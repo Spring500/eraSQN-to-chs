@@ -93,7 +93,7 @@ FOR LCOUNT, 1, CHARANUM
 				PRINTFORM  %BL(16)%
 			ENDIF
 			IF CONFIG("３サイズ：表示")
-				PRINTFORM [200]\@ CONFIG("能力表示で３サイズ閲覧") ? 体力等表示 # ３size表示 \@ %BL(12)%
+				PRINTFORM [200]\@ CONFIG("能力表示で３サイズ閲覧") ? 显示体力等数据 # 显示三围 \@ %BL(12)%
 			ELSE
 				PRINTFORM %BL(28)%
 			ENDIF
@@ -126,41 +126,42 @@ NEXT
 ;選択肢の表示
 IF CONFIG("表示人数") && Z > CONFIG("表示人数")
 	IF ARG
-		PRINTFORM [{1000 + ARG}]前のpageへ　
+		PRINTFORM [{1000 + ARG}]上一页　
 	ELSE
-		PRINTPLAINFORM [----]前のpageへ　
+		PRINTPLAINFORM [----]上一页　
 	ENDIF
 ENDIF
 
 SIF ARGS != "コス確認" || (CONFIG("表示人数") && Z > CONFIG("表示人数"))
-	PRINTFORM  [100]戻る
+	PRINTFORM  [100]返回上层菜单
 
 SELECTCASE ARGS
 CASE "喫茶店"
 	SIF CHARA_NUM("バイト可能") >= 2
-		PRINTFORM  [200]全キャラ一括指示
+		PRINTFORM  [200]全员行动指示
 CASE "一晩開放許可"
 	SIF CHARA_NUM("一晩開放可能") >= 2
-		PRINTFORM  [200]全キャラ一括指示
+		PRINTFORM  [200]全员行动指示
 CASE "能力表示"
 	SIF CHARA_NUM("助手可能") && CONFIG("調教相手変更不可") == 0
-		PRINTFORM  [109]助手変更
+		PRINTFORM  [109]更换助手
 	SIF CHARA_NUM("控えキャラ") && CONFIG("調教相手変更不可") == 0
-		PRINTFORM  [110]調教対象変更
+		PRINTFORM  [110]更换调教对象
 CASE "助手変更"
 	IF CONFIG("探索同行者選択中") == 0
-		PRINTFORM  [101]能力の表示
+		PRINTFORM  [101]角色能力状态
 		SIF CHARA_NUM("控えキャラ") && CONFIG("調教相手変更不可") == 0
-			PRINTFORM  [110]調教対象変更
+			PRINTFORM  [110]更换调教对象
 	ENDIF
 CASE "調教対象変更"
-	PRINTFORM  [101]能力の表示
+	PRINTFORM  [101]角色能力状态
 	SIF CHARA_NUM("助手可能") && CONFIG("調教相手変更不可") == 0
+	  ; 未翻译
 		PRINTFORM  [109]%TEXTS("助手の名称")%変更
 ENDSELECT
 
 SIF CONFIG("表示人数") && Z > CONFIG("表示人数") * (ARG + 1)
-	PRINTFORM 　[{1000 + ARG + 2}]次のpageへ
+	PRINTFORM 　[{1000 + ARG + 2}]下一页
 
 PRINTL
 
@@ -177,13 +178,13 @@ SELECTCASE ARGS
 CASE "喫茶店", "探索", "乳首選択"
 CASEELSE
 	SIF TARGET || (ASSI && TARGET <= 0)
-		PRINTFORM 現在
+		PRINTFORM 目前
 	SIF TARGET
-		PRINTFORM [{TARGET}]%NAME:TARGET%の相手をしていて、
+		PRINTFORM 的调教对象是[{TARGET}]%NAME:TARGET%，
 	IF ASSI
-		PRINTFORM [{ASSI}]%NAME:ASSI%が%TEXTS("助手の名称")%です
+		PRINTFORM %TEXTS("助手の名称")%是[{ASSI}]%NAME:ASSI%
 	ELSEIF TARGET
-		PRINTFORM %TEXTS("助手の名称")%はつけていません
+		PRINTFORM 没有配置%TEXTS("助手の名称")%
 	ENDIF
 	SIF ARGS == "売却"
 		PRINTFORM  (所持金:%MONEY_C(MONEY)%)
@@ -192,26 +193,28 @@ ENDSELECT
 
 SELECTCASE ARGS
 CASE "能力表示"
-	PRINTL 誰の能力を見ますか？
+	PRINTL 想要查看谁的能力呢？
 	IF CHARA_NUM("ドランク")
-		PRINT ちなみに
-		CALL PRINT_COLORTEXT, "色が青いキャラは悪酔い中", DEF_COLOR("青")
-		PRINT 、
-		CALL PRINT_COLORTEXT, "ピンクのキャラはドランク中", DEF_COLOR("ハートピンク")
-		PRINTL です
+		PRINT 顺带一提，
+		CALL PRINT_COLORTEXT, "青色表示的角色正处于烂醉状态", DEF_COLOR("青")
+		PRINT ，
+		CALL PRINT_COLORTEXT, "粉色表示的角色正处于醉酒状态", DEF_COLOR("ハートピンク")
+		PRINTL 。
 	ENDIF
-	PRINTL 能力表示画面の各項目(□ 素質 □など)はクリックすることにより出し入れできます
+	PRINTL 通过点击能力显示画面的各个项目(□ 素质 □ 等等)可以将其折叠起来
 CASE "助手変更"
 	IF CONFIG("助手への指示")
-		PRINTL []の数だけ指示を与えることが出来ます。
-		PRINTL 誰の指示を変更しますか？
+	  ; 未翻译，没找到在那里出现，先抄旧汉化版
+		; PRINTL []の数だけ指示を与えることが出来ます。
+		PRINTL 可以下达[]个指示。
+		PRINTL 要给谁变更指示？
 	ELSE
-		PRINTFORML 誰を%TEXTS("助手の名称")%にしますか？（選択済みのキャラを選ぶと%TEXTS("助手の名称")%無しになります）
+		PRINTFORML 要选谁作为を%TEXTS("助手の名称")%呢？（要解除助手请点击已选择的%TEXTS("助手の名称")%）
 		IF CONFIG("助手の探索能力表示")
-			PRINTFORML %TEXTS("助手の名称")%の能力(財宝発見など)はクリックすることで効果の解説を見る事が出来ます
+			PRINTFORML 点击%TEXTS("助手の名称")%的能力(如「财宝发现」之类的)就可以显示该能力的说明
 		ELSE
-			PRINTFORML %TEXTS("助手の名称")%の能力(調合など)はクリックすることで効果の解説を見る事が出来ます
-			PRINTFORML （覚えているアルカナを確認するには 魔法使い or アルカナ をクリックして下さい）
+			PRINTFORML 点击%TEXTS("助手の名称")%的能力(如「调合」之类的)就可以显示该能力的说明
+			PRINTFORML （点击「魔法使」或「秘法」就可以显示已习得的秘法）
 		ENDIF
 	ENDIF
 	DRAWLINE
@@ -219,29 +222,29 @@ CASE "助手変更"
 	PRINTFORM 　[ 0]%TEXT_LJ(LOCALS, 16)%
 	IF CONFIG("探索同行者選択中") == 0
 		IF CHARA_NUM("指示可能な助手")
-			PRINTFORM [200]\@ CONFIG("助手への指示") ? 変更画面 # 指示画面 \@
+			PRINTFORM [200]\@ CONFIG("助手への指示") ? 变更界面 # 指示界面 \@
 		ELSE
 			CLEARBIT FLAG:45, 0
 		ENDIF
-		PRINTFORM [300]\@ CONFIG("助手の探索能力表示") ? 調教時の能力 # 探索時の能力 \@
-		PRINTFORM [400]%TEXTS("助手の名称")%の名称の変更
+		PRINTFORM [300]\@ CONFIG("助手の探索能力表示") ? 调教时的能力 # 探索时的能力 \@
+		PRINTFORM [400]%TEXTS("助手の名称")%的名称的变更
 	ENDIF
 	PRINTL
 CASE "調教対象変更"
 	IF CONFIG("調教対象変更でアナライズ")
-		PRINTL 誰を調教しますか？（強さは100点満点で、50点ならば主人と互角です）
+		PRINTL 要调教谁呢？（满点是100点，超过50点就可以跟MASTER叫板）
 		DRAWLINE
-		PRINTFORM  [200]通常表示に戻す
-		PRINTPLAINFORM 　欲求不満　 好感度　 放置　 敏感度　 攻撃力　主人基準での強さ
+		PRINTFORM  [200]显示普通项目
+		PRINTPLAINFORM 　欲求不满　 好感度　 放置　 敏感度　 攻击力　跟MASTER对比
 	ELSE
-		PRINTL 誰を調教しますか？（☆マークはお気に入りのしるしです）
+		PRINTL 要调教谁呢？（☆标记：偏爱角色）
 		DRAWLINE
-		PRINTFORM  [200]欲求不満度、好感度、放置期間、具体的な強さ…等を表示する
+		PRINTFORM  [200]显示欲求不满度、好感度、放置时间、具体的强度等…
 	ENDIF
 	PRINTL
 CASE "売却"
-	PRINTL 誰を売りますか？
-	PRINTL 計算式は 能力×変動しない素質×変動する素質＝評価pt→価格 となっています
+	PRINTL 要将谁卖掉呢？
+	PRINTL 计算公式大概就是 能力 × 不可变素质 × 可变素质 ＝ 评价pt → 价格
 CASE "探索"
 	PRINTFORML 主人か%TEXTS("助手の名称")%に限り探索に出かける事ができます。誰が赴きますか？
 	IF ASSI
