@@ -1,0 +1,318 @@
+﻿@COM9
+;アナル舐め※消費を少し高めにする
+IF TEQUIP:押し倒し
+	PRINTL Ａ顔面騎乗
+ELSE
+	PRINTL アナル舐め
+ENDIF
+
+CALL TRAIN_MESSAGE_B
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+IF TEQUIP:押し倒し
+	STR:0 = Ａ顔面騎乗
+ELSE
+	STR:0 = アナル舐め
+ENDIF
+
+;-------------------------------------------------
+;射精チェック
+;-------------------------------------------------
+SIF TEQUIP:押し倒し
+	CALL SAMEN_CHECK
+
+RETURN 1
+
+@FLAG_COM9, ARG
+;対象のＡ⇔調教者の口の汚れが移動
+CALL EQ_STAIN, TARGET, PLAYER, 4, 0
+
+
+@SOURCE_COM9, ARG
+VARSET LOCAL
+
+LOCAL:20 += 20
+LOCAL:21 += 70
+
+;※露出のソースを元より高めにしてみる
+LOCAL:12 = 800
+LOCAL:14 = 500
+;Ａ液体追加
+LOCAL:19 = 100
+
+;ABL:Ａ感覚をみる
+LOCAL:2 = CALCF("Ａ刺激", 1, 70)
+;調教者の舌使いをみる
+LOCAL:2 = SOURCE_EXABL(LOCAL:2, 30, PLAYER)
+
+;顔面騎乗の時には快感を得るよりはむしろ攻撃重視
+SIF TEQUIP:押し倒し
+	TIMES LOCAL:2, 0.30
+
+;EXP:Ａ経験に応じたＡ快感、苦痛、恐怖、逸脱(反感)補正
+SELECTCASE EXP:Ａ経験
+CASE IS >= 300
+	TIMES LOCAL:2, 1.60
+	TIMES LOCAL:6, 0.50
+	TIMES LOCAL:9, 0.20
+	TIMES LOCAL:14, 0.20
+CASE IS >= 150
+	TIMES LOCAL:2, 1.40
+	TIMES LOCAL:6, 0.60
+	TIMES LOCAL:9, 0.40
+	TIMES LOCAL:14, 0.60
+CASE IS >= 50
+	TIMES LOCAL:2, 1.20
+	TIMES LOCAL:6, 0.80
+	TIMES LOCAL:9, 0.70
+CASE IS >= 20
+	TIMES LOCAL:14, 1.20
+CASE IS >= 5
+	TIMES LOCAL:2, 0.50
+	TIMES LOCAL:6, 1.50
+	TIMES LOCAL:9, 1.50
+	TIMES LOCAL:14, 1.50
+CASEELSE
+	TIMES LOCAL:2, 0.10
+	TIMES LOCAL:6, 2.00
+	TIMES LOCAL:9, 2.00
+	TIMES LOCAL:14, 2.00
+ENDSELECT
+
+;PALAM:欲情をみる
+SELECTCASE PALAM:欲情
+CASE IS < PALAMLV:1
+	TIMES LOCAL:13, 0.30
+CASE IS < PALAMLV:2
+	TIMES LOCAL:13, 0.50
+CASE IS < PALAMLV:3
+	TIMES LOCAL:13, 0.80
+CASE IS < PALAMLV:4
+CASE IS >= PALAMLV:4
+	TIMES LOCAL:13, 1.20
+ENDSELECT
+
+;Ａ敏感、鈍感をみる
+;快Ａ自体のチェックは後でまとめてやる
+IF TALENT:Ａ鈍感
+	TIMES LOCAL:6, 0.50
+	TIMES LOCAL:11, 0.50
+	TIMES LOCAL:13, 0.50
+	TIMES LOCAL:14, 0.50
+ELSEIF TALENT:Ａ敏感
+	TIMES LOCAL:6, 1.50
+	TIMES LOCAL:11, 1.50
+	TIMES LOCAL:13, 1.50
+	TIMES LOCAL:14, 1.50
+ENDIF
+
+;処女で貞操観念orお尻許可フラグ
+IF (TALENT:処女 == 1 && TALENT:貞操観念) || CFLAG:100
+	LOCAL:14 /= 3
+	LOCAL:15 /= 3
+ENDIF
+
+CALL CALC, "調教ソース", LOCAL:0, LOCAL:1, LOCAL:2, LOCAL:3, LOCAL:4, LOCAL:5, LOCAL:6, LOCAL:7, LOCAL:8, LOCAL:9, LOCAL:10, LOCAL:11, LOCAL:12, LOCAL:13, LOCAL:14, LOCAL:15, LOCAL:16, LOCAL:17, LOCAL:18, LOCAL:19, LOCAL:20, LOCAL:21, ARG
+
+
+@TRAIN_MESSAGE_COM9
+;同時押し倒し
+IF TEQUIP:Ｗ押し倒し
+	PRINTFORM %CALLNAME:TARGET%は
+	;助手が前回と同じ行動(違う行動の時は、ここでなく、EQUIP_COM32で記述)
+	SIF SELECTCOM:1 == PREVCOM:1 && SELECTCOM:1 >= 0
+		PRINTFORM %TEXTS("Ｗ押し倒し中")%
+	IF SELECTCOM == PREVCOM
+		PRINTFORM %CALLNAME:MASTER%の顔
+		IF TALENT:恥薄い || TALENT:淫乱
+			PRINT の上でお尻をぐっと広げ、
+		ELSE
+			PRINT に腰を下ろして、
+		ENDIF
+		PRINTFORMW お尻の穴を舐めさせ続けている…
+	ELSE
+		IF COND("脚の使用") == 0
+			PRINTFORMW %CALLNAME:MASTER%の顔を押さえつけ、口にアヌスを押し付けた……
+		ELSE
+			PRINTFORMW %CALLNAME:MASTER%の顔にまたがり、口にアヌスを押し付けた……
+		ENDIF
+		;淫乱or欲情4LV以上なら追加
+		IF TALENT:淫乱 || PALAM:欲情 >= PALAMLV:4
+			SIF (SELECTCOM:1 == 65 || SELECTCOM:1 == 75) && ABL:レズっ気 >= 3 && RAND:2 == 0
+				PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:(TARGET:1)%と舌を絡めながら、快感を貪っている…
+		ENDIF
+	ENDIF
+;押し倒されているときは顔面騎乗
+ELSEIF TEQUIP:押し倒し && (TEQUIP:顔面騎乗 == SELECTCOM || PREVCOM == SELECTCOM) && COND("前Ｔ調教者") == PLAYER
+	PRINTFORM %CALLNAME:TARGET%は
+	IF RAND:2 == 0
+		PRINTFORM %TEXTS("アナル")%
+	ELSEIF ABL:欲望 + ABL:Ａ感覚 >= 6
+		PRINTFORM %NAMES("指")%で広げた
+	ENDIF
+	PRINTFORMW アヌスを%CALLNAME:PLAYER%に奉仕させ続けている…
+	;アナルが露出していないで、パンツをずらしていないなら自動的にずらす
+	SIF !CHECK_CLO("Ａ露出")
+		CALL SETFLAG, "ボトムを露出：テキスト無し", TARGET
+ELSEIF TEQUIP:押し倒し
+	PRINTFORM %CALLNAME:TARGET%は
+	;前回が顔面騎乗
+	IF (TEQUIP:顔面騎乗 == 1 || PREVCOM == 1) && COND("前Ｔ調教者") == PLAYER
+		PRINTFORM 軽く腰を浮かせると、今度は
+		;アナルが露出していないで、パンツをずらしていないなら自動的にずらす
+		SIF !CHECK_CLO("Ａ露出")
+			CALL SETFLAG, "ボトムを露出：テキスト無し", TARGET
+	;足がある
+	ELSEIF COND("脚が無い") == 0
+		;「恥じらい」で「臆病」でない
+		IF TALENT:恥じらい && TALENT:臆病 == 0
+			PRINT 恥ずかしそうに
+		;「臆病」で「恋慕」でない
+		ELSEIF TALENT:臆病 && TALENT:恋慕 == 0
+			PRINT おずおずと
+		;「小悪魔」でランダム1/2
+		ELSEIF TALENT:小悪魔 && RAND:2 == 0
+			PRINT ニヤニヤしながら
+		ENDIF
+		PRINTFORM %CALLNAME:PLAYER%の顔の上に
+		;「恥じらい」or「臆病」でランダム
+		IF (TALENT:恥じらい || TALENT:臆病) && RAND:3 == 0
+			PRINTFORM アソコを%NAMES("手")%で隠しながら
+		;「生意気」or「淫乱」or「小悪魔」でランダム
+		ELSEIF (TALENT:生意気 || TALENT:淫乱 || TALENT:小悪魔) && RAND:2 == 0
+			PRINT 脚を大きく開いて
+		ENDIF
+		PRINT しゃがみこみ、
+		;アナルが露出していないで、パンツをずらしていないなら自動的にずらす
+		SIF !CHECK_CLO("Ａ露出") && CHECK_CLO("Ａ露出可")
+			CALL SETFLAG, "ボトムを露出：テキスト有り", TARGET
+	;ラミア、で後は一応他の条件もつける…ラミアってパンツはいてないな
+	ELSEIF TALENT:ラミア
+		;「恥じらい」で「臆病」でない
+		IF TALENT:恥じらい && TALENT:臆病 == 0
+			PRINT 恥ずかしそうに
+		;「臆病」で「恋慕」でない
+		ELSEIF TALENT:臆病 && TALENT:恋慕 == 0
+			PRINT おずおずと
+		;「小悪魔」でランダム1/4
+		ELSEIF TALENT:小悪魔 && RAND:4 == 0
+			PRINT ニヤニヤしながら
+		;「生意気」or「淫乱」or「小悪魔」でランダム1/3
+		ELSEIF (TALENT:生意気 || TALENT:淫乱 || TALENT:小悪魔) && RAND:3 == 0
+			PRINT 見せ付けるようにゆっくりと
+		;欲情4以上＋A感覚3以上でランダム1/2
+		ELSEIF PALAM:欲情 >= PALAMLV:4 && ABL:Ａ感覚 >= 3 && RAND:2 == 0
+			PRINT 待ちきれないようにいそいそと
+		;その他
+		ELSE
+			PRINT するすると
+		ENDIF
+		PRINTFORM 仰向けの%CALLNAME:PLAYER%の顔に腰を近づけると、
+	;マーメイド、で後は一応他の条件もつける…マーメイドのアレは服には見えないのだが一体なんだろう…
+	ELSEIF TALENT:マーメイド
+		PRINT 後ろ手をついて
+		;「恥じらい」で「臆病」でない
+		IF TALENT:恥じらい && TALENT:臆病 == 0
+			PRINT 恥ずかしそうに
+		;「臆病」で「恋慕」でない
+		ELSEIF TALENT:臆病 && TALENT:恋慕 == 0
+			PRINT おずおずと
+		;「小悪魔」でランダム1/2
+		ELSEIF TALENT:小悪魔 && RAND:2 == 0
+			PRINT ニヤニヤしながら
+		;「生意気」or「淫乱」or「小悪魔」でランダム1/3
+		ELSEIF (TALENT:生意気 || TALENT:淫乱 || TALENT:小悪魔) && RAND:3 == 0
+			PRINT ゆっくりと
+		;欲情4以上＋A感覚3以上でランダム1/2
+		ELSEIF PALAM:欲情 >= PALAMLV:4 && ABL:Ａ感覚 >= 3 && RAND:2 == 0
+			PRINT 待ちきれずにいそいそと
+		ELSE
+			PRINT 気だるげに
+		ENDIF
+		PRINTFORM 仰向けの%CALLNAME:PLAYER%の顔に座り込むように近づけると、
+	ENDIF
+	;欲情6以上orA感覚3以上でランダム1/2
+	IF PALAM:欲情 >= PALAMLV:6 && ABL:Ａ感覚 >= 3 && RAND:2 == 0
+		PRINTFORMW %CALLNAME:PLAYER%の口に%TEXTS("アナル")%アヌスを押し付けた……
+	;それ以外
+	ELSE
+		PRINTFORMW %CALLNAME:PLAYER%の口元に%TEXTS("アナル")%アヌスを差し出した……
+	ENDIF
+ELSEIF PREVCOM == SELECTCOM && COND("前Ｔ調教者") == PLAYER
+	PRINTFORM %CALLNAME:PLAYER%は%CALLNAME:TARGET%の
+	IF RAND:2 || TEQUIP:シックスナイン || COND("性癖：尻", PLAYER)
+		PRINTFORM %TEXTS("お尻：感触")%%TEXTR("に顔を埋めて", "を自らの顔で楽しみながら", "を満喫しながら")%、
+	ELSEIF COND("指の使用", PLAYER)
+		PRINTFORM お尻を押し広げて、%TEXTR("丸見えになった", "剥き出しになった", "引き伸ばされた")%
+	ENDIF
+	PRINTFORMW %TEXTR("アヌスを執拗に舐め", "尻の穴の粘膜を舌で味わい", "肛門の皺を舌でなぞり", "尻の穴の味を愉しみ")%続けた…
+;押し倒されていないときは後ろから…いや前からってのもあるか…
+ELSE
+	IF TEQUIP:シックスナイン
+		PRINTFORM %CALLNAME:PLAYER%は%CALLNAME:TARGET%の
+		;アナルが露出していないで、パンツをずらしていないなら自動的にずらす
+		IF !CHECK_CLO("Ａ露出") && CHECK_CLO("Ａ露出可")
+			CALL SETFLAG, "ボトムを露出：テキスト有り", TARGET
+		ELSE
+			PRINTFORM お尻の肉をぐっと広げて
+		ENDIF
+		PRINTFORM 、%TEXTS("６９")%
+	ELSE
+		SIF PLAYER != MASTER
+			PRINTFORM %CALLNAME:PLAYER%は
+		;前回Ａくぱぁ
+		IF PREVCOM == 14
+			PRINT アナルを見せ付けている
+		;縄着用時かつラミアでないかつマーメイドでない
+		ELSEIF TEQUIP:拘束 && COND("脚が無い") == 0
+			PRINT 脚を大きく開かされている
+		;恥じらいで快Ａor欲情が高い
+		ELSEIF TALENT:恥じらい && (PALAM:快Ａ >= PALAMLV:3 || PALAM:欲情 >= PALAMLV:4)
+			PRINT 両手で顔を隠して恥ずかしがりつつ、率先して脚を開いている
+		;恥じらいで快Ａor欲情が低い
+		ELSEIF TALENT:恥じらい && (PALAM:快Ａ <= PALAMLV:3 || PALAM:欲情 <= PALAMLV:4)
+			PRINT 固く脚を閉じている
+		;淫乱or欲情4LV以上
+		ELSEIF (TALENT:淫乱 || PALAM:欲情 >= PALAMLV:4) && ABL:Ａ感覚 >= 3
+			PRINT 脚を大きく広げている
+		ENDIF
+		PRINTFORM %CALLNAME:TARGET%の
+		;アナルが露出していないで、パンツをずらしていないなら自動的にずらす
+		IF !CHECK_CLO("Ａ露出") && CHECK_CLO("Ａ露出可")
+			CALL SETFLAG, "ボトムを露出：テキスト有り", TARGET
+		;前から
+		ELSEIF RAND:2
+			PRINT 腰をぐっと持ち上げて
+		;後ろから
+		ELSE
+			PRINT 股間に顔を寄せて
+		ENDIF
+		PRINT 、
+	ENDIF
+	PRINTFORM %TEXTS("アナル")%お尻の穴を
+	IF RAND:2 == 0
+		PRINT 舌で
+	ELSE
+		PRINT 唇で
+	ENDIF
+	IF RAND:4 == 0
+		PRINT 優しく
+	ELSEIF RAND:3 == 0
+		PRINT 丁寧に
+	ELSEIF RAND:2 == 0
+		PRINT 激しく
+	ELSE
+		PRINT 荒々しく
+	ENDIF
+	IF RAND:4 == 0
+		PRINTFORMW 吸い上げた…
+	ELSEIF RAND:3 == 0
+		PRINTFORMW 舐めあげた…
+	ELSEIF RAND:2 == 0
+		PRINTFORMW 愛撫した…
+	ELSE
+		PRINTFORMW 味わった…
+	ENDIF
+ENDIF

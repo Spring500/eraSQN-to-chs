@@ -1,0 +1,168 @@
+﻿@COM107
+;逆Ａバイブ
+;PLAYER側がバイブで楽しむコマンド。通常のバイブコマンドとは違い、入れっぱなしにはしない。
+PRINT 逆Ａバイブ
+SIF TALENT:PLAYER:妖精
+	PRINT (妖精用)
+PRINTL 
+
+;-------------------------------------------------
+;実行できるかの判定
+;-------------------------------------------------
+CALL SHOW_COM_ORDER_COM, 107
+
+;実行できない
+SIF TCVAR:28 == 0
+	RETURN 0
+;-------------------------------------------------
+;実行決定
+;-------------------------------------------------
+CALL TRAIN_MESSAGE_B
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+STR:0 = 逆Ａバイブ
+
+;-------------------------------------------------
+;射精チェック
+;-------------------------------------------------
+CALL SAMEN_CHECK
+
+RETURN 1
+
+@TRAIN_MESSAGE_COM107
+;バイブ選択
+CALL SELECT_VIB_A, PLAYER
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+PRINTFORM %CALLNAME:TARGET%は、%CALLNAME:PLAYER%のアナルを
+SELECTCASE SIZE("Ａバイブ", PLAYER)
+CASE IS >= 3
+	PRINT 極太のバイブ
+CASE 2
+	PRINT 太めのバイブ
+CASE 1
+	PRINT バイブ
+CASE 0
+	PRINT アナルバイブ
+ENDSELECT
+IF PREVCOM == SELECTCOM && COND("前Ｔ調教者") == PLAYER
+	PRINTW でかき回し続けている…
+ELSE
+	PRINTW でかき回した…
+ENDIF
+
+
+@FLAG_COM107, ARG
+
+@SOURCE_COM107, ARG
+VARSET LOCAL
+
+LOCAL:20 += 100
+LOCAL:21 += 100
+
+LOCAL:3 = 500
+LOCAL:8 = 1000
+LOCAL:11 = CALCF("実行値による欲情追加")
+LOCAL:14 = 1500
+;バイブの大きさなど
+IF SIZE("Ａバイブ", PLAYER) >= 3
+	TIMES LOCAL:11 , 3.00
+ELSEIF SIZE("Ａバイブ", PLAYER) >= 2
+	TIMES LOCAL:11 , 1.50
+ENDIF
+IF SIZE("Ａバイブ", PLAYER) > ABL:PLAYER:Ａ拡張
+	TIMES LOCAL:11 , 1.50
+ELSEIF SIZE("Ａバイブ", PLAYER) < ABL:PLAYER:Ａ拡張
+	TIMES LOCAL:11 , 0.50
+ENDIF
+
+;ABL:奉仕精神をみる
+SELECTCASE ABL:奉仕精神
+CASE 0
+	LOCAL:4 = 420
+	LOCAL:5 = 150
+CASE 1
+	LOCAL:4 = 500
+	LOCAL:5 = 300
+CASE 2
+	LOCAL:4 = 580
+	LOCAL:5 = 600
+CASE 3
+	LOCAL:4 = 660
+	LOCAL:5 = 900
+CASE 4
+	LOCAL:4 = 740
+	LOCAL:5 = 1500
+CASEELSE
+	LOCAL:4 = 820
+	LOCAL:5 = 2200
+ENDSELECT
+
+;ABL:技巧をみる
+SELECTCASE ABL:技巧
+CASE 0
+	TIMES LOCAL:4 , 0.50
+	TIMES LOCAL:5 , 0.50
+CASE 1
+	TIMES LOCAL:4 , 0.80
+	TIMES LOCAL:5 , 0.80
+CASE 2
+CASE 3
+	TIMES LOCAL:4 , 1.20
+	TIMES LOCAL:5 , 1.20
+CASE 4
+	TIMES LOCAL:4 , 1.50
+	TIMES LOCAL:5 , 1.50
+CASEELSE
+	TIMES LOCAL:4 , 2.00
+	TIMES LOCAL:5 , 2.00
+ENDSELECT
+
+CALL CALC, "調教ソース", LOCAL:0, LOCAL:1, LOCAL:2, LOCAL:3, LOCAL:4, LOCAL:5, LOCAL:6, LOCAL:7, LOCAL:8, LOCAL:9, LOCAL:10, LOCAL:11, LOCAL:12, LOCAL:13, LOCAL:14, LOCAL:15, LOCAL:16, LOCAL:17, LOCAL:18, LOCAL:19, LOCAL:20, LOCAL:21, ARG
+
+
+@COM_ORDER_COM107, ARG
+VARSET LOCAL
+LOCALS = 
+
+;すべての命令に共通の要素を考慮
+;(従順が高いと命令に従いやすいなど)
+CALL COM_ORDER, ARG
+
+LOCAL = RESULT
+
+;ABL:奉仕精神
+IF ABL:奉仕精神
+	LOCAL += ABL:奉仕精神 * 4
+	LOCALS = %LOCALS% + %ABLNAME:6%LV{ABL:奉仕精神}({ABL:奉仕精神 * 4})
+ENDIF
+;ABL:サドっ気
+IF ABL:サドっ気
+	LOCAL += ABL:サドっ気 * 5
+	LOCALS = %LOCALS% + %ABLNAME:15%LV{ABL:サドっ気}({ABL:サドっ気 * 5})
+ENDIF
+;献身的
+IF TALENT:献身
+	LOCAL += 6
+	LOCALS = %LOCALS% + %TALENTNAME:63%(6)
+ENDIF
+;快感の否定
+IF TALENT:快感の否定
+	LOCAL -= 1
+	LOCALS = %LOCALS% - %TALENTNAME:71%(1)
+ENDIF
+;サド
+IF TALENT:サド
+	LOCAL += 5
+	LOCALS = %LOCALS% + %TALENTNAME:83%(5)
+ENDIF
+
+
+;合計を表示(40以上で実行)
+CALL PRINT_COM_ORDER_COM, LOCALS, ARG, LOCAL, 40
+
+RETURN RESULT

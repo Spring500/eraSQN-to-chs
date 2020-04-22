@@ -1,0 +1,457 @@
+﻿@COM33
+;アナルバイブ
+;0bit細い, 1bit普通, 2bit太い, 3bit極太, 4bit腕並み, 5bit馬並み, 
+;10bit双頭タイプ, 11bitパールタイプ
+IF TEQUIP:触手
+	PRINTFORML アナル触手
+ELSEIF TEQUIP:アナルバイブ
+	IF COND("アナルパール")
+		PRINTFORML アナルパールを抜く
+	ELSE
+		PRINTFORML アナルバイブを抜く
+	ENDIF
+ELSE
+	PRINTFORML アナルバイブ\@ TALENT:妖精 ? (妖精用) # \@
+ENDIF
+
+CALL TRAIN_MESSAGE_B
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+IF TEQUIP:触手
+	STR:0 = アナル触手
+ELSEIF TEQUIP:アナルバイブ == 0
+	STR:0 = アナルバイブを抜く
+ELSE
+	IF COND("アナルパール")
+		STR:0 = アナルパール
+	ELSE
+		STR:0 = アナルバイブ
+	ENDIF
+ENDIF
+
+RETURN 1
+
+;ARGに入れられるキャラ、ARGSは補足。
+;現状だとARGS == "強制挿入"で[100] やめる を選択不可にできる
+@SELECT_VIB_A, ARG, ARGS
+#DIM LCOUNT
+#DIM SIZE_DILDO
+
+VARSET LOCAL, 1
+;逆Ａバイブ
+IF ARG == PLAYER
+	;大きなバイブ
+	SIF ABL:ARG:Ａ拡張 == 0 || (ABL:ARG:Ａ拡張 <= 1 && ABL:ARG:マゾっ気 < 3 && TALENT:サド == 0)
+		LOCAL:2 = 0
+	;極太バイブ
+	SIF ABL:ARG:Ａ拡張 <= 1 || (ABL:ARG:Ａ拡張 <= 2 && ABL:ARG:マゾっ気 < 3 && TALENT:サド == 0)
+		LOCAL:3 = 0
+	;腕並みバイブ
+	SIF ABL:ARG:Ａ拡張 <= 2 || (ABL:ARG:Ａ拡張 <= 3 && ABL:ARG:マゾっ気 < 3 && TALENT:サド == 0)
+		LOCAL:4 = 0
+	;馬並みバイブ
+	SIF ABL:ARG:Ａ拡張 <= 3 || (ABL:ARG:Ａ拡張 <= 4 && ABL:ARG:マゾっ気 < 3 && TALENT:サド == 0)
+		LOCAL:5 = 0
+	LOCAL:11 = 0
+ELSE
+	;どのバイブを使えるかを判定（双方のサドマゾ具合で変化）
+	FOR LCOUNT, 1, 6
+		;バイブのサイズを代入
+		SIZE_DILDO = LCOUNT
+
+		SELECTCASE SIZE_DILDO - ABL:Ａ拡張
+		CASE IS >= 4
+			;PLAYERがサドなら、どんな大きさのものだろうと無理やりねじ込める
+			SIF TALENT:PLAYER:サド
+				CONTINUE
+		CASE 3
+			;大きさが３上回っている時
+			SIF TALENT:PLAYER:サド
+				CONTINUE
+			SIF (ABL:PLAYER:サドっ気 >= 5 && ABL:マゾっ気 >= 3) || (TALENT:マゾ && ABL:PLAYER:サドっ気 >= 3)
+				CONTINUE
+		CASE 2
+			;大きさが２上回っているなら、サドっ気５ＬＶor（サドっ気３ＬＶに加えて相手のマゾっ気３ＬＶ）が必要
+			SIF ABL:PLAYER:サドっ気 >= 5 || MIN(ABL:マゾっ気, ABL:PLAYER:サドっ気) >= 3
+				CONTINUE
+		CASE 1
+			;大きさが１上回っているなら、サドっ気３ＬＶor（サドっ気１ＬＶに加えて相手のマゾっ気１ＬＶ）が必要
+			SIF ABL:PLAYER:サドっ気 >= 3 || MIN(ABL:マゾっ気, ABL:PLAYER:サドっ気) >= 1
+				CONTINUE
+		CASEELSE
+			CONTINUE
+		ENDSELECT
+
+		LOCAL:LCOUNT = 0
+	NEXT
+ENDIF
+SIF ITEM:アナルパール == 0
+	LOCAL:11 = 0
+
+PRINTFORML どれを使\@ ARG == PLAYER ? ってもら # \@いますか？
+
+VARSET LOCALS
+LOCALS:0 = [ 0] アナルバイブ
+LOCALS:1 = [\@ LOCAL:1 ? {1, 2} # × \@] 普通のバイブ　　　\@ ABL:ARG:Ａ拡張 <= 0 - TALENT:ARG:妖精 ? ※初心者厳禁！ # \@
+LOCALS:2 = [\@ LOCAL:2 ? {2, 2} # × \@] 大きめのバイブ　　\@ ABL:ARG:Ａ拡張 <= 1 - TALENT:ARG:妖精 ? ※慣れた人用！ # \@
+LOCALS:3 = [\@ LOCAL:3 ? {3, 2} # × \@] 極太バイブ　　　　\@ ABL:ARG:Ａ拡張 <= 2 - TALENT:ARG:妖精 ? ※上級者専用！ # \@
+LOCALS:4 = [\@ LOCAL:4 ? {4, 2} # × \@] フィストバイブ　　\@ ABL:ARG:Ａ拡張 <= 3 - TALENT:ARG:妖精 ? ※超上級者専用！ # \@
+LOCALS:5 = [\@ LOCAL:5 ? {5, 2} # × \@] 馬並みバイブ　　　\@ ABL:ARG:Ａ拡張 <= 4 - TALENT:ARG:妖精 ? ※後戻りできない人向け # \@
+
+LOCALS:11 = [\@ LOCAL:11 ? 11 # × \@] アナルパール
+
+FOR LCOUNT, 0, 20
+	SIF STRLENS(LOCALS:LCOUNT) == 0
+		CONTINUE
+
+	SIF LOCAL:LCOUNT == 0
+		SETCOLOR DEF_COLOR("灰色")
+	PRINTFORML  %LOCALS:LCOUNT%
+	RESETCOLOR
+NEXT
+
+SIF ARGS != "強制挿入"
+	PRINTFORML [100] やめる
+
+$INPUT_LOOP
+INPUT
+
+IF RESULT == 100 && ARGS != "強制挿入"
+	TEQUIP:ARG:アナルバイブ = 0
+	TFLAG:14 = 1
+	RETURN 0
+ELSEIF RESULT == 0
+	TEQUIP:ARG:アナルバイブ = 1p0
+ELSEIF RESULT == 1 && LOCAL:1
+	TEQUIP:ARG:アナルバイブ = 1p1
+ELSEIF RESULT == 2 && LOCAL:2
+	TEQUIP:ARG:アナルバイブ = 1p2
+ELSEIF RESULT == 3 && LOCAL:3
+	TEQUIP:ARG:アナルバイブ = 1p3
+ELSEIF RESULT == 4 && LOCAL:4
+	TEQUIP:ARG:アナルバイブ = 1p4
+ELSEIF RESULT == 5 && LOCAL:5
+	TEQUIP:ARG:アナルバイブ = 1p5
+ELSEIF RESULT == 11 && LOCAL:11
+	TEQUIP:ARG:アナルバイブ = 1p0 + 1p11
+ELSE
+	GOTO INPUT_LOOP
+ENDIF
+RETURN 1
+
+
+@TRAIN_MESSAGE_COM33
+;アナルバイブの着脱
+IF TEQUIP:アナルバイブ
+	IF COND("アナルパール")
+		PRINTFORMW %CALLNAME:TARGET%\@ TEQUIP:押し倒し ? は # の \@アヌスからアナルパールを勢い良く引き抜いた…
+	ELSE
+		PRINTFORMW %CALLNAME:TARGET%\@ TEQUIP:押し倒し ? は # の \@お尻の穴から%NAMES("Ａバイブ", TARGET)%を抜いた…
+	ENDIF
+	TFLAG:16 = TEQUIP:アナルバイブ
+	TEQUIP:アナルバイブ = 0
+	RETURN 0
+ENDIF
+
+;バイブの品揃えを見た、夢魔の反応です
+CALL SELF_KOJO, "Ａバイブ追加口上"
+
+$SELECT_VIB
+;バイブ選択
+CALL SELECT_VIB_A, TARGET
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+;使われるバイブが決定された時の、夢魔の反応です
+CALL SELF_KOJO, "Ａバイブ追加口上"
+
+IF TEQUIP:アナルバイブ == 0
+	TFLAG:16 = 1
+	GOTO SELECT_VIB
+ENDIF
+;-------------------------------------------------
+;ソースの計算(予測値)
+;-------------------------------------------------
+CALL CALC, "調教ソースの試算"
+
+PRINTFORM %CALLNAME:PLAYER%は%CALLNAME:TARGET%の
+;アナルが露出していないで、パンツをずらしていないなら自動的にずらす
+IF !CHECK_CLO("Ａ露出")
+	CALL SETFLAG, "ボトムを露出：テキスト有り", TARGET
+	PRINT 、
+ENDIF
+IF (ABL:Ａ拡張 >= 5 || (PREVCOM >= 70 && PREVCOM <= 79) || PREVCOM == 142 || PREVCOM == 143) && ABL:Ａ拡張 >= 2 && RAND:3 == 0
+	PRINT だらしなく口を開けている
+ELSEIF ABL:Ａ拡張 >= 2
+	PRINT すっかり柔らかくなった
+ELSEIF TALENT:恋慕 || RAND:3 == 0
+	PRINT 可愛い
+ELSEIF EXP:Ａ経験 < 50 && RAND:2 == 0
+	PRINT 経験の少ない
+ELSE
+	PRINT キュッと窄まった
+ENDIF
+PRINT アナル
+IF TALENT:恋慕
+	PRINTFORM を揉みほぐしてから\@ COND("ボトムを露出させた") ? # 、 \@
+ELSE
+	PRINTFORM に
+ENDIF
+IF COND("アナルパール")
+	PRINTFORMW アナルパールを一つずつ飲み込ませた。
+ELSE
+	SELECTCASE SIZE("Ａバイブ", TARGET)
+	CASE 5
+		PRINT 冗談みたいな大きさの
+	CASE 4
+		PRINT 男の腕をかたどった
+	CASE 3
+		PRINT 極太の
+	CASE 2
+		PRINT 大きな
+	CASE 0
+		PRINT アナル
+	ENDSELECT
+	PRINT バイブを
+	;拡張不足
+	IF ABL:Ａ拡張 < SIZE("Ａバイブ", TARGET)
+		PRINTFORMW %TEXTR("力任せに", "強引に", "無理矢理に", "抉るように", "肉を押しのける感触を味わいながら", "抵抗をものともせずに")%捻じ込んだ。
+	ELSE
+		IF CHECK("Ａバイブ") == 0 && TALENT:PLAYER:サド && RAND:2 == 0
+			PRINT 力任せに
+		ELSEIF (TALENT:恋慕 || ABL:サドっ気 >= 3) && RAND:3 == 0
+			PRINT 深々と
+		ELSEIF TALENT:恋慕 && RAND:3 == 0
+			PRINT 優しく
+		ELSEIF (TALENT:恋慕 || ABL:サドっ気 >= 3) && RAND:2 == 0
+			PRINT 一気に
+		ELSE
+			PRINT ゆっくりと
+		ENDIF
+		IF RAND:4 == 0
+			PRINTW 飲み込ませた。
+		ELSEIF CHECK("Ａバイブ") == 0 && TALENT:PLAYER:サド && RAND:2 == 0
+			PRINTW 侵入させた。
+		ELSEIF (TALENT:恋慕 || ABL:サドっ気 >= 3) && RAND:3 == 0
+			PRINTW 沈めた。
+		ELSEIF (TALENT:恋慕 || ABL:サドっ気 >= 3) && RAND:2 == 0
+			PRINTW 挿し込んだ。
+		ELSE
+			PRINTW 挿入した。
+		ENDIF
+	ENDIF
+ENDIF
+
+;拡張十分
+IF CHECK("Ａバイブ") && RAND:3
+	PRINTFORM %CALLNAME:TARGET%の
+	IF TALENT:小柄体型 && EXP:Ａ経験 < 100 && ABL:Ａ拡張 <= 1
+		PRINT 小さな
+	ELSEIF TALENT:小柄体型 && ABL:Ａ拡張 >= 2
+		SIF ABL:Ａ拡張 > SIZE("Ａバイブ", TARGET)
+			PRINT 十分に
+		PRINT 拡張された
+	ELSEIF EXP:Ａ経験 >= 100 && RAND:2 == 0
+		PRINT 経験豊富な
+	ELSEIF ABL:Ａ拡張 > SIZE("Ａバイブ", TARGET)
+		PRINT 柔らかな
+	ENDIF
+	PRINT アヌスは
+	IF SIZE("Ａバイブ", TARGET) >= 2 && ABL:Ａ拡張 > SIZE("Ａバイブ", TARGET) && RAND:2
+		IF RAND:3 == 0
+			PRINT いとも簡単に
+		ELSEIF RAND:2
+			PRINT 何の抵抗もなく
+		ELSE
+			PRINT 吸い込むように
+		ENDIF
+	ELSEIF ABL:Ａ拡張 >= SIZE("Ａバイブ", TARGET) + 1 && RAND:2 == 0
+		SIF TALENT:内気 || TALENT:清楚
+			PRINT 大人しそうな外見に反して
+		PRINT 易々と拡がり、
+	ELSEIF ABL:Ａ拡張 >= SIZE("Ａバイブ", TARGET)
+		PRINT ゴムのように伸び、
+	ENDIF
+	IF COND("アナルパール")
+		PRINT アナルパールを
+	ELSE
+		SELECTCASE SIZE("Ａバイブ", TARGET)
+		CASE IS >= 3
+			IF TALENT:オトコ || TALENT:処女
+				PRINT 口でも咥えられなさそうな
+			ELSEIF ABL:Ｖ拡張 < SIZE("Ａバイブ", TARGET)
+				PRINT 前の穴にも入らなさそうな
+			ENDIF
+			PRINT 凶悪な
+		CASE 2
+			PRINT 野太い
+		CASE 0
+			PRINT アナル
+		ENDSELECT
+		PRINT バイブを
+	ENDIF
+	PRINTW 直腸の奥まで呑み込んだ…
+ELSEIF CHECK("Ａバイブ") == 0 && ABL:Ａ拡張 < SIZE("Ａバイブ", TARGET)
+	PRINTFORM %CALLNAME:TARGET%の
+	SIF TALENT:小柄体型 && EXP:Ａ経験 < 100 && ABL:Ａ拡張 == 0
+		PRINT 小さな
+	PRINT 肛門は
+	IF SIZE("Ａバイブ", TARGET) >= 1 && ABL:Ａ拡張 < SIZE("Ａバイブ", TARGET)
+		PRINTW バイブの大きさに耐え切れず、悲鳴を上げている…
+	ELSE
+		PRINT 今にも裂けそうな程に拡がるが、なんとか
+		IF COND("アナルパール")
+			PRINT 連結された球体
+		ELSEIF SIZE("Ａバイブ", TARGET) == 0
+			PRINT アナルバイブ
+		ELSE
+			PRINT バイブ
+		ENDIF
+		PRINTW を呑み込んでいく…
+	ENDIF
+ELSEIF CHECK("Ａバイブ")
+	IF COND("アナルパール")
+		PRINTFORMW 直腸を異物でいっぱいにされる感覚に、%CALLNAME:TARGET%は熱い濡れた声を漏らした…
+	ELSE
+		PRINTFORMW 直腸で震えるバイブのもたらす快感に、%CALLNAME:TARGET%は熱い濡れた声を漏らした…
+	ENDIF
+ELSEIF ABL:Ａ感覚 >= 2 && CUP:苦痛 < 500
+	PRINTFORMW %CALLNAME:TARGET%は奇妙な感覚に戸惑っている…
+ELSE
+	PRINTFORM 慣れない
+	IF COND("アナルパール")
+		PRINT アナルパール
+	ELSE
+		PRINT バイブ
+	ENDIF
+	PRINTFORMW の刺激に%CALLNAME:TARGET%の肛門はきつく引き締まり、強烈な抵抗を見せる…
+ENDIF
+
+@SELECT_SYOKUSYU_A
+PRINTL どれで犯しますか？
+PRINTFORML  [ 0] 普通の触手
+PRINTFORML  [ 1] 太めの触手　　　　\@ABL:Ａ拡張 < 3 - TALENT:妖精 ? ※上級者専用！ # \@
+PRINTFORML  [ 2] 極太の触手　　　　\@ABL:Ａ拡張 < 4 - TALENT:妖精 ? ※超上級者専用！ # \@
+PRINTFORML [100] やめる
+
+$INPUT_LOOP
+INPUT
+
+IF RESULT == 100
+	TEQUIP:アナルバイブ = 0
+	TFLAG:14 = 1
+	RETURN 0
+ELSEIF RESULT == 0
+	TEQUIP:アナルバイブ = 1p1
+ELSEIF RESULT == 1
+	TEQUIP:アナルバイブ = 1p2
+ELSEIF RESULT == 2
+	TEQUIP:アナルバイブ = 1p3
+ELSE
+	GOTO INPUT_LOOP
+ENDIF
+RETURN 1
+
+@TRAIN_MESSAGE_COM202
+IF TEQUIP:アナルバイブ
+	PRINTFORMW 触手は%CALLNAME:TARGET%のアヌスから引き抜かれた…
+	TFLAG:16 = TEQUIP:アナルバイブ
+	TEQUIP:アナルバイブ = 0
+ELSE
+	CALL SELECT_SYOKUSYU_A
+
+	SIF REFUSE_CHECK()
+		RETURN 0
+	SELECTCASE SIZE("Ａバイブ", TARGET)
+	CASE IS >= 3
+		PRINTFORMW 捻じれ絡まった触手の塊が%CALLNAME:TARGET%のアナルに無理やり押し入ってきた…
+	CASE 2
+		PRINTFORMW 長大な触手が%CALLNAME:TARGET%のアナルにずるずると潜り込んだ…
+	CASEELSE
+		PRINTFORMW 細かい突起に覆われた触手が%CALLNAME:TARGET%のアヌスに潜り込んでいった…
+	ENDSELECT
+	CALL ADD_STAIN, TARGET, "Ａ", "触手"
+ENDIF
+
+
+@FLAG_COM33, ARG
+CALL FLAG_INSERTION, "Ａバイブ", ARG, 100
+;アナルが露出していないなら自動的にずらす
+SIF CHECK_CLO("Ａ露出") == 0
+	CALL SETFLAG, "ボトムを露出：テキスト無し", TARGET
+
+@SOURCE_COM33, ARG
+CALL SOURCE_INSERTION, "Ａバイブ", ARG, 100
+
+
+@EQUIP_COM13
+;Ａバイブ挿入中
+SIF SELECTCOM == 33 || SELECTCOM == 202
+	RETURN 0
+
+CALL SOURCE_COM33, 30
+CALL FLAG_COM33, 30
+
+RETURN 1
+
+@EQUIP_COM13_2
+;Ａバイブ挿入中
+SIF SELECTCOM == 33 || SELECTCOM == 202
+	RETURN 0
+
+IF TEQUIP:触手
+	SELECTCASE SIZE("Ａバイブ", TARGET)
+	CASE IS >= 3
+		PRINTL ＜アナル極太触手挿入中＞
+	CASEELSE
+		PRINTL ＜アナル触手挿入中＞
+	ENDSELECT
+ELSE
+	IF COND("アナルパール")
+		PRINTL ＜アナルパール挿入中＞
+	ELSE
+		SELECTCASE SIZE("Ａバイブ", TARGET)
+		CASE 5
+			PRINTL ＜アナル馬並バイブ挿入中＞
+		CASE 4
+			PRINTL ＜アナル腕型バイブ挿入中＞
+		CASE 3
+			PRINTL ＜アナル極太バイブ挿入中＞
+		CASEELSE
+			PRINTL ＜アナルバイブ挿入中＞
+		ENDSELECT
+	ENDIF
+
+ENDIF
+
+LOCAL = 1
+IF TEQUIP:触手
+	LOCAL += 1
+;自慰実行時は経験＋１
+ELSEIF SELECTCOM == 3
+	SIF ABL:Ａ拡張 < SIZE("Ａバイブ", TARGET)
+		LOCAL += 1
+ENDIF
+
+EXP:Ａ経験 += LOCAL
+PRINTFORML Ａ経験＋{LOCAL}
+
+VARSET LOCAL
+;Ａ拡張経験
+IF TEQUIP:触手 || SELECTCOM == 3 || SELECTCOM == 2
+	SIF SIZE("Ａバイブ", TARGET) >= 2 - TALENT:妖精
+		LOCAL = MAX(SIZE("Ａバイブ", TARGET) - ABL:Ａ拡張 + 1, SIZE("Ａバイブ", TARGET)/3)
+ENDIF
+
+IF LOCAL
+	EXP:Ａ拡張経験 += LOCAL
+	PRINTFORML Ａ拡張経験＋{LOCAL}
+	;拡張経験による追加の疲労
+	DOWNBASE:体力 += LOCAL*50
+	DOWNBASE:気力 += LOCAL*50
+ENDIF
+
+RETURN 1

@@ -1,0 +1,291 @@
+﻿@SAVE_CONFIGURE
+#DIM LCOUNT
+;コンフィグをセーブデータ間で共有したかったんだ
+;まずは読み込んでおく
+LOADGLOBAL
+
+;既にセーブされている場合、上書きするかどうかチェック
+IF GLOBAL:100
+	PRINTL 既にコンフィグデータが存在します。上書きしますか？
+	PRINTLC [0] はい
+	PRINTLC [1] いいえ
+	PRINTL 
+	CALL INPUT_SELECT, 2
+	SIF RESULT == 1
+		RETURN 0
+ENDIF
+
+GLOBAL:98 = FLAG:98
+
+;コンフィグ保存の日時：AB年CD月EF年を保存
+GETTIME
+RESULT /= 1000000000
+RESULT %= 1000000
+GLOBAL:99 = RESULT
+;バージョンを保存（同じか古いバージョンでないと読み込めない）
+GLOBAL:100 = FLAG:29
+
+
+;射精箇所の変更（GLOBAL:101～106）
+FOR LCOUNT, 91, 97
+	GLOBAL:(LCOUNT + 10) = FLAG:LCOUNT
+NEXT
+;触手設定（GLOBAL:107～114）
+FOR LCOUNT, 80, 88
+	GLOBAL:(LCOUNT + 27) = FLAG:LCOUNT
+NEXT
+;着せ替え設定（GLOBAL:115～119）
+FOR LCOUNT, 200, 205
+	GLOBAL:(LCOUNT - 85) = FLAG:LCOUNT
+NEXT
+;妊娠パッチ
+GLOBAL:120 = FLAG:211
+;素質：相思相愛
+GLOBAL:124 = FLAG:241
+;各種調教フィルタ
+GLOBAL:125 = FLAG:209
+GLOBAL:126 = 0
+
+;寝取られイベント
+GLOBAL:130 = FLAG:262
+;夢魔達の日常
+GLOBAL:150 = FLAG:205
+;自動で喘ぎ声を生成
+GLOBAL:151 = FLAG:206
+;消耗品のオート購入
+GLOBAL:152 = FLAG:9
+;キャラリストの表示人数＆子供の世代別表示の設定
+GLOBAL:153 = FLAG:225
+GLOBAL:154 = FLAG:237
+;陰毛の設定
+GLOBAL:155 = FLAG:207
+;難易度
+GLOBAL:156 = FLAG:220
+;ウルズグンなくても超大量射精
+GLOBAL:157 = FLAG:222
+;恍惚状態の時には夢魔の好きにさせる
+GLOBAL:158 = FLAG:223
+;召喚事故
+GLOBAL:159 = FLAG:221
+;カウンターの確率などの表示
+GLOBAL:160 = FLAG:217
+;助手調教中の恋慕口上
+GLOBAL:161 = FLAG:218
+;３サイズと身長の表示＆巨乳の上限の設定
+GLOBAL:162 = FLAG:239
+;ペニス詳細設定
+GLOBAL:163 = FLAG:263
+;探索時の召喚済みのボスキャラの出現
+GLOBAL:164 = FLAG:245
+;経験していない経験を表示しないで詰める
+GLOBAL:165 = FLAG:250
+
+;夢魔化
+GLOBAL:169 = FLAG:226
+GLOBAL:170 = FLAG:227
+;ＶＡ詳細表示
+GLOBAL:171 = FLAG:254
+
+;夢魔変化
+GLOBAL:173 = FLAG:242
+;恋慕淫乱任意取得
+GLOBAL:174 = FLAG:251
+;ビデオ売却の選択
+GLOBAL:175 = FLAG:261
+;時間制限撤廃
+GLOBAL:176 = FLAG:265
+;日付固定イベント再現
+GLOBAL:177 = FLAG:266
+;ニプルファック
+GLOBAL:178 = FLAG:267
+;精液浣腸
+GLOBAL:179 = FLAG:268
+;多重召喚
+GLOBAL:180 = FLAG:269
+;夜這い朝駆け禁止
+GLOBAL:181 = FLAG:270
+;台詞の名前表示
+GLOBAL:182 = FLAG:273
+;一晩開放のイベント全表示
+GLOBAL:183 = FLAG:274
+;温泉旅行での浮気
+GLOBAL:184 = FLAG:275
+;尿道の拡張難度減
+GLOBAL:185 = FLAG:276
+;喫茶店でのショタ店員許可フラグ
+GLOBAL:186 = FLAG:277
+;匂いの表記
+GLOBAL:187 = FLAG:278
+;UNICODEの設定
+GLOBAL:188 = FLAG:279
+;乱交イベントの参加条件など
+GLOBAL:189 = FLAG:280
+;セクハラ禁止
+GLOBAL:190 = FLAG:281
+;蓄精
+GLOBAL:191 = FLAG:282
+;乳首の詳細
+GLOBAL:192 = FLAG:283
+
+;キャラ口上の表示頻度
+;GLOBAL:199 = FLAG:7
+
+;GLOBAL:400～999
+FOR LCOUNT, 0, 600
+	GLOBAL:(LCOUNT + 400) = DITEMTYPE:0:LCOUNT
+NEXT
+
+;以上設定をセーブする
+SAVEGLOBAL
+
+PRINTW コンフィグをセーブしました
+
+
+@LOAD_CONFIGURE
+#DIM LCOUNT
+
+;まずは読み込む
+LOADGLOBAL
+
+;同じか古いバージョンでないと読み込めない
+IF GLOBAL:100 > FLAG:29
+	PRINTL コンフィグのロードに失敗しました
+	PRINTW eraSQNをバージョンアップしてください
+	RETURN 0
+ENDIF
+
+LOCAL:1 = 0
+
+FLAG:98 = GLOBAL:98
+
+;射精箇所の変更
+FOR LCOUNT, 91, 97
+	IF LCOUNT != 91 && ITEM:魔法瓶 == 0 && GLOBAL:(LCOUNT + 10) == 90
+		IF !(LOCAL:1 & 1)
+			PRINTL 魔法瓶がないので、一部設定を反映できませんでした
+			LOCAL:1 |= 1
+		ENDIF
+		FLAG:LCOUNT = 0
+		CONTINUE
+	ENDIF
+	FLAG:LCOUNT = GLOBAL:(LCOUNT + 10)
+NEXT
+
+;触手設定
+FOR LCOUNT, 80, 88
+	FLAG:LCOUNT = GLOBAL:(LCOUNT + 27)
+NEXT
+
+;着せ替え設定
+FOR LCOUNT, 200, 205
+	FLAG:LCOUNT = GLOBAL:(LCOUNT - 85)
+NEXT
+
+;靴の設定は上限が１に変更されました
+SIF FLAG:202 >= 2
+	FLAG:202 = 1
+
+;妊娠パッチ
+FLAG:211 = GLOBAL:120
+
+;素質：相思相愛
+FLAG:241 = GLOBAL:124
+IF ITEM:誓約の指輪 >= 2 && !(GLOBAL:124 & 1)
+	IF !(LOCAL:1 & 2)
+		PRINTL 誓約の指輪が複数存在するので、一部設定を反映できませんでした
+		LOCAL:1 |= 2
+	ENDIF
+	FLAG:241 |= 1
+ENDIF
+
+;各種調教フィルタ
+FLAG:209 = GLOBAL:125
+
+;GLOBAL:400～999
+FOR LCOUNT, 0, 600
+	DITEMTYPE:0:LCOUNT = GLOBAL:(LCOUNT + 400)
+NEXT
+
+;寝取られイベント
+FLAG:262 = GLOBAL:130
+;夢魔達の日常
+FLAG:205 = GLOBAL:150
+;自動で喘ぎ声を生成
+FLAG:206 = GLOBAL:151
+;消耗品のオート購入
+FLAG:9 = GLOBAL:152
+;キャラリストの表示人数＆子供の世代別表示の設定
+FLAG:225 = GLOBAL:153
+FLAG:237 = GLOBAL:154
+;陰毛の設定
+FLAG:207 = GLOBAL:155
+;難易度
+FLAG:220 = GLOBAL:156
+;ウルズグンなくても超大量射精
+FLAG:222 = GLOBAL:157
+;恍惚状態の時には夢魔の好きにさせる
+FLAG:223 = GLOBAL:158
+;召喚事故
+FLAG:221 = GLOBAL:159
+;カウンターの確率などの表示
+FLAG:217 = GLOBAL:160
+;助手調教中の恋慕口上
+FLAG:218 = GLOBAL:161
+;３サイズと身長の表示＆巨乳の上限の設定
+FLAG:239 = GLOBAL:162
+;ペニス詳細設定
+FLAG:263 = GLOBAL:163
+;探索時の召喚済みのボスキャラの出現
+FLAG:245 = GLOBAL:164
+;経験していない経験を表示しないで詰める
+FLAG:250 = GLOBAL:165
+;夢魔化
+FLAG:226 = GLOBAL:169
+FLAG:227 = GLOBAL:170
+;ＶＡ詳細表示
+FLAG:254 = GLOBAL:171
+;夢魔変化
+FLAG:242 = GLOBAL:173
+;恋慕淫乱任意取得
+FLAG:251 = GLOBAL:174
+;ビデオ売却の選択
+FLAG:261 = GLOBAL:175
+;時間制限撤廃
+FLAG:265 = GLOBAL:176
+;日付固定イベント再現
+FLAG:266 = GLOBAL:177
+;ニプルファック
+FLAG:267 = GLOBAL:178
+;精液浣腸
+FLAG:268 = GLOBAL:179
+;多重召喚
+FLAG:269 = GLOBAL:180
+;夜這い朝駆け禁止
+FLAG:270 = GLOBAL:181
+;台詞の名前表示
+FLAG:273 = GLOBAL:182
+;一晩開放のイベント全表示
+FLAG:274 = GLOBAL:183
+;温泉旅行での浮気
+FLAG:275 = GLOBAL:184
+;尿道の拡張難度減
+FLAG:276 = GLOBAL:185
+;喫茶店でのショタ店員許可フラグ
+FLAG:277 = GLOBAL:186
+;匂いの表記
+FLAG:278 = GLOBAL:187
+;UNICODEの設定
+FLAG:279 = GLOBAL:188
+;乱交イベントの参加条件など
+FLAG:280 = GLOBAL:189
+;セクハラ禁止
+FLAG:281 = GLOBAL:190
+;蓄精
+FLAG:282 = GLOBAL:191
+;乳首の詳細
+FLAG:283 = GLOBAL:192
+
+;[888]キャラ口上の表示頻度
+;FLAG:7 = GLOBAL:199
+
+PRINTW コンフィグをロードしました

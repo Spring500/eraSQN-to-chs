@@ -1,0 +1,1103 @@
+﻿;重要！！　探索コマンドはあくまでバイト感覚！
+;探索者はPLAYER, Iは入手アイテム, Mは獲得金額
+;Rは一時的な変数記憶(探索コマンド口上で使用)
+;FLAG:50の各bitで各種フラグを記録する(基本的にはボス遭遇とボス撃破)
+; 0- 4	エルトゥム森林
+; 5- 9	リュードゥフ洞
+;10-14	アンショス海
+;15-19	ベルナドットの大迷路
+;20-24	ゴズバーン砂漠
+;25-29	キアズマの遊郭
+;60-63	汎用フラグ（毎回探索開始の時にリセットされる）
+
+@EXPLORER, P, M
+#DIM MEMO_TARGET
+#DIM MEMO_PLAYER
+#DIM MEMO_LINECOUNT
+
+REDRAW 0
+
+MEMO_LINECOUNT = LINECOUNT
+
+CALL SHOW_CHARA_LIST_PRE, "探索"
+CALL SHOW_CHARA_LIST, "探索", P, M
+SIF CHARA_NUM("助手可能") && CONFIG("調教相手変更不可") == 0
+	PRINTFORML  [109]%TEXTS("助手の名称")%変更
+PRINT  [200]探索の方針：
+SELECTCASE FLAG:246
+CASE 0
+	PRINTFORML 指示無し
+CASE 1
+	PRINTFORML ガンガンいこうぜ！
+CASE 2
+	PRINTFORML いのちをだいじに
+CASE 3
+	PRINTFORML フラグをけんちく
+ENDSELECT
+
+;アクセサリの探索効果
+IF TALENT:MASTER:隠密 > 0 || TALENT:MASTER:宝箱出現率 > 0 || TALENT:MASTER:ドア発見率 > 0
+	PRINTFORM アクセサリの効果：
+	FOR LOCAL, 301, 306
+		SELECTCASE FLAG:LOCAL / 1000
+		CASE 50 TO 59
+			PRINTFORM %ACCESSORY_EFFECT(FLAG:LOCAL)% 
+		ENDSELECT
+	NEXT
+	PRINTL 
+ENDIF
+
+$INPUT_LOOP
+INPUTS
+
+SELECTCASE RESULTS
+;探索での能力
+CASE "遭遇回避"
+	CALL PRINT_STR, "夢魔との遭遇率が_黄色_５％減少_します_W"
+CASE "遭遇増加"
+	CALL PRINT_STR, "夢魔との遭遇率が_青_５％上昇_します_W"
+CASE "罠解除"
+	CALL PRINT_STR, "宝箱を開ける際のトラップ発動率が_黄色_４分の一_になります_W"
+CASE "罠誘発"
+	CALL PRINT_STR, "宝箱を開ける際のトラップ発動率が_青_2.5倍_になります_W"
+CASE "財宝発見"
+	CALL PRINT_STR, "宝箱を見つける確率が_黄色_５％上昇_します_W"
+CASE "財宝見逃し"
+	CALL PRINT_STR, "宝箱を見つける確率が_青_５％減少_します_W"
+CASE "階段発見"
+	CALL PRINT_STR, "次の階層へのドアを見つける確率が_黄色_５％上昇_します_W"
+CASE "回復"
+	CALL PRINT_STR, "各行動ごとに精力が_黄色_１Ｐ回復_し、戦闘終了時は_黄色_２Ｐ多く回復_します_W"
+CASE "戦闘補助"
+	CALL PRINT_STR, "数値の分だけ探索者の戦闘力が増えます_W"
+CASE "状態異常無効"
+	CALL PRINT_STR, "宝箱の罠での状態異常を無効化します_W"
+;それ以外は数値入力へ変換
+CASEELSE
+	RESULT = TOINT(RESULTS)
+	IF RESULT == 100
+		REDRAW 1
+		RETURN 0
+	ELSEIF RESULT == 109 && CHARA_NUM("助手可能") && CONFIG("調教相手変更不可") == 0
+		FLAG:45 = 1p1 + 1p2
+		CALL SELECT_ASSI, 0, 0
+		FLAG:45 = 0
+		RESTART
+	ELSEIF RESULT == 200
+		PRINTFORML 探索の方針を決定します。どれにしますか？
+		PRINTL 
+		PRINTFORML [0] 指示しない　　　　…数値変動無し
+		PRINTFORML [1] ガンガンいこうぜ！…遭遇率＆ドア発見率ＵＰ、宝発見率DOWN。自信のある時に
+		PRINTFORML [2] いのちをだいじに　…宝発見率DOWN、戦闘有利。自信の無い時に
+		PRINTFORML [3] フラグをけんちく　…イかせた夢魔が着いてくるかも。仲魔を増やしたい時に
+
+		CALL INPUT_SELECT, 4
+
+		FLAG:246 = RESULT
+		PRINTW 探索方針を変更しました。
+		PRINTL 
+
+		RESTART
+	ELSEIF RESULT == 2000 && CONFIG("世代別表示")
+		M = 0
+		P = 0
+		RESTART
+	ELSEIF RESULT == 2001 && CONFIG("世代別表示")
+		M += 1
+		P = 0
+		RESTART
+	ELSEIF RESULT == 2002 && CONFIG("世代別表示")
+		M -= 1
+		P = 0
+		RESTART
+	ELSEIF RESULT >= 1001 && RESULT <= 1000+Q && CONFIG("表示人数") && Q >= 2 && P != RESULT - 1001
+		P = RESULT - 1001
+		RESTART
+	ELSEIF RESULT < MASTER || RESULT >= CHARANUM
+		GOTO INPUT_LOOP
+	ELSEIF RESULT > MASTER && COND("助手可能", RESULT) == 0
+		GOTO INPUT_LOOP
+	ENDIF
+
+	MEMO_TARGET = TARGET
+	MEMO_PLAYER = PLAYER
+	;探索者はPLAYERとして扱う
+	PLAYER = RESULT
+
+	CALL SET_EXPLORER
+
+	TARGET = MEMO_TARGET
+	PLAYER = MEMO_PLAYER
+	;戻る を選択
+	SIF RESULT == 100
+		RESTART
+
+	VARSET TFLAG
+	BEGIN TURNEND
+	RETURN 1
+ENDSELECT
+
+CLEARLINE LINECOUNT - MEMO_LINECOUNT
+RESTART
+
+@SET_EXPLORER
+#DIM LCOUNT
+;探検する際の助手…ASSIを連れていない場合にはPLAYERがこれになって寂しい
+#DIM ASSI_EXPLORER
+#DIM MEMO_LINECOUNT
+#DIMS DUNGEON, 10
+#DIMS FEILD_EXPLORER
+
+REDRAW 1
+
+ASSI_EXPLORER = PLAYER
+IF PLAYER == MASTER
+	IF ASSI
+		PRINTFORM %CALLNAME:ASSI%に
+		ASSI_EXPLORER = ASSI
+	ENDIF
+ELSE
+	PRINTFORM %CALLNAME:PLAYER%が
+ENDIF
+
+;お茶
+SELECTCASE NO:ASSI_EXPLORER
+CASE 16, 22
+	PRINTFORM キアズマのお茶と
+CASE 20
+	PRINTFORM エーランドブランドと
+CASE 25
+	PRINTFORM ローズティーと
+CASE 19, 46, 47
+	PRINTFORM リスヴェグティーと
+CASEELSE
+	PRINTFORM ミントティーと
+ENDSELECT
+
+;お弁当
+SELECTCASE NAMES("食事", FLAG:40)
+CASE "シプリサンド"
+	PRINT お弁当のシプリサンド
+	CALL SET_PALAM_EXPLORER, "精力回復補正", 2
+CASE "マウンテンステーキ"
+	PRINT マウンテンステーキを挟んだサンドウィッチ
+	CALL SET_PALAM_EXPLORER, "精力回復補正", 4
+CASE "木の実のサラダ"
+	PRINT 木の実のサラダサンド
+	CALL SET_PALAM_EXPLORER, "精力回復補正", 2
+CASE "スモークサーモン"
+	PRINT スモークサーモンを挟んだサンドウィッチ
+	CALL SET_PALAM_EXPLORER, "精力回復補正", 3
+CASE "ハニービスケット"
+	PRINT おやつのハニービスケット
+	CALL SET_PALAM_EXPLORER, "精力回復補正", 1
+CASE "ベイクドアップル"
+	PRINT おやつの焼き林檎
+	CALL SET_PALAM_EXPLORER, "精力回復補正", 1
+;もう舐めおわりました
+;CASE "ムーンドロップス"
+;	PRINT 大好きなムーンドロップス
+;	CALL SET_PALAM_EXPLORER, "精力回復補正", 5
+CASEELSE
+	IF DAY%2
+		PRINT お弁当
+	ELSE
+		IF TIME == 0
+			PRINT お昼の残りを挟んだ
+		ELSE
+			PRINT 夕食の残りを挟んだ
+		ENDIF
+		PRINT サンドウィッチ
+	ENDIF
+ENDSELECT
+
+IF PLAYER != ASSI_EXPLORER
+	PRINTFORM を用意させて
+ELSE
+	PRINTFORM を持って
+ENDIF
+PRINTFORML 探索に出かけます。
+PRINTFORM 探索能力：
+;一人の探索
+IF PLAYER == ASSI_EXPLORER
+	CALL TEXT, "探索能力", PLAYER
+;主人と助手のペア
+ELSE
+	CALL TEXT, "探索能力ペア"
+ENDIF
+
+VARSET DUNGEON
+;行先一覧
+DUNGEON:0 = 草原
+DUNGEON:1 = エルトゥム森林
+DUNGEON:2 = リュードゥフ洞
+DUNGEON:3 = アンショス海
+DUNGEON:4 = ベルナドットの大迷路
+DUNGEON:5 = ゴズバーン砂漠
+DUNGEON:6 = キアズマの遊郭
+
+PRINTFORML どこに行きますか？
+PRINTFORML 
+
+FOR LCOUNT, 0, 10
+	SIF DUNGEON:LCOUNT == ""
+		CONTINUE
+	;CALL SET_DATA_FEILD_EXPLORER, DUNGEON:LCOUNT
+	PRINTFORM  [{LCOUNT, 2}] %TEXT_LJ(DUNGEON:LCOUNT, 22)%
+	LOCALS = %DUNGEON:LCOUNT%：ボス撃破
+	SIF PALAM_EXPLORER(LOCALS)
+		CALL PRINT_COLORTEXT, "※踏破済み※", DEF_COLOR("イエロー")
+	;PRINTFORM 遭遇率{PALAM_EXPLORER("遭遇率")}％　
+	;PRINTFORM 難易度{PALAM_EXPLORER("敵の強さ")}　
+	;PRINTFORM トレジャーLV{PALAM_EXPLORER("アイテムレベル")}　
+	;PRINTFORM 宝箱発見率{PALAM_EXPLORER("アイテム発見率")}％
+	PRINTL 
+NEXT
+
+PRINTFORML [100] 戻る
+
+$INPUT_LOOP
+INPUT
+
+SELECTCASE RESULT
+CASE 100
+	REDRAW 0
+	RETURN 100
+CASE 0 TO 10
+	SIF DUNGEON:RESULT == ""
+		GOTO INPUT_LOOP
+	FEILD_EXPLORER = %DUNGEON:RESULT%
+CASEELSE
+	GOTO INPUT_LOOP
+ENDSELECT
+
+CALL SET_DATA_FEILD_EXPLORER, FEILD_EXPLORER
+
+CALL TITLE_DATA_FEILD_EXPLORER, FEILD_EXPLORER
+
+SELECTCASE FEILD_EXPLORER
+CASE "キアズマの遊郭"
+	PRINTFORML %FEILD_EXPLORER%の探索には%TEXTS("助手の名称")%が同行できず、$1,000〜$10,000の代金がかかります
+	IF MONEY < 1000
+		PRINTFORML …残念ながら持ち合わせが無いようですね
+		PRINTFORML またのお越しをお待ちしております
+		RESTART
+	ENDIF
+ENDSELECT
+
+PRINTL ここの探索を開始していいですか？
+PRINTL [0] はい
+PRINTL [1] いいえ
+CALL INPUT_SELECT, 2
+SIF RESULT == 1
+	RESTART
+
+SAVESTR:15 = %FEILD_EXPLORER%
+;60-63	汎用フラグ（毎回探索開始の時にリセットされる）
+FLAG:50 = CLEARBITS(FLAG:50, 60, 63)
+
+PRINTL 
+
+MEMO_LINECOUNT = LINECOUNT
+
+SIF PLAYER == MASTER && ASSI
+	TRYCALLFORM GUEST_KOJO_K{NO:ASSI}_{CFLAG:ASSI:209}, "探索：探索開始", ASSI
+
+SIF LINECOUNT != MEMO_LINECOUNT
+	PRINTL 
+PRINTFORMW %TEXTS("探索先")%の探索を開始します。
+
+CALL START_EXPLORER
+
+
+@TITLE_DATA_FEILD_EXPLORER, ARGS
+DRAWLINE
+SELECTCASE ARGS
+CASE "草原"
+	PRINTFORML 〜草原〜
+CASE "エルトゥム森林"
+	PRINTFORML 〜エルトゥム森林〜　BOSS：スクーグスロー　ユニーク：ティターニア
+CASE "リュードゥフ洞"
+	PRINTFORML 〜リュードゥフ洞〜　BOSS：ストゥーナ＆メローナ　ユニーク：ヴィーヴル
+CASE "アンショス海"
+	PRINTFORML 〜アンショス海〜　BOSS：レヴィアタン　ユニーク：カリュブディス
+CASE "ベルナドットの大迷路"
+	PRINTFORML 〜ベルナドットの大迷路〜　BOSS：ベルナドット
+CASE "ゴズバーン砂漠"
+	PRINTFORML 〜ベルナドットの大迷路〜　BOSS：ハーピー三姉妹　ユニーク：スフィンクス
+CASE "キアズマの遊郭"
+	PRINTFORML 〜キアズマの遊郭〜　BOSS：リン　ユニーク：ハツメ、タマモ
+ENDSELECT
+PRINTFORM 遭遇率{PALAM_EXPLORER("遭遇率")}％　
+PRINTFORM 難易度{PALAM_EXPLORER("敵の強さ")}　
+PRINTFORM トレジャーLV{PALAM_EXPLORER("アイテムレベル")}　
+PRINTFORML 宝箱発見率{PALAM_EXPLORER("アイテム発見率")}％
+DRAWLINE
+
+
+@SET_DATA_FEILD_EXPLORER, ARGS
+VARSET TFLAG
+SELECTCASE ARGS
+CASE "草原"
+	CALL SET_PALAM_EXPLORER, "遭遇率", 20
+	CALL SET_PALAM_EXPLORER, "アイテム発見率", 20
+	CALL SET_PALAM_EXPLORER, "アイテムレベル", 1
+	CALL SET_PALAM_EXPLORER, "階段発見率", 0
+	CALL SET_PALAM_EXPLORER, "フロア", 1
+	CALL SET_PALAM_EXPLORER, "最深フロア", 1
+	CALL SET_PALAM_EXPLORER, "敵の強さ", 1
+	;出現するのはサキュバス＆インプ＆シルフ
+	CALL SET_PALAM_EXPLORER, "夢魔", 1, 1
+	CALL SET_PALAM_EXPLORER, "夢魔", 2, 1
+	CALL SET_PALAM_EXPLORER, "夢魔", 5, 1
+	CALL SET_PALAM_EXPLORER, "基本の敵キャラ", 3
+
+CASE "エルトゥム森林"
+	CALL SET_PALAM_EXPLORER, "遭遇率", 20
+	CALL SET_PALAM_EXPLORER, "アイテム発見率", 30
+	CALL SET_PALAM_EXPLORER, "アイテムレベル", 3
+	CALL SET_PALAM_EXPLORER, "階段発見率", 20
+	CALL SET_PALAM_EXPLORER, "フロア", 1
+	CALL SET_PALAM_EXPLORER, "最深フロア", 8
+	CALL SET_PALAM_EXPLORER, "敵の強さ", 2
+	;ドライアド、ピクシー、シルフ、ネコマタ、ワーウルフ、ヴィレッジャ、クズノハ、ゴブリン
+	CALL SET_PALAM_EXPLORER, "夢魔", 3, 2
+	CALL SET_PALAM_EXPLORER, "夢魔", 4, 2
+	CALL SET_PALAM_EXPLORER, "夢魔", 5, 2
+	CALL SET_PALAM_EXPLORER, "夢魔", 6, 1
+	CALL SET_PALAM_EXPLORER, "夢魔", 7, 1
+	CALL SET_PALAM_EXPLORER, "夢魔", 8, 2
+	CALL SET_PALAM_EXPLORER, "夢魔", 16, 2
+	CALL SET_PALAM_EXPLORER, "夢魔", 31, 2
+	CALL SET_PALAM_EXPLORER, "基本の敵キャラ", 14
+
+CASE "リュードゥフ洞"
+	CALL SET_PALAM_EXPLORER, "遭遇率", 20
+	CALL SET_PALAM_EXPLORER, "アイテム発見率", 30
+	CALL SET_PALAM_EXPLORER, "アイテムレベル", 5
+	CALL SET_PALAM_EXPLORER, "階段発見率", 20
+	CALL SET_PALAM_EXPLORER, "フロア", 1
+	CALL SET_PALAM_EXPLORER, "最深フロア", 8
+	CALL SET_PALAM_EXPLORER, "敵の強さ", 3
+	;ラミア、リザードマン、ハーピー。ヴィーヴル、ストメロは後で追加。
+	CALL SET_PALAM_EXPLORER, "夢魔", 10, 2
+	CALL SET_PALAM_EXPLORER, "夢魔", 11, 2
+	CALL SET_PALAM_EXPLORER, "夢魔", 12, 2
+	CALL SET_PALAM_EXPLORER, "基本の敵キャラ", 6
+
+CASE "アンショス海"
+	CALL SET_PALAM_EXPLORER, "遭遇率", 30
+	CALL SET_PALAM_EXPLORER, "アイテム発見率", 35
+	CALL SET_PALAM_EXPLORER, "アイテムレベル", 3
+	CALL SET_PALAM_EXPLORER, "階段発見率", 20
+	CALL SET_PALAM_EXPLORER, "フロア", 1
+	CALL SET_PALAM_EXPLORER, "最深フロア", 10
+	CALL SET_PALAM_EXPLORER, "敵の強さ", 4
+	;マーメイド、アプサラス、スキュラ。レヴィアタンはあとで追加。
+	CALL SET_PALAM_EXPLORER, "夢魔", 105, 2
+	CALL SET_PALAM_EXPLORER, "夢魔", 13, 1
+	CALL SET_PALAM_EXPLORER, "夢魔", 213, 1
+	CALL SET_PALAM_EXPLORER, "夢魔", 14, 2
+	CALL SET_PALAM_EXPLORER, "夢魔", 214, 1
+	CALL SET_PALAM_EXPLORER, "夢魔", 15, 2
+	CALL SET_PALAM_EXPLORER, "夢魔", 215, 1
+	CALL SET_PALAM_EXPLORER, "基本の敵キャラ", 10
+
+CASE "ベルナドットの大迷路"
+	CALL SET_PALAM_EXPLORER, "遭遇率", 20
+	CALL SET_PALAM_EXPLORER, "アイテム発見率", 30
+	CALL SET_PALAM_EXPLORER, "アイテムレベル", 6
+	CALL SET_PALAM_EXPLORER, "階段発見率", 3
+	CALL SET_PALAM_EXPLORER, "フロア", 1
+	CALL SET_PALAM_EXPLORER, "最深フロア", 3
+	CALL SET_PALAM_EXPLORER, "敵の強さ", 5
+	;ケットシー、リャナンシー、ダーキニー、アルラウネ、ハイＬＶシルフ、ウィッチ
+	CALL SET_PALAM_EXPLORER, "夢魔", 203, 2
+	CALL SET_PALAM_EXPLORER, "夢魔", 204, 2
+	CALL SET_PALAM_EXPLORER, "夢魔", 305, 2
+	CALL SET_PALAM_EXPLORER, "夢魔", 206, 2
+	CALL SET_PALAM_EXPLORER, "夢魔", 314, 2
+	CALL SET_PALAM_EXPLORER, "夢魔", 206, 2
+	CALL SET_PALAM_EXPLORER, "夢魔", 19, 2
+	CALL SET_PALAM_EXPLORER, "基本の敵キャラ", 14
+
+CASE "ゴズバーン砂漠"
+	CALL SET_PALAM_EXPLORER, "遭遇率", 10
+	CALL SET_PALAM_EXPLORER, "アイテム発見率", 10
+	CALL SET_PALAM_EXPLORER, "アイテムレベル", 7
+	CALL SET_PALAM_EXPLORER, "階段発見率", 10
+	CALL SET_PALAM_EXPLORER, "フロア", 1
+	CALL SET_PALAM_EXPLORER, "最深フロア", 6
+	CALL SET_PALAM_EXPLORER, "敵の強さ", 6
+	;アルプ、メリジューヌ、ハーピー、アルケニー、スフィンクス
+	CALL SET_PALAM_EXPLORER, "夢魔", 202, 2
+	CALL SET_PALAM_EXPLORER, "夢魔", 210, 1
+	CALL SET_PALAM_EXPLORER, "夢魔", 11, 3
+	CALL SET_PALAM_EXPLORER, "夢魔", 18, 1
+	CALL SET_PALAM_EXPLORER, "夢魔", 406, 1
+	CALL SET_PALAM_EXPLORER, "基本の敵キャラ", 8
+
+CASE "キアズマの遊郭"
+	CALL SET_PALAM_EXPLORER, "遭遇率", 40
+	CALL SET_PALAM_EXPLORER, "アイテム発見率", 10
+	CALL SET_PALAM_EXPLORER, "アイテムレベル", 2
+	CALL SET_PALAM_EXPLORER, "階段発見率", 0
+	CALL SET_PALAM_EXPLORER, "フロア", 1
+	CALL SET_PALAM_EXPLORER, "最深フロア", 1
+	CALL SET_PALAM_EXPLORER, "敵の強さ", 7
+	;ネコマタ、クズノハ、クノイチ
+	CALL SET_PALAM_EXPLORER, "夢魔", 6, 1
+	CALL SET_PALAM_EXPLORER, "夢魔", 16, 1
+	CALL SET_PALAM_EXPLORER, "夢魔", 22, 1
+	CALL SET_PALAM_EXPLORER, "基本の敵キャラ", 3
+
+ENDSELECT
+
+
+@START_EXPLORER
+#DIM LCOUNT
+#DIM MEMO_LINECOUNT
+#DIM MEMO_ASSI
+#DIM IS_ITEMGET
+#DIM MEMO_EXP
+#DIM IS_EXPGET
+#DIMS GETITEMS
+
+MEMO_ASSI = ASSI
+
+SELECTCASE TEXTS("探索先")
+CASE "草原"
+
+CASE "エルトゥム森林"
+	SIF PALAM_EXPLORER("エルトゥム森林：ボス撃破")
+		CALL SET_PALAM_EXPLORER, "階段発見率", 20
+CASE "リュードゥフ洞"
+	SIF PALAM_EXPLORER("リュードゥフ洞：ボス撃破")
+		CALL SET_PALAM_EXPLORER, "階段発見率", 20
+CASE "アンショス海"
+	SIF PALAM_EXPLORER("アンショス海：ボス撃破")
+		CALL SET_PALAM_EXPLORER, "階段発見率", 20
+CASE "ベルナドットの大迷路"
+	SIF PALAM_EXPLORER("ベルナドットの大迷路：ボス撃破")
+		CALL SET_PALAM_EXPLORER, "階段発見率", 20
+CASE "ゴズバーン砂漠"
+	SIF PALAM_EXPLORER("ゴズバーン砂漠：ボス撃破")
+		CALL SET_PALAM_EXPLORER, "階段発見率", 20
+CASE "キアズマの遊郭"
+	SIF PALAM_EXPLORER("キアズマの遊郭：ボス撃破")
+		CALL SET_PALAM_EXPLORER, "階段発見率", 20
+	ASSI = 0
+	PRINTFORML どのコースにしますか？ 所持金:%MONEY_C(MONEY)%
+	PRINTFORML [ 0] 梅　 $1,000　
+	PRINTFORML [ 1] 竹　 $5,000　ハツメとタマモが登場します
+	IF PALAM_EXPLORER("キアズマの遊郭：ボス撃破") == 0 || CONFIG("探索ボス")
+		PRINTFORML [ 2] 松　$10,000　リンが登場します
+		CALL INPUT_SELECT, 3
+	ELSE
+		CALL INPUT_SELECT, 2
+	ENDIF
+	SELECTCASE RESULT
+	CASE 0
+		MONEY -= 1000
+	CASE 1
+		MONEY -= 5000
+		CALL SET_PALAM_EXPLORER, "夢魔", 316, 3
+		CALL SET_PALAM_EXPLORER, "夢魔", 222, 3
+	CASE 2
+		MONEY -= 10000
+		CALL SET_PALAM_EXPLORER, "夢魔", 316, 3
+		CALL SET_PALAM_EXPLORER, "夢魔", 222, 3
+		CALL SET_PALAM_EXPLORER, "夢魔", 444, 10
+	ENDSELECT
+ENDSELECT
+
+;探索者と助手の効果
+FOR LCOUNT, 1, CHARANUM
+	SELECTCASE LCOUNT
+	CASE PLAYER
+	CASE ASSI
+		SIF PLAYER != MASTER
+			CONTINUE
+	CASEELSE
+		CONTINUE
+	ENDSELECT
+
+	SIF COND("探索：遭遇回避", LCOUNT)
+		CALL SET_PALAM_EXPLORER, "遭遇率", -5
+	SIF COND("探索：遭遇増加", LCOUNT)
+		CALL SET_PALAM_EXPLORER, "遭遇率", 5
+	SIF COND("探索：財宝発見", LCOUNT)
+		CALL SET_PALAM_EXPLORER, "アイテム発見率", 5
+	SIF COND("探索：財宝見逃し", LCOUNT)
+		CALL SET_PALAM_EXPLORER, "アイテム発見率", -5
+	SIF COND("探索：階段発見", LCOUNT)
+		CALL SET_PALAM_EXPLORER, "階段発見率", 5
+	SIF COND("探索：回復", LCOUNT)
+		CALL SET_PALAM_EXPLORER, "精力回復補正", 2
+NEXT
+;アクセサリ効果（隠密、宝箱、ドア）
+;隠密
+IF TALENT:PLAYER:隠密 > 0
+	LOCAL = MULTIPLY(PALAM_EXPLORER("遭遇率"), TALENT:PLAYER:隠密)
+	CALL SET_PALAM_EXPLORER, "遭遇率", -LOCAL
+ENDIF
+;宝箱
+IF TALENT:PLAYER:宝箱出現率 > 0
+	LOCAL = MULTIPLY(PALAM_EXPLORER("アイテム発見率"), TALENT:PLAYER:宝箱出現率)
+	CALL SET_PALAM_EXPLORER, "アイテム発見率", LOCAL
+ENDIF
+;ドア
+IF TALENT:PLAYER:ドア発見率 > 0
+	LOCAL = MULTIPLY(PALAM_EXPLORER("階段発見率"), TALENT:PLAYER:ドア発見率)
+	CALL SET_PALAM_EXPLORER, "階段発見率", LOCAL
+ENDIF
+;作戦方針補正
+;ガンガンいこうぜ！ ドア発見率小ＵＰ、宝発見率小DOWN
+IF FLAG:246 == 1
+	CALL SET_PALAM_EXPLORER, "遭遇率", 10
+	CALL SET_PALAM_EXPLORER, "アイテム発見率", -10
+	CALL SET_PALAM_EXPLORER, "階段発見率", 15
+;いのちをだいじに 宝発見率小DOWN、戦闘小有利
+ELSEIF FLAG:246 == 2
+	CALL SET_PALAM_EXPLORER, "アイテム発見率", -5
+	CALL SET_PALAM_EXPLORER, "敵の強さ", -2
+ENDIF
+
+;獲得アイテムと＄等の初期化
+VARSET I
+MONEY:5 = 0
+MONEY:6 = 0
+;経験値の記録
+MEMO_EXP = EXP:PLAYER:経験値
+
+;ひとまず30ターン探索
+FOR COUNT:99, 0, 30
+	;時間経過で精力回復
+	BASE:PLAYER:精力 = MIN(BASE:PLAYER:精力 + PALAM_EXPLORER("精力回復補正")/2 + 1, MAXBASE:PLAYER:精力)
+
+	;セックスバトル発生
+	IF RAND:100 < PALAM_EXPLORER("遭遇率")
+		CALL SEXBATTLE_EXPLORER
+	;アイテム発見
+	ELSEIF RAND:100 < PALAM_EXPLORER("アイテム発見率")
+		CALL GET_TREASURE_EXPLORER
+	ELSE
+		CALL SEARCH_FOR_EXPLORER
+	ENDIF
+
+	;敗北した？
+	SIF BASE:PLAYER:精力 <= 0
+		BREAK
+
+	IF PALAM_EXPLORER("ハーレム")
+		CALL SET_PALAM_EXPLORER, "ハーレム", -1
+		CALL SET_PALAM_EXPLORER, "遭遇率", -10
+		SIF PALAM_EXPLORER("ハーレム") == 0
+			PRINTFORML ハーレムの罠の効果が切れた。
+	ENDIF
+	IF PALAM_EXPLORER("幸運")
+		CALL SET_PALAM_EXPLORER, "幸運", -1
+		IF PALAM_EXPLORER("幸運") == 0
+			CALL SET_PALAM_EXPLORER, "アイテム発見率", -50
+			CALL SET_PALAM_EXPLORER, "アイテムレベル", -3
+			PRINTFORML リャナンシーの罠？の効果が切れた。
+		ENDIF
+	ENDIF
+	IF PALAM_EXPLORER("クラムジ")
+		CALL SET_PALAM_EXPLORER, "クラムジ", -1
+		SIF PALAM_EXPLORER("クラムジ") == 0
+			PRINTFORML アルカナの罠の効果が切れた。
+	ENDIF
+	IF PALAM_EXPLORER("センシブ")
+		CALL SET_PALAM_EXPLORER, "センシブ", -1
+		SIF PALAM_EXPLORER("センシブ") == 0
+			PRINTFORML 毒の罠の効果が切れた。
+	ENDIF
+
+	;時間調整
+	SIF COUNT:99 < 0
+		COUNT:99 = 0
+	SIF COUNT:99 > 29
+		BREAK
+NEXT
+
+;獲得経験値
+IS_EXPGET = EXP:PLAYER:経験値 - MEMO_EXP
+
+IF BASE:PLAYER:精力 <= 0
+	PRINTFORMW %CALLNAME:PLAYER%は体力の限界だ…。探索を終了します。
+	BASE:PLAYER:体力 = 500
+ELSE
+	PRINTFORMW 帰還しました。
+	BASE:PLAYER:体力 *= BASE:PLAYER:精力
+	BASE:PLAYER:体力 /= MAXBASE:PLAYER:精力
+	SIF BASE:PLAYER:体力 < 500
+		BASE:PLAYER:体力 = 500
+ENDIF
+PRINTL 
+
+MEMO_LINECOUNT = LINECOUNT
+
+IF PLAYER == MASTER && ASSI
+	TRYCALLFORM GUEST_KOJO_K{NO:ASSI}_{CFLAG:ASSI:209}, "探索：帰還", ASSI
+	;二人きりでの冒険で、欲求不満も少し解消
+	CALL CALC, "欲求不満解消", ASSI, 15
+ENDIF
+SIF LINECOUNT != MEMO_LINECOUNT
+	PRINTL 
+
+BASE:PLAYER:精力 = MAX(BASE:PLAYER:精力, 1)
+PRINTFORML 〜今回の成果〜
+IF PALAM_EXPLORER("最深フロア") > 1
+	PRINTFORM 到達階層：
+	IF PALAM_EXPLORER("フロア") == PALAM_EXPLORER("最深フロア")
+		PRINTFORML 最深部
+	ELSE
+		PRINTFORML {PALAM_EXPLORER("フロア")}Ｆ
+	ENDIF
+ENDIF
+SIF MONEY:6
+	PRINTFORML 獲得金額：%MONEY_C(MONEY:6)%
+MONEY += MONEY:6
+
+SIF IS_EXPGET
+	PRINTFORML 　経験値：{IS_EXPGET}Ｐ
+
+IS_ITEMGET = 0
+GETITEMS = 
+FOR LCOUNT, 0, 330
+	SIF I:LCOUNT == 0
+		CONTINUE
+	GETITEMS = %GETITEMS%%ITEMNAME:LCOUNT%×{I:LCOUNT}%BL(1)%
+	ITEM:LCOUNT += I:LCOUNT
+
+	SELECTCASE LCOUNT
+	;通常アイテムと詩集など
+	CASE 0 TO 99, 310 TO 319
+		SETBIT IS_ITEMGET, 0
+	;収集専用アイテム（解説付）
+	CASE 300 TO 309
+		SETBIT IS_ITEMGET, 1
+	;収集専用アイテム（アクセサリ）
+	CASE 320 TO 329
+		SETBIT IS_ITEMGET, 2
+	ENDSELECT
+NEXT
+
+IF IS_ITEMGET
+	PRINTFORML 入手アイテム：%GETITEMS%
+	SIF GETBIT(IS_ITEMGET, 1)
+		PRINTFORML スプーンやティーカップは食事の時は勿論、探索中の休憩でも優雅な一時を演出することでしょう…
+	;アクセサリの鑑定
+	SIF GETBIT(IS_ITEMGET, 2)
+		PRINTFORML 鑑定されていないアクセサリは『おぼろげ屋』へ持ち込むのがおすすめです
+ELSEIF IS_ITEMGET + MONEY:6 == 0
+	PRINTL アイテム入手など：無し
+ENDIF
+
+SIF I:999 && PLAYER == MASTER
+	PRINTFORML %NAME:TARGET%を仲魔にしたので経験値にボーナスが発生しています
+;LVUP
+SIF PLAYER == MASTER
+	CALL ABLUP_MASTER, "通常"
+
+ASSI = MEMO_ASSI
+FORCEWAIT
+
+@SEARCH_FOR_EXPLORER
+IF RAND:100 < PALAM_EXPLORER("階段発見率") && PALAM_EXPLORER("フロア") < PALAM_EXPLORER("最深フロア")
+	CALL SET_PALAM_EXPLORER, "フロア", 1
+	PRINTFORML ドアを発見。次の階層へ移動します。
+	;時間延長
+	COUNT:99 = MAX(COUNT:99 - 3 - RAND:5, 0)
+	SETCOLOR DEF_COLOR("黄色")
+	PRINTFORM {PALAM_EXPLORER("フロア")}Ｆ探索開始……
+	RESETCOLOR
+	PRINTL 
+	;もぐると敵の強さ等ＵＰ
+	SIF RAND:2
+		CALL SET_PALAM_EXPLORER, "敵の強さ", 1
+	SIF PALAM_EXPLORER("アイテム発見率") > RAND:100
+		CALL SET_PALAM_EXPLORER, "アイテム発見率", RAND:3 + 1
+	SIF RAND:4 == 0
+		CALL SET_PALAM_EXPLORER, "アイテムレベル", 1
+
+	;新たな敵出現
+	SELECTCASE TEXTS("探索先")
+	CASE "エルトゥム森林"
+		SELECTCASE PALAM_EXPLORER("フロア")
+		;ティターニア出現
+		CASE 3
+			CALL SET_PALAM_EXPLORER, "夢魔", 304, 1
+		;スクーグスロー出現
+		CASE 8
+			CALL SET_PALAM_EXPLORER, "夢魔", 303, 5
+		ENDSELECT
+	CASE "リュードゥフ洞"
+		SELECTCASE PALAM_EXPLORER("フロア")
+		;ヴィーヴル出現
+		CASE 3
+			CALL SET_PALAM_EXPLORER, "夢魔", 412, 1
+		;メローナ出現
+		CASE 5
+			SIF CONFIG("探索ボス") || GETCHARA(35) < 0
+				CALL SET_PALAM_EXPLORER, "夢魔", 35, 1
+		;ストゥーナ出現
+		CASE 8
+			SIF CONFIG("探索ボス") || GETCHARA(34) < 0
+				CALL SET_PALAM_EXPLORER, "夢魔", 34, 5
+		ENDSELECT
+	CASE "アンショス海"
+		SELECTCASE PALAM_EXPLORER("フロア")
+		;カリュブディス増量
+		CASE 3
+			CALL SET_PALAM_EXPLORER, "夢魔", 215, 1
+		;レヴィアタン出現
+		CASE 10
+			CALL SET_PALAM_EXPLORER, "夢魔", 313, 5
+		ENDSELECT
+	CASE "ベルナドットの大迷路"
+		SELECTCASE PALAM_EXPLORER("フロア")
+		;ミミック出現
+		;CASE 2
+		;	CALL SET_PALAM_EXPLORER, "夢魔", 33, 2
+		;ベルナドット出現
+		CASE 3
+			SIF CONFIG("探索ボス") || GETCHARA(47) < 0
+				CALL SET_PALAM_EXPLORER, "夢魔", 47, 5
+		ENDSELECT
+	CASE "ゴズバーン砂漠"
+		SELECTCASE PALAM_EXPLORER("フロア")
+		;エスプラーナ出現
+		CASE 6
+			SIF CONFIG("探索ボス") || GETCHARA(38) < 0
+				CALL SET_PALAM_EXPLORER, "夢魔", 38, 5
+		ENDSELECT
+	CASE "キアズマの遊郭"
+	ENDSELECT
+ELSE
+	PRINT 探索中…
+ENDIF
+
+
+;探索の各種数値はTFLAGで管理する
+; 1	精力回復補正
+; 3〜14	ダンジョンパラメーター
+;15〜29	戦闘で使用する
+;30〜68	敵キャラの遭遇表
+;69	敵キャラの遭遇表の母数
+;70〜	トラップなど
+@SET_PALAM_EXPLORER, ARGS, ARG, ARG:1
+#DIM LCOUNT
+SELECTCASE ARGS
+CASE "精力回復補正"
+	TFLAG:1 += ARG
+CASE "遭遇率"
+	TFLAG:3 = LIMIT(TFLAG:3 + ARG, 0, 90)
+CASE "アイテム発見率"
+	TFLAG:4 = LIMIT(TFLAG:4 + ARG, 0, 90)
+CASE "アイテムレベル"
+	TFLAG:5 = MAX(TFLAG:5 + ARG, 1)
+CASE "財宝期待値"
+	TFLAG:6 = ARG
+CASE "財宝"
+	TFLAG:7 = ARG
+
+CASE "階段発見率"
+	TFLAG:8 = LIMIT(TFLAG:8 + ARG, 1, 90)
+CASE "フロア"
+	TFLAG:9 += ARG
+CASE "最深フロア"
+	TFLAG:10 = ARG
+CASE "敵の強さ"
+	TFLAG:11 = MAX(TFLAG:11 + ARG, 1)
+
+CASE "戦闘フラグリセット"
+	TFLAG:22 = 0
+	TFLAG:23 = 0
+	TFLAG:24 = 0
+CASE "行動"
+	TFLAG:17 = ARG
+
+CASE "テンダーキッス"
+	TFLAG:17 = 1
+CASE "キス"
+	TFLAG:17 = 2
+CASE "パイズリ"
+	TFLAG:17 = 3
+CASE "アナル責め"
+	TFLAG:17 = 4
+CASE "顔面騎乗"
+	TFLAG:17 = 5
+CASE "手コキ"
+	TFLAG:17 = 6
+CASE "フェラチオ"
+	TFLAG:17 = 7
+CASE "足コキ"
+	TFLAG:17 = 8
+CASE "シックスナイン"
+	TFLAG:17 = 9
+CASE "甘い言葉"
+	TFLAG:17 = 10
+CASE "バスト"
+	TFLAG:17 = 11
+CASE "ヴァッジ"
+	TFLAG:17 = 12
+CASE "アナル"
+	TFLAG:17 = 13
+
+CASE "敵キャラ数"
+	TFLAG:20 += ARG
+CASE "ムード"
+	TFLAG:21 = MAX(TFLAG:21 + ARG, 0)
+CASE "脱衣"
+	TFLAG:22 = ARG
+CASE "体位"
+	TFLAG:23 = ARG
+CASE "Ｖインサート"
+	TFLAG:23 = 1
+	TFLAG:24 |= 1
+CASE "Ａインサート"
+	TFLAG:23 = 2
+	TFLAG:24 |= 2
+CASE "エースオブスペード"
+	TFLAG:23 = 3
+CASE "夢魔"
+	TFLAG:30 += ARG:1
+	FOR LCOUNT, 31, 60
+		SIF TFLAG:LCOUNT
+			CONTINUE
+		FOR LOCAL, 0, ARG:1
+			TFLAG:(LCOUNT + LOCAL) = ARG
+		NEXT
+		BREAK
+	NEXT
+CASE "基本の敵キャラ"
+	TFLAG:69 = ARG
+
+CASE "ハーレム"
+	TFLAG:70 = MAX(TFLAG:70 + ARG, 0)
+CASE "幸運"
+	TFLAG:71 = MAX(TFLAG:71 + ARG, 0)
+CASE "クラムジ"
+	TFLAG:72 = MAX(TFLAG:72 + ARG, 0)
+CASE "センシブ"
+	TFLAG:73 = MAX(TFLAG:73 + ARG, 0)
+
+;FLAG:50の各bitで各種フラグを記録する(基本的にはボス遭遇とボス撃破)
+; 0- 4	エルトゥム森林
+CASE "エルトゥム森林：ボス撃破"
+	SETBIT FLAG:50, 0
+; 5- 9	リュードゥフ洞
+CASE "リュードゥフ洞：中ボス撃破"
+	SETBIT FLAG:50, 5
+CASE "リュードゥフ洞：ボス撃破"
+	SETBIT FLAG:50, 6
+;10-14	アンショス海
+CASE "アンショス海：ボス撃破"
+	SETBIT FLAG:50, 10
+;15-19	ベルナドットの大迷路
+CASE "ベルナドットの大迷路：ボス撃破"
+	SETBIT FLAG:50, 15
+;20-24	ゴズバーン砂漠
+CASE "ゴズバーン砂漠：ボス撃破"
+	SETBIT FLAG:50, 20
+;25-29	キアズマの遊郭
+CASE "キアズマの遊郭：ボス撃破"
+	SETBIT FLAG:50, 21
+;60-63	汎用フラグ（毎回探索開始の時にリセットされる）
+CASE "中ボス撃破"
+	SETBIT FLAG:50, 60
+CASE "ボス撃破"
+	SETBIT FLAG:50, 61
+ENDSELECT
+
+@PALAM_EXPLORER(ARGS, ARG)
+#FUNCTION
+SELECTCASE ARGS
+CASE "精力回復補正"
+	;食器で回復量上昇
+	IF ITEM:ミスリルのティーカップ
+		RETURNF TFLAG:1 + 8
+	ELSEIF ITEM:ミスリルのスプーン
+		RETURNF TFLAG:1 + 7
+	ELSEIF ITEM:銀のティーカップ
+		RETURNF TFLAG:1 + 5
+	ELSEIF ITEM:銀のスプーン
+		RETURNF TFLAG:1 + 4
+	ELSEIF ITEM:陶磁器のティーカップ
+		RETURNF TFLAG:1 + 2
+	ELSEIF ITEM:陶磁器のスプーン
+		RETURNF TFLAG:1 + 1
+	ENDIF
+	RETURNF TFLAG:1
+CASE "遭遇率"
+	RETURNF TFLAG:3
+CASE "アイテム発見率"
+	RETURNF TFLAG:4
+CASE "アイテムレベル"
+	RETURNF TFLAG:5
+CASE "財宝期待値"
+	RETURNF TFLAG:6
+CASE "財宝"
+	RETURNF TFLAG:7
+CASE "階段発見率"
+	RETURNF TFLAG:8
+CASE "フロア"
+	RETURNF TFLAG:9
+CASE "最深フロア"
+	RETURNF TFLAG:10
+CASE "敵の強さ"
+	RETURNF TFLAG:11
+CASE "戦闘ターン数"
+	RETURNF TFLAG:12
+CASE "エンカウント回数"
+	RETURNF TFLAG:13
+CASE "ランダムエンカウント"
+	RETURNF TFLAG:(31 + RAND:(TFLAG:30) )
+CASE "制限エンカウント"
+	RETURNF TFLAG:(31 + RAND:(TFLAG:69) )
+CASE "敵キャラ数"
+	RETURNF TFLAG:20
+CASE "一人目"
+	RETURNF CHARANUM - TFLAG:20
+CASE "二人目"
+	RETURNF CHARANUM - (TFLAG:20 - 1)
+CASE "三人目"
+	RETURNF CHARANUM - (TFLAG:20 - 2)
+CASE "ムード"
+	RETURNF TFLAG:21
+CASE "脱衣"
+	RETURNF TFLAG:22
+
+CASE "攻撃力"
+	LOCAL = ABL:技巧 + 1
+	SIF ABL:ＬＶ > ABL:PLAYER:ＬＶ
+		LOCAL += 1 + (ABL:ＬＶ - ABL:PLAYER:ＬＶ) / 3
+	RETURNF LOCAL
+CASE "探索者攻撃力"
+	;アクセサリ補正
+	LOCAL = MULTIPLY(ABL:ARG:技巧, 100 + (TALENT:ARG:技巧強化 + TALENT:ARG:魅力強化)/2 )
+	SIF TALENT:ARG:竜の血
+		LOCAL += 1
+	SIF TALENT:ARG:力持ち
+		LOCAL += 1
+	SIF TALENT:ARG:魔王のかけら
+		LOCAL += 3
+	;SIF COND("ユニーク", ARG)
+	;	LOCAL += 1
+	LOCAL += TALENT:ARG:魔法使い + TALENT:ARG:上位夢魔
+	RETURNF LOCAL
+;魔法使いについてはアルカナ補助部分に分割される
+CASE "助手攻撃力"
+	LOCAL = (ABL:ARG:技巧 + 1)/3 + TALENT:ARG:上位夢魔
+	SIF TALENT:ARG:竜の血
+		LOCAL += 1
+	SIF TALENT:ARG:力持ち
+		LOCAL += 1
+	SIF TALENT:ARG:魔王のかけら
+		LOCAL += 2
+	;SIF COND("ユニーク", ARG)
+	;	LOCAL += 1
+	RETURNF LOCAL
+CASE "アルカナ補助"
+	LOCAL = 0
+	SIF TALENT:ARG:センシブ || TALENT:ARG:ウルズグン || TALENT:ARG:シギルグン || TALENT:ARG:エオルグン || TALENT:ARG:イーサグン || TALENT:ARG:魔法使い >= 2
+		LOCAL += 1
+	SIF TALENT:ARG:トワイス || TALENT:ARG:バインド || TALENT:ARG:魔法使い >= 2
+		LOCAL += 1
+	SIF TALENT:ARG:アルスグン || TALENT:ARG:魔法使い >= 2
+		LOCAL += 1
+	RETURNF LOCAL
+CASE "テンダーキッス"
+	SIF TFLAG:17 == 1
+		RETURNF 1
+CASE "キス"
+	SIF TFLAG:17 == 2
+		RETURNF 1
+CASE "パイズリ"
+	SIF TFLAG:17 == 3
+		RETURNF 1
+CASE "アナル責め"
+	SIF TFLAG:17 == 4
+		RETURNF 1
+CASE "顔面騎乗"
+	SIF TFLAG:17 == 5
+		RETURNF 1
+CASE "手コキ"
+	SIF TFLAG:17 == 6
+		RETURNF 1
+CASE "フェラチオ"
+	SIF TFLAG:17 == 7
+		RETURNF 1
+CASE "足コキ"
+	SIF TFLAG:17 == 8
+		RETURNF 1
+CASE "シックスナイン"
+	SIF TFLAG:17 == 9
+		RETURNF 1
+CASE "甘い言葉"
+	SIF TFLAG:17 == 10
+		RETURNF 1
+CASE "バスト"
+	SIF TFLAG:17 == 11
+		RETURNF 1
+CASE "ヴァッジ"
+	SIF TFLAG:17 == 12
+		RETURNF 1
+CASE "アナル"
+	SIF TFLAG:17 == 13
+		RETURNF 1
+
+CASE "体位"
+	RETURNF TFLAG:23
+CASE "Ｖインサート"
+	SIF TFLAG:23 == 1
+		RETURNF 1
+CASE "Ａインサート"
+	SIF TFLAG:23 == 2
+		RETURNF 1
+CASE "エースオブスペード"
+	SIF TFLAG:23 == 3
+		RETURNF 1
+CASE "両穴征服"
+	SIF GETBIT(TFLAG:24, 0) && GETBIT(TFLAG:24, 1)
+		RETURNF 1
+
+CASE "ハーレム"
+	RETURNF TFLAG:70
+CASE "幸運"
+	RETURNF TFLAG:71
+CASE "クラムジ"
+	RETURNF TFLAG:72
+CASE "センシブ"
+	RETURNF TFLAG:73
+
+;FLAG:50の各bitで各種フラグを記録する(基本的にはボス遭遇とボス撃破)
+; 0- 4	エルトゥム森林
+CASE "エルトゥム森林：ボス撃破"
+	RETURNF GETBIT(FLAG:50, 0)
+; 5- 9	リュードゥフ洞
+CASE "リュードゥフ洞：中ボス撃破"
+	RETURNF GETBIT(FLAG:50, 5)
+CASE "リュードゥフ洞：ボス撃破"
+	RETURNF GETBIT(FLAG:50, 6)
+;10-14	アンショス海
+CASE "アンショス海：ボス撃破"
+	RETURNF GETBIT(FLAG:50, 10)
+;15-19	ベルナドットの大迷路
+CASE "ベルナドットの大迷路：ボス撃破"
+	RETURNF GETBIT(FLAG:50, 15)
+;20-24	ゴズバーン砂漠
+CASE "ゴズバーン砂漠：ボス撃破"
+	RETURNF GETBIT(FLAG:50, 20)
+;25-29	キアズマの遊郭
+CASE "キアズマの遊郭：ボス撃破"
+	RETURNF GETBIT(FLAG:50, 21)
+;60-63	汎用フラグ（毎回探索開始の時にリセットされる）
+CASE "中ボス撃破"
+	RETURNF GETBIT(FLAG:50, 60)
+CASE "ボス撃破"
+	RETURNF GETBIT(FLAG:50, 61)
+ENDSELECT
+RETURNF 0

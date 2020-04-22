@@ -1,0 +1,438 @@
+﻿;-------------------------------------------------
+;ブラをつける関数
+;指定番号によって名前がCSTR:41に代入される。
+;99番までは、その番号の夢魔の下着。
+;EQUIP:ブラはブラの特徴フラグ。ビット管理する
+;-------------------------------------------------
+@SET_BRA, ARG, ARG:1
+;ARGのブラをARG:1番のものにする。ARG:1==0なら脱がす
+;汚れ＆ずれたりしたフラグ等を初期化して新品にする
+TCVAR:ARG:26 = 0
+
+IF ARG:1 == 0
+	EQUIP:ARG:ブラ = 0
+	CSTR:ARG:41 = 
+	RETURN 0
+ENDIF
+
+;名前記録
+CSTR:ARG:41 = %PALAM_BRA(ARG:1, ARG, 1)%
+
+;色をそろえる
+CALL SAME_COLOR, ARG, 40, 41
+
+;Ｈなブラはリネーム
+SIF CHECK_BRA("超Ｈ", ARG)
+	CALL RENAME_BRA, ARG
+
+SIF EQUIP:ARG:ボディスーツ
+	CALL SET_BODYS, ARG
+
+TCVAR:ARG:26 = 0
+RETURN ARG:1
+;-------------------------------------------------
+;ARGのブラの名前。ARG:1==0なら正式名称 by CSTR。ARG:1==1なら短縮名称 by EQUIP。
+;基本的に、揃いのパンツがあるときにはそっちに複合した名前にする。
+;また、上に服を着ているときには省略する。
+;-------------------------------------------------
+@BRA(ARG, ARG:1)
+#FUNCTIONS
+IF ARG:1 == 0 && CSTR:ARG:41 != ""
+	LOCALS = %CSTR:ARG:41%
+	SIF CONFIG("衣装の細かい色表示の禁止")
+		RETURNF LOCALS
+	LOCALS:1 = %TEXTS("衣装の色", EQUIP:ARG:ブラ)%
+	SIF LOCALS:1 != "" && SUBSTRING(CSTR:ARG:41, 0, 2) != SUBSTRING(LOCALS:1, 0, 2)
+		LOCALS = %LOCALS%(%LOCALS:1%)
+ELSE
+	IF CHECK_BRA("貝殻", ARG)
+		LOCALS = 貝殻ブラ
+	ELSEIF CHECK_BRA("帷子", ARG)
+		LOCALS = 帷子
+	ELSEIF CHECK_BRA("前掛け", ARG)
+		LOCALS = 前掛け
+	ELSEIF CHECK_BRA("タンクトップ", ARG)
+		LOCALS = タンクトップ
+	;ELSEIF CHECK_BRA("マイクロ", ARG)
+	;	LOCALS = マイクロブラ
+	ELSEIF CHECK_BRA("水着", ARG)
+		LOCALS = ビキニ
+	ELSEIF CHECK_BRA("キャミソール", ARG)
+		LOCALS = キャミソール
+	ELSE
+		LOCALS = ブラジャー
+	ENDIF
+ENDIF
+RETURNF LOCALS
+
+;-------------------------------------------------
+;ARG番のブラの正式名称
+;ARG:1 > 0ならARG:1はキャラ番号として働く
+;-------------------------------------------------
+@NAME_BRA(ARG, ARG:1)
+#FUNCTIONS
+LOCALS = %PALAM_BRA(ARG, ARG:1)%
+RETURNF LOCALS
+
+;-------------------------------------------------
+;bit値に応じてキャラARGの穿いているブラの名前をリネーム
+;主にＨなブラ用
+;-------------------------------------------------
+@RENAME_BRA, ARG
+SIF ARG < 0
+	RETURN 0
+SIF ARG == 0 && TARGET
+	ARG = TARGET
+SIF EQUIP:ARG:ブラ == 0
+	RETURN 0
+
+VARSET LOCALS
+IF CHECK_BRA("レース", ARG)
+	SELECTCASE TEXTS("衣装の色", EQUIP:ARG:ブラ)
+	CASE "黒", "紫"
+		LOCALS = %TEXTS("衣装の色", EQUIP:ARG:ブラ)%レースブラ
+	CASEELSE
+		IF CHECK_BRA("オープンブラ", ARG)
+			LOCALS = レースのオープンブラ
+		ELSE
+			LOCALS = レースのブラ
+		ENDIF
+	ENDSELECT
+ELSEIF CHECK_BRA("シルク", ARG)
+	LOCALS = シルクのブラ
+ELSEIF CHECK_BRA("オープンブラ", ARG)
+	LOCALS = オープンブラ
+ELSEIF CHECK_BRA("1/4カップ", ARG)
+	LOCALS = 1/4カップブラ
+ELSEIF CHECK_BRA("マイクロ", ARG)
+	LOCALS = マイクロブラ
+ELSEIF CHECK_BRA("1/2カップ", ARG)
+	LOCALS = 1/2カップブラ
+ELSEIF CHECK_BRA("シースルー", ARG)
+	LOCALS = シースルーブラ
+ELSEIF CHECK_BRA("3/4カップ", ARG)
+	LOCALS = 3/4カップブラ
+ENDIF
+
+SIF CHECK_BRA("シースルー", ARG) && LOCALS != "シースルーブラ"
+	LOCALS = %LOCALS%(透)
+
+SIF STRLENS(LOCALS)
+	CSTR:ARG:41 = %LOCALS%
+
+;-------------------------------------------------
+;ARG番のブラの詳細パラ
+;ARG:1 > 0ならARG:1はキャラ番号として働き、ARG:1 > 0 && ARG:2 > 0ならEQUIPを定める
+;-------------------------------------------------
+@PALAM_BRA(ARG, ARG:1, ARG:2)
+#FUNCTIONS
+VARSET LOCAL
+VARSET LOCALS
+
+SELECTCASE ARG
+CASE 1
+	IF CFLAG:(ARG:1):8 == 2
+		LOCALS = 淫魔のブラ
+		LOCAL = SETFLAG_BRA("水着", "3/4カップ", "黒")
+	ELSEIF CFLAG:(ARG:1):8 == 3
+		LOCALS = 淫魔のブラ
+		LOCAL = SETFLAG_BRA("水着", "3/4カップ", "黒")
+	ELSE
+		LOCALS = 淫魔のブラ
+		LOCAL = SETFLAG_BRA("水着", "3/4カップ", "紫")
+	ENDIF
+CASE 4
+	IF CFLAG:(ARG:1):8 == 3
+		LOCALS = 妖精のキャミソール
+		LOCAL = SETFLAG_BRA("オープンキャミ", "フリル", "紫")
+	ELSE
+		LOCALS = 妖精のキャミソール
+		LOCAL = SETFLAG_BRA("オープンキャミ", "フリル", "純白")
+	ENDIF
+CASE 6
+	IF CFLAG:(ARG:1):8 == 2
+		LOCALS = 魔猫のビスチェ
+		LOCAL = SETFLAG_BRA("ビスチェ", "毛皮", "青")
+	ELSEIF CFLAG:(ARG:1):8 == 3
+		LOCALS = 魔猫のビスチェ
+		LOCAL = SETFLAG_BRA("ビスチェ", "毛皮", "黄")
+	ELSE
+		LOCALS = 魔猫のビスチェ
+		LOCAL = SETFLAG_BRA("ビスチェ", "毛皮")
+	ENDIF
+CASE 7
+	IF TALENT:(ARG:1):四足歩行 == 0
+		LOCALS = 人狼のレザーブラ
+		LOCAL = SETFLAG_BRA("3/4カップ", "レザー", "黒")
+	ENDIF
+CASE 8, 9, 32, 52, 59
+	IF CFLAG:(ARG:1):8 != 2
+		LOCALS = 大人しめなブラ
+		LOCAL = SETFLAG_BRA("大人しめ")
+	ENDIF
+CASE 13
+	IF CFLAG:(ARG:1):8 == 3
+		LOCALS = 貝殻の胸当て
+		LOCAL = SETFLAG_BRA("貝殻", "薄青")
+	ELSE
+		LOCALS = 貝殻の胸当て
+		LOCAL = SETFLAG_BRA("貝殻", "赤")
+	ENDIF
+CASE 17
+	IF CFLAG:(ARG:1):8 != 1
+		LOCALS = ボンデージブラ
+		LOCAL = SETFLAG_BRA("3/4カップ", "革", "黒")
+	ENDIF
+CASE 22
+	LOCALS = 忍帷子
+	LOCAL = SETFLAG_BRA("帷子", "黒")
+CASE 23, 58
+	LOCALS = セクシーブラ
+	LOCAL = SETFLAG_BRA("フリル", "黒")
+CASE 26
+	LOCALS = 前掛け
+	LOCAL = SETFLAG_BRA("前掛け", "薄緑")
+CASE 30
+	LOCALS = 清楚なブラ
+	LOCAL = SETFLAG_BRA("3/4カップ", "民族的", "純白")
+CASE 31
+	LOCALS = タンクトップ
+	LOCAL = SETFLAG_BRA("タンクトップ", "橙")
+CASE 33
+	IF CFLAG:(ARG:1):8 == 4
+		LOCALS = 黒いブラ
+		LOCAL = SETFLAG_BRA("フリル", "黒")
+	ELSE
+		LOCALS = 薄桃色のブラ
+		LOCAL = SETFLAG_BRA("フリル", "薄桃")
+	ENDIF
+CASE 47
+	LOCALS = Ｈなブラ
+	LOCAL = SETFLAG_BRA("Ｈ", "超Ｈ")
+CASE 49
+	LOCALS = シースルーキャミ
+	LOCAL = SETFLAG_BRA("ロングキャミ", "透け", "シルク")
+CASE 54
+	LOCALS = Ｈなブラ
+	LOCAL = SETFLAG_BRA("Ｈ", "超Ｈ")
+CASE 55
+	LOCALS = キャミソール
+	LOCAL = SETFLAG_BRA("キャミソール", "純白")
+CASE 57
+	LOCALS = 清楚なブラ
+	LOCAL = SETFLAG_BRA("清楚")
+CASE 100
+	LOCALS = 縞々ブラ
+	LOCAL = SETFLAG_BRA("縞々", "縞々色")
+CASE 101
+	LOCALS = 黒レースブラ
+	LOCAL = SETFLAG_BRA("3/4カップ", "レース", "シースルー", "黒")
+CASE 102
+	LOCALS = フリルブラ
+	LOCAL = SETFLAG_BRA("フリル", "大人しめ")
+CASE 103
+	LOCALS = キャミソール
+	LOCAL = SETFLAG_BRA("キャミソール", "大人しめ")
+CASE 104
+	LOCALS = 1/2カップブラ
+	LOCAL = SETFLAG_BRA("1/2カップ", "Ｈめの色")
+CASE 105
+	LOCALS = タンクトップ
+	LOCAL = SETFLAG_BRA("タンクトップ", "Ｈめの色")
+CASE 106
+	LOCALS = シースルーブラ
+	LOCAL = SETFLAG_BRA("シースルー", "清楚")
+CASE 107
+	LOCALS = 3/4カップブラ
+	LOCAL = SETFLAG_BRA("3/4カップ", "Ｈめの色")
+CASE 108
+	LOCALS = レザーブラ
+	LOCAL = SETFLAG_BRA("3/4カップ", "レザー")
+CASE 109
+	LOCALS = チューブトップ
+	LOCAL = SETFLAG_BRA("チューブトップ", "黒")
+CASE 110
+	IF ITEM:ビキニ
+		LOCALS = ビキニブラ
+		LOCAL = SETFLAG_BRA("水着")
+	ENDIF
+CASE 111
+	IF ITEM:ビキニ
+		LOCALS = ミニマルビキニブラ
+		LOCAL = SETFLAG_BRA("水着", "マイクロ")
+	ENDIF
+CASE 112
+	LOCALS = レースのブラ
+	LOCAL = SETFLAG_BRA("3/4カップ", "レース", "清楚")
+;CASE 113
+;	LOCALS = ミニマルブラ
+;	LOCAL = SETFLAG_PANTIES("マイクロ")
+
+CASE 130
+	LOCALS = Ｈなブラ
+	LOCAL = SETFLAG_BRA("Ｈ", "超Ｈ")
+ENDSELECT
+
+SIF ARG:1 > 0 && ARG:2 > 0
+	EQUIP:(ARG:1):ブラ = LOCAL
+
+RETURNF LOCALS
+
+;-------------------------------------------------
+;指示されたとおりのブラのフラグを設定するために使う
+;-------------------------------------------------
+@SETFLAG_BRA(ARGS:1, ARGS:2, ARGS:3, ARGS:4, ARGS:5, ARGS:6, ARGS:7, ARGS:8, ARGS:9, ARGS:10)
+#FUNCTION
+#DIM LCOUNT
+
+LOCAL = 0
+FOR LCOUNT, 1, 11
+	ARGS = %ARGS:LCOUNT%
+	SELECTCASE ARGS
+	;谷間が綺麗に見える
+	CASE "3/4カップ", "３/４カップ"
+		SETBIT LOCAL, 0
+		LOCAL |= SETFLAG_COMMON("谷間露出")
+	;乳首がちょっと見える
+	CASE "1/2カップ", "１/２カップ", "ハーフカップ"
+		SETBIT LOCAL, 1
+		LOCAL |= SETFLAG_COMMON("谷間露出", "乳首露出")
+	;乳首は隠れない
+	CASE "1/4カップ", "１/４カップ", "トップレスブラ"
+		SETBIT LOCAL, 2
+		LOCAL |= SETFLAG_COMMON("谷間露出", "乳首露出", "はだけ不可")
+	;カップ部分だけない
+	CASE "オープンブラ"
+		SETBIT LOCAL, 3
+		LOCAL |= SETFLAG_COMMON("胸露出", "はだけ不可")
+	;乳首周辺の三角形しか隠していない
+	CASE "マイクロ"
+		SETBIT LOCAL, 4
+		LOCAL |= SETFLAG_COMMON("谷間露出")
+	CASE "タンクトップ"
+		SETBIT LOCAL, 5
+	;おへそ辺りまで
+	CASE "キャミソール", "キャミ"
+		SETBIT LOCAL, 6
+	;ブラが隠れるぐらいの長さ
+	CASE "ロングキャミソール", "ロングキャミ"
+		SETBIT LOCAL, 7
+		SETBIT LOCAL, 6
+	;おへそが見えるように前面が開いている
+	CASE "オープンキャミソール", "オープンキャミ"
+		SETBIT LOCAL, 8
+		SETBIT LOCAL, 6
+	;布が巻かれているようなの
+	CASE "民族的"
+		SETBIT LOCAL, 9
+		LOCAL |= SETFLAG_COMMON("谷間露出")
+	;クノイチの着てるのは鎖製ではないと信じたい
+	CASE "帷子", "かたびら"
+		SETBIT LOCAL, 10
+		LOCAL |= SETFLAG_COMMON("ずれ不可", "ズリ不可")
+	;ドラグーン着用
+	CASE "前掛け"
+		SETBIT LOCAL, 11
+	CASE "チューブトップ"
+		SETBIT LOCAL, 12
+	CASE "ビスチェ"
+		SETBIT LOCAL, 13
+	CASE "スポーツブラ", "スポーツ"
+		SETBIT LOCAL, 14
+	CASE "貝殻"
+		SETBIT LOCAL, 15
+		LOCAL |= SETFLAG_COMMON("ズリ不可", "谷間露出")
+	CASE "超Ｈ"
+		SETBIT LOCAL, 16
+	;オートブラ
+	CASE "大人しめ"
+		LOCAL |= SETFLAG_COMMON("大人しめの色")
+	CASE "清楚"
+		SIF RAND:3 == 0
+			SETBIT LOCAL, 6
+		SIF RAND:3 == 0
+			LOCAL |= SETFLAG_COMMON("フリル")
+		SIF RAND:3 == 0
+			LOCAL |= SETFLAG_COMMON("シルク")
+		LOCAL |= SETFLAG_COMMON("大人しめの色")
+	CASE "ちょっとＨ"
+		IF RAND:3
+			SETBIT LOCAL, 0
+			LOCAL |= SETFLAG_COMMON("谷間露出")
+		ELSEIF RAND:2
+			SETBIT LOCAL, 1
+			LOCAL |= SETFLAG_COMMON("谷間露出")
+		ENDIF
+		SIF RAND:3 == 0
+			LOCAL |= SETFLAG_COMMON("フリル")
+		SIF RAND:3 == 0
+			LOCAL |= SETFLAG_COMMON("シルク")
+		SIF RAND:3 == 0
+			LOCAL |= SETFLAG_COMMON("シースルー")
+		LOCAL |= SETFLAG_COMMON("Ｈめの色")
+	CASE "Ｈ"
+		IF RAND:5 == 0
+			SETBIT LOCAL, 0
+			LOCAL |= SETFLAG_COMMON("谷間露出")
+		ELSEIF RAND:4 == 0
+			SETBIT LOCAL, 1
+			LOCAL |= SETFLAG_COMMON("谷間露出")
+		ELSEIF RAND:3 == 0
+			SETBIT LOCAL, 2
+			LOCAL |= SETFLAG_COMMON("谷間露出", "乳首露出", "はだけ不可")
+		ELSEIF RAND:2
+			SETBIT LOCAL, 3
+			LOCAL |= SETFLAG_COMMON("胸露出", "はだけ不可")
+		ELSE
+			SETBIT LOCAL, 4
+			LOCAL |= SETFLAG_COMMON("谷間露出")
+		ENDIF
+		SIF RAND:5 == 0
+			LOCAL |= SETFLAG_COMMON("シルク")
+		SIF RAND:5 == 0
+			LOCAL |= SETFLAG_COMMON("レース")
+		SIF RAND:4 == 0
+			LOCAL |= SETFLAG_COMMON("シースルー")
+		LOCAL |= SETFLAG_COMMON("Ｈめの色")
+	CASEELSE
+		SIF STRLENS(ARGS)
+			LOCAL |= SETFLAG_COMMON(ARGS)
+	ENDSELECT
+	SIF STRLENS(ARGS:(LCOUNT + 1) ) == 0
+		RETURNF LOCAL
+NEXT
+RETURNF LOCAL
+
+;-------------------------------------------------
+;ARGのブラが条件ARGS:1～5を満たすか確認する
+;-------------------------------------------------
+@CHECK_BRA(ARGS, ARG)
+#FUNCTION
+SIF ARG == 0 && TARGET
+	ARG = TARGET
+SIF EQUIP:ARG:ブラ == 0
+	RETURNF 0
+
+SELECTCASE ARGS
+CASE "はだけ可"
+	;既に露出している場合
+	SIF SETFLAG_BRA("胸露出")&EQUIP:ARG:ブラ
+		RETURNF 0
+	SIF SETFLAG_BRA("乳首露出")&EQUIP:ARG:ブラ
+		RETURNF 0
+	SIF SETFLAG_BRA("はだけた")&EQUIP:ARG:ブラ
+		RETURNF 0
+	SIF SETFLAG_BRA("はだけ不可")&EQUIP:ARG:ブラ
+		RETURNF 0
+	RETURNF 1
+CASE "乳首露出"
+	SIF SETFLAG_BRA("胸露出")&EQUIP:ARG:ブラ
+		RETURNF 1
+	SIF SETFLAG_BRA("乳首露出")&EQUIP:ARG:ブラ
+		RETURNF 1
+CASEELSE
+	SIF (SETFLAG_BRA(ARGS)&EQUIP:ARG:ブラ) == SETFLAG_BRA(ARGS)
+		RETURNF 1
+ENDSELECT
+
+RETURNF 0

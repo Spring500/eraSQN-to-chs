@@ -1,0 +1,987 @@
+﻿@DAUGHTER_CHECK, ARGS
+#DIM MEMO_TARGET
+#DIM MOTHER
+#DIM FATHER
+
+MEMO_TARGET = TARGET
+
+MOTHER = TARGET
+FATHER = COND("胎児の父親")
+
+;娘は調教可能になるかなどを判定します。
+SIF CHARANUM < 100
+	CALL DAUGHTER_BIRTH, ARGS, MOTHER, FATHER
+
+TARGET = MEMO_TARGET
+
+@DAUGHTER_BIRTH, ARGS, MOTHER, FATHER
+#DIM LCOUNT
+#DIM MOTHER
+#DIM FATHER
+#DIM TBONUS
+#DIM HP_BONUS
+
+;息子かどうか
+IF COND("育児中：息子", MOTHER)
+	ADDCHARA 95
+ELSE
+	ADDCHARA 97
+ENDIF
+TARGET = CHARANUM-1
+
+;気力体力の処理
+
+MAXBASE:体力 = MAX(MAX(CSVBASE(BASE:MOTHER:種族, 0, 0), MAXBASE:MOTHER:体力)/120*100 + TALENT:オトコ*200, 1000)
+MAXBASE:気力 = MAX(MAX(CSVBASE(BASE:MOTHER:種族, 1, 0), MAXBASE:MOTHER:気力)/60*50, 800)
+
+BASE:体力 = MAXBASE:体力
+BASE:気力 = MAXBASE:気力
+
+;従順の処理、産みの親の反発刻印が少ないほど最初から従順
+ABL:従順 = MAX(2 - MARK:MOTHER:反発刻印, 0)
+
+;遺伝の処理
+;父親が子離れの時にいると、母がMASTERか20％の確率で素質は父のものを参照
+;また娘は付く素質が制限される
+IF FATHER > 0 && (MOTHER == MASTER || RAND:5 == 0)
+	CALL D_TALENT_INHERITANCE, FATHER, MOTHER
+ELSE
+	CALL D_TALENT_INHERITANCE, MOTHER, FATHER
+ENDIF
+;胸の大きさは母親のものしか影響しない
+CALL D_BUST_SET, MOTHER
+;娘固有の素質を付加、反する素質の制限。
+TALENT:好奇心 = 1
+TALENT:痛みに弱い = 1
+TALENT:痛みに強い = 0
+;小柄
+TALENT:長身 = 0
+TALENT:小柄体型 = 1
+;幼稚
+TALENT:幼稚 = 1
+
+;親の素質LV5によるボーナスの計算
+LOCAL = 0
+;父親が優秀だった時にもボーナス
+SELECTCASE FATHER
+CASE MASTER
+	;あなたの時にはＬＶ依存
+	LOCAL += FLAG:255/5
+CASE IS > 0
+	FOR LCOUNT, 0, 20
+		SIF ABL:FATHER:LCOUNT >= 5
+			LOCAL += 1
+		;最大LVが5以上の能力は、最大LVに達していることでさらに+1
+		SIF ABL:FATHER:LCOUNT >= 6 && ABL:FATHER:LCOUNT == NUM("最大レベル", LCOUNT)
+			LOCAL += 1
+	NEXT
+ENDSELECT
+
+FOR LCOUNT, 0, 20
+	SIF ABL:MOTHER:LCOUNT >= 5
+		LOCAL += 1
+	;最大LVが5以上の能力は、最大LVに達していることでさらに+1
+	SIF ABL:MOTHER:LCOUNT >= 6 && ABL:MOTHER:LCOUNT == NUM("最大レベル", LCOUNT)
+		LOCAL += 1
+NEXT
+;高LVが5個につき1つ、ボーナスがもらえます
+TBONUS = LOCAL / 5
+
+;素質ボーナスは最高5個
+TBONUS = MIN(TBONUS, 5)
+
+;ボーナスが0の場合はそのまま次の処理へ
+IF TBONUS > 0
+	FOR LCOUNT, 0, TBONUS
+		CALL DAUGHTER_BONUS, MOTHER, FATHER
+	NEXT
+ENDIF
+
+;フラグ立て
+CFLAG:2 = LIMIT(CFLAG:MOTHER:2/10, 0, 500 + TALENT:MOTHER:お気に入り*100 + TALENT:MOTHER:相思相愛*200)
+BASE:誕生日 = COND("出産日", MOTHER)
+CFLAG:MOTHER:485 = 0
+
+;ランクの遺伝
+CFLAG:8 = CFLAG:MOTHER:8
+BASE:種族 = BASE:MOTHER:種族
+SIF BASE:種族 == 0 && FATHER > 0
+	BASE:種族 = BASE:FATHER:種族
+BASE:種族思考 = BASE:種族
+BASE:何番目 = TALENT:MOTHER:出産経験
+
+;-3ならドラゴンの娘
+IF FATHER > 0
+	BASE:父親 = BASE:FATHER:識別番号
+ELSE
+	BASE:父親 = FATHER
+ENDIF
+IF MOTHER > 0
+	BASE:母親 = BASE:MOTHER:識別番号
+ELSE
+	BASE:母親 = MOTHER
+ENDIF
+BASE:世代 = BASE:MOTHER:世代 + 1
+
+;ドラゴンの子供？竜の血(TALENT:竜の血)の濃さをここで操作。
+IF BASE:父親 == -3
+	TALENT:竜の血 += RAND:2 + 1
+ELSEIF TALENT:竜の血 > 0
+	TALENT:竜の血 -= 1
+ENDIF
+
+;触手の子供？
+SIF BASE:父親 == -5
+	TALENT:旧支配者の名残 = 1
+
+;相性決定
+FOR LCOUNT, 1, 99
+	SIF RELATION:MOTHER:LCOUNT != 0 && RELATION:MOTHER:LCOUNT != 100
+		RELATION:LCOUNT = (RELATION:MOTHER:LCOUNT)/2+50
+	SIF RELATION:LCOUNT > 190
+		RELATION:LCOUNT = 190
+NEXT
+;親との相性よし
+SIF FATHER > 0
+	RELATION:(NO:FATHER) = 200
+RELATION:(NO:MOTHER) = 200
+
+;息子なら
+IF NO:TARGET == 95
+	TALENT:処女 = 0
+	;男にも濡れやすさの変化をつける試み
+	;TALENT:濡れやすい = 0
+	;TALENT:濡れにくい = 0
+	TALENT:Ｖ損傷 = 0
+	TALENT:Ａ損傷 = 0
+	TALENT:淫壷 = 0
+	TALENT:淫乳 = 0
+	;両刀は…どうなんだろう
+	TALENT:両刀 = 0
+	TALENT:男の娘 = RAND:2
+	TALENT:Ｖ鈍感 = 0
+	TALENT:Ｖ敏感 = 0
+	TALENT:貧乳 = 0
+	TALENT:巨乳 = 0
+	TALENT:オンナ = 0
+	TALENT:ふたなり = 0
+	TALENT:オトコ = 1
+	TALENT:具現 = 0
+	TALENT:童貞 = 1
+	IF RAND:10 == 0
+		TALENT:遅漏 = RAND:3
+	ELSEIF RAND:9 == 0
+		TALENT:早漏 = 1
+	ENDIF
+	ABL:Ｖ感覚 = 0
+	ABL:ＢＬっ気 = ABL:レズっ気
+	ABL:レズっ気 = 0
+	ABL:Ｂ感覚 = MAX(ABL:Ｂ感覚 - 1, 0)
+ENDIF
+
+;注いだ量等で、夢魔は体力気力にボーナス
+HP_BONUS = MIN(BASE:MOTHER:胎児への栄養, 100)
+IF TALENT:上位夢魔
+	HP_BONUS *= 4
+ELSEIF TALENT:夢魔
+	HP_BONUS *= 2
+ELSE
+	HP_BONUS = 0
+ENDIF
+
+;ボーナス表記
+IF TBONUS || HP_BONUS || TALENT:竜の血
+	SETCOLOR DEF_COLOR("黄色")
+	PRINTL
+	SIF TBONUS
+		PRINTFORML 親の能力が優秀なため、{TBONUS}個の素質にボーナスが発生しています
+	SIF HP_BONUS
+		PRINTFORML 妊娠中に母体に注いだ精液の影響で体力、気力に{HP_BONUS}のボーナスが発生しています
+	SIF TALENT:竜の血
+		PRINTFORML 身体に流れる竜の血の影響で体力、気力に\@ TALENT:竜の血 <= 2 ? 400 # 800 \@のボーナスが発生しています
+	RESETCOLOR
+	WAIT
+ENDIF
+
+;竜の血が体を流れているか？
+IF TALENT:竜の血 > 0
+	;血が濃いほど、体力気力にボーナス
+	IF TALENT:竜の血 <= 2
+		HP_BONUS += 400
+	ELSE
+		HP_BONUS += 800
+	ENDIF
+ENDIF
+
+MAXBASE:体力 += HP_BONUS
+MAXBASE:気力 += HP_BONUS
+BASE:体力 = MAXBASE:体力
+BASE:気力 = MAXBASE:気力
+BASE:MOTHER:胎児への栄養 = 0
+
+PRINTL 
+SELECTCASE ARGS
+CASE "スライム"
+	;分裂展開に限り、100％スライム
+	TALENT:スライム = 1
+
+	PRINTFORMW 分裂したスライムは%CALLNAME:MOTHER%の子供として迎え入れられました。
+	PRINTFORML %CALLNAME:MOTHER%の子供はあなたの仕事に興味を持ったようです
+	PRINTFORMW %CALLNAME:MOTHER%の子供が調教可能になりました。
+CASEELSE
+	PRINTFORML %CALLNAME:MOTHER%の育てていた子供はあなたの仕事に興味を持ったようです
+	PRINTFORMW %CALLNAME:MOTHER%の子供が調教可能になりました。
+ENDSELECT
+
+IF TALENT:オトコ
+	PRINTL 
+	PRINTFORML ところで、この男の子はどのように\@ ARGS == "スライム" ? 見えます # 育ちました \@か？
+	PRINTFORML [ 0] 普通の男児
+	PRINTFORML [ 1] 一見女にしか見えない、いわゆる男の娘
+	CALL INPUT_SELECT, 2
+	SIF RESULT == 1
+		SETBIT TALENT:男の娘, 0
+	PRINTL 
+ENDIF
+
+CALL SETFLAG, "識別番号", TARGET
+;腰使いLVでヒップとウェストに影響が出るのを防ぐ
+CALL SET_3SIZE, TARGET
+CALL RESET_EXP_GAIN, TARGET
+CALL GET_EXABL, TARGET
+CALL GET_EXTALENT, TARGET
+CALL SETFLAG, "陰毛と腋毛", TARGET
+CALL SETFLAG, "乳首の詳細設定", TARGET
+CALL SETFLAG, "ペニス詳細設定"
+CALL SETFLAG, "属性", TARGET
+
+ABL:ＬＶ = MAX(ABL:MOTHER:ＬＶ/3, 1)
+
+CALL SET_DAUGHTER_NAME, MOTHER
+
+;調教しないならココでおしまい
+SIF RESULT == 4
+	RETURN 1
+
+CALLNAME:TARGET = %NAME:TARGET%
+
+$STATUS_LOOP
+PRINTFORML %NAME:TARGET%を調教しますか？
+PRINTFORML [ 0] する
+PRINTFORML [ 1] ステータスを見る
+PRINTFORML [ 2] 調教するのはやめておく
+CALL INPUT_SELECT, 3
+IF RESULT == 0
+
+ELSEIF RESULT == 1
+	CALL NEW_PRINT_STATE, TARGET, "通常"
+	GOTO STATUS_LOOP
+ELSEIF RESULT == 2
+	DELCHARA TARGET
+ENDIF
+
+RETURN 1
+
+@SET_DAUGHTER_NAME, ARG
+IF ARG > 0 && CSTR:ARG:90 != ""
+	NAME:TARGET = %CSTR:ARG:90%
+	CSTR:ARG:90 = 
+	RETURN 0
+ENDIF
+
+PRINTL 名前を付けますか？
+PRINTFORML [0] はい
+PRINTFORML [1] いいえ
+IF ARG == MASTER
+	PRINTFORML [2] 名前を思い浮かべてみる（名前の候補の中から選択）
+ELSE
+	PRINTFORML [2] %CALLNAME:ARG%にどんな名前が良いか聞いてみる
+ENDIF
+PRINTFORML [3] ステータスを見る
+PRINTFORML [4] 調教するのはやめておく
+
+CALL INPUT_SELECT, 5
+
+IF RESULT == 0
+	PRINTL 名前を入力してください。何も入力しない場合は選択肢に戻ります
+	CALL INPUTS_SELECT, 16
+	SIF RESULTS == ""
+		RESTART
+	NAME:TARGET = %RESULTS%
+ELSEIF RESULT == 1
+ELSEIF RESULT == 2
+	CALL GIVE_NAME
+ELSEIF RESULT == 3
+	CALL NEW_PRINT_STATE, TARGET, "通常"
+	RESTART
+ELSEIF RESULT == 4
+	DELCHARA TARGET
+	RETURN 4
+ENDIF
+
+@BEFOREHAND_DAUGHTER_NAME
+PRINTL 名前はどうしますか？
+PRINTL [0] 思いつかないので後で考える
+PRINTL [1] 今つける
+IF TARGET == MASTER
+	PRINTFORML [2] 名前を思い浮かべてみる（名前の候補の中から選択）
+ELSE
+	PRINTFORML [2] %CALLNAME:TARGET%にどんな名前が良いか聞いてみる
+ENDIF
+CALL INPUT_SELECT, 3
+IF RESULT == 0
+	RETURN 0
+ELSEIF RESULT == 1
+	PRINTL 名前を入力してください。何も入力しない場合は選択肢へ戻ります
+	CALL INPUTS_SELECT, 16
+	SIF RESULTS == ""
+		RESTART
+	CSTR:90 = %RESULTS%
+ELSEIF RESULT == 2
+	CALL BEFOREHAND_GIVE_NAME
+ENDIF
+
+@GIVE_NAME
+#DIM MOTHER
+#DIM IDEA
+#DIM PREVIDEA
+
+VARSET LOCAL
+MOTHER = 0
+IF COND("母親") > MASTER
+	MOTHER = COND("母親")
+	PRINTFORMW %CALLNAME:MOTHER%に名前を考えてもらいます
+ENDIF
+PREVIDEA = 0
+$START
+
+;名前はジャンルで分ける
+IF COND("母親") > 0
+	;母の種族がキアズマかどうか
+	SELECTCASE BASE:MOTHER:種族
+	CASE 16, 22, 44
+		IDEA = RAND:60
+	CASEELSE
+		IDEA = 100 + RAND:192
+	ENDSELECT
+ELSEIF RAND:2
+	IDEA = RAND:60
+ELSE
+	IDEA = 100 + RAND:192
+ENDIF
+
+;連続で同じ名前は提案しない
+SIF IDEA == PREVIDEA || NAMES("子供の名前", IDEA) == "娘"
+	GOTO START
+
+NAME:TARGET = %NAMES("子供の名前", IDEA)%
+
+CALL PRINT_GIVENAME, COND("母親"), NAME:TARGET
+PRINTFORML この名前で良いですか？
+PRINTL [0] はい
+PRINTL [1] もう一回考える
+CALL INPUT_SELECT, 2
+IF RESULT == 0
+	PRINTFORMW 子供の名前は%NAME:TARGET%に決まりました。
+	RETURN 0
+ELSEIF RESULT == 1
+	PREVIDEA = IDEA
+	GOTO START
+ENDIF
+
+@BEFOREHAND_GIVE_NAME
+#DIM IDEA
+#DIM PREVIDEA
+
+SIF TARGET > MASTER
+	PRINTFORMW %CALLNAME:TARGET%に名前を考えてもらいます
+PREVIDEA = 0
+
+$START
+
+;名前はジャンルで分ける
+IF TARGET
+	;名付けする人の種族がキアズマかどうか
+	SELECTCASE BASE:種族思考
+	CASE 16, 22, 44
+		IDEA = RAND:60
+	CASEELSE
+		IDEA = 100 + RAND:192
+	ENDSELECT
+ELSEIF RAND:2
+	IDEA = RAND:60
+ELSE
+	IDEA = 100 + RAND:192
+ENDIF
+
+;連続で同じ名前は提案しない
+SIF IDEA == PREVIDEA || NAMES("子供の名前", IDEA) == "娘"
+	GOTO START
+
+CSTR:90 = %NAMES("子供の名前", IDEA)%
+
+CALL PRINT_GIVENAME, TARGET, CSTR:90
+PRINTFORML この名前で良いですか？
+PRINTL [0] はい
+PRINTL [1] もう一回考える
+PRINTL [2] やっぱり後で考える
+CALL INPUT_SELECT, 3
+IF RESULT == 0
+	PRINTFORMW 子供の名前は%CSTR:90%に決まりました。
+ELSEIF RESULT == 1
+	PREVIDEA = IDEA
+	GOTO START
+ELSEIF RESULT == 2
+	CSTR:90 = 
+ENDIF
+
+@PRINT_GIVENAME, ARG, ARGS
+IF ARG >= 1
+	SELECTCASE NO:ARG
+	CASE 0
+		PRINTFORMW %CALLNAME:MASTER%の頭に浮かんだ名前は……%ARGS%
+	CASE 6
+		PRINTFORMW 「にゅ……%ARGS%、なんてどうかにゃ？」
+	CASE 7
+		PRINTFORMW 「ガル……%ARGS%」
+	CASE 8, 9, 23, 24, 32, 43, 44
+		PRINTFORMW 「この子の名前……%ARGS%、なんてどうかな？」
+	CASE 12, 13, 15, 19, 26, 28, 39
+		PRINTFORMW 「ちょっと待って……%ARGS%、なんてどう？」
+	CASE 16
+		PRINTFORMW 「むむむ……%ARGS%、なんてどうじゃ？」
+	CASE 20
+		PRINTFORMW 「そうですねぇ……%ARGS%、なんてどうでしょうか？」
+	CASE 21
+		PRINTFORMW 「そうだなぁ……%ARGS%、なんてどうだい？」
+	CASE 22, 30, 61
+		PRINTFORMW 「そうですね……%ARGS%、なんてどうでしょう？」
+	CASE 24
+		PRINTFORMW 「ん……。%ARGS%、なんて、どう…？」
+	CASE 27
+		PRINTFORM 「予言するわ。この子の名前は…、%ARGS%
+		IF RAND:4 == 0
+			PRINTFORMW 。きっと3ターン後にはイキそうになっているでしょう…」
+		ELSEIF RAND:3 == 0
+			PRINTFORMW 。きっとケフィア好きの、元気な子になるでしょう…？」
+		ELSEIF RAND:2 == 0
+			PRINTFORMW 。きっと東の国を統べることでしょう…」
+		ELSE
+			PRINTFORMW 」
+		ENDIF
+	CASE 29
+		PRINTFORMW 「この子の名前はね、ぷるぷる〜っ♪…じゃなくて、%ARGS%、なんてどうかなぁ？」
+	CASE 2, 4, 31, 33, 40, 50, 55
+		PRINTFORMW 「えっとー……%ARGS%、なんて可愛いよね？」
+	CASE 1, 3, 5, 10, 11, 14, 17, 18, 25, 37, 38, 48, 49
+		PRINTFORMW 「そうね……%ARGS%、なんてどうかしら？」
+	CASEELSE
+		PRINTFORMW 相談の結果、子供の名前は%ARGS%になりそうです。
+	ENDSELECT
+ELSE
+	PRINTFORMW そうだなぁ…%ARGS%、なんてどうだろう？
+ENDIF
+
+;ARG、ARG:1は両親。ARGの素質を優先的に得る
+@D_TALENT_INHERITANCE, ARG, ARG:1
+#DIM LCOUNT
+#DIM PATTERN
+#DIM GENE, 3
+
+;親が成長済みでない場合、一時的に成長
+VARSET LOCAL
+IF !COND("成長済み", ARG)
+	FOR LCOUNT, 1, 300
+		LOCAL:LCOUNT = TALENT:ARG:LCOUNT
+	NEXT
+	CALL CALC, "子供の成長", ARG, CFLAG:ARG:484
+	LOCAL = 1
+ENDIF
+
+;遺伝の処理(性格に関係のないもの)
+FOR LCOUNT, 1, 300
+	SIF CALCF("遺伝可能な素質", LCOUNT) == 0 || CALCF("性格素質", LCOUNT)
+		CONTINUE
+	IF RAND:4 == 0 && ARG:1 > 0
+		TALENT:LCOUNT = TALENT:(ARG:1):LCOUNT
+	ELSE
+		TALENT:LCOUNT = TALENT:ARG:LCOUNT
+	ENDIF
+NEXT
+;大魔法使いは無し
+SIF TALENT:魔法使い >= 2
+	TALENT:魔法使い = 1
+
+;親の能力によって○使いにボーナス
+FOR LCOUNT, 30, 36
+	IF RAND:4 == 0 && ARG:1 > 0
+		SIF ABL:(ARG:1):LCOUNT - TALENT:(ARG:1):(150+LCOUNT) >= 5
+			TALENT:(150+LCOUNT) += 1
+	ELSE
+		SIF ABL:ARG:LCOUNT - TALENT:ARG:(150+LCOUNT) >= 5
+			TALENT:(150+LCOUNT) += 1
+	ENDIF
+NEXT
+
+;親から遺伝する属性を1つ選択
+GENE:0 = 0
+PATTERN = 1
+FOR LCOUNT, 0, NUM("属性")
+	SIF GETBIT(BASE:ARG:属性, LCOUNT) == 0
+		CONTINUE
+	SELECTCASE LCOUNT
+	CASE 1 TO 7, 10 TO 12, 14
+		SIF RAND:PATTERN == 0
+			GENE:0 = LCOUNT
+		PATTERN += 1
+	;ここでは[エッチ]は出やすい
+	CASE 17
+		SIF RAND:PATTERN <= 1
+			GENE:0 = LCOUNT
+		PATTERN += 1
+	ENDSELECT
+NEXT
+
+;親から遺伝できる属性がない場合、適当に設定
+;20%ほどでランダム
+$CHOICE_ELEMENT1
+IF GENE:0 == 0 || RAND:5 == 0
+	GENE:0 = CHOICE_NEWELEMENT()
+	GOTO CHOICE_ELEMENT1
+ENDIF
+
+;25%の確率で性格が反転する
+IF RAND:4 == 0
+	SELECTCASE GENE:0
+	CASE 1
+		IF RAND:2
+			GENE:0 = 6
+		ELSE
+			GENE:0 = 7
+		ENDIF
+	CASE 2
+		GENE:0 = 17
+	CASE 3
+		IF RAND:2
+			GENE:0 = 5
+		ELSE
+			GENE:0 = 11
+		ENDIF
+	CASE 4
+		GENE:0 = 10
+	CASE 5
+		GENE:0 = 3
+	CASE 6
+		GENE:0 = 1
+	CASE 7
+		GENE:0 = 1
+	CASE 10
+		IF RAND:3
+			GENE:0 = 4
+		ELSE
+			GENE:0 = 14
+		ENDIF
+	CASE 11
+		GENE:0 = 3
+	CASE 12
+		GENE:0 = 17
+	CASE 14
+		GENE:0 = 10
+	CASE 17
+		IF RAND:3
+			GENE:0 = 2
+		ELSE
+			GENE:0 = 12
+		ENDIF
+	ENDSELECT
+ENDIF
+
+$CHOICE_ELEMENT2
+GENE:1 = CHOICE_NEWELEMENT(GENE:0)
+GENE:2 = CHOICE_NEWELEMENT(GENE:0, GENE:1)
+SIF GENE:1 == 0 && GENE:2 == 0
+	GOTO CHOICE_ELEMENT2
+
+;決定した属性をもとに性格素質を設定
+FOR LCOUNT, 0, 3
+	SIF GENE:LCOUNT == 0
+		CONTINUE
+	IF GETBIT(BASE:ARG:属性, GENE:LCOUNT)
+		SELECTCASE GENE:LCOUNT
+		CASE 1
+			TALENT:強気 = 1
+			TALENT:反抗的 = TALENT:ARG:反抗的
+			TALENT:気丈 = TALENT:ARG:気丈
+			TALENT:生意気 = TALENT:ARG:生意気
+			TALENT:目立ちたがり = TALENT:ARG:目立ちたがり
+		CASE 2
+			TALENT:清楚 = 1
+		CASE 3
+			TALENT:陽気 = 1
+			TALENT:目立ちたがり = TALENT:ARG:目立ちたがり
+		CASE 4
+			TALENT:素直 = 1
+			TALENT:好奇心 = TALENT:ARG:好奇心
+		CASE 5
+			TALENT:陰気 = 1
+			TALENT:意地悪 = TALENT:ARG:意地悪
+			TALENT:保守的 = TALENT:ARG:保守的
+		CASE 6
+			TALENT:内気 = 1
+			TALENT:プライド低い = TALENT:ARG:プライド低い
+			TALENT:保守的 = TALENT:ARG:保守的
+		CASE 7
+			TALENT:臆病 = 1
+			TALENT:プライド低い = TALENT:ARG:プライド低い
+			TALENT:保守的 = TALENT:ARG:保守的
+		CASE 10
+			TALENT:高慢 = 1
+			TALENT:反抗的 = TALENT:ARG:反抗的
+			TALENT:生意気 = TALENT:ARG:生意気
+		CASE 11
+			TALENT:冷静 = TALENT:ARG:冷静
+			TALENT:感情乏しい = TALENT:ARG:感情乏しい
+			IF TALENT:冷静 == 0 && TALENT:感情乏しい == 0
+				IF RAND:2
+					TALENT:冷静 = 1
+				ELSE
+					TALENT:感情乏しい = 1
+				ENDIF
+			ENDIF
+			TALENT:無関心 = TALENT:ARG:無関心
+		CASE 12
+			TALENT:恥じらい = 1
+		CASE 14
+			TALENT:献身 = 1
+		CASE 17
+			TALENT:好色 = 1
+			TALENT:恥薄い = TALENT:ARG:恥薄い
+			TALENT:惚れっぽい = TALENT:ARG:惚れっぽい
+			TALENT:小悪魔 = TALENT:ARG:小悪魔
+		ENDSELECT
+	ELSE
+		SELECTCASE GENE:LCOUNT
+		CASE 1
+			TALENT:強気 = 1
+			SIF RAND:3 == 0 || TALENT:ARG:反抗的
+				TALENT:反抗的 = 1
+			SIF RAND:3 == 0 || TALENT:ARG:気丈
+				TALENT:気丈 = 1
+			SIF RAND:3 == 0 || TALENT:ARG:生意気
+				TALENT:生意気 = 1
+		CASE 2
+			TALENT:清楚 = 1
+			TALENT:貞操無頓着 = 0
+			TALENT:粗野 = 0
+			SIF RAND:2
+				TALENT:貞操観念 = 1
+		CASE 3
+			TALENT:陽気 = 1
+		CASE 4
+			TALENT:素直 = 1
+			SIF RAND:2 || TALENT:ARG:好奇心
+				TALENT:好奇心 = 1
+		CASE 5
+			TALENT:陰気 = 1
+			SIF RAND:2 || TALENT:ARG:意地悪
+				TALENT:意地悪 = 1
+			SIF RAND:4 == 0 || TALENT:ARG:保守的
+				TALENT:保守的 = 1
+		CASE 6
+			TALENT:内気 = 1
+			SIF RAND:3 == 0 || TALENT:ARG:プライド低い
+				TALENT:プライド低い = 1
+			SIF RAND:4 == 0 || TALENT:ARG:保守的
+				TALENT:保守的 = 1
+		CASE 7
+			TALENT:臆病 = 1
+			SIF RAND:3 == 0 || TALENT:ARG:プライド低い
+				TALENT:プライド低い = 1
+			SIF RAND:4 == 0 || TALENT:ARG:保守的
+				TALENT:保守的 = 1
+		CASE 10
+			TALENT:高慢 = 1
+			SIF RAND:3 == 0 || TALENT:ARG:反抗的
+				TALENT:反抗的 = 1
+			SIF RAND:3 == 0 || TALENT:ARG:生意気
+				TALENT:生意気 = 1
+		CASE 11
+			IF RAND:2
+				TALENT:冷静 = 1
+			ELSE
+				TALENT:感情乏しい = 1
+			ENDIF
+		CASE 12
+			TALENT:恥じらい = 1
+		CASE 14
+			TALENT:献身 = 1
+		CASE 17
+			TALENT:好色 = 1
+			TALENT:貞操観念 = 0
+			SIF RAND:3 == 0
+				TALENT:貞操無頓着 = 1
+			SIF RAND:3 == 0 || TALENT:ARG:恥薄い
+				TALENT:恥薄い = 1
+			SIF RAND:3 == 0 || TALENT:ARG:小悪魔
+				TALENT:小悪魔 = 1
+		ENDSELECT
+	ENDIF
+NEXT
+
+;娘は必ず処女
+TALENT:処女 = 1
+
+;娘固有の素質や、関連する素質を持つ場合、CFLAG:484へ記憶する
+CFLAG:484 = 0
+FOR LCOUNT, 2, 10
+	SIF TALENT:CALCF("成長後に変化する素質", LCOUNT)
+		SETBIT CFLAG:484, LCOUNT
+NEXT
+
+;一時的に成長させた親を元に戻す
+IF LOCAL
+	FOR LCOUNT, 1, 300
+		TALENT:ARG:LCOUNT = LOCAL:LCOUNT
+	NEXT
+	CLEARBIT CFLAG:ARG:484, 1
+ENDIF
+
+
+@DAUGHTER_GROW
+PRINTFORML 経験値を1000使用することで、%CALLNAME:TARGET%を一人前の\@(TALENT:夢魔 || TALENT:上位夢魔) ? 夢魔 # 姿\@へと成長させます
+PRINTFORML %CALLNAME:TARGET%を成長させますか？
+PRINTFORML ※成長させた場合、基本的に元に戻ることはできません！
+PRINTL [ 0] はい
+PRINTL [ 1] いいえ
+CALL INPUT_SELECT,2
+IF RESULT == 0
+	CALL CALC, "子供の成長", TARGET, CFLAG:484
+	PRINTFORM %CALLNAME:TARGET%は
+	IF AGE(TARGET) <= 2
+		PRINT かわいらしく
+	ELSEIF TALENT:オトコ && !TALENT:男の娘
+		PRINT 格好よく
+	ELSE
+		PRINT 美しく
+	ENDIF
+	PRINTFORML 成長し\@(RESULTS:0 != "" || RESULTS:1 != "") ? 、 # たように見えます…？\@
+	SIF RESULTS:1 != ""
+		PRINTFORML %RESULTS:1%を失\@(RESULTS:0 != "") ? い、 # なった！\@
+	SIF RESULTS:0 != ""
+		PRINTFORML %RESULTS:0%を獲得した！
+	PRINTW 
+	EXP:経験値 -= 1000
+ENDIF
+
+@CHOICE_NEWELEMENT(ARG:0 = 0, ARG:1 = 0)
+#FUNCTION
+;新たな属性を一つ選ぶ
+;ここでは[エッチ]は出にくい
+LOCAL = RAND:23 / 2 + 1
+SELECTCASE LOCAL
+CASE 8 TO 10
+	LOCAL += 2
+CASE 11
+	LOCAL = 14
+CASE 12
+	LOCAL = 17
+ENDSELECT
+SIF D_GOOD_COMBINATION(LOCAL, ARG:0) && D_GOOD_COMBINATION(LOCAL, ARG:1)
+	RETURNF LOCAL
+RETURNF 0
+
+@D_GOOD_COMBINATION(ARG, ARG:1)
+#FUNCTION
+;対になっていたりする属性同士の場合、0を返す。そうでない場合1を返す。
+IF ARG > ARG:1
+	SWAP ARG, ARG:1
+ELSEIF ARG == ARG:1
+	RETURNF 0
+ENDIF
+SELECTCASE ARG
+CASE 1
+	SELECTCASE ARG:1
+	CASE 5 TO 7
+		RETURNF 0
+	ENDSELECT
+CASE 2
+	SELECTCASE ARG:1
+	CASE 10, 17
+		RETURNF 0
+	ENDSELECT
+CASE 3
+	SELECTCASE ARG:1
+	CASE 5 TO 7, 11
+		RETURNF 0
+	ENDSELECT
+CASE 4
+	SELECTCASE ARG:1
+	CASE 6, 10
+		RETURNF 0
+	ENDSELECT
+CASE 6
+	SELECTCASE ARG:1
+	CASE 10
+		RETURNF 0
+	ENDSELECT
+CASE 7
+	SELECTCASE ARG:1
+	CASE 10
+		RETURNF 0
+	ENDSELECT
+CASE 10
+	SELECTCASE ARG:1
+	CASE 14
+		RETURNF 0
+	ENDSELECT
+CASE 12
+	SELECTCASE ARG:1
+	CASE 17
+		RETURNF 0
+	ENDSELECT
+CASE 14
+	SELECTCASE ARG:1
+	CASE 17
+		RETURNF 0
+	ENDSELECT
+ENDSELECT
+RETURNF 1
+
+
+@D_BUST_SET, MOTHER
+#DIM LCOUNT
+#DIM MOTHER
+;胸の大きさの処理
+TALENT:貧乳 = 0
+TALENT:巨乳 = 0
+
+;現在の胸＆将来性の決定。実際の増加イベントは@CALCの"バストアップ"で行う
+IF TALENT:MOTHER:巨乳
+	LOCAL = 10
+	TALENT:将来性 = RAND:3
+ELSEIF TALENT:MOTHER:貧乳
+	LOCAL = 4
+	SIF RAND:5 == 0
+		TALENT:将来性 = 1
+ELSE
+	LOCAL = 7
+	SIF RAND:3 == 0
+		TALENT:将来性 = 1
+ENDIF
+SELECTCASE RAND:LOCAL
+CASE IS >= 6
+	TALENT:巨乳 = 1
+CASE 3 TO 5
+CASE 0 TO 2
+	TALENT:貧乳 = 1
+ENDSELECT
+
+
+@DAUGHTER_BONUS, MOTHER, FATHER
+#DIM MOTHER
+#DIM FATHER
+
+;条件					入手する素質	打ち消す素質
+;従順5かつ奉仕精神5			献身		反抗的
+;欲望5					惚れっぽい	一線越えない
+;技巧5					賢い		愚か
+;Ｃ感覚5				Ｃ敏感		Ｃ鈍感
+;Ｖ感覚5				Ｖ敏感		Ｖ鈍感
+;Ａ感覚5				Ａ敏感		Ａ鈍感
+;露出癖5かつ[恥じらい]なし		目立ちたがり
+;マゾっ気/サドっ気のいずれかが5		倒錯的
+;BL/レズっ気のいずれかが5		両刀		男嫌い
+;自慰中毒/精液中毒のどちらかが5		中毒しやすい
+;Ｂ感覚5				Ｂ敏感		Ｂ鈍感
+;助手LV5				鼓舞
+;Ｍ感覚5				Ｍ敏感		Ｍ鈍感
+;父親が謎の魅力				謎の魅力
+
+CALL CALC, "ランダム選択"
+SIF ABL:MOTHER:従順 == 5 && ABL:MOTHER:奉仕精神 == 5 && TALENT:献身 == 0
+	CALL CALC, "ランダム選択", 1
+SIF ABL:MOTHER:欲望 == 5 && TALENT:惚れっぽい == 0
+	CALL CALC, "ランダム選択", 2
+SIF ABL:MOTHER:技巧 >= 5 && TALENT:賢い == 0
+	CALL CALC, "ランダム選択", 3
+SIF ABL:MOTHER:Ｃ感覚 >= 5 && TALENT:Ｃ敏感 == 0
+	CALL CALC, "ランダム選択", 4
+SIF ABL:MOTHER:Ｖ感覚 >= 5 && TALENT:Ｖ敏感 == 0
+	CALL CALC, "ランダム選択", 5
+SIF ABL:MOTHER:Ａ感覚 >= 5 && TALENT:Ａ敏感 == 0
+	CALL CALC, "ランダム選択", 6
+SIF ABL:MOTHER:露出癖 == 5 && TALENT:目立ちたがり == 0 && TALENT:恥じらい == 0
+	CALL CALC, "ランダム選択", 7
+SIF (ABL:MOTHER:マゾっ気 == 5 || ABL:MOTHER:サドっ気 == 5) && TALENT:倒錯的 == 0
+	CALL CALC, "ランダム選択", 8
+SIF (ABL:MOTHER:レズっ気 == 5 || ABL:MOTHER:ＢＬっ気 == 5) && TALENT:両刀 == 0
+	CALL CALC, "ランダム選択", 9
+SIF (ABL:MOTHER:自慰中毒 == 5 || ABL:MOTHER:精液中毒 == 5) && TALENT:中毒しやすい == 0
+	CALL CALC, "ランダム選択", 10
+SIF ABL:MOTHER:Ｂ感覚 >= 5 && TALENT:Ｂ敏感 == 0
+	CALL CALC, "ランダム選択", 11
+SIF ABL:MOTHER:助手 == 5 && TALENT:鼓舞 == 0
+	CALL CALC, "ランダム選択", 12
+SIF ABL:MOTHER:Ｍ感覚 >= 5 && TALENT:Ｍ敏感 == 0
+	CALL CALC, "ランダム選択", 13
+SIF FATHER > 0 && TALENT:FATHER:謎の魅力 && TALENT:謎の魅力 == 0
+	CALL CALC, "ランダム選択", 14
+
+LOCAL = 0
+SELECTCASE RESULT
+CASE 1
+	LOCAL = 11
+CASE 2
+	LOCAL = 27
+CASE 3
+	LOCAL = 51
+CASE 4
+	LOCAL = 101
+CASE 5
+	LOCAL = 103
+CASE 6
+	LOCAL = 105
+CASE 7
+	TALENT:目立ちたがり = 1
+CASE 8
+	TALENT:倒錯的 = 1
+CASE 9
+	LOCAL = 82
+CASE 10
+	TALENT:中毒しやすい = 1
+CASE 11
+	LOCAL = 107
+CASE 12
+	TALENT:鼓舞 = 1
+CASE 13
+	LOCAL = 96
+CASE 14
+	TALENT:謎の魅力 = 1
+ENDSELECT
+
+SIF LOCAL == 0
+	RETURN 0
+
+IF TALENT:LOCAL
+	TALENT:LOCAL = 0
+ELSE
+	TALENT:CALCF("逆の素質", LOCAL) = 1
+ENDIF
+
+@BIRTHDAY_GROW
+#DIM LCOUNT
+;誕生日に娘が成長するぞ
+FOR LCOUNT, 1, CHARANUM
+	;普通の人間は2倍かかる
+	SIF !(TALENT:LCOUNT:夢魔 + TALENT:LCOUNT:上位夢魔 + TALENT:LCOUNT:魔王のかけら) && (DAY - BASE:LCOUNT:誕生日) < 240
+		CONTINUE
+	SIF !COND("成長性", LCOUNT)
+		CONTINUE
+	SIF DAY - BASE:LCOUNT:誕生日 < 120
+		CONTINUE
+
+	PRINTFORML %CALLNAME:LCOUNT%が親離れしてから結構な時間が経ち、さまざまなことを学んだようだ
+	PRINTFORMW 一人前になるために十分な経験を積めば、新たな成長の可能性が見えるだろう……
+	SETBIT CFLAG:LCOUNT:484, 0
+NEXT
+

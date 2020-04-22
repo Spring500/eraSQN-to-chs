@@ -1,0 +1,100 @@
+﻿@EVENTTRAIN
+#PRI
+;調教中のフラグON
+FLAG:99 = TARGET
+SETBIT FLAG:99, 10
+;射精フラグ、処女喪失フラグなどをリセット
+VARSET TFLAG
+;調教開始時のTARGETの番号を記録
+FLAG:21 = TARGET
+;ASSIを調教したフラグをリセット
+FLAG:22 = 0
+;Ｗ押し倒しの変数をリセット
+VARSET SELECTCOM, -1
+VARSET PREVCOM, -1
+;不要な文字列を初期化
+VARSET STR, "", 0, 10
+;これはどうなんだろうと思いつつ、コマンド表示０の時には一回だけ全部表示にしてみるぞ
+IF GETBITS(FLAG:210, 0, 13) == 0 && CONFIG("調教フィルタ経験フラグ") == 0
+	FLAG:210 = INVERTBITS(FLAG:210, 0, 13)
+	SETBIT FLAG:210, 60
+ENDIF
+
+;フラグに使う現実時間を取得
+CALL GET_REALTIMEFORFLAG
+
+;調教者は誰か
+PLAYER = MASTER
+
+;複数プレイの基本的な補佐に助手を設定。変更する時には違う人を設定する事
+PLAYER:1 = ASSI
+TARGET:1 = ASSI
+
+;レベルリミッターチェック
+CALL SETFLAG, "レベルリミッター"
+;クリスマスツリーチェック
+SIF DAYEV("クリスマス期間")
+	TFLAG:33 += NUM("クリスマスツリー") * 30
+;ドランクによるムード補正
+SIF STATE("ドランク", TARGET)
+	TFLAG:33 += 90
+;SIF STATE("ドランク", MASTER)
+;	TFLAG:33 += 45
+
+;開始前の諸設定１（口上前でリセットされてそうなもの）
+CALL SETFLAG, "調教開始前Ａ", TARGET
+CALL SETFLAG, "調教開始前Ａ", MASTER
+SIF ASSI
+	CALL SETFLAG, "調教開始前Ａ", ASSI
+
+;衣装の汚れ
+CALL STAIN_CALC_COSPLAY
+
+
+@EVENTTRAIN
+#LATER
+;開始前の諸設定２（前回記録で口上で使えそうなものをリセット）
+CALL SETFLAG, "調教開始前Ｂ", TARGET
+CALL SETFLAG, "調教開始前Ｂ", MASTER
+SIF ASSI
+	CALL SETFLAG, "調教開始前Ｂ", ASSI
+
+;食事などの処理
+SELECTCASE NAMES("食事", FLAG:40)
+CASE "シプリサンド"
+
+CASE "マウンテンステーキ"
+
+CASE "木の実のサラダ"
+	CALL ADD_STATE, MASTER, "エオルグン"
+
+CASE "スモークサーモン"
+
+CASE "ハニービスケット", "ベイクドアップル"
+	;幼稚なキャラはお菓子に弱い
+	IF TALENT:幼稚
+		PRINTFORML %CALLNAME:TARGET%はお菓子を食べてご機嫌のようだ
+		CFLAG:2 += 50
+		PALAM:恭順 += 500
+	ENDIF
+CASE "ミョッズ"
+
+CASE "ファドゥルサワー"
+
+CASE "マタタビワイン"
+	;マタタビワイン
+	IF BASE:種族 == 6
+		PRINTFORML %CALLNAME:TARGET%は瞳をトロンとさせて発情している…
+		PALAM:Ｖ潤 += 3000
+		PALAM:恭順 += 3000
+		PALAM:欲情 += 3000
+	ENDIF
+
+CASE "ムーンドロップス"
+
+ENDSELECT
+
+
+DRAWLINE
+;助手が忙しく色々準備
+CALL EVENT_ASSI_AUTO, "調教開始"

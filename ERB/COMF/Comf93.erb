@@ -1,0 +1,225 @@
+﻿@COM93
+;素股
+CALL PRINT_TRAIN_NAME(SELECTCOM)
+
+;-------------------------------------------------
+;実行できるかの判定
+;-------------------------------------------------
+CALL SHOW_COM_ORDER_COM, 93
+
+;実行できない
+SIF TCVAR:28 == 0
+	RETURN 0
+;-------------------------------------------------
+;実行決定
+;-------------------------------------------------
+CALL TRAIN_MESSAGE_B
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+STR:0 = %STR:2%
+;-------------------------------------------------
+;射精チェック
+;-------------------------------------------------
+CALL SAMEN_CHECK
+
+RETURN 1
+
+@FLAG_COM93, ARG
+;対象のＶ⇔調教者のＰの汚れが移動
+SIF CHECK_CLO("Ｖ露出")
+	CALL EQ_STAIN, TARGET, PLAYER, 3, 2
+SIF ASSIPLAY == 0
+	TFLAG:30 += 1
+
+@SOURCE_COM93, ARG
+VARSET LOCAL
+
+LOCAL:20 += 40
+LOCAL:21 += 130
+
+LOCAL:8 = COM_ORDER_STAIN("Ｐ", "Ｖ")*50 + 60
+LOCAL:11 = CALCF("実行値による欲情追加")
+LOCAL:13 = 1200
+LOCAL:14 = 50
+
+;汚れデータを元に、LOCAL:8は上で決定
+
+;ABL:奉仕精神をみる
+SELECTCASE ABL:奉仕精神
+CASE 0
+	LOCAL:4 = 200
+	LOCAL:5 = 100
+CASE 1
+	LOCAL:4 = 250
+	LOCAL:5 = 180
+CASE 2
+	LOCAL:4 = 300
+	LOCAL:5 = 250
+CASE 3
+	LOCAL:4 = 350
+	LOCAL:5 = 350
+CASE 4
+	LOCAL:4 = 400
+	LOCAL:5 = 500
+CASEELSE
+	LOCAL:4 = 450
+	LOCAL:5 = 800
+ENDSELECT
+
+;ABL:技巧をみる
+SELECTCASE ABL:技巧
+CASE 0
+	TIMES LOCAL:4 , 0.50
+	TIMES LOCAL:5 , 0.50
+CASE 1
+	TIMES LOCAL:4 , 0.80
+	TIMES LOCAL:5 , 0.80
+CASE 2
+CASE 3
+	TIMES LOCAL:4 , 1.20
+	TIMES LOCAL:5 , 1.20
+CASE 4
+	TIMES LOCAL:4 , 1.50
+	TIMES LOCAL:5 , 1.50
+CASEELSE
+	TIMES LOCAL:4 , 2.00
+	TIMES LOCAL:5 , 2.00
+ENDSELECT
+
+;ABL:Ｃ感覚をみる
+LOCAL:0 = CALCF("Ｃ刺激", 2)
+
+;PALAM:Ｖ潤
+SELECTCASE PALAM:Ｖ潤
+CASE IS < PALAMLV:1
+	TIMES LOCAL:0 , 0.10
+	TIMES LOCAL:4 , 0.60
+CASE IS < PALAMLV:2
+	TIMES LOCAL:0 , 0.30
+	TIMES LOCAL:4 , 0.80
+CASE IS < PALAMLV:3
+	TIMES LOCAL:0 , 0.50
+	TIMES LOCAL:4 , 1.00
+CASE IS < PALAMLV:4
+	TIMES LOCAL:4 , 1.20
+CASE IS < PALAMLV:5
+	TIMES LOCAL:0 , 0.90
+	TIMES LOCAL:4 , 1.40
+CASEELSE
+	TIMES LOCAL:0 , 0.80
+	TIMES LOCAL:4 , 1.60
+ENDSELECT
+
+;アソコが露出していないと快Ｃ減
+IF CHECK_CLO("Ｖ露出") == 0 && COND("調教中")
+	;ズボン等をはいていると快Ｃ激減
+	IF CHECK_OUTER("ズボン") || CHECK_PANTIES("レザー")
+		TIMES LOCAL:0 , 0.20
+		TIMES LOCAL:12 , 0.20
+	ELSE
+		TIMES LOCAL:0 , 0.60
+		TIMES LOCAL:12 , 0.50
+	ENDIF
+ENDIF
+
+CALL CALC, "調教ソース", LOCAL:0, LOCAL:1, LOCAL:2, LOCAL:3, LOCAL:4, LOCAL:5, LOCAL:6, LOCAL:7, LOCAL:8, LOCAL:9, LOCAL:10, LOCAL:11, LOCAL:12, LOCAL:13, LOCAL:14, LOCAL:15, LOCAL:16, LOCAL:17, LOCAL:18, LOCAL:19, LOCAL:20, LOCAL:21, ARG
+
+
+@TRAIN_MESSAGE_COM93
+IF CHECK_COM("Ｗ奉仕")
+	IF SELECTCOM:1 == PREVCOM:1 && SELECTCOM == PREVCOM
+		PRINTFORM 二人は
+		IF TALENT:(TARGET:1):淫乱 + TALENT:(TARGET:1):恋慕 && TALENT:淫乱 + TALENT:恋慕 && RAND:3 == 0
+			PRINT うっとりしながら
+		ELSEIF RAND:2 == 0
+			PRINT 夢中になって
+		ENDIF
+		PRINTFORMW %CALLNAME:MASTER%のペニスに股間を擦り付け、刺激し続けている…
+	ELSE
+		PRINTFORM %CALLNAME:TARGET%と%CALLNAME:(TARGET:1)%は
+		SIF TALENT:(TARGET:1):淫乱 + TALENT:(TARGET:1):恋慕 + TALENT:淫乱 + TALENT:恋慕 && RAND:2 == 0
+			PRINTFORM 上気した瞳で%CALLNAME:MASTER%を見つめながら、
+		PRINTFORMW 協力してペニスをアソコで挟んで扱いてきた…
+	ENDIF
+ELSE
+	IF TEQUIP:キス
+		PRINTFORM %CALLNAME:TARGET%は%CALLNAME:PLAYER%%TEXTS("キス継続助詞付き")%ペニスを
+		CALL SETFLAG, "追加キスフラグ", TARGET
+	ELSE
+		PRINTFORM %CALLNAME:TARGET%はペニスを
+	ENDIF
+	;アソコ剥き出し
+	IF CHECK_CLO("Ｖ露出")
+		IF RAND:2
+			PRINT ぷっくりと膨らんだ柔らかい
+		ELSEIF COND("陰毛") >= 6
+			PRINT 濡れた陰毛の絡みつく
+		ELSEIF COND("陰毛") == 5
+			;PRINT 綺麗に剃り整えられた
+			PRINT 柔らかな
+		;ELSEIF COND("陰毛") == 4
+		;	PRINT 生えかけの
+		ELSEIF COND("陰毛") && COND("陰毛") <= 3
+			PRINT ツルツルの
+		ENDIF
+	ENDIF
+	PRINTFORM 股間で挟み、
+	SIF ABL:腰使い >= 3
+		PRINT 腰を淫靡にくねらせて
+	PRINTFORMW 扱きあげた…
+ENDIF
+
+@COM_ORDER_COM93, ARG
+VARSET LOCAL
+LOCALS = 
+
+;すべての命令に共通の要素を考慮
+;(従順が高いと命令に従いやすいなど)
+CALL COM_ORDER, ARG
+
+LOCAL = RESULT
+
+;ABL:奉仕精神
+IF ABL:奉仕精神
+	LOCAL += ABL:奉仕精神 * 4
+	LOCALS = %LOCALS% + %ABLNAME:6%LV{ABL:奉仕精神}({ABL:奉仕精神 * 4})
+ENDIF
+;ABL:精液中毒
+IF ABL:精液中毒
+	LOCAL += ABL:精液中毒 * 3
+	LOCALS = %LOCALS% + %ABLNAME:11%LV{ABL:精液中毒}({ABL:精液中毒 * 3})
+ENDIF
+
+;恥じらい
+IF TALENT:恥じらい
+	LOCAL -= 3
+	LOCALS = %LOCALS% - %TALENTNAME:35%(3)
+ENDIF
+;快感の否定
+IF TALENT:快感の否定
+	LOCAL -= 1
+	LOCALS = %LOCALS% - %TALENTNAME:71%(1)
+ENDIF
+
+;媚薬
+IF TEQUIP:媚薬
+	LOCAL += 6
+	LOCALS = %LOCALS% + %ITEMNAME:31%(6)
+ENDIF
+
+;汚れあり
+IF COM_ORDER_STAIN("Ｐ", "Ｖ")/3
+	LOCAL -= COM_ORDER_STAIN("Ｐ", "Ｖ")/3
+	LOCALS = %LOCALS% - 汚れあり
+	;汚臭鈍感
+	SIF TALENT:汚臭鈍感 || TALENT:汚臭敏感
+		LOCALS = %LOCALS%、\@TALENT:汚臭鈍感 ? %TALENTNAME:61% # %TALENTNAME:62%\@
+	LOCALS = %LOCALS%({COM_ORDER_STAIN("Ｐ", "Ｖ")/3})
+ENDIF
+
+;合計を表示(20以上で実行)
+CALL PRINT_COM_ORDER_COM, LOCALS, ARG, LOCAL, 20
+
+RETURN RESULT

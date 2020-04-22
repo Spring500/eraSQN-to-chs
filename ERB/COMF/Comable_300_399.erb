@@ -1,0 +1,236 @@
+﻿;-------------------------------------------------
+;300〜399番,キャラ、能力依存の特殊コマンド
+;-------------------------------------------------
+@COM_ABLE300
+;甘い言葉実行判定
+SIF COMABLE_DEF(300)
+	RETURN 0
+;重ねがけは禁止
+SIF TEQUIP:甘い言葉
+	RETURN 0
+;[☆甘い言葉]を持っていないとダメ
+SIF TALENT:PLAYER:甘い言葉 == 0
+	RETURN 0
+RETURN 1
+
+@COM_ABLE301
+;てかげんコマンド実行判定
+SIF COMABLE_DEF(301)
+	RETURN 0
+;[☆てかげん]を持っていないとダメ
+SIF TALENT:PLAYER:てかげん == 0
+	RETURN 0
+RETURN 1
+
+@COM_ABLE302
+;歌を歌う
+SIF COMABLE_DEF(302)
+	RETURN 0
+IF PLAYER == MASTER
+	LOCAL = ASSI
+ELSE
+	LOCAL = MASTER
+ENDIF
+;演奏中断はいつでもＯＫ
+SIF TEQUIP:LOCAL:演奏中
+	RETURN 1
+;調教していない方が歌唱技能を持っていないとダメ。精力がある程度歌えるぐらいないとダメ
+SIF TALENT:LOCAL:歌唱技能 == 0 || BASE:LOCAL:精力 < 10
+	RETURN 0
+RETURN 1
+
+@COM_ABLE303
+;締め上げる実行判定
+SIF COMABLE_DEF(303)
+	RETURN 0
+;[ラミア]もちで、サドっ気4以上あるいは[サド]の助手がいるときのみ使用可能
+IF ASSI
+	SIF TALENT:ASSI:ラミア && ABL:ASSI:サドっ気 > 3
+		RETURN 1
+ENDIF
+RETURN 0
+
+@COM_ABLE304
+;ドラ姦
+SIF COMABLE_DEF(304)
+	RETURN 0
+;調教相手、あるいは助手かMASTERがドラグーンじゃないと実行できない。
+IF  ASSI
+	SIF TALENT:ドラグーン + TALENT:ASSI:ドラグーン + TALENT:MASTER:ドラグーン == 0
+		RETURN 0
+ELSE
+	SIF TALENT:ドラグーン + TALENT:MASTER:ドラグーン == 0
+		RETURN 0
+ENDIF
+;押し倒されていると、逆ドラ姦
+IF TEQUIP:押し倒し
+	;調教相手がドラグーンでない
+	SIF TALENT:ドラグーン == 0
+		RETURN 0
+	;PLAYERが処女orオトコor妖精
+	SIF TALENT:PLAYER:処女 + TALENT:PLAYER:オトコ + TALENT:PLAYER:妖精
+		RETURN 0
+	;調教相手がサド度が低い
+	SIF ABL:サドっ気 < 5
+		RETURN 0
+;押し倒されてない
+ELSE
+	;アソコ使用判定
+	SIF USE_V(TARGET) == 0
+		RETURN 0
+	;処女はダメ
+	SIF TALENT:処女 == 1
+		RETURN 0
+	;ローター挿入中はダメ
+	SIF TEQUIP:ローター挿入
+		RETURN 0
+	;妖精だとダメ
+	SIF TALENT:妖精
+		RETURN 0
+	;Ｖ拡張LVがドラゴンのサイズに匹敵していないと実行できない。サドは補正あり
+	SIF 5 - ABL:Ｖ拡張 - TALENT:PLAYER:サド * 2 >= 2
+		RETURN 0
+	;触手調教中はダメ
+	SIF TEQUIP:触手
+		RETURN 0
+	;お風呂場プレイ中はプレイマットが無いとダメ
+	IF TEQUIP:お風呂プレイ
+		SIF ITEM:プレイマット == 0 && NOITEM == 0
+			RETURN 0
+	ENDIF
+ENDIF
+RETURN 1
+
+@COM_ABLE305
+;アナルドラ姦
+SIF COMABLE_DEF(305)
+	RETURN 0
+;調教相手、あるいは助手かMASTERがドラグーンじゃないと実行できない。
+IF  ASSI
+	SIF TALENT:ドラグーン + TALENT:ASSI:ドラグーン + TALENT:MASTER:ドラグーン == 0
+		RETURN 0
+ELSE
+	SIF TALENT:ドラグーン + TALENT:MASTER:ドラグーン == 0
+		RETURN 0
+ENDIF
+;押し倒されていると、逆ドラ姦
+IF TEQUIP:押し倒し
+	;調教相手がドラグーンでない
+	SIF TALENT:ドラグーン == 0
+		RETURN 0
+	;調教相手がサド度が低い
+	SIF ABL:サドっ気 < 5
+		RETURN 0
+	;PLAYERが妖精
+	SIF TALENT:PLAYER:妖精
+		RETURN 0
+;押し倒されてない
+ELSE
+	;アナル使用判定
+	SIF USE_A(TARGET) == 0
+		RETURN 0
+	;妖精だとダメ
+	SIF TALENT:妖精
+		RETURN 0
+	;Ａ拡張LVがドラゴンのサイズに匹敵していないと実行できない。サドは補正あり
+	SIF 5 - ABL:Ａ拡張 - TALENT:PLAYER:サド * 2 >= 2
+		RETURN 0
+	;触手調教中はダメ
+	SIF TEQUIP:触手
+		RETURN 0
+	;お風呂場プレイ中はプレイマットが無いとダメ
+	IF TEQUIP:お風呂プレイ
+		SIF ITEM:プレイマット == 0 && NOITEM == 0
+			RETURN 0
+	ENDIF
+ENDIF
+RETURN 1
+
+@COM_ABLE306
+;ハードスキン実行判定
+SIF COMABLE_DEF(306)
+	RETURN 0
+;助手がストゥーナの時使える
+IF ASSI
+	SIF NO:ASSI == 34
+		RETURN 1
+ENDIF
+;MASTERがストゥーナの時も使える
+SIF NO:MASTER == 34
+	RETURN 1
+;TARGETがストゥーナで、屈服刻印2LVor恋慕ならＯＫ
+SIF (MARK:屈服刻印 >= 2 || TALENT:恋慕) && NO:TARGET == 34
+	RETURN 1
+RETURN 0
+
+@COM_ABLE307
+;ぷるぷる挿入実行判定
+SIF COMABLE_DEF(307)
+	RETURN 0
+;アソコ使用判定
+SIF USE_V(TARGET) == 0
+	RETURN 0
+;スライムでないとダメ
+SIF TALENT:PLAYER:スライム == 0
+	RETURN 0
+RETURN 1
+
+@COM_ABLE308
+;Ａぷるぷる挿入実行判定
+SIF COMABLE_DEF(308)
+	RETURN 0
+;アナル使用判定
+SIF USE_A(TARGET) == 0
+	RETURN 0
+;浣腸＋アナルプラグ使用中はダメ
+SIF TEQUIP:浣腸
+	RETURN 0
+;スライムでないとダメ
+SIF TALENT:PLAYER:スライム == 0
+	RETURN 0
+RETURN 1
+
+@COM_ABLE311
+;メルティキッス実行判定
+SIF COMABLE_DEF(311)
+	RETURN 0
+;メローナでないと使えない
+SIF NO:PLAYER != 35
+	RETURN 0
+;技巧が0だとダメ（こんなことは無いだろうが）
+SIF ABL:PLAYER:技巧 + ABL:PLAYER:舌使い == 0
+	RETURN 0
+;すでにふにゃふにゃだとダメ
+SIF STATE("ふにゃふにゃ", TARGET)
+	RETURN 0
+;ボールギャグ使用中は不可
+SIF TEQUIP:口枷
+	RETURN 0
+RETURN 1
+
+@COM_ABLE312
+;具現実行判定
+SIF COMABLE_DEF(312)
+	RETURN 0
+VARSET LOCAL
+SIF ASSI && (TALENT:ASSI:オンナ || STATE("具現", ASSI) )
+	SETBIT LOCAL, 0
+SIF TALENT:MASTER:オンナ || STATE("具現", MASTER)
+	SETBIT LOCAL, 1
+SIF TALENT:オンナ || STATE("具現", TARGET)
+	SETBIT LOCAL, 2
+SIF LOCAL == 0
+	RETURN 0
+;具現がつかえないとだめ
+SIF MAGIC_USER(312, "コマンド")
+	RETURN 1
+RETURN 0
+
+@COM_ABLE313
+RETURN 0
+
+@COM_ABLE314
+RETURN 0
+
+@COM_ABLE315
+RETURN 0

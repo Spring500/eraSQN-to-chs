@@ -1,0 +1,241 @@
+﻿@COM80
+;貝あわせ
+CALL PRINT_TRAIN_NAME(SELECTCOM)
+
+CALL SETFLAG, "下半身を脱がす", PLAYER
+
+CALL TRAIN_MESSAGE_B
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+STR:0 = %STR:2%
+
+;-------------------------------------------------
+;射精チェック
+;-------------------------------------------------
+CALL SAMEN_CHECK
+
+RETURN 1
+
+@FLAG_COM80, ARG
+IF CHECK_COM("双頭バイブプレイ")
+	IF TALENT:PLAYER:処女
+		CALL SETFLAG, "処女喪失フラグ", PLAYER
+		CALL SETFLAG, "処女簒奪フラグ", TARGET
+	ENDIF
+ENDIF
+;対象のＶ⇔調教者のＶの汚れが移動
+CALL EQ_STAIN, TARGET, PLAYER, 3, 3
+
+
+@SOURCE_COM80, ARG
+VARSET LOCAL
+
+LOCAL:20 += 30
+LOCAL:21 += 90
+
+;LOCAL:9 = 500
+LOCAL:12 = 250
+LOCAL:13 = 400
+LOCAL:14 = 300
+
+;ABL:従順をみる
+SELECTCASE ABL:従順
+CASE 0
+	LOCAL:11 = 200
+CASE 1
+	LOCAL:11 = 120
+CASE 2
+	LOCAL:11 = 60
+CASE 3
+	LOCAL:11 = 20
+ENDSELECT
+
+;ABL:Ｃ感覚をみる
+LOCAL:0 = CALCF("Ｃ刺激", 2, 120)
+SELECTCASE ABL:Ｃ感覚
+CASE 0
+	TIMES LOCAL:12 , 0.80
+CASE 1
+	LOCAL:4 = 10
+	LOCAL:5 = 50
+	TIMES LOCAL:12 , 0.90
+CASE 2
+	LOCAL:4 = 50
+	LOCAL:5 = 100
+	TIMES LOCAL:12 , 1.00
+CASE 3
+	LOCAL:4 = 100
+	LOCAL:5 = 300
+	TIMES LOCAL:12 , 1.10
+CASE 4
+	LOCAL:4 = 300
+	LOCAL:5 = 600
+	TIMES LOCAL:12 , 1.20
+CASEELSE
+	LOCAL:4 = 500
+	LOCAL:5 = 1000
+	TIMES LOCAL:12 , 1.30
+ENDSELECT
+
+IF CHECK_COM("双頭バイブプレイ")
+	TIMES LOCAL:0 , 0.30
+	CALL SOURCE_INSERTION, "双頭バイブプレイ", ARG, 100
+ENDIF
+;調教者の腰使いをみる
+LOCAL:0 = SOURCE_EXABL(LOCAL:0, 33, PLAYER)
+
+;陰毛の生え具合補正
+SIF COND("陰毛") <= 5 && COND("陰毛", PLAYER) >= 5
+	TIMES LOCAL:0 , 1.20
+
+;ABL:奉仕精神をみる
+SELECTCASE ABL:奉仕精神
+CASE 0
+	LOCAL:4 += 300
+	TIMES LOCAL:5 , 0.50
+CASE 1
+	LOCAL:4 += 350
+CASE 2
+	LOCAL:4 += 400
+	TIMES LOCAL:5 , 1.20
+CASE 3
+	LOCAL:4 += 600
+	TIMES LOCAL:5 , 1.40
+CASE 4
+	LOCAL:4 += 800
+	TIMES LOCAL:5 , 1.70
+CASEELSE
+	LOCAL:4 += 1000
+	TIMES LOCAL:5 , 2.00
+ENDSELECT
+
+IF COND("お気に入りの体位中")
+	TIMES LOCAL:0 , 1.20
+	TIMES LOCAL:1 , 1.20
+	TIMES LOCAL:4 , 1.20
+	TIMES LOCAL:5 , 1.20
+	TIMES LOCAL:9 , 0.80
+	TIMES LOCAL:14, 0.80
+ENDIF
+
+CALL CALC, "調教ソース", LOCAL:0, LOCAL:1, LOCAL:2, LOCAL:3, LOCAL:4, LOCAL:5, LOCAL:6, LOCAL:7, LOCAL:8, LOCAL:9, LOCAL:10, LOCAL:11, LOCAL:12, LOCAL:13, LOCAL:14, LOCAL:15, LOCAL:16, LOCAL:17, LOCAL:18, LOCAL:19, LOCAL:20, LOCAL:21, ARG
+
+
+@TRAIN_MESSAGE_COM80
+IF PREVCOM == SELECTCOM
+	PRINTFORM %CALLNAME:PLAYER%と%CALLNAME:TARGET%は
+	IF RAND:2
+		PRINTFORM 体中からエッチな香りを漂わせつつ、
+	ELSE
+		PRINTFORM 全身に汗を浮かべながら、
+	ENDIF
+	SIF MIN(ABL:レズっ気, ABL:PLAYER:レズっ気) >= 3 && RAND:2
+		PRINT 夢中で
+	IF RAND:2
+		PRINTFORMW 互いのアソコを擦りあわせている…
+	ELSE
+		PRINTFORMW 股間を擦り合わせて快感を与え合っている…
+	ENDIF
+ELSEIF TEQUIP:押し倒し
+	PRINTFORM %CALLNAME:TARGET%は%CALLNAME:PLAYER%を押さえつけると、
+	IF CHECK_COM("双頭バイブプレイ")
+		IF TALENT:PLAYER:処女
+			PRINTFORMW 股間から突き出す双頭バイブを押し込んで処女を奪った
+			PRINTFORMW 体重のかけられたバイブは瞬く間に%CALLNAME:PLAYER%の膣奥まで達し、鮮やかな痛みを伝えてくる…
+		ELSE
+			PRINTFORMW 股間の双頭バイブで膣を犯して激しく腰を振ってきた…
+		ENDIF
+	ELSE
+		PRINTFORMW 貪るように互いの性器を擦りあわせてきた…
+	ENDIF
+ELSEIF CHECK_COM("双頭バイブプレイ")
+	PRINTFORM %CALLNAME:PLAYER%
+	IF TALENT:PLAYER:処女
+		PRINTFORMW は%CALLNAME:TARGET%の膣から頭を出しているバイブに向けて腰を突き出し、処女を散らした
+		PRINTFORM %CALLNAME:TARGET%は
+		IF TALENT:恋慕 || ABL:レズっ気 >= 3
+			PRINTFORMW %CALLNAME:PLAYER%の初めてを貰えた事にゾクゾクしながら、優しく行為を続け始めた…
+		ELSE
+			PRINTFORMW %CALLNAME:PLAYER%の事をなんともいえない表情で眺めつつ、上の空で行為に付き合っている…
+		ENDIF
+	ELSEIF MIN(ABL:レズっ気, ABL:PLAYER:レズっ気) >= 3 && RAND:2
+		PRINTFORM と%CALLNAME:TARGET%は後ろ手で身体を支えるＭ字開脚の姿勢で向き合い、双頭バイブで互いを連結させて
+		IF RAND:3 == 0
+			PRINTFORMW 互いの膣を責めあった
+		ELSEIF RAND:2
+			PRINTFORMW 腰を突き出しあった
+		ELSE
+			PRINTFORMW 腰を大きく揺すりあった
+		ENDIF
+
+		;攻め手の判定
+		SELECTCASE ABL:Ｖ使い - ABL:Ｖ拡張 - (ABL:PLAYER:Ｖ使い - ABL:PLAYER:Ｖ拡張)
+		;TARGET有利
+		CASE IS > 0
+			LOCAL = TARGET
+			LOCAL:1 = PLAYER
+		CASE 0
+			LOCAL = TARGET
+			LOCAL:1 = PLAYER
+			SIF RAND:2
+				SWAP LOCAL, LOCAL:1
+		CASE IS < 0
+			LOCAL = PLAYER
+			LOCAL:1 = TARGET
+		ENDSELECT
+
+		PRINTFORM %CALLNAME:LOCAL%の
+		IF ABL:LOCAL:Ｖ拡張 >= 4 && RAND:3
+			PRINTFORM 拡張を繰り返された
+		ELSEIF ABL:LOCAL:Ｖ名器度 >= 70 && RAND:3
+			PRINTFORM 包み込むような
+		ELSEIF TALENT:LOCAL:淫壷
+			PRINTFORM 蕩ける様に
+		ENDIF
+		PRINTFORM 柔らかな膣は、%CALLNAME:(LOCAL:1)%の
+		IF ABL:(LOCAL:1):Ｖ使い >= 5 && RAND:3
+			PRINTFORM 握力のように強い
+		ELSEIF ABL:(LOCAL:1):Ｖ拡張 <= 2 && RAND:3
+			PRINTFORM キツい
+		ELSEIF ABL:(LOCAL:1):Ｖ名器度 >= 70 && RAND:3
+			PRINTFORM 吸い付くような
+		ELSEIF TALENT:(LOCAL:1):淫壷
+			PRINTFORM 貪欲とも言える
+		ENDIF
+		PRINTFORM 締め付けで支えられたバイブ
+		IF RAND:3 == 0
+			PRINTFORMW の容赦ない責めに翻弄されている…
+		ELSEIF RAND:2
+			PRINTFORMW の侵入を\@ RAND:2 ? 送り返す # 為す \@術もなく受け入れている…
+		ELSE
+			PRINTFORMW に奥まで余すことなく蹂躙されている…
+		ENDIF
+
+	ELSE
+		PRINTFORM は%CALLNAME:TARGET%の膣から頭を出しているバイブを貝あわせの体勢で咥え込み、
+		IF RAND:2
+			PRINTFORMW 膣内を掻き回し合いながらアソコを擦りあわせた
+		ELSE
+			PRINTFORMW 膣肉を締めながら腰を振りはじめた
+		ENDIF
+		IF RAND:2
+			PRINTFORMW バイブがガイドの役目を果たしているおかげで激しく擦り付けられる結合部は淫液が泡立ち、太腿に至るまでべっとりと濡れ光っている…
+		ELSE
+			PRINTFORMW 常とは異なり膣内をも刺激しあえるプレイに、否応もなく二人の興奮は高まっていく…
+		ENDIF
+	ENDIF
+ELSE
+	PRINTFORMW %CALLNAME:PLAYER%と%CALLNAME:TARGET%は互いのアソコを擦りあわせた
+	IF RAND:2 && COND("陰毛") <= 3 && COND("陰毛", PLAYER) >= 5
+		PRINTFORMW 無毛のソコを陰毛で刺激され、%CALLNAME:TARGET%はくすぐったそうな顔を浮かべる…
+	ELSEIF RAND:2 && COND("陰毛") >= 5 && COND("陰毛", PLAYER) <= 3
+		PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%の無防備なソコを自らのヘアで刺激し、楽しそうな顔を浮かべている…
+	ELSEIF RAND:2
+		PRINTFORMW \@ RAND:2 ? 重い水音 # 淫靡な粘着質の音 \@と共にもたらされる快感に、腰の動きは徐々に激しさを増していく…
+	ELSE
+		PRINTFORMW 押し付けあわされている陰唇はぐにゅぐにゅといやらしく形を変え、互いの淫らな香りの混ざった凄い%TEXTS("匂い")%をさせている…
+	ENDIF
+ENDIF
+

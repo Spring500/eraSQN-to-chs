@@ -1,0 +1,364 @@
+﻿@COM5
+;胸愛撫
+;TEQUIP:胸愛撫で行為を記録する
+;0bitで胸を揉む 1bitで乳首を弄る 2bitでピアスをいじめる 10bitで乳首を舐める
+;乳首が陥没状態かどうかはCALCF("Ｂ発情") == 0 かどうかで判定可能
+;基本的には胸愛撫→胸舐め（可能なら揉みながら）となる
+
+CALL PRINT_TRAIN_NAME(SELECTCOM)
+
+;乳首を舐めると、ながらキスフラグは消滅する
+SIF CHECK_COM("乳首舐めに変化")
+	TEQUIP:キス = 0
+
+CALL TRAIN_MESSAGE_B
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+STR:0 = %STR:2%
+
+RETURN 1
+
+@FLAG_COM5, ARG
+;対象のＢに触手の汚れがつく
+IF TEQUIP:触手
+	CALL ADD_STAIN, TARGET, "Ｂ", "触手"
+ELSE
+	;口で愛撫した場合（対象のＢ⇔調教者の口の汚れが移動）
+	SIF CHECK_COM("乳首舐め")
+		CALL EQ_STAIN, TARGET, PLAYER, 5, 0
+	;指で愛撫した場合（対象のＢ⇔調教者の指の汚れが移動）
+	SIF CHECK_COM("胸指愛撫")
+		CALL EQ_STAIN, TARGET, PLAYER, 5, 1
+ENDIF
+
+@SOURCE_COM5, ARG
+VARSET LOCAL
+
+LOCAL:20 += 5
+LOCAL:21 += 50
+
+LOCAL:4 = 60
+LOCAL:8 = 20
+LOCAL:11 = 100
+LOCAL:12 = 200
+
+
+;ABL:Ｂ感覚をみる
+LOCAL:17 = CALCF("Ｂ刺激", 1)
+SELECTCASE ABL:Ｂ感覚
+CASE 0
+	LOCAL:3 = 50
+CASE 1
+	LOCAL:3 = 100
+CASE 2
+	LOCAL:3 = 160
+CASE 3
+	LOCAL:3 = 200
+CASE 4
+	LOCAL:3 = 230
+CASEELSE
+	LOCAL:3 = 250
+ENDSELECT
+
+;ローションの使用をみる
+SIF TEQUIP:ローション
+	TIMES LOCAL:17, 1.30
+
+;調教者が［幼児退行］or幼稚
+IF TALENT:PLAYER:幼児／幼児退行 + TALENT:PLAYER:幼稚
+	TIMES LOCAL:17, 1.20
+	TIMES LOCAL:3, 1.20
+ENDIF
+
+IF TEQUIP:触手 == 0
+	;口で愛撫した場合
+	IF CHECK_COM("乳首舐め") || COND("母乳飲みフラグ", PLAYER)
+		LOCAL:17 = SOURCE_EXABL(LOCAL:17, 30, PLAYER)
+	;指で愛撫した場合
+	ELSE
+		LOCAL:17 = SOURCE_EXABL(LOCAL:17, 31, PLAYER)
+	ENDIF
+ENDIF
+
+;鎧を着けたりしてると快Ｂ激減
+IF CHECK_SHIRT("鎧") && CHECK_CLO("谷間露出") == 0 && CHECK_CLO("乳首露出") == 0
+	TIMES LOCAL:17, 0.10
+	TIMES LOCAL:12, 0.10
+ENDIF
+
+;乳首を責めている時に陥没乳首だと色々修正
+IF CHECK_COM("乳首弄り") && COND("陥没乳首")
+	;乳首が露出した
+	IF CALCF("Ｂ発情")
+		TIMES LOCAL:17, 1.50
+	ELSE
+		TIMES LOCAL:17, 0.50
+	ENDIF
+ENDIF
+
+CALL CALC, "調教ソース", LOCAL:0, LOCAL:1, LOCAL:2, LOCAL:3, LOCAL:4, LOCAL:5, LOCAL:6, LOCAL:7, LOCAL:8, LOCAL:9, LOCAL:10, LOCAL:11, LOCAL:12, LOCAL:13, LOCAL:14, LOCAL:15, LOCAL:16, LOCAL:17, LOCAL:18, LOCAL:19, LOCAL:20, LOCAL:21, ARG
+
+
+@TRAIN_MESSAGE_COM5
+;TEQUIP:胸愛撫で行為を記録する
+;0bitで胸を揉む 1bitで乳首を弄る 2bitでピアスをいじめる 10bitで乳首を舐める 11bitでおっぱいを飲む
+
+IF TEQUIP:触手
+	PRINTFORM %CALLNAME:TARGET%の
+ELSE
+	PRINTFORM %CALLNAME:PLAYER%は
+
+	IF INSERT("合体中")
+		PRINTFORM %TEXTS("合体中", PLAYER)%%CALLNAME:TARGET%の
+	ELSE
+		IF TEQUIP:キス
+			PRINTFORM %TEXTS("キス継続")%、
+			CALL SETFLAG, "追加キスフラグ", TARGET
+		ENDIF
+		PRINTFORM %CALLNAME:TARGET%の
+		;胸が露出している服
+		IF CHECK_CLO("谷間露出") && CHECK_CLO("乳首露出") == 0 && RANDF(3)
+			IF TALENT:巨乳
+				PRINTFORM 大胆に主張している
+			ELSEIF TALENT:貧乳
+				PRINTFORM 控えめな
+			ENDIF
+			PRINTFORM 胸元
+			SIF TALENT:オトコ == 0 && TALENT:貧乳 == 0
+				PRINTFORM の谷間
+			PRINTFORM に手を差し入れて、
+		;胸元をはだける
+		ELSEIF CHECK_CLO("はだけ可")
+			PRINTFORM 胸元をはだけさせて、
+			CALL SETFLAG, "胸をはだける", TARGET
+		ENDIF
+	ENDIF
+ENDIF
+
+IF TALENT:巨乳 && CONFIG("３サイズ") && RAND:3 == 0
+	LOCALS = %TOFULL(CONDS("バストカップ") )%カップの%TALENT_NAME(110, TALENT:巨乳)%
+ELSEIF TALENT:オトコ
+	LOCALS = 胸板
+ELSEIF RAND:2
+	LOCALS = 乳房
+ELSE
+	LOCALS = 胸
+ENDIF
+
+;TEQUIP:胸愛撫 で行動を記録…するまえに、不要なフラグを消去する
+CLEARBIT TEQUIP:胸愛撫, 2
+
+IF TEQUIP:触手
+	IF TALENT:オトコ || RAND:2
+		PRINTFORMW 胸の先端の突起を、吸盤状の触手が包み込んで吸い上げた…
+	ELSE
+		PRINTFORMW %LOCALS%を絞り上げるように、幾本もの触手が絡みついた…
+	ENDIF
+	SETBIT TEQUIP:胸愛撫, 0
+	CLEARBIT TEQUIP:胸愛撫, 1
+	SIF TALENT:母乳体質 && (CHOSECOM(SELECTCOM) == 0 || RAND:4 == 0)
+		PRINTFORMW 乳房を締め上げる触手によって胸の形が変えられるたび、先端からは母乳が染み出してくる…
+;乳首を舐める
+ELSEIF CHECK_COM("乳首舐めに変化")
+	;乳首フラグ
+	SETBIT TEQUIP:胸愛撫, 1
+
+	;胸揉みも同時にするか？（主に連続選択時）
+	IF CHECK_COM("胸揉み") && CHECK_COM("乳首舐め")
+		IF CALCF("Ｂ発情")
+			PRINTFORM %TEXTS("乳首：描写")%%TEXTR("乳首", "突起")%を%TEXTR("舐め", "舌で転がし", "吸い", "咥え", "甘く噛み")%つつ、
+		ELSE
+			PRINTFORM %TEXTS("乳首：描写")%乳首を%TEXTR("舐め", "舌先で突っつき", "吸い上げ", "舐めほじり")%つつ、
+		ENDIF
+		SIF TALENT:オトコ == 0
+			PRINTFORM %TEXTS("おっぱい：描写")%
+		;直接
+		IF CHECK_CLO("谷間露出") && TALENT:貧乳 == 0 && RAND:2
+			IF RAND:2 == 0
+				IF TALENT:巨乳 && RAND:2
+					PRINTFORMW 柔肉を強めに揉みこんだ…
+				ELSE
+					PRINTFORMW 柔肉のもっちりとした感触を楽しんだ…
+				ENDIF
+			ELSE
+				PRINTFORMW 乳房に柔らかく指が沈み込む感触を堪能した…
+			ENDIF
+		ELSE
+			IF TALENT:貧乳 == 0 && RAND:2
+				IF RAND:2
+					PRINTFORMW 乳房を持ち上げるようにして撫で回した…
+				ELSE
+					PRINTFORMW 乳房の柔らかさを楽しんだ…
+				ENDIF
+			ELSE
+				IF RAND:2
+					PRINTFORMW 乳房全体を包み込むように手の平で撫で回した…
+				ELSE
+					PRINTFORMW %LOCALS%を揉みしだいた…
+				ENDIF
+			ENDIF
+		ENDIF
+	ELSE
+		;乳首舐めフラグ
+		SETBIT TEQUIP:胸愛撫, 10
+
+		PRINTFORM 胸の先端の
+		IF TALENT:母乳体質 && RAND:3 == 0
+			IF CALCF("Ｂ発情")
+				PRINTFORM %TEXTR("ミルクを滲ませる突起", "母乳の染み出す乳首")%
+			ELSE
+				PRINTFORM %TEXTR("ミルクを滲ませる箇所", "母乳の染み出す陥没状態の乳首")%
+			ENDIF
+		ELSE
+			PRINTFORM %TEXTS("乳首：描写")%%TEXTR("乳首", "突起")%
+		ENDIF
+		;ピアスをいじめる
+		IF TALENT:ニプルピアス && RAND:2
+			;ピアス弄りフラグ
+			SETBIT TEQUIP:胸愛撫, 2
+			PRINTFORM につけられた%TEXTS("ニプルピアス")%
+			IF RAND:2
+				PRINTFORMW を舌で舐め転がした…
+			ELSE
+				PRINTFORMW を咥えて、軽く引っ張ったりした…
+			ENDIF
+		ELSE
+			;においフェチ分岐
+			IF TALENT:母乳体質 && COND("性癖：においフェチ", PLAYER) && PLAYER == MASTER && TALENT:お気に入り + TALENT:相思相愛 && (CHOSECOM(SELECTCOM) == 0 || RAND:3 == 0)
+				IF RAND:2 && CALCF("Ｂ発情")
+					PRINTFORMW を口に含みながら、母乳の甘い匂いを楽しんだ…
+				ELSE
+					PRINTFORMW に吸い付き、母乳の甘い匂いに包まれながら先端を舌で転がした…
+				ENDIF
+			ELSEIF RAND:4 == 0
+				PRINTFORMW を甘噛みしながら歯でしごいた…
+			ELSEIF RAND:3 == 0
+				PRINTFORMW \@ CALCF("Ｂ発情") ? を咥えて # に口づけて \@、ちゅっちゅっと吸い上げた…
+			ELSEIF RAND:2
+				PRINTFORMW を思いっきり吸い上げ、先端を舌で\@ CALCF("Ｂ発情") ? 転がし # 穿っ \@た…
+			ELSE
+				PRINTFORMW を口に含みつつ、乳輪の周りを焦らすように舐めた…
+			ENDIF
+		ENDIF
+	ENDIF
+	;母乳体質だと母乳を飲めるかも
+	CALL TEXT, "母乳飲み"
+
+;乳首を弄る…貧乳はこっちメイン。陥没乳首だとここには来ない
+ELSEIF CALCF("Ｂ発情") && (TALENT:オトコ || (CHECK_CLO("乳首露出") && RAND:(2 + TALENT:貧乳) ) )
+	;乳首フラグ
+	SETBIT TEQUIP:胸愛撫, 1
+	CLEARBIT TEQUIP:胸愛撫, 0
+	PRINTFORM 胸の先端の
+	IF TALENT:母乳体質 && RAND:3 == 0
+		PRINTFORM ミルクを滲ませる突起
+	ELSE
+		PRINTFORM %TEXTS("乳首：描写")%%TEXTR("乳首", "突起")%
+	ENDIF
+	;ピアスをいじめる
+	IF TALENT:ニプルピアス && RAND:2
+		;ピアス弄りフラグ
+		SETBIT TEQUIP:胸愛撫, 2
+		PRINTFORM につけられた%TEXTS("ニプルピアス")%
+		IF RAND:3 == 0
+			PRINTFORMW を指で弾いた…
+		ELSEIF RAND:2 == 0
+			PRINTFORMW を弄んだ…
+		ELSE
+			PRINTFORMW に指を通して軽く引っ張った…
+		ENDIF
+	ELSE
+		IF RAND:7 == 0
+			PRINTFORMW を、摘まんでこね回した…
+		ELSEIF RAND:6 == 0
+			PRINTFORMW を、ぎゅーっと押しつぶし、スリスリと擦りあげた…
+		ELSEIF RAND:5 == 0
+			PRINTFORMW を捻りあげた…
+		ELSEIF RAND:4 == 0
+			PRINTFORMW を、強弱つけながら刺激した…
+		ELSEIF RAND:3 == 0
+			PRINTFORMW を、乳輪にそってくすぐった…
+		ELSEIF RAND:2 == 0
+			PRINTFORMW をつまみあげた…
+		ELSE
+			PRINTFORMW を扱きあげた…
+		ENDIF
+	ENDIF
+
+	SIF TALENT:母乳体質 && (CHOSECOM(SELECTCOM) == 0 || RAND:4 == 0)
+		PRINTFORMW 乳首を弄られる刺激で、%CALLNAME:TARGET%の乳房からどんどん母乳が染み出ていく…
+;胸を揉む
+ELSE
+	SIF TALENT:オトコ == 0
+		PRINTFORM %TEXTS("おっぱい：描写")%
+	;胸揉みフラグ
+	SETBIT TEQUIP:胸愛撫, 0
+	CLEARBIT TEQUIP:胸愛撫, 1
+
+	;においフェチ分岐
+	IF PLAYER == MASTER && COND("性癖：においフェチ", PLAYER) && TALENT:お気に入り + TALENT:相思相愛 && (CHOSECOM(SELECTCOM) == 0 || RAND:3 == 0)
+		;胸に手を差し入れたかどうか
+		IF RANDF(3)
+			IF RAND:2
+				PRINTFORMW 、汗ばんだ乳房の質感を楽しみながら揉みしだいた…
+			ELSE
+				PRINTFORMW 胸の谷間の汗の匂いを嗅ぎながら、乳房の柔らかさを楽しんだ…
+			ENDIF
+		ELSE
+			PRINTFORMW 蒸れた谷間に顔を埋め、体臭を胸いっぱいに吸い込みながら乳房を愛撫した…
+		ENDIF
+	;直接
+	ELSEIF CHECK_CLO("谷間露出") && TALENT:貧乳 == 0 && RAND:2
+		IF EX:Ｂ絶頂 * 10000 + PALAM:快Ｂ >= 10000 && RAND:4 == 0
+			PRINTFORM %LOCALS%を下から支えながら、
+			IF COND("真性陥没乳首")
+				PRINTFORMW 先端に向けて埋没した乳首を絞り出すかのように扱いた…
+			ELSEIF CALCF("Ｂ発情")
+				PRINTFORMW ツンと尖った乳首に向かってゆっくりと扱いた…
+			ELSE
+				PRINTFORMW 恥ずかしさで顔を隠している乳首を扱きだそうと強めに扱いた…
+			ENDIF
+		ELSEIF RAND:3 == 0 && ABL:Ｂ感覚 >= 3
+			PRINTFORMW %LOCALS%を、形が変わるぐらいに揉みしだいた…
+		ELSEIF RAND:2 == 0
+			PRINTFORM 柔肉に指をめり込ませつつ
+			IF TALENT:巨乳 && RAND:2
+				PRINTFORMW 強めに揉みこんだ…
+			ELSE
+				PRINTFORMW もっちりとした感触を楽しんだ…
+			ENDIF
+		ELSE
+			PRINTFORMW 乳房に柔らかく指が沈み込む感触を堪能した…
+		ENDIF
+	ELSE
+		IF TALENT:貧乳 == 0 && RAND:2
+			IF RAND:4 == 0
+				PRINTFORMW 乳房を持ち上げるようにして撫で回した…
+			ELSEIF RAND:3 == 0
+				PRINTFORMW %LOCALS%を鷲掴みにして、捏ねくり回した…
+			ELSEIF RAND:2 == 0
+				PRINTFORM %LOCALS%を
+				SIF RAND:2
+					PRINTFORM 弾力を楽しみながら
+				PRINTFORMW 存分に揉みしだいた…
+			ELSE
+				PRINTFORMW 乳房の柔らかさを楽しんだ…
+			ENDIF
+		ELSE
+			IF RAND:2
+				PRINTFORMW 乳房全体を包み込むように手の平で撫で回した…
+			ELSE
+				PRINTFORMW %LOCALS%を揉みしだいた…
+			ENDIF
+		ENDIF
+	ENDIF
+	IF TALENT:母乳体質 && (CHOSECOM(SELECTCOM) == 0 || RAND:4 == 0)
+		IF TALENT:貧乳 == 0 && RAND:2
+			PRINTFORMW %CALLNAME:PLAYER%の手が乳房に沈み込むたび、先端からは母乳が染み出してくる…
+		ELSE
+			PRINTFORMW %CALLNAME:PLAYER%の手によって胸の形が変えられるたび、先端からは母乳が染み出してくる…
+		ENDIF
+	ENDIF
+ENDIF

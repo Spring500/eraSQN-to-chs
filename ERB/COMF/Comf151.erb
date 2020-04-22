@@ -1,0 +1,657 @@
+﻿@COM151
+;尿道ブジー
+;何度も実行したくないので、消耗は激しいが効果は高いコマンドにしたい
+CALL PRINT_TRAIN_NAME(SELECTCOM)
+
+;-------------------------------------------------
+;実行できるかの判定
+;-------------------------------------------------
+CALL SHOW_COM_ORDER_COM, 151
+
+;実行できない
+SIF TCVAR:28 == 0
+	RETURN 0
+;-------------------------------------------------
+;実行決定
+;-------------------------------------------------
+CALL TRAIN_MESSAGE_B
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+STR:0 = %STR:2%
+
+RETURN 1
+
+@FLAG_COM151, ARG
+;尿の汚れ発生
+IF PENIS(TARGET)
+	STAIN:Ｐ = SET_STAIN(STAIN:Ｐ, "尿")
+ELSE
+	STAIN:Ｖ = SET_STAIN(STAIN:Ｖ, "尿")
+ENDIF
+;パンツをずらす
+SIF !CHECK_CLO("Ｖ露出") && INSERT("インサート") == 0
+	CALL SETFLAG, "ボトムを露出：テキスト無し", TARGET
+
+
+@SOURCE_COM151, ARG
+VARSET LOCAL
+
+;くぱぁ
+CALL SOURCE_COM13, 50
+
+;消耗はかなり激しい
+LOCAL:20 += 100 * (10 + MAX(TEQUIP:尿道ブジー - MIN_STR(LOCALS), 0)*2 ) / 10
+LOCAL:21 += 150 * (10 + MAX(TEQUIP:尿道ブジー - MIN_STR(LOCALS), 0)*2 ) / 10
+
+LOCAL:8 = 1000
+LOCAL:11 = 500 + TEQUIP:尿道ブジー*100
+LOCAL:12 = 2000
+LOCAL:13 = 5000
+LOCAL:14 = 5000 + TEQUIP:尿道ブジー*100
+
+;どっちの尿道か
+LOCALS = %CONDS("尿道拡張度")%
+IF PENIS(TARGET)
+	LOCAL:6 = 2500
+	LOCAL:9 = 2500
+ELSE
+	LOCAL:6 = 500
+	LOCAL:9 = 500
+ENDIF
+
+;ABL:Ｃ感覚をみる
+LOCAL:0 = CALCF("尿道刺激", 0)
+;これは凹凸もないし快楽用の道具ではない
+TIMES LOCAL:0, 0.20
+CALL SETFLAG, "尿道性感フラグ", TARGET
+
+;初めて経験する太さは痛い。２回目以降は軽減
+IF TEQUIP:尿道ブジー > MAX_STR(LOCALS)
+	LOCAL:6 += 500
+	LOCAL:9 += 500
+ENDIF
+
+;痛み(LOCAL:6)と恐怖(LOCAL:9)は、主にペニスの有無、TEQUIP:尿道ブジーとMIN_STR(LOCALS)依存
+;尿道性感についてはここの最後で大きな補正あり
+LOCAL:6 += MAX(TEQUIP:尿道ブジー - MIN_STR(LOCALS), 0) * 500
+LOCAL:9 += MAX(TEQUIP:尿道ブジー - MIN_STR(LOCALS), 0) * 1000
+
+SELECTCASE TEQUIP:尿道ブジー - MIN_STR(LOCALS)
+CASE 1
+	TIMES LOCAL:0, 0.80
+	TIMES LOCAL:6, 1.20
+	TIMES LOCAL:9, 1.50
+CASE 2
+	TIMES LOCAL:0, 0.50
+	TIMES LOCAL:6, 1.50
+	TIMES LOCAL:9, 2.00
+CASE 3
+	TIMES LOCAL:0, 0.30
+	TIMES LOCAL:6, 2.00
+	TIMES LOCAL:9, 3.00
+CASE 4
+	TIMES LOCAL:0, 0.15
+	TIMES LOCAL:6, 2.50
+	TIMES LOCAL:9, 4.00
+CASE IS >= 5
+	TIMES LOCAL:0, 0.05
+	TIMES LOCAL:6, 3.00
+	TIMES LOCAL:9, 5.00
+ENDSELECT
+
+;尿道拡張経験が5, 20, 50, 150…と区切りを越えて大きいなら、恐怖を軽減する
+SELECTCASE GET_EXP_LV(EXP:尿道拡張経験) - (TEQUIP:尿道ブジー - MIN_STR(LOCALS) )
+CASE 1
+	TIMES LOCAL:9, 0.50
+CASE 2
+	TIMES LOCAL:9, 0.30
+CASE IS >= 3
+	TIMES LOCAL:9, 0.15
+ENDSELECT
+
+SELECTCASE EXP:尿道経験 + MIN(EXP:PLAYER:尿道責め経験, 50)
+CASE IS < 5
+CASE IS < 20
+	TIMES LOCAL:6, 0.80
+	TIMES LOCAL:9, 0.80
+CASE IS < 50
+	TIMES LOCAL:0, 1.20
+	TIMES LOCAL:6, 0.60
+	TIMES LOCAL:9, 0.60
+CASE IS < 150
+	TIMES LOCAL:0, 1.35
+	TIMES LOCAL:6, 0.40
+	TIMES LOCAL:9, 0.40
+CASEELSE
+	TIMES LOCAL:0, 1.50
+	TIMES LOCAL:6, 0.20
+	TIMES LOCAL:9, 0.20
+ENDSELECT
+
+;PALAM:欲情をみる
+SELECTCASE PALAM:欲情
+CASE IS < PALAMLV:1
+	TIMES LOCAL:14, 1.50
+CASE IS < PALAMLV:2
+	TIMES LOCAL:14, 1.00
+CASE IS < PALAMLV:3
+	TIMES LOCAL:14, 0.90
+CASE IS < PALAMLV:4
+	TIMES LOCAL:14, 0.70
+CASE IS >= PALAMLV:4
+	TIMES LOCAL:14, 0.50
+ENDSELECT
+
+;ABL:マゾっ気をみる
+SELECTCASE ABL:マゾっ気
+CASE 0
+	TIMES LOCAL:11, 0.05
+CASE 1
+	TIMES LOCAL:9, 0.90
+	TIMES LOCAL:11, 0.50
+CASE 2
+	TIMES LOCAL:9, 0.80
+CASE 3
+	TIMES LOCAL:9, 0.70
+	TIMES LOCAL:11, 1.50
+CASE 4
+	TIMES LOCAL:9, 0.60
+	TIMES LOCAL:11, 2.00
+CASEELSE
+	TIMES LOCAL:9, 0.50
+	TIMES LOCAL:11, 3.00
+ENDSELECT
+
+;快Ｃについては既に参照済み
+IF TALENT:尿道狂い
+	TIMES LOCAL:6, 0.10
+	TIMES LOCAL:9, 0.10
+	LOCAL:7 += 10000 + SIZE("ペニスの直径", PLAYER)*200
+	LOCAL:11 += LOCAL:14
+	TIMES LOCAL:14, 0.05
+ELSEIF TALENT:尿道性感
+	TIMES LOCAL:6, 0.20
+	TIMES LOCAL:9, 0.20
+	LOCAL:7 += 5000 + SIZE("ペニスの直径", PLAYER)*100
+	LOCAL:11 += LOCAL:14
+	TIMES LOCAL:14, 0.20
+ENDIF
+
+SELECTCASE EXP:放尿経験 + EXP:お漏らし経験
+CASE IS < EXPLV:1
+	TIMES LOCAL:14, 3.00
+CASE IS < EXPLV:2
+	TIMES LOCAL:14, 2.50
+CASE IS < EXPLV:3
+	TIMES LOCAL:14, 2.00
+CASE IS < EXPLV:4
+	TIMES LOCAL:14, 1.00
+CASE IS < EXPLV:5
+	TIMES LOCAL:14, 0.80
+CASEELSE
+	TIMES LOCAL:14, 0.60
+ENDSELECT
+
+;筋弛緩剤
+SIF GETBIT(TEQUIP:筋弛緩剤, 1)
+	TIMES LOCAL:6, 0.20
+
+;連続実行だと少々お得
+IF PREVCOM == SELECTCOM
+	TIMES LOCAL:0, 1.50
+	TIMES LOCAL:6, 1.50
+	TIMES LOCAL:8, 1.50
+	TIMES LOCAL:9, 1.50
+	TIMES LOCAL:11, 1.50
+	TIMES LOCAL:12, 1.50
+	TIMES LOCAL:13, 1.50
+	TIMES LOCAL:14, 1.50
+ENDIF
+
+CALL CALC, "調教ソース", LOCAL:0, LOCAL:1, LOCAL:2, LOCAL:3, LOCAL:4, LOCAL:5, LOCAL:6, LOCAL:7, LOCAL:8, LOCAL:9, LOCAL:10, LOCAL:11, LOCAL:12, LOCAL:13, LOCAL:14, LOCAL:15, LOCAL:16, LOCAL:17, LOCAL:18, LOCAL:19, LOCAL:20, LOCAL:21, ARG
+
+
+;尿道ブジーの太さを選択する
+@SELECT_BOUGIE
+#DIM LCOUNT
+#DIM SELECT_BOUGIE
+#DIM BOUGIE, 10
+#DIM CHOICE
+
+;どっちの尿道か
+LOCALS = %CONDS("尿道拡張度")%
+
+;今までに経験した太さが、痛みのある太さかどうか。最小*1.05…{MIN_STR(LOCALS)*21/20}mmまでなら痛みは少ない
+;例えば、LOCALS = 10/10/10/9/9/9/9/8/8/8 ならMAX_STR(LOCALS) = 10, CALCF("尿道径") = 9, MIN_STR(LOCALS) = 8 となる
+;ちなみにMAX_STR(LOCALS) = MIN_STR(LOCALS) + 1
+;初回
+IF FIRSTCOM(SELECTCOM) == 0
+	PRINTFORML %CALLNAME:TARGET%の尿道は、一度もブジーを受け入れたことがありません
+	PRINTFORML 今回は{MIN_STR(LOCALS)}mm、太くても{MIN_STR(LOCALS) + 1}mmを試してみるのが無難と思われます
+	PRINTFORML ……どの太さのブジーを使いますか？
+;ブジーよりも太いものを入れられたことがありそう
+ELSEIF MAX_STR(LOCALS) > CFLAG:452
+	PRINTFORML %CALLNAME:TARGET%に使用したブジーで一番太い物は{CFLAG:452}mmですが……それよりも緩くなっているように見受けられます
+	PRINTFORML ……どの太さのブジーを使いますか？
+ELSEIF CFLAG:454 == 0
+	SELECTCASE MAX_STR(LOCALS) - MIN_STR(LOCALS)*21/20
+	CASE IS >= 1
+		PRINTFORML %CALLNAME:TARGET%の尿道は直径{MAX(MAX_STR(LOCALS), CFLAG:452)}mmまで経験済みですが、痛みが少ないのは{MIN_STR(LOCALS)*21/20}mmまでのようです
+		PRINTFORML {MAX(MIN_STR(LOCALS)*21/20, MIN_STR(LOCALS) + 1)}mm以下の太さが良いと思われますが……\@ PREVCOM == SELECTCOM ? 引き続き # 今回は \@、どの太さのブジーを使いますか？
+	CASE 0
+		PRINTFORML %CALLNAME:TARGET%の尿道は直径{MAX(MAX_STR(LOCALS), CFLAG:452)}mmまで経験済みで、ここまでなら痛みが少ないようです
+		PRINTFORML {MAX(MAX_STR(LOCALS), CFLAG:452)}mm以下の太さが良いと思われますが……\@ PREVCOM == SELECTCOM ? 引き続き # 今回は \@、どの太さのブジーを使いますか？
+	CASEELSE
+		PRINTFORML %CALLNAME:TARGET%の尿道は直径{MAX(MAX_STR(LOCALS), CFLAG:452)}mmまで経験済みで、この太さまでは大丈夫のようです
+		PRINTFORML {MAX_STR(LOCALS) + 1}mmに挑戦しても問題ないと思われますが……\@ PREVCOM == SELECTCOM ? 引き続き # 今回は \@、どの太さのブジーを使いますか？
+	ENDSELECT
+ENDIF
+IF TEQUIP:尿道ブジー && CFLAG:454 == 1
+	PRINTFORM %CALLNAME:TARGET%の尿道に突き刺さったままの
+		SIF CFLAG:455 >= 40
+			PRINTFORM 巨大な
+	IF RAND:2 && TALENT:尿道狂い
+		PRINTFORM ブジーを再び動かし粘膜を削り上げると、隙間から尿を吹き溢しながら快楽を享受している…
+	ELSEIF RAND:1 && TALENT:尿道性感
+		SIF CFLAG:455 >= 40
+			PRINTFORM 巨大な
+		PRINTFORMW プジーを再び動かし、尿道快楽を自覚し始めた粘膜をこすりあげて行く…
+	ELSE
+		PRINTFORM プジー
+		IF CALCF("尿道径") >= 40
+			PRINTFORMW で、すっかり緩んでしまった尿道を再び擦りあげた…
+		ELSEIF CALCF("尿道径") >= 20
+			PRINTFORMW で綻び始めた尿道粘膜を再び削り上げた…
+		ELSE
+			PRINTFORMW を再び動かし、痛々しく腫れ上がった尿道を削り上げた…
+		ENDIF
+	ENDIF
+;連続実行だと２倍行う
+ELSEIF PREVCOM == SELECTCOM
+	SETCOLOR DEF_COLOR("黄色")
+	PRINTFORML ※同一コマンド連続実行のため、%CALLNAME:TARGET%の尿道を念入りに虐めます※
+	RESETCOLOR
+;肉体的な限界がある
+ELSEIF CALCF("尿道径") >= CALCF("尿道拡張の壁")
+	SETCOLOR DEF_COLOR("黄色")
+	IF CALCF("尿道径") >= CALCF("尿道拡張の限界")
+		PRINTFORML ※%CALLNAME:TARGET%の尿道は限界です……これ以上の拡張は殆ど無理でしょう※
+	ELSE
+		PRINTFORML ※%CALLNAME:TARGET%の尿道は限界に近づいています……これ以上の拡張は難しそうです※
+	ENDIF
+
+	SETCOLOR DEF_COLOR("ハートピンク")
+	;ちょっとお得な情報
+	CALL COM_ABLE146
+	IF RESULT && COND("身嗜み：尿道拡張") == 0 && ABL:尿道拡張 >= 0 && EXP:尿道経験 >= 5 && (EXP:尿道経験 >= 20 || EXP:尿道拡張経験 >= 5 || ABL:尿道拡張 >= 1)
+		PRINTFORML 身嗜み管理で指示する事で、尿道の拡張を%CALLNAME:TARGET%にも行わせる事が出来ます
+		PRINTFORML %CALLNAME:PLAYER%の腕には及ばないと思われますが、如何でしょうか？
+	ENDIF
+	RESETCOLOR
+ENDIF
+PRINTL 
+
+
+;MIN_STR(LOCALS)mmの太さは拡張という点では弱いが、尿道経験は増えるので一応意味はある
+SELECT_BOUGIE = MAX(MAX_STR(LOCALS) - MIN_STR(LOCALS), 3) + MIN_STR(LOCALS)/20
+SIF ABL:PLAYER:サドっ気 >= 5 || ABL:マゾっ気 >= 5
+	SELECT_BOUGIE += 1
+SIF ABL:PLAYER:サドっ気 >= 3
+	SELECT_BOUGIE += 1
+;調教知識によるボーナス
+SIF COND("性器拡張知識", PLAYER)
+	SELECT_BOUGIE += 1
+;太さの1.2倍までとする…最大値があまりに低い場合は３保障
+SELECT_BOUGIE = MAX(LIMIT(SELECT_BOUGIE, 3, MIN_STR(LOCALS)/5 + 1), 3, MIN_STR(LOCALS)/10 + 1)
+
+VARSET LOCAL
+VARSET BOUGIE
+
+FOR LCOUNT, 0, SELECT_BOUGIE
+	;選択肢が多すぎる場合には削る
+	SELECTCASE MIN_STR(LOCALS) + LCOUNT
+	CASE IS >= 40
+		SIF SELECT_BOUGIE >= 10 && (MIN_STR(LOCALS) + LCOUNT)%5
+			CONTINUE
+	ENDSELECT
+
+	BOUGIE:LOCAL = MIN_STR(LOCALS) + LCOUNT
+	PRINTFORML  [{LOCAL, 2}] {BOUGIE:LOCAL, 2}mm
+
+	LOCAL += 1
+NEXT
+
+IF CFLAG:454 == 0
+
+;クリキャップとニプルキャップを付けるか
+IF TEQUIP:クリキャップ == 0 && FIRSTCOM(34)
+	CALL COM_ABLE34
+	IF RESULT
+		LOCAL:90 = 90
+		PRINTFORML  [90] クリキャップを付ける
+	ENDIF
+ENDIF
+IF TEQUIP:ニプルキャップ == 0 && FIRSTCOM(35)
+	CALL COM_ABLE35
+	IF RESULT
+		LOCAL:91 = 91
+		PRINTFORML  [91] ニプルキャップを付ける
+	ENDIF
+ENDIF
+PRINTFORML  [99] 補足を見る
+PRINTFORML [100] やめる
+
+CALL INPUT_SELECT, LOCAL, 99, 100, LOCAL:90, LOCAL:91
+
+CHOICE = RESULT
+
+SELECTCASE CHOICE
+CASE 100
+	TFLAG:14 = 1
+	RETURN 0
+CASE 99
+	PRINTFORML □ 補足 □---------------------------------------------------------------------
+	PRINTFORM 尿道を拡張する際には、
+	CALL PRINT_COLORTEXT, "[調教知識(性器拡張)]", DEF_COLOR("黄色")
+	PRINTFORM や
+	CALL PRINT_COLORTEXT, "[拡張適正]", DEF_COLOR("黄色")
+	PRINTFORML があると捗ります
+	PRINTFORM 拡張のしやすさには影響のない素質ですが、
+	CALL PRINT_COLORTEXT, "[倒錯的]", DEF_COLOR("黄色")
+	PRINTFORML が有ると反感を抑えられる事でしょう
+	PRINTFORML 
+
+	PRINTFORML 尿道での快感はＣ感覚に依存しています……が、初期は痛みが強く殆ど快楽を得られません
+	PRINTFORML 経験を積ませて痛みを減らし、尿道を弄られる事に慣れさせる事が重要となります
+	PRINTFORM 尿道を責められながらの絶頂を経験させる事で、
+	CALL PRINT_COLORTEXT, "[尿道性感]", DEF_COLOR("黄色")
+	PRINTFORML に目覚めさせる事が出来ます
+	CALL PRINT_COLORTEXT, "[尿道性感]", DEF_COLOR("黄色")
+	PRINTFORMW 無しだと基本的には気持ちの良くない調教なので、早めの取得が重要でしょう
+	PRINTFORML -------------------------------------------------------------------------------
+CASE 90
+	CALL TRAIN_MESSAGE_COM34
+CASE 91
+	CALL TRAIN_MESSAGE_COM35
+CASEELSE
+	IF BOUGIE:CHOICE
+		TEQUIP:尿道ブジー = BOUGIE:CHOICE
+		;今までに使われた最大の大きさを記録
+		SIF TEQUIP:尿道ブジー > CFLAG:452
+			CFLAG:452 = TEQUIP:尿道ブジー
+		RETURN 1
+	ENDIF
+ENDSELECT
+
+PRINTL 
+RESTART
+
+ENDIF
+
+
+@TRAIN_MESSAGE_COM151
+;ブジーを見た、夢魔の反応です
+CALL SELF_KOJO, "尿道ブジー追加口上"
+
+IF CFLAG:454 == 0
+
+;ブジーの太さ選択
+CALL SELECT_BOUGIE
+
+ENDIF
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+
+;-------------------------------------------------
+;ソースの計算(予測値)
+;-------------------------------------------------
+CALL CALC, "調教ソースの試算"
+CFLAG:455 = TEQUIP:尿道ブジー
+;どっちの尿道か
+LOCALS = %CONDS("尿道拡張度")%
+
+PRINTFORM %CALLNAME:PLAYER%は%CALLNAME:TARGET%の
+IF GETBIT(TEQUIP:筋弛緩剤, 1) 
+SIF CFLAG:454 == 0
+	PRINTFORM 弛緩した尿道に、
+ELSE
+	PRINTFORM \@ PENIS(TARGET) ? ペニス # 尿道 \@に
+ENDIF
+SELECTCASE TEQUIP:尿道ブジー
+CASE IS < 15
+SIF CFLAG:454 == 0
+	PRINTFORMW ゼリーを塗った{TEQUIP:尿道ブジー}mmのブジーを挿入した。
+;指並み
+CASE IS < 26
+SIF CFLAG:454 == 0
+	PRINTFORMW 指ほどの太さのある{TEQUIP:尿道ブジー}mmのブジーを挿入した。
+;短小ペニス並み
+CASE IS < 33
+SIF CFLAG:454 == 0
+	PRINTFORMW 細めの張り型と言っても良さそうな直径{TEQUIP:尿道ブジー}mmのブジーを挿入した。
+;ふつうのちんこ並み
+CASE IS < 40
+SIF CFLAG:454 == 0
+	PRINTFORMW 普通なら到底入るとは思えない{TEQUIP:尿道ブジー}mmのブジーを挿入した。
+;巨根並み〜
+CASEELSE
+SIF CFLAG:454 == 0
+	PRINTFORMW 直径{TEQUIP:尿道ブジー}mmの滑らかな金属製の張り型を挿入した。
+ENDSELECT
+
+;EXP:尿道経験、TALENT:尿道性感、TALENT:倒錯的、TEQUIP:尿道ブジー > CALCF("尿道径") あたりで分岐か
+;拡張する段階ごとに中間報告（太さを飛ばしてると出ないが些細な事だろう）
+IF TEQUIP:尿道ブジー > MAX_STR(LOCALS) && CALCF("尿道拡張の限界") >= TEQUIP:尿道ブジー + 2 && CFLAG:454 == 0
+	SELECTCASE MIN_STR(LOCALS)
+	CASE 13 TO 17
+		IF GETBIT(CFLAG:453, 0) == 0
+			PRINTFORML ……%CALLNAME:TARGET%のそこは、大分拡張が進んできたようだ。
+			PRINTFORMW 近いうちに、指ぐらいなら受け入れられるようになるかもしれない…
+			SETBIT CFLAG:453, 0
+			RETURN 1
+		ENDIF
+	CASE 24 TO 28
+		IF GETBIT(CFLAG:453, 1) == 0
+			PRINTFORML ……%CALLNAME:TARGET%のそこは、目に見えて拡がってきている。
+			PRINTFORMW このまま続けていけば、もしかしたら小さなペニス程度なら挿入できるようになるかもしれない…
+			SETBIT CFLAG:453, 1
+			RETURN 1
+		ENDIF
+	CASE 31 TO 35
+		IF GETBIT(CFLAG:453, 2) == 0
+			PRINTFORML ……%CALLNAME:TARGET%のそこは、随分と大きくなってしまったようだ。
+			PRINTFORMW もしかしたら、あと少しで一般的な大きさの男性器でも受け入れられるようになるのではないだろうか…
+			SETBIT CFLAG:453, 2
+			RETURN 1
+		ENDIF
+	CASE 38 TO 42
+		IF GETBIT(CFLAG:453, 3) == 0
+			PRINTFORML ……%CALLNAME:TARGET%のそこは、すっかり大きな穴と化してしまっている
+			PRINTFORMW おそらく、性行為を問題なく行えるようにまでなるだろう…
+			SETBIT CFLAG:453, 3
+			RETURN 1
+		ENDIF
+	ENDSELECT
+ENDIF
+
+;初めてのブジー受け入れ
+IF FIRSTCOM(SELECTCOM) == 0 && EXP:尿道拡張経験 == 0
+	;初回から拡張
+	IF TEQUIP:尿道ブジー > MIN_STR(LOCALS)
+		PRINTFORMW 穴に対して棒が少々太\@ TEQUIP:尿道ブジー - MIN_STR(LOCALS) >= 2 ? 過ぎた # かった \@ようだが、滑らかな金属棒は尿道括約筋の抵抗を意に介すことなく、排尿のための穴を掘削して太さに慣らしていく…
+	ELSEIF PENIS(TARGET)
+		PRINTFORMW 初めてという事で挿入に手間取りはしたものの、%CALLNAME:TARGET%の尿道は侵入して来た金属の棒をペニスの根元まで受け入れた…
+	ELSE
+		PRINTFORMW 初めてという事で挿入に手間取りはしたものの、%CALLNAME:TARGET%の尿道は侵入して来た金属の棒をしっかり膀胱まで受け入れた…
+	ENDIF
+;各調教ごとの二回目以降のセリフ（簡潔）
+ELSEIF CHOSECOM(SELECTCOM) && CFLAG:454 == 0
+	IF CHECK("尿道プレイ")
+		IF TALENT:尿道性感
+			PRINTFORM %CALLNAME:TARGET%は
+			IF RAND:2
+				PRINTFORM 差し込まれる棒を\@ PENIS(TARGET) ? 陰茎の根元 # 膀胱 \@まで悠々と受け入れ、
+			ELSE
+				PRINTFORM 本来は液体しか通る事の無い穴で\@ TALENT:尿道性感 ? 嬉々として # \@異物を呑み込み、
+			ENDIF
+			IF TALENT:尿道性感 && RAND:3 == 0
+				PRINTFORMW 上気した顔で尿を滴らせながらプレイを楽しんでいる…
+			ELSEIF RAND:2
+				PRINTFORMW 出入りに合わせて括約筋を締めたり緩めたりしている…
+			ELSE
+				PRINTFORMW 粘膜を擦りあげられる動きに、くすぐったそうな反応を見せている…
+			ENDIF
+		ELSEIF PENIS(TARGET)
+			PRINTFORMW 特に引っかかる事も無く奥深くまで侵入した金属の棒は、出入りの度に陰茎の海綿体を押し退けながら%CALLNAME:TARGET%の尿道を異物に慣らしていく…
+		ELSE
+			PRINTFORMW 滑るように膀胱まで到達した金属の棒は、出入りの度に漏れ出た液体で水溜りを広げながら%CALLNAME:TARGET%の尿道を異物に慣らしていく…
+		ENDIF
+	ELSE
+		PRINTFORMW 抵抗の強い小さな穴を、金属製の拡張棒がゆっくりと、しかし確実に性器へと作り変えていく…
+	ENDIF
+;拡張
+ELSEIF TEQUIP:尿道ブジー > MIN_STR(LOCALS) && CFLAG:454 == 0
+	;痛みや抵抗が少ない
+	IF CHECK("尿道プレイ")
+		IF TALENT:尿道性感 && RAND:2
+			PRINTFORMW すっかり性器として目覚めてしまった%CALLNAME:TARGET%の尿道は、侵入してくる異物を平気な様子で\@ PENIS(TARGET) ? 20cmあまり # 膀胱まで \@受け入れるどころか、抜かれる時には名残惜しそうに吸い付いてくる様子すら見せている…
+		ELSE
+			PRINTFORMW 特に抵抗を見せることなく金属棒を受け入れた小さな穴は、隙間無く押し広げるそれの動きに従って埋め込まれたり引きずり出されたりしている…
+		ENDIF
+	ELSEIF EXP:尿道経験 >= 20 || EXP:尿道拡張経験 >= 20
+		PRINTFORMW 物を入れられること自体には慣れた%CALLNAME:TARGET%の尿道だが、流石にこの太さは辛いのか強い抵抗を示している…
+	ELSE
+		PRINTFORMW まだまだ経験が少なく排泄器官でしかない尿道は、挿入された異物による苦痛で括約筋から力を抜くことが出来ないようだ…
+	ENDIF
+;拡張はしないで慣らすのみ
+ELSEIF  CFLAG:454 == 0
+	IF CHECK("尿道プレイ")
+		IF TALENT:尿道性感
+			PRINTFORMW %CALLNAME:TARGET%はブジーが尿道を出入りする度に快感に腰を震わせ、満更でも無い様子でこの異常なプレイを楽しんでいる…
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%は特に痛みを感じてはいないようだが、背筋を走るゾワゾワとしたなんとも言えない感覚で不安そうな表情を浮かべている…
+		ENDIF
+	ELSEIF PENIS(TARGET)
+		PRINTFORMW 太く滑らかな金属棒は%CALLNAME:TARGET%の抵抗をものともせずに尿道の奥深くに侵入し、挿抜のたびに狭い粘膜の道を刺激に慣れさせながら拡張している…
+	ELSE
+		PRINTFORMW 太く滑らかな金属棒は%CALLNAME:TARGET%の抵抗をものともせずに膀胱にまで侵入し、挿抜のたびに尿を漏らさせながら狭い粘膜の道を拡張している…
+	ENDIF
+ENDIF
+
+	CFLAG:455 = TEQUIP:尿道ブジー
+	IF CFLAG:454 == 1
+		PRINTFORM %CALLNAME:TARGET%の尿道に鎮座し
+		IF RAND:2 && TALENT:尿道狂い
+			PRINTFORMW ていたブジーを抜き去ると、名残惜しい様子で尿道をヒクヒクと痙攣させている…
+		ELSEIF RAND:1
+			PRINTFORMW 痛みにきつく締め上げたプジーを抜き去ると、痛々しく腫れ上がった尿道が姿を現した…
+		ELSE
+			PRINTFORMW ていたブジーを抜き去ると、
+			IF CFLAG:452 >= 40
+				PRINTFORMW 尿道は中々元には戻らずぽっかりと大きく口を開けている…
+			ELSEIF CFLAG:452 >= 20
+				PRINTFORMW 綻び始めた尿道がぱくぱくと開閉を繰り返した…
+			ELSE
+				PRINTFORMW 小さく敏感な尿道は異常な責め苦により痛々しく腫れ上がっている…
+			ENDIF
+		ENDIF
+		TEQUIP:尿道ブジー = 0
+		CFLAG:454 = 0
+	ENDIF
+	
+	IF TEQUIP:尿道ブジー >= 1
+		IF TALENT:尿道狂い
+			PRINTFORMW %CALLNAME:TARGET%は尿道内に残されたプジーを落とさないよう必死に締め付けている…
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%は尿道内に残されたプジーの違和感に耐えている…
+		ENDIF
+
+		TEQUIP:尿道ブジー = CFLAG:455
+		CFLAG:454 = 1
+	ENDIF
+@COM_ORDER_COM151, ARG
+VARSET LOCAL
+LOCALS = 
+
+;すべての命令に共通の要素を考慮
+;(従順が高いと命令に従いやすいなど)
+CALL COM_ORDER, ARG
+
+LOCAL = RESULT
+
+;ABL:露出癖
+IF ABL:露出癖
+	LOCAL += ABL:露出癖 * 4
+	LOCALS = %LOCALS% + %ABLNAME:7%LV{ABL:露出癖}({ABL:露出癖 * 4})
+ENDIF
+;ABL:マゾっ気
+IF ABL:マゾっ気
+	LOCAL += ABL:マゾっ気 * 3
+	LOCALS = %LOCALS% + %ABLNAME:8%LV{ABL:マゾっ気}({ABL:マゾっ気 * 3})
+ENDIF
+;自制心
+IF TALENT:冷静
+	LOCAL -= 5
+	LOCALS = %LOCALS% - %TALENTNAME:20%(5)
+ENDIF
+;恥じらい
+IF TALENT:恥じらい
+	LOCAL -= 15
+	LOCALS = %LOCALS% - %TALENTNAME:35%(15)
+ENDIF
+;恥薄い
+IF TALENT:恥薄い
+	LOCAL += 2
+	LOCALS = %LOCALS% + %TALENTNAME:36%(2)
+ENDIF
+;清楚
+IF TALENT:清楚
+	LOCAL -= 10
+	LOCALS = %LOCALS% - %TALENTNAME:39%(10)
+ENDIF
+;快感に素直
+IF TALENT:快感に素直
+	LOCAL += 5
+	LOCALS = %LOCALS% + %TALENTNAME:70%(5)
+ENDIF
+;快感の否定
+IF TALENT:快感の否定
+	LOCAL -= 5
+	LOCALS = %LOCALS% - %TALENTNAME:71%(5)
+ENDIF
+;倒錯的
+IF TALENT:倒錯的
+	LOCAL += 10
+	LOCALS = %LOCALS% + %TALENTNAME:80%(10)
+ENDIF
+IF TEQUIP:拘束
+	LOCAL += 30
+	LOCALS = %LOCALS% + 拘束中(30)
+ENDIF
+;媚薬
+IF TEQUIP:媚薬
+	LOCAL += 2
+	LOCALS = %LOCALS% + %ITEMNAME:31%(2)
+ENDIF
+;ビデオ撮影
+IF TEQUIP:ビデオカメラ
+	LOCAL -= 20
+	LOCALS = %LOCALS% - 撮影中(20)
+ENDIF
+;野外or館内露出
+IF TEQUIP:野外プレイ
+	LOCAL -= 10
+	LOCALS = %LOCALS% - 野外プレイ(10)
+ELSEIF TEQUIP:館内露出プレイ
+	LOCAL -= 10
+	LOCALS = %LOCALS% - 館内露出(10)
+ENDIF
+
+;合計を表示(55以上で実行)
+CALL PRINT_COM_ORDER_COM, LOCALS, ARG, LOCAL, 55
+
+RETURN RESULT

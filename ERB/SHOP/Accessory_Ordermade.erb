@@ -1,0 +1,242 @@
+﻿;eraSQ製作スレッド９  738氏 10/09/01 作成 	10/09/02 更新
+;-----------------------------------------------------------------------------------------
+@ACCESSORY_ORDERMADE_MENU
+#DIM LCOUNT
+#DIM NUM_ACCE
+#DIM MEMO_PRICE
+
+;まずは何個目かを判定
+FOR LCOUNT, 1, 9
+	IF FLAG:(300 + LCOUNT*10) == 0
+		NUM_ACCE = LCOUNT
+		BREAK
+	ENDIF
+NEXT
+
+PRINTL 
+PRINTL 「あんたの好みに合わせたアクセサリーを作ってやるぜ。
+PRINTL 　流石に値は張るが、きっと気にいるだろう。
+PRINTL 　さて、どれを元にして作るんだ？」
+PRINTL （どれをベースとしても値段は変わりません）
+PRINTL  [ 0] ブレスレット　　　精神力重視　
+PRINTL  [ 1] カフス　　　　　　魅力重視　　
+PRINTL  [ 2] ガントレット　　　技巧重視　　
+PRINTL  [ 3] サッシュ　　　　　精力重視　　
+PRINTL  [ 4] 指輪　　　　　　　バランス重視
+PRINTL [100] 戻る
+
+CALL INPUT_SELECT, 5, 100
+
+SIF RESULT == 100
+	RETURN 0
+
+FLAG:(300 + NUM_ACCE*10) = RESULT*10
+
+PRINTL 
+PRINTL 「よし、素材は何にする？」
+
+SELECTCASE FLAG:(300 + NUM_ACCE*10)
+CASE 0
+	PRINTL [0]象牙　　　　　[1]青銅　　　　　[2]白銀　　　　　[3]霊銀
+	CALL INPUT_SELECT, 4
+CASE 10
+	PRINTL [0]コーラル　　　[1]フォシル　　　[2]ジェイド　　　[3]アンバー
+	CALL INPUT_SELECT, 4
+CASE 20
+	PRINTL [0]シルク　　　　[1]サテン　　　　[2]ビロード
+	CALL INPUT_SELECT, 3
+CASE 30
+	PRINTL [0]牡馬　　　　　[1]牡鹿　　　　　[2]雄兎
+	CALL INPUT_SELECT, 3
+CASE 40
+	PRINTL [0]クリスタル　　[1]ダイアモンド
+	CALL INPUT_SELECT, 2
+ENDSELECT
+FLAG:(300 + NUM_ACCE*10) += RESULT + 1
+
+PRINTL 
+PRINT 「最大で
+CALL PRINT_COLORTEXT, "５つ", DEF_COLOR("黄色")
+PRINTL まで付けることができるが…アビリティをいくつ付与するんだ？
+PRINTL 　ただし、付けるアビリティが多くなるほど代金は高くなるからな。
+PRINT 　そうだな、
+CALL PRINT_COLORTEXT, "１個ならサービスで$5,000", DEF_COLOR("黄色")
+PRINTL にしておいてやる。
+PRINT 　２個以上付けたいなら…
+CALL PRINT_COLORTEXT, "アビリティの数×$10,000", DEF_COLOR("黄色")
+PRINTL ほど代金を貰うぞ。
+PRINTW 　付与する数が多いと、かなりの金がかかるからな。気をつけてくれよ」
+
+$MAKE_ACCE
+
+CALL SET_ACCESSORY_ABILITY, NUM_ACCE
+
+PRINTL 「さて、こいつでいいかい？」
+
+CALL PRINT_ACCESSORY, NUM_ACCE
+
+VARSET LOCAL
+FOR LCOUNT, 1, 6
+	SIF FLAG:(300 + NUM_ACCE*10 + LCOUNT) == 0
+		BREAK
+	LOCAL += 1
+NEXT
+
+;お代の計算
+SELECTCASE LOCAL
+CASE 0
+	MEMO_PRICE = 0
+CASE 1
+	MEMO_PRICE = 5000
+CASEELSE
+	MEMO_PRICE = LOCAL*10000
+ENDSELECT
+
+PRINTFORM 「代金は……さっき言った通り、
+CALL PRINT_COLORTEXT, MONEY_C(MEMO_PRICE), DEF_COLOR("黄色")
+PRINTFORML になるが問題ないか？」
+PRINTL 
+
+PRINTFORML  [ 0] 問題ない　（所持金：%MONEY_C(MONEY)% … \@ MONEY >= MEMO_PRICE ? 予算内 # 予算オーバー！ \@）
+PRINTFORML  [ 1] もう一回考える
+PRINTFORML [100] 出直してきます
+
+$ORDER_BUY_ANS
+INPUT
+
+IF RESULT == 100
+	VARSET FLAG, 0, 300 + NUM_ACCE*10, 310 + NUM_ACCE*10
+	PRINTW 「なんでぇ…冷やかしかよ」
+ELSEIF RESULT == 0 && MONEY < MEMO_PRICE
+	PRINTL 「金が足りないぜ…」
+	GOTO ORDER_BUY_ANS
+ELSEIF RESULT == 0
+	PRINTW 「毎度ありっ」
+	MONEY -= MEMO_PRICE
+ELSEIF RESULT == 1
+	GOTO MAKE_ACCE
+ELSE
+	GOTO ORDER_BUY_ANS
+ENDIF
+
+@SET_ACCESSORY_ABILITY, ARG
+#DIM LCOUNT
+#DIM MEMO_PRICE
+#DIM MEMO_LINECOUNT
+MEMO_LINECOUNT = LINECOUNT
+
+REDRAW 0
+
+PRINTL  
+VARSET LOCAL
+FOR LCOUNT, 1, 6
+	SIF FLAG:(300 + ARG*10 + LCOUNT) == 0
+		BREAK
+	LOCAL += 1
+NEXT
+
+;お代の計算
+SELECTCASE LOCAL
+CASE 0
+	MEMO_PRICE = 0
+CASE 1
+	MEMO_PRICE = 5000
+CASEELSE
+	MEMO_PRICE = LOCAL*10000
+ENDSELECT
+;選択肢の存在チェック
+FOR LCOUNT, 1, 101
+	SELECTCASE LCOUNT
+	CASE 1 TO 6, 10 TO 14, 20 TO 24, 30 TO 33, 50 TO 52
+		SIF LOCAL <= 4
+			LOCAL:LCOUNT = 1
+	CASE 99, 100
+		SIF LOCAL
+			LOCAL:LCOUNT = 1
+	ENDSELECT
+NEXT
+
+SELECTCASE LOCAL
+CASE 0
+	PRINTFORML 「どのアビリティを付けるんだ？」
+CASEELSE
+	PRINTFORML 「とりあえずはこんな感じだぜ」
+	CALL PRINT_ACCESSORY, ARG
+
+	PRINT 「お代は
+
+	CALL PRINT_COLORTEXT, MONEY_C(MEMO_PRICE), DEF_COLOR("黄色")
+
+	SELECTCASE LOCAL
+	CASE 5
+		PRINTFORML だ。 もうこれ以上は付けられないぜ」
+	CASEELSE
+		PRINTFORML だ。 まだいくか？」
+	ENDSELECT
+ENDSELECT
+PRINTL 
+
+SIF LOCAL >= 5
+	SETCOLOR DEF_COLOR("灰色")
+
+PRINTFORML  [ 1] %TEXT_RJ("ＥＰ+30%", 14)%　…　射精ゲージのＭＡＸが30％増加
+PRINTFORML  [ 2] %TEXT_RJ("精力+30%", 14)%　…　精力のＭＡＸが30％増加
+PRINTFORML  [ 3] %TEXT_RJ("技巧+30%", 14)%　…　与える快感等が30％増加
+PRINTFORML  [ 4] %TEXT_RJ("精神力+30%", 14)%　…　受ける快感＆恍惚率等が30％減少
+PRINTFORML  [ 5] %TEXT_RJ("魅力+30%", 14)%　…　相手に与える不快感が30％減少＆好感度＋１
+PRINTFORML  [ 6] %TEXT_RJ("ストック増加", 14)%　…　ストックを１本増加（重複しません）
+PRINTFORML  [10] %TEXT_RJ("Ｃ強化+50%", 14)%　…　相手に与えるＣ快感が50％増加
+PRINTFORML  [11] %TEXT_RJ("Ｖ強化+50%", 14)%　…　相手に与えるＶ快感が50％増加
+PRINTFORML  [12] %TEXT_RJ("Ａ強化+50%", 14)%　…　相手に与えるＡ快感が50％増加
+PRINTFORML  [13] %TEXT_RJ("Ｂ強化+50%", 14)%　…　相手に与えるＢ快感が50％増加
+PRINTFORML  [14] %TEXT_RJ("Ｍ強化+50%", 14)%　…　相手に与えるＭ快感が50％増加
+PRINTFORML  [20] %TEXT_RJ("ムード+3", 14)%　…　ムードの上昇+３
+PRINTFORML  [21] %TEXT_RJ("実行値+7", 14)%　…　コマンド実行値が７増加
+PRINTFORML  [22] %TEXT_RJ("受ける快感+20%", 14)%　…　受ける快感が20％増加
+PRINTFORML  [23] %TEXT_RJ("押し倒され+20%", 14)%　…　押し倒される確率が20％増加
+PRINTFORML  [24] %TEXT_RJ("取得経験値+20%", 14)%　…　獲得する経験値が20％増加
+PRINTFORML  [30] %TEXT_RJ("常にウルズグン", 14)%　…　常にウルズグン状態になる
+PRINTFORML  [31] %TEXT_RJ("常にミニマム", 14)%　…　常にミニマム状態になる
+PRINTFORML  [32] %TEXT_RJ("常にセンシブ", 14)%　…　常にセンシブ状態になる
+PRINTFORML  [33] %TEXT_RJ("常にエンラジ", 14)%　…　常にエンラジ状態になる
+PRINTFORML  [50] %TEXT_RJ("隠密+20%", 14)%　…　探索で敵に出会う確率が20％減少
+PRINTFORML  [51] %TEXT_RJ("宝箱出現率+20%", 14)%　…　探索で宝箱を見つける確率が20％増加
+PRINTFORML  [52] %TEXT_RJ("ドア発見率+20%", 14)%　…　探索でドアを見つける確率が20％増加
+
+RESETCOLOR
+SIF LOCAL == 0
+	SETCOLOR DEF_COLOR("灰色")
+
+PRINTFORML  [99] アビリティを一つ削る
+PRINTFORML [100] これでいい
+
+RESETCOLOR
+$INPUT_LOOP
+INPUT
+IF RESULT >= 1 && RESULT <= 100 && LOCAL:RESULT
+	SELECTCASE RESULT
+	CASE 100
+		REDRAW 1
+		RETURN 1
+	CASE 99
+		;一番下の効果を消す
+		FLAG:(300 + ARG*10 + LOCAL) = 0
+	CASE 1 TO 5
+		FLAG:(300 + ARG*10 + LOCAL + 1) = RESULT*1000 + 30
+	CASE 10 TO 14
+		FLAG:(300 + ARG*10 + LOCAL + 1) = RESULT*1000 + 50
+	CASE 20
+		FLAG:(300 + ARG*10 + LOCAL + 1) = RESULT*1000 + 3
+	CASE 21
+		FLAG:(300 + ARG*10 + LOCAL + 1) = RESULT*1000 + 7
+	CASE 22 TO 24, 50 TO 52
+		FLAG:(300 + ARG*10 + LOCAL + 1) = RESULT*1000 + 20
+	CASEELSE
+		FLAG:(300 + ARG*10 + LOCAL + 1) = RESULT*1000
+	ENDSELECT
+ELSE
+	GOTO INPUT_LOOP
+ENDIF
+
+CLEARLINE LINECOUNT - MEMO_LINECOUNT
+RESTART

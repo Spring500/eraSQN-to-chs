@@ -1,0 +1,298 @@
+﻿;-------------------------------------------------
+;バンダースナッチ日常イベント、悪戯日記
+;全般的に双方屈服Lv3以降か、面倒なら恋慕でもいいかもしれない
+;ヴィレッジャ日常口上等を参考にさせていただきました、でもたぶんまだわかってない
+;-------------------------------------------------
+@DAILY_LIFE_MESSAGE_42_1
+#DIM LCOUNT
+#DIM GUEST, 20
+;#DIM GUEST2, 20
+#DIM DEVENT, 100
+#DIM EVENT_NUM
+#DIM NUM_RAND
+
+;会話イベント用
+VARSET DEVENT
+VARSET GUEST
+;VARSET GUEST2
+
+;各イベントが発生する条件をチェックし、ＯＫならDEVENT:(イベント番号)に１を代入
+;登場させるキャラが居る場合には、一人目から順にGUEST, GUEST2にそのキャラの番号を代入する
+
+IF FIND_COND("Ｃミミック")
+	DEVENT:1 = 1
+	GUEST:1 = FIND_COND("Ｃミミック")
+ENDIF
+IF FIND_COND("Ｃネコマタ")
+	DEVENT:2 = 1
+	GUEST:2 = FIND_COND("Ｃネコマタ")
+ENDIF
+IF FIND_COND("Ｃインプ")
+	DEVENT:3 = 1
+	GUEST:3 = FIND_COND("Ｃインプ")
+ENDIF
+IF FIND_COND("Ｃソルジャー")
+	DEVENT:4 = 1
+	GUEST:4 = FIND_COND("Ｃソルジャー")
+ENDIF
+IF FIND_COND("Ｃハーピー")
+	DEVENT:5 = 1
+	GUEST:5 = FIND_COND("Ｃハーピー")
+ENDIF
+IF FIND_COND("Ｃストゥーナ")
+	DEVENT:6 = 1
+	GUEST:6 = FIND_COND("Ｃストゥーナ")
+ENDIF
+IF FIND_COND("Ｃメローナ")
+	DEVENT:7 = 1
+	GUEST:7 = FIND_COND("Ｃメローナ")
+ENDIF
+IF FIND_COND("Ｃステラ")
+	DEVENT:8 = 1
+	GUEST:8 = FIND_COND("Ｃステラ")
+ENDIF
+IF FIND_COND("幼稚")
+	DEVENT:9 = 1
+	GUEST:9 = FIND_COND("幼稚")
+ENDIF
+IF FIND_COND("臆病")
+	DEVENT:10 = 1
+	GUEST:10 = FIND_COND("臆病")
+ENDIF
+
+;起きうるイベントから、等確率でのランダム選択開始
+NUM_RAND = 1
+FOR LCOUNT, 1, 100
+	SIF DEVENT:LCOUNT == 0
+		CONTINUE
+	;CEVENTを用いて、イベントが既に発生したかをチェックし、していないなら優先的に発生させる処理を行う
+	;数字が大きい（新しく用意された）ものほど優先
+	;起きるイベント番号はEVENT_NUMに保存。イベントが発生しないならEVENT_NUM = 0 となる
+	LOCALS:LCOUNT = 日常：%TOFULL(TOSTR(LCOUNT) )%
+	SIF RAND:NUM_RAND == 0 || CEVENT(LOCALS:LCOUNT) == 0
+		EVENT_NUM = LCOUNT
+
+	NUM_RAND += 1
+NEXT
+
+;ゲストキャラ
+GUEST = GUEST:EVENT_NUM
+;GUEST2 = GUEST2:EVENT_NUM
+
+;反発刻印Lv3の時
+IF MARK:反発刻印 == 3
+
+;体力が低め（1000以下）の時は休ませる
+;ELSEIF BASE:体力 <= 1000
+;	PRINTFORMW 
+;屈服刻印3LVの時に各キャラとの会話イベントなど。まだ起きていないイベントならCEVENT(LOCALS:EVENT_NUM) == 0なので確実に起こしておく
+ELSEIF MARK:屈服刻印 == 3 && EVENT_NUM && (RAND:3 == 0 || CEVENT(LOCALS:EVENT_NUM) == 0)
+	SELECTCASE EVENT_NUM
+	;vsミミック　うなぎゼリー
+	CASE 1
+		PRINTFORMW %CALLNAME:GUEST%が体調を崩したらしい…
+		PRINTFORMW 様子を見に行くと、先客がいるのか中から声が聞こえてくる
+		PRINTFORML 
+		PRINTFORMW 「ヤーーーーーダーーーーーーー！！！！　食べたくなーーーーーい！！！！！１１！！！」
+		PRINTFORMW 「ええい子供のような我侭は止めるのです。だいたいあなたが『食欲ないけどゼリーなら大丈夫かも』と言ったのですよ」
+		PRINTFORMW 「それゼリーじゃない！　ゼリーじゃないよ！　普通に焼いて食べようよ！」
+		PRINTFORMW 「%CALLNAME:TARGET%のお国ではうなぎはゼリーにして喰うものなのです。さあ栄養はあるからキリキリ喰うといいですよ」
+		PRINTFORMW 「ヤダヤダヤダーーーー！！！　だってグロいもん！　それグロいもん！」
+		PRINTFORMW 「グロいしマズいけど栄養はあるから食べるのです。さあさあさあ」
+		PRINTFORMW 「今マズいって言った！　マズいって言ったーーーー！！！　たーべーたーくーなーいー！！！」
+		PRINTFORMW 「くーうーのーでーすーーーーーー」
+		PRINTFORMW 「イーーーヤーーーー！！！」
+		PRINTFORML 
+		DRAWLINE
+		PRINTFORML 
+		PRINTFORMW ほどなくして、%CALLNAME:GUEST%の体調は回復した……
+		PRINTFORMW 何を食べさせられたのかはわからないが……効果はあったらしい
+		PRINTFORMW ……しばらく部屋からすすり泣きが聞こえてはいたが
+	;VSネコマタ　猫語
+	CASE 2
+		PRINTFORMW ふと居間を覗くと%CALLNAME:TARGET%と%CALLNAME:GUEST%が何やら話し込んでいる…
+		PRINTFORMW 「にゃーにゃー」
+		PRINTFORMW 「ニャ？　にゃんにゃあ」
+		PRINTFORMW 「にゃにゃにゃ、にゃんにゃにゃあ」
+		PRINTFORMW 「うニャ？　ニャーニャー」
+		PRINTFORMW 「にゃにゃにゃんにゃ」
+		PRINTFORMW 「にゃにゃニャン」
+		PRINTFORMW 「うーにゃー」
+		PRINTFORML 
+		PRINTFORMW 話？　が終わったのか、%CALLNAME:TARGET%は席を離れ、こちらに近付いて来る
+		PRINTFORMW 何の話をしていたんだろう？
+		IF RAND:7 == 0
+			PRINTFORMW 「はい、エルダーサキュバスなんぼのもんじゃいと」
+		ELSEIF RAND:6 == 0
+			PRINTFORMW 「はい、実はクワガタと勝負した負けたことがあると」
+		ELSEIF RAND:5 == 0
+			PRINTFORMW 「はい、一昨日カエルを生で食べて腹を壊したと」
+		ELSEIF RAND:4 == 0
+			PRINTFORMW 「はい、うなぎゼリーを吐くほど喰わせてくれと」
+		ELSEIF RAND:3 == 0
+			PRINTFORMW 「はい、カナブンは酸味が利いてておいしいと」
+		ELSEIF RAND:2 == 0
+			PRINTFORMW 「はい、全財産を%CALLNAME:TARGET%に寄付してくれると」
+		ELSE
+			PRINTFORMW 「はい、カブトムシが大好物だと」
+		ENDIF
+		PRINTFORMW 「そんなこと言ってないニャ！？」
+	;VSインプ　嘘八百
+	CASE 3
+		PRINTFORMW ふと居間を覗くと%CALLNAME:TARGET%と%CALLNAME:GUEST%が何やら話し込んでいる…
+		PRINTFORML 
+		IF RAND:5 == 0
+			PRINTFORMW 「%CALLNAME:TARGET%のお国では、木こりの七割はオカマなのです。すごいでしょう？」
+		ELSEIF RAND:4 == 0
+			PRINTFORMW 「とある秘境には恐ろしい蚊がいて、大砲を装備した部隊を揃えてようやく戦えるレベルだと言います。怖いですね」
+		ELSEIF RAND:3 == 0
+			PRINTFORMW 「かつて南方にナニという王様がいました。彼は聖王と呼ばれるほど大変清廉潔白な人物であり、生涯を独身で通しました」
+			PRINTFORMW 「しかし、性欲は人並みにあったので、夜な夜な自らを慰めたそうです」
+			PRINTFORMW 「この聖王ナニが自慰、つまりオナニーの語源であることは言うまでもありません」
+		ELSEIF RAND:2 == 0
+			PRINTFORMW 「古代、ここより遥か東方のとある国にて、亜兵岩王という武術の達人がいました」
+			PRINTFORMW 「その亜兵岩王が近隣の村を脅かす悪党を見事目突き、つまりピースで仕留め、村に平和、つまりピースをもたらし、村は喜びに沸いたと言います」
+			PRINTFORMW 「これこそ『亜兵岩王のＷピース』と呼ばれる伝説であり、そこから喜びに打ち震える様子を『アヘ顔ダブルピース』と呼ぶようになったのです」
+		ELSE
+			PRINTFORMW 「〜と、……いうわけで〜〜〜なのです」
+		ENDIF
+		PRINTFORMW 「ええー？　ウソだー」
+		PRINTFORMW 「嘘なものですか、%CALLNAME:TARGET%は今まで嘘を吐いたことがないのですよ」
+		PRINTFORMW 「わーすごーい！　本当！？」
+		PRINTFORMW 「ウソです」
+		PRINTFORMW 「もーーーー！」
+		PRINTFORML 
+		PRINTFORMW 二人は楽しそうに喋っている…
+	;VSソルジャー　警備指南
+	CASE 4
+		PRINTFORMW %CALLNAME:GUEST%と屋敷の警備について話し合っていると、突然%CALLNAME:TARGET%が現れた…
+		PRINTFORMW 「呼ばれて飛び出てじゃじゃじゃじゃーん」
+		PRINTFORMW いや別に呼んだ覚えは無いのだが…
+		PRINTFORMW 「さて警備なら%CALLNAME:TARGET%の出番であることは言うまでもありません。さてミリティア君」
+		PRINTFORMW 「え……何？　というかアタシそんな名前じゃ……」
+		PRINTFORMW 「そうか悪かったポーン君。さて、警備をする上で重要なのが新鮮な果物に対する警戒であることは言うまでもなく――」
+		PRINTFORMW 話がややこしくなりそうなので早々につまみ出す事にした……
+	;VSハーピー　悪戯相談
+	CASE 5
+		PRINTFORMW 居間を覗くと%CALLNAME:TARGET%と%CALLNAME:GUEST%が何やら話し込んでいる
+		PRINTFORMW 「やはり飛んでいるわけですから――」
+		PRINTFORMW 「そうね、だとすると――」
+		PRINTFORMW 話を総合すると、どうやら空を飛ぶ相手に有効な悪戯の相談をしているようだ…
+		PRINTFORMW 「そうだ！　トリモチを使うのはどうかしら！？」
+		PRINTFORMW 「おー、それはナイスアイデアです。流石ですね、鳥だけに」
+		PRINTFORMW 「アハハハ！　当然よ！　もっと褒めなさい！」
+		PRINTFORMW 罠が完成したとして、真っ先に被害に会うのは%CALLNAME:GUEST%だと思うが…
+		PRINTFORMW 本人は気づいていないようなので、黙っておく事にした…
+	;VSストゥーナ　落とし穴
+	CASE 6
+		PRINTFORMW 「おーーーい！　誰かいないかーーー！」
+		PRINTFORMW 中庭に出ると、%CALLNAME:GUEST%の声が聞こえて来た……
+		DRAWLINE
+		PRINTFORMW 声を辿ると、%CALLNAME:GUEST%が落とし穴に落ちていた。それはもう、見事に
+		PRINTFORMW 「……先に言っとく。笑ったら殺す。いいな？」
+		PRINTFORML 
+		PRINTFORMW 「情けねえ話だが、ちょっと身動きが取れねえ。ちょっと引っ張りあげてくれ」
+		PRINTFORMW 「そう、そこを……イテテテ！　痛てえよ馬鹿！　あーもう！　誰だこんなの掘りやがった馬鹿は！」
+		PRINTFORMW 「お呼びでしょうか」
+		PRINTFORMW どこからとも無く%CALLNAME:TARGET%が現れた
+		PRINTFORMW 「テメエか！　こんなつまらねえ悪戯しやがって！」
+		PRINTFORMW 「はっはっはっ、%CALLNAME:TARGET%以外の誰がこんなしょうもない悪戯をするのです」
+		PRINTFORMW 「しょうもないって自覚があるならするんじゃねーーー！！！！１１１１！！」
+		PRINTFORMW 「しかししょうもない悪戯にひっかかるおマヌさんは見つかったのです。やーいやーい」
+		PRINTFORMW 「テ〜〜〜メ〜〜〜エ〜〜〜！！！！！　ぬっ……おっ……ふぬぬぬぬ……りゃあ！」
+		PRINTFORML 
+		PRINTFORMW ドカーン！！！
+		PRINTFORML 
+		PRINTFORMW 轟音とともに地面が爆ぜ、今や大穴となった落とし穴から%CALLNAME:GUEST%が飛び出した
+		PRINTFORMW 「おお、なんと見事な力技。流石はドラゴンです」
+		PRINTFORMW 「舐めんじゃねえ！　……さてと、覚悟はできてんだろうなあ？」
+		PRINTFORMW 「はっはっはっ、できてるわけないのです。さーらーばー」
+		PRINTFORMW %CALLNAME:TARGET%は脱兎の如く逃げ出した、辺りの物をなぎ倒しながら、怒り心頭の%CALLNAME:GUEST%が追いかける
+		PRINTFORMW 「待ちやがれぇぇぇぇぇぇッッッ！！！！１１１１！！」
+		PRINTFORMW 「待てと呼ばれて待つ奴はいないのです。次の%CALLNAME:TARGET%はもっと上手くやるでしょう。はっはー」
+		PRINTFORML 
+		PRINTFORMW 所でこの穴は自分が埋めなければならないのだろうか……
+		PRINTFORMW 荒れ放題の中庭を眺め、溜息をついた
+	;vsメローナ　やっぱり落とし穴
+	CASE 7
+		PRINTFORMW 「ね〜〜〜え〜〜〜！　誰か〜〜〜〜ぁ」
+		PRINTFORMW 中庭に出ると、%CALLNAME:GUEST%の声が聞こえて来た……
+		DRAWLINE
+		PRINTFORMW 声を辿ると、%CALLNAME:GUEST%が落とし穴に落ちていた。それはもう、見事に
+		PRINTFORMW 「ちょっとぉ〜、笑わないでよぉ〜」
+		PRINTFORML 
+		PRINTFORMW 「なんか嵌っちゃってぇ〜。出られないの〜、お願い手伝ってぇ」
+		PRINTFORMW 「そう、そこ持って……あっ、ちょっとイタいよぉ〜。もー、誰よこんな穴掘ったのぉ〜」
+		PRINTFORMW 「お呼びでしょうか」
+		PRINTFORMW どこからとも無く%CALLNAME:TARGET%が現れた
+		PRINTFORMW 「ちょっとぉ〜！　こんな悪戯しちゃ駄目なんだからねぇ〜！」
+		PRINTFORMW 「はっはっはっ、駄目と言われればやりたくなるのが%CALLNAME:TARGET%の性分なのです」
+		PRINTFORMW 「もう〜〜〜！！！　ふざけないでよぉ〜〜〜！」
+		PRINTFORMW 「大真面目に馬鹿をやるのが%CALLNAME:TARGET%です。しかし見事にはまってますね、おっぱいが引っ掛かってるのですか？」
+		PRINTFORMW 「も〜〜〜！！！　怒ったんだからねぇ〜〜〜〜！！！！　ええいっ！」
+		PRINTFORML 
+		PRINTFORMW シュウウウウウ……ボンッ！
+		PRINTFORML 
+		PRINTFORMW 何かが焦げるような臭いと共に地面が融解し、今や大穴となった落とし穴から%CALLNAME:GUEST%が飛び出した
+		PRINTFORMW 「おお、火竜にはそんな事もできるんですね。%CALLNAME:TARGET%は感心しました」
+		PRINTFORMW 「うふふ〜♪　見くびってもらっちゃ困るなぁ♪　さ・て・と♪」
+		PRINTFORMW 「はっはっはっ、なんだか暑いのに寒気がするので%CALLNAME:TARGET%は逃げることにします」
+		PRINTFORMW %CALLNAME:TARGET%は脱兎の如く逃げ出した、それを怒り心頭の%CALLNAME:GUEST%が追いかける……色んなものを溶かしたり燃やしたりしながら
+		PRINTFORMW 「コラーーー！！！　お仕置きなんだからねぇーーーー！！！！１１１！！　待ちなさぁ〜〜〜〜〜〜い！！！」
+		PRINTFORMW 「待てと呼ばれて待つ奴はいないのです。次の%CALLNAME:TARGET%はもっと上手くやるでしょう。はっはー」
+		PRINTFORML 
+		PRINTFORMW 所でこの惨状、やはり自分が片付けるのだろうか……
+		PRINTFORMW 荒れ放題の中庭を眺め、溜息をついた
+	;vsステラ　シャボン玉
+	CASE 8
+		PRINTFORMW 中庭を覗くと、%CALLNAME:GUEST%と%CALLNAME:TARGET%がシャボン玉を飛ばしている…
+		PRINTFORMW 「シャボン玉飛んだー♪　屋根まで飛んだー♪」
+		PRINTFORMW 「屋根まで飛んでー、壊れて消えたー」
+		PRINTFORMW 「わー、花火みたいだね」
+		PRINTFORMW 「実際にやってみましょうか」
+		PRINTFORMW 「うん！」
+		PRINTFORMW 止めてください
+	;VS幼稚　落とし穴掘り　昼専用？　夜は膝枕
+	CASE 9
+		IF TIME == 0
+			PRINTFORMW 庭で一時の休息を楽しんでいると、目の前を%CALLNAME:GUEST%を連れた%CALLNAME:TARGET%が通り過ぎた…
+			PRINTFORMW 手にはスコップが握られている…
+			PRINTFORMW また何かよからぬ事を企んでいるのだろうか…
+		ELSE
+			PRINTFORMW 飲み物を取りに居間へ入ると、%CALLNAME:GUEST%が%CALLNAME:TARGET%の膝枕で寝息を立てていた
+			PRINTFORMW %CALLNAME:TARGET%は優しげな顔で%CALLNAME:GUEST%の頭を撫でている…
+			PRINTFORMW %CALLNAME:MASTER%に気付くと、人差し指を口に当て、静かにするよう促した
+		ENDIF
+	;VS臆病　新鮮な果物で武装した恋敵
+	CASE 10
+		PRINTFORMW %CALLNAME:MASTER%が廊下を歩いていると、%CALLNAME:GUEST%が呆然とした顔で座り込んでいる…
+		PRINT 近寄ると、その手には
+		IF RAND:5 == 0
+			PRINT 真っ赤なイチゴ
+		ELSEIF RAND:4 == 0
+			PRINT 熟したバナナ
+		ELSEIF RAND:3 == 0
+			PRINT 瑞々しいリンゴ
+		ELSEIF RAND:2 == 0
+			PRINT 甘そうな洋梨
+		ELSE
+			PRINT 新鮮なオレンジ
+		ENDIF
+		PRINTFORMW が握られている…
+		PRINTFORMW 話を聞くと、%CALLNAME:TARGET%がこれを持って襲い掛かってきたそうだ…
+		PRINTFORMW 驚いてへたり込むと、危機管理がどうの、気迫がどうのと説教した後、これを握らせて去って行ったらしい
+		PRINTFORMW 一体何を考えているのだろうか……？
+	ENDSELECT
+	;ゲストと仲良くなる
+	CALL CHANGE_RELATION, 5, TARGET, GUEST
+	;今回起きたイベントを記録
+	CALL SET_CEVENT, LOCALS:EVENT_NUM
+;通常昼の時
+;ELSEIF TIME == 0 && RAND:3 == 0
+;	PRINTFORMW 
+;通常夜の時
+;ELSEIF TIME == 1 && RAND:3 == 0
+;	PRINTFORMW 
+ENDIF
+
+RETURN 1

@@ -1,0 +1,316 @@
+﻿@COM148
+;ピアッシング
+PRINTL ピアッシング
+
+CALL TRAIN_MESSAGE_B
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+STR:0 = ピアッシング
+
+RETURN 1
+
+@TRAIN_MESSAGE_COM148
+#DIM LCOUNT
+;ピアスの形状
+#DIMS PIERCES
+;ピアスの場所
+#DIMS PART_PIERCES
+
+PRINTFORMW %CALLNAME:TARGET%の身体をピアスで飾り立てます。
+IF ABL:マゾっ気 < 3 && FIRSTCOM(SELECTCOM) == 0
+	PRINTFORML このプレイはまだ早い気もしますが……今回はどうしましすか？
+ELSE
+	PRINTFORML さて、今回はどうしようか？
+ENDIF
+
+PRINTFORML  [ 0] \@ PENIS(TARGET) ? ペニス # クリトリス \@\@ TALENT:クリピアス ? からピアスを外す # にピアスをつける \@
+SIF TALENT:オトコ
+	SETCOLOR DEF_COLOR("灰色")
+PRINTFORML  [ 1] 小陰唇\@ TALENT:ラビアピアス ? からピアスを外す # にピアスをつける \@
+RESETCOLOR
+SIF COND("真性陥没乳首")
+	SETCOLOR DEF_COLOR("灰色")
+PRINTFORML  [ 2] 乳首\@ TALENT:ニプルピアス ? からピアスを外す # にピアスをつける \@
+RESETCOLOR
+PRINTFORML  [ 3] おへそ\@ TALENT:へそピアス ? からピアスを外す # にピアスをつける \@
+PRINTFORML [100] やめる
+
+$INPUT_LOOP
+INPUT
+
+IF RESULT == 100
+	TFLAG:14 = 1
+	RETURN 0
+ELSEIF RESULT == 0
+	CALL SETFLAG, "クリピアスフラグ", TARGET
+	SIF TALENT:クリピアス == 0
+		CALL SETFLAG, "ピアスＯＮフラグ", TARGET
+	CALL DEL_CEVENT_GROUP, "クリピアス"
+	IF PENIS(TARGET)
+		PART_PIERCES = ペニス
+	ELSE
+		PART_PIERCES = クリトリス
+	ENDIF
+ELSEIF RESULT == 1 && TALENT:オトコ == 0
+	CALL SETFLAG, "ラビアピアスフラグ", TARGET
+	SIF TALENT:ラビアピアス == 0
+		CALL SETFLAG, "ピアスＯＮフラグ", TARGET
+	CALL DEL_CEVENT_GROUP, "ラビアピアス"
+	PART_PIERCES = 小陰唇
+ELSEIF RESULT == 2 && COND("真性陥没乳首") == 0
+	CALL SETFLAG, "ニプルピアスフラグ", TARGET
+	SIF TALENT:ニプルピアス == 0
+		CALL SETFLAG, "ピアスＯＮフラグ", TARGET
+	CALL DEL_CEVENT_GROUP, "ニプルピアス"
+	PART_PIERCES = 乳首
+ELSEIF RESULT == 3
+	CALL SETFLAG, "へそピアスフラグ", TARGET
+	SIF TALENT:へそピアス == 0
+		CALL SETFLAG, "ピアスＯＮフラグ", TARGET
+	CALL DEL_CEVENT_GROUP, "へそピアス"
+	PART_PIERCES = おへそ
+ELSE
+	GOTO INPUT_LOOP
+ENDIF
+
+;ピアスの詳細を文字列で記録
+PIERCES = 
+
+;ピアスをつけた
+IF COND("ピアスＯＮフラグ")
+	PRINTFORML どのようなピアスをつけますか？
+	PRINTFORML  [ 0] リング型
+	PRINTFORML  [ 1] バーベル型
+	PRINTFORML  [ 2] 十字架型
+	PRINTFORML  [ 3] ♂型
+	PRINTFORML  [ 4] ♀型
+	PRINTFORML  [90] 直接入力する
+	PRINTFORML [100] 特にこだわらない（記述しません）
+
+	CALL INPUT_SELECT, 5, 90, 100
+
+	SELECTCASE RESULT
+	CASE 100
+	CASE 0
+		PIERCES = リング型
+	CASE 1
+		PIERCES = バーベル型
+	CASE 2
+		PIERCES = 十字架型
+	CASE 3
+		PIERCES = ♂型
+	CASE 4
+		PIERCES = ♀型
+	CASE 90
+		PRINTL 全角で８文字以下（半角なら16文字まで）の文字列を入力してください
+		PRINTL ("〜のピアス"等のように使われても違和感が無いもの推奨)
+		PRINTL また、何も入力しない場合は特にこだわらない（記述しない）事とします
+		CALL INPUTS_SELECT, 16
+		PIERCES = %RESULTS%
+	ENDSELECT
+
+	PRINTL 麻酔を使いますか？
+	PRINTL [0] はい
+	PRINTL [1] いいえ
+	CALL INPUT_SELECT, 2
+	SIF RESULT == 0
+		CALL SETFLAG, "鎮痛麻酔フラグ", TARGET
+
+	PRINTFORM %CALLNAME:PLAYER%は%CALLNAME:TARGET%の
+	IF COND("クリピアスフラグ")
+		IF PENIS(TARGET)
+			PRINT ペニスに
+		ELSE
+			IF TALENT:淫核
+				PRINT 勃起した
+			ELSEIF TALENT:Ｃ敏感
+				PRINT 敏感な
+			ELSEIF TALENT:小柄体型
+				PRINT 小さな
+			ENDIF
+			PRINT クリトリスに
+		ENDIF
+	ELSEIF COND("ラビアピアスフラグ")
+		IF TALENT:淫壷
+			PRINT 淫らにヒクつく
+		ELSEIF TALENT:Ｖ敏感
+			PRINT 敏感な
+		ELSEIF TALENT:小柄体型 && TALENT:幼稚
+			PRINT 幼い
+		ELSEIF TALENT:小柄体型
+			PRINT 小さな
+		ENDIF
+		PRINT 小陰唇に
+	ELSEIF COND("ニプルピアスフラグ")
+		IF COND("陥没乳首")
+			PRINTFORM 埋没している\@ COND("乳首肥大") ? 立派な # \@乳首を露出させて
+		ELSE
+			IF COND("乳首肥大")
+				PRINT 肥大した
+			ELSEIF TALENT:淫乳
+				PRINT 勃起した
+			ELSEIF TALENT:Ｂ敏感
+				PRINT 敏感な
+			ELSEIF TALENT:小柄体型 && TALENT:幼稚
+				PRINT 幼い
+			ELSEIF TALENT:小柄体型
+				PRINT 小さな
+			ENDIF
+			PRINT 乳首に
+		ENDIF
+	ELSEIF COND("へそピアスフラグ")
+		PRINT おへそに
+	ENDIF
+	SIF PIERCES != ""
+		PRINTFORM %PIERCES%の
+	PRINTFORMW ピアスをつけた
+
+	IF COND("クリピアスフラグ")
+		IF PENIS(TARGET)
+
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%のクリトリスはピアスを付けられたおかげで皮が捲られ、常時剥き出しの状態になってしまった…
+		ENDIF
+		PIERCES = クリピアス：%PIERCES%
+	ELSEIF COND("ラビアピアスフラグ")
+		SIF AGE(TARGET) >= 3
+			PRINTFORMW %CALLNAME:TARGET%の小陰唇は付けられたピアスの重みに引っ張られ、一目で分かるほどに大陰唇からはみ出てしまっている…
+		PIERCES = ラビアピアス：%PIERCES%
+	ELSEIF COND("ニプルピアスフラグ")
+		SIF COND("陥没乳首")
+			PRINTFORMW %CALLNAME:TARGET%の乳首は通されたピアスのおかげで戻れなくなり、常時露出するように矯正されてしまった…
+		PIERCES = ニプルピアス：%PIERCES%
+	ELSEIF COND("へそピアスフラグ")
+		PIERCES = へそピアス：%PIERCES%
+	ENDIF
+
+	;ピアスの形状フラグセット
+	SIF PIERCES != ""
+		CALL SET_CEVENT, PIERCES
+;ピアスを外した
+ELSE
+	PRINTFORMW %CALLNAME:PLAYER%は%CALLNAME:TARGET%の%PART_PIERCES%からピアスを外した
+ENDIF
+
+;つけたり外したり
+IF COND("クリピアスフラグ")
+	INVERTBIT TALENT:クリピアス, 0
+ELSEIF COND("ラビアピアスフラグ")
+	INVERTBIT TALENT:ラビアピアス, 0
+ELSEIF COND("ニプルピアスフラグ")
+	INVERTBIT TALENT:ニプルピアス, 0
+ELSEIF COND("へそピアスフラグ")
+	INVERTBIT TALENT:へそピアス, 0
+ENDIF
+
+
+@FLAG_COM148, ARG
+;クリorラビアピアスなら、アソコを露出させる
+IF COND("クリピアスフラグ") + COND("ラビアピアスフラグ") && !CHECK_CLO("Ｖ露出")
+	CALL SET_PANTIES, TARGET
+	CALL SET_BODYS, TARGET
+	CALL SET_OUTER, TARGET
+ENDIF
+
+STAIN:PLAYER:手 = 0
+IF COND("クリピアスフラグ")
+	STAIN:Ｖ = SET_STAIN(0, "Ｖ")
+ELSEIF COND("ラビアピアスフラグ")
+	STAIN:Ｖ = SET_STAIN(0, "Ｖ")
+ELSEIF COND("ニプルピアスフラグ")
+	STAIN:Ｂ = 0
+ENDIF
+
+@SOURCE_COM148, ARG
+VARSET LOCAL
+
+LOCAL:20 += 100
+LOCAL:21 += 200
+
+;外した場合
+SIF COND("ピアスＯＮフラグ") == 0
+	RETURN 1
+
+;基本はへそピアスの時
+;初めてつける時は痛みのせいで、体力気力消費が凄いことになります
+
+;主なSOURCE
+;LOCAL:6  痛み
+;LOCAL:13 屈従
+;LOCAL:14 逸脱
+
+LOCAL:6 = 3000
+LOCAL:13 = 1000
+LOCAL:14 = 3000
+
+IF COND("クリピアスフラグ")
+	LOCAL:20 += 100
+	LOCAL:21 += 300
+	LOCAL:6 += 17000
+	LOCAL:13 += 9000
+	LOCAL:14 += 17000
+ELSEIF COND("ラビアピアスフラグ")
+	LOCAL:20 += 100
+	LOCAL:21 += 200
+	LOCAL:6 += 7000
+	LOCAL:13 += 9000
+	LOCAL:14 += 12000
+ELSEIF COND("ニプルピアスフラグ")
+	LOCAL:20 += 50
+	LOCAL:21 += 200
+	LOCAL:6 += 12000
+	LOCAL:13 += 9000
+	LOCAL:14 += 12000
+ELSEIF COND("へそピアスフラグ")
+
+ENDIF
+
+;ABL:マゾっ気をみる
+SELECTCASE ABL:マゾっ気
+CASE 0
+CASE 1
+	TIMES LOCAL:13 , 1.20
+	TIMES LOCAL:14 , 0.90
+CASE 2
+	TIMES LOCAL:13 , 1.40
+	TIMES LOCAL:14 , 0.80
+CASE 3
+	TIMES LOCAL:13 , 1.60
+	TIMES LOCAL:14 , 0.50
+CASE 4
+	TIMES LOCAL:13 , 1.80
+	TIMES LOCAL:14 , 0.30
+CASEELSE
+	TIMES LOCAL:13 , 2.00
+	TIMES LOCAL:14 , 0.10
+ENDSELECT
+
+;露出癖をみる
+SELECTCASE ABL:露出癖
+CASE 0, 1
+CASE 2
+	TIMES LOCAL:14 , 0.90
+CASE 3
+	TIMES LOCAL:14 , 0.80
+CASE 4
+	TIMES LOCAL:14 , 0.70
+CASEELSE
+	TIMES LOCAL:14 , 0.60
+ENDSELECT
+
+;麻酔を使ったら痛み激減
+SIF COND("鎮痛麻酔フラグ")
+	TIMES LOCAL:6 , 0.01
+
+;ビデオ撮影中
+IF TEQUIP:ビデオカメラ
+	TIMES LOCAL:13 , 1.50
+	TIMES LOCAL:14 , 1.50
+ENDIF
+
+CALL SOURCE_SMPLAY, "ピアッシング", ARG
+
+CALL CALC, "調教ソース", LOCAL:0, LOCAL:1, LOCAL:2, LOCAL:3, LOCAL:4, LOCAL:5, LOCAL:6, LOCAL:7, LOCAL:8, LOCAL:9, LOCAL:10, LOCAL:11, LOCAL:12, LOCAL:13, LOCAL:14, LOCAL:15, LOCAL:16, LOCAL:17, LOCAL:18, LOCAL:19, LOCAL:20, LOCAL:21, ARG
+

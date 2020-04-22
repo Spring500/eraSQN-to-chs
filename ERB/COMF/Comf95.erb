@@ -1,0 +1,403 @@
+﻿@COM95
+;足コキ
+CALL PRINT_TRAIN_NAME(SELECTCOM)
+
+;-------------------------------------------------
+;実行できるかの判定
+;-------------------------------------------------
+CALL SHOW_COM_ORDER_COM, 95
+
+;実行できない
+SIF TCVAR:28 == 0
+	RETURN 0
+;-------------------------------------------------
+;実行決定
+;-------------------------------------------------
+CALL TRAIN_MESSAGE_B
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+STR:0 = 足コキ
+;-------------------------------------------------
+;射精チェック
+;-------------------------------------------------
+CALL SAMEN_CHECK
+
+RETURN 1
+
+@FLAG_COM95, ARG
+
+@SOURCE_COM95, ARG
+VARSET LOCAL
+
+LOCAL:20 += 40
+LOCAL:21 += 130
+
+IF PENIS(PLAYER)
+	LOCAL:8 = COM_ORDER_STAIN("Ｐ", "")*10 + 60
+ELSE
+	LOCAL:8 = COM_ORDER_STAIN("Ｖ", "")*10 + 60
+ENDIF
+LOCAL:11 = CALCF("実行値による欲情追加")
+LOCAL:13 = 400
+LOCAL:14 = 400
+
+
+;ABL:奉仕精神をみる
+SELECTCASE ABL:奉仕精神
+CASE 0
+	LOCAL:4 = 200
+	LOCAL:5 = 100
+CASE 1
+	LOCAL:4 = 250
+	LOCAL:5 = 180
+CASE 2
+	LOCAL:4 = 300
+	LOCAL:5 = 250
+CASE 3
+	LOCAL:4 = 350
+	LOCAL:5 = 350
+CASE 4
+	LOCAL:4 = 400
+	LOCAL:5 = 500
+CASEELSE
+	LOCAL:4 = 450
+	LOCAL:5 = 800
+ENDSELECT
+
+;ABL:技巧をみる
+SELECTCASE ABL:技巧
+CASE 0
+	TIMES LOCAL:4 , 0.50
+	TIMES LOCAL:5 , 0.50
+CASE 1
+	TIMES LOCAL:4 , 0.80
+	TIMES LOCAL:5 , 0.80
+CASE 2
+CASE 3
+	TIMES LOCAL:4 , 1.20
+	TIMES LOCAL:5 , 1.20
+CASE 4
+	TIMES LOCAL:4 , 1.50
+	TIMES LOCAL:5 , 1.50
+CASEELSE
+	TIMES LOCAL:4 , 2.00
+	TIMES LOCAL:5 , 2.00
+ENDSELECT
+
+;サドっ気をみる
+IF ABL:サドっ気
+	IF TALENT:サド
+		TIMES LOCAL:13 , 0.50
+		TIMES LOCAL:14 , 0.20
+	ENDIF
+	SELECTCASE ABL:サドっ気
+	CASE 0
+	CASE 1
+		TIMES LOCAL:14 , 0.80
+	CASE 2
+		TIMES LOCAL:14 , 0.60
+	CASE 3
+		TIMES LOCAL:14 , 0.40
+	CASE 4
+		TIMES LOCAL:14 , 0.20
+	CASEELSE
+		TIMES LOCAL:14 , 0.05
+	ENDSELECT
+ENDIF
+
+CALL CALC, "調教ソース", LOCAL:0, LOCAL:1, LOCAL:2, LOCAL:3, LOCAL:4, LOCAL:5, LOCAL:6, LOCAL:7, LOCAL:8, LOCAL:9, LOCAL:10, LOCAL:11, LOCAL:12, LOCAL:13, LOCAL:14, LOCAL:15, LOCAL:16, LOCAL:17, LOCAL:18, LOCAL:19, LOCAL:20, LOCAL:21, ARG
+
+
+@TRAIN_MESSAGE_COM95
+;TEQUIP:足コキのbitで行動管理
+;0bit 踏みつけ,1bit 股間見せ, 2bit 両足
+IF CHECK_COM("Ｗ奉仕")
+	;二人とも前回と同じ行動
+	IF SELECTCOM:1 == PREVCOM:1 && SELECTCOM == PREVCOM
+		PRINTFORM 二人は
+		IF TALENT:(TARGET:1):淫乱 + TALENT:(TARGET:1):恋慕 && TALENT:淫乱 + TALENT:恋慕 && RAND:3 == 0
+			PRINT うっとりしながら
+		ELSEIF RAND:2 == 0
+			PRINT 夢中になって
+		ENDIF
+		PRINTFORM %CALLNAME:MASTER%の
+		IF PENIS(PLAYER)
+			PRINT ペニス
+		ELSE
+			PRINTFORM \@ PREVPLAY("Ｖインサート", MASTER) ? ドロドロにほぐされた # \@アソコ
+		ENDIF
+		PRINTFORMW を足で弄くりまわしている…
+	ELSE
+		PRINTFORM %CALLNAME:TARGET%と%CALLNAME:(TARGET:1)%は
+		IF TALENT:(TARGET:1):淫乱 + TALENT:(TARGET:1):恋慕 && TALENT:淫乱 + TALENT:恋慕
+			IF RAND:3 == 0
+				PRINTFORM 上気した瞳で%CALLNAME:MASTER%を見つめながら、
+			ELSEIF RAND:2 == 0
+				PRINTFORM 股間が良く見える体勢をとると、
+				SETBIT TEQUIP:足コキ, 1
+			ENDIF
+		ENDIF
+		SIF RAND:2 == 0
+			PRINT 協力して
+		IF PENIS(PLAYER)
+			PRINTFORMW ペニスを足で扱きはじめた…
+		ELSE
+			PRINTFORMW アソコを足で弄り始めた…
+		ENDIF
+	ENDIF
+;同時押し倒し
+ELSEIF TEQUIP:Ｗ押し倒し
+	PRINTFORM %CALLNAME:TARGET%は
+	;助手が前回と同じ行動(違う行動の時は、ここでなく、EQUIP_COM32で記述)
+	SIF SELECTCOM:1 == PREVCOM:1 && SELECTCOM:1 >= 0
+		PRINTFORM %TEXTS("Ｗ押し倒し中")%
+	PRINTFORM %CALLNAME:MASTER%の
+	IF PENIS(PLAYER)
+		PRINT ペニスを
+	ELSE
+		PRINT アソコを
+	ENDIF
+	IF ABL:サドっ気 >= 3 && ABL:技巧 + ABL:足使い >= 3 && RAND:2 == 0
+		PRINT 巧みに
+	ELSEIF ABL:サドっ気 >= 3
+		PRINT 荒々しく
+	ELSEIF ABL:技巧 + ABL:足使い >= 3 && PENIS(PLAYER)
+		PRINT ゴシゴシと
+	ELSEIF ABL:サドっ気 < 3 || ABL:技巧 + ABL:足使い < 3
+		PRINT ぎこちなく
+	ENDIF
+	IF PREVCOM == SELECTCOM && COND("前Ｔ調教者") == PLAYER
+		IF PENIS(PLAYER)
+			PRINTW 扱き続けている…
+		ELSE
+			PRINTW 弄り続けている…
+		ENDIF
+	ELSE
+		IF PENIS(PLAYER)
+			PRINTW 扱いてきた…
+		ELSE
+			PRINTW 弄ってきた…
+		ENDIF
+	ENDIF
+ELSE
+	PRINTFORM %CALLNAME:TARGET%は
+	;押し倒され中
+	IF TEQUIP:押し倒し
+		SIF PENIS(PLAYER) == 0
+			SETBIT TEQUIP:足コキ, 0
+		IF TEQUIP:顔面騎乗 && ABL:サドっ気 >= 3
+			PRINTFORM %CALLNAME:PLAYER%の顔を股間で押し潰した体勢のまま、
+			TEQUIP:足コキ = 0
+		ELSEIF SELECTCOM == PREVCOM
+		;サドっ気3以上
+		ELSEIF ABL:サドっ気 >= 3 && RAND:2 && GETBIT(TEQUIP:足コキ, 0) == 0
+			PRINTFORM %CALLNAME:PLAYER%の
+			IF TALENT:小柄体型
+				PRINT 胸
+			ELSE
+				PRINT 顔
+			ENDIF
+			PRINT に腰を下ろして脚を伸ばすと、
+		ELSEIF GETBIT(TEQUIP:足コキ, 0)
+			IF ABL:サドっ気 >= 3 && COND("脚の使用", PLAYER) && RAND:2
+				PRINTFORM %CALLNAME:PLAYER%の足首を掴んで電気按摩の体勢を取ると、
+			ELSE
+				PRINTFORM %CALLNAME:PLAYER%を
+				SIF ABL:サドっ気 >= 3
+					PRINT 愉快そうに
+				PRINT 見下ろしながら、
+			ENDIF
+			;顔面騎乗解除
+			TEQUIP:顔面騎乗 = 0
+		ENDIF
+	;ズボン
+	ELSEIF EQUIP:アウター && CHECK_OUTER("ズボン")
+	;露出癖が低め
+	ELSEIF ABL:露出癖 - TALENT:恥じらい + TALENT:恥薄い + TALENT:好色 + TALENT:淫乱 + TALENT:小悪魔 < RAND:4
+		PRINT さりげなく股間を
+		;エプロン
+		IF TEQUIP:新妻プレイ
+			PRINT エプロンで
+		;スカートのある服
+		ELSEIF EQUIP:スカート
+			PRINTFORM %SKIRT(TARGET, 1)%で
+		ELSE
+			PRINTFORM %NAMES("手")%で
+		ENDIF
+		PRINT 隠しながら、
+	;露出癖3以上orサドor淫乱でズボン(これは上のほうで弾き済み)でない
+	ELSEIF ABL:奉仕精神 + TALENT:献身*2 >= 4 || ABL:露出癖 + ABL:サドっ気 + TALENT:サド*3 >= 3 || TALENT:好色 + TALENT:淫乱 + TALENT:恋慕 + TALENT:小悪魔 || PALAM:欲情 >= 10000
+		;スカートなどをはいているなら
+		IF EQUIP:スカート + TEQUIP:新妻プレイ && RAND:3
+			;エプロン
+			IF TEQUIP:新妻プレイ
+				PRINT エプロンを
+			ELSE
+				PRINTFORM %SKIRT(TARGET, 1)%を
+			ENDIF
+			IF COND("口の使用") && RANDIF(2, COND("指の使用") )
+				PRINT 口でくわえると、
+			ELSEIF COND("指の使用") && RAND:2
+				PRINT 持ち上げると、
+			ELSE
+				PRINT めくって
+			ENDIF
+		;パンツをはいているなら、ずらすことも
+		ELSEIF !CHECK_CLO("Ｖ露出") && CHECK_CLO("Ｖ露出可") && RAND:5 == 0
+			CALL SETFLAG, "ボトムを１枚ずらす", TARGET
+		ENDIF
+		IF TEQUIP:バイブ || TEQUIP:アナルバイブ || COND("アナルプラグ")
+			SIF TEQUIP:バイブ || TEQUIP:アナルバイブ
+				PRINT バイブ
+			SIF TEQUIP:バイブ && COND("アナルプラグ")
+				PRINT と
+			SIF COND("アナルプラグ")
+				PRINT プラグ
+			;淫乱
+			IF TALENT:淫乱
+				PRINT を咥え込んだ
+			ELSE
+				PRINT の刺さった
+			ENDIF
+			PRINT 股間
+		ELSEIF TALENT:オトコ
+			PRINT 勃起したペニス
+		;パンツをはいていて、ずらしていない
+		ELSE
+			PRINTFORM %TEXTS("アソコ：視覚")%
+		ENDIF
+		PRINT を見せつけながら、
+		SETBIT TEQUIP:足コキ, 1
+	ENDIF
+	IF PENIS(PLAYER)
+		SIF TEQUIP:押し倒し == 0
+			PRINTFORM %CALLNAME:PLAYER%の
+		PRINT ペニスを
+	ELSE
+		PRINTFORM \@ PREVPLAY("Ｖインサート", MASTER) ? 犯されたばかりの # 無防備な \@アソコを
+	ENDIF
+	;マーメイドなら
+	IF TALENT:マーメイド
+		PRINT ヒレで
+	ELSEIF TEQUIP:押し倒し == 0 && ABL:サドっ気 >= 3 && RAND:3 == 0
+		PRINT 両足で
+		SETBIT TEQUIP:足コキ, 2
+	;靴を履いている
+	ELSEIF EQUIP:靴
+		PRINTFORM %SHOES(TARGET, 1)%を履いた足で
+	;ソックスをはいている
+	ELSEIF EQUIP:靴下
+		PRINTFORM %SOCKS(TARGET, 1)%を履いた足で
+	;動物足
+	ELSEIF TALENT:動物足 && CHOSECOM(SELECTCOM) == 0
+		PRINT 人ならざる足で
+	ELSE
+		PRINT 足で
+	ENDIF
+	IF GETBIT(TEQUIP:足コキ, 0)
+		PRINT グリグリと
+	ELSEIF ABL:サドっ気 >= 3 && ABL:技巧 + ABL:足使い >= 3 && RAND:2 == 0
+		PRINT 巧みに
+		SIF ABL:足使い >= 3 && RAND:2
+			PRINT 動きに変化をつけながら
+	ELSEIF ABL:サドっ気 >= 3
+		PRINT 荒々しく
+	ELSEIF ABL:技巧 + ABL:足使い >= 3 && PENIS(PLAYER)
+		PRINT ゴシゴシと
+	ELSEIF ABL:サドっ気 < 3 || ABL:技巧 + ABL:足使い < 3
+		PRINT ぎこちなく
+	ENDIF
+	IF PREVCOM == SELECTCOM && GETBIT(TEQUIP:足コキ, 0) && COND("前Ｔ調教者") == PLAYER
+		PRINT 踏みつけ続けている
+	ELSEIF PREVCOM == SELECTCOM && COND("前Ｔ調教者") == PLAYER
+		IF PENIS(PLAYER)
+			PRINT 扱き続けている
+		ELSE
+			PRINT 弄り続けている
+		ENDIF
+	ELSEIF GETBIT(TEQUIP:足コキ, 0)
+		PRINT 踏みつけてきた
+	ELSE
+		IF PENIS(PLAYER)
+			PRINT 扱いてきた
+		ELSE
+			PRINT 弄ってきた
+		ENDIF
+	ENDIF
+	;脚は二本ある…あとはわかるな？
+	IF CHECK_COM("足コキ：両足コキ") == 0 && COND("脚に弱い") && (ABL:奉仕精神 >= 3 || ABL:サドっ気 >= 3)
+		PRINTW 。
+		PRINTFORM 
+	ENDIF
+	PRINTW …
+ENDIF
+
+
+@COM_ORDER_COM95, ARG
+VARSET LOCAL
+LOCALS = 
+
+;すべての命令に共通の要素を考慮
+;(従順が高いと命令に従いやすいなど)
+CALL COM_ORDER, ARG
+
+LOCAL = RESULT
+
+;ABL:サドっ気
+IF ABL:サドっ気
+	LOCAL += ABL:サドっ気 * 5
+	LOCALS = %LOCALS% + %ABLNAME:15%LV{ABL:サドっ気}({ABL:サドっ気 * 5})
+ENDIF
+;ABL:奉仕精神
+IF ABL:奉仕精神
+	LOCAL += ABL:奉仕精神 * 4
+	LOCALS = %LOCALS% + %ABLNAME:6%LV{ABL:奉仕精神}({ABL:奉仕精神 * 4})
+ENDIF
+;ABL:精液中毒
+IF ABL:精液中毒
+	LOCAL += ABL:精液中毒 * 3
+	LOCALS = %LOCALS% + %ABLNAME:11%LV{ABL:精液中毒}({ABL:精液中毒 * 3})
+ENDIF
+
+;強気
+IF TALENT:強気
+	LOCAL += 10
+	LOCALS = %LOCALS% + %TALENTNAME:18%(10)
+ENDIF
+;恥じらい
+IF TALENT:恥じらい
+	LOCAL -= 5
+	LOCALS = %LOCALS% - %TALENTNAME:35%(5)
+ENDIF
+;快感の否定
+IF TALENT:快感の否定
+	LOCAL -= 1
+	LOCALS = %LOCALS% - %TALENTNAME:71%(1)
+ENDIF
+;サド
+IF TALENT:サド
+	LOCAL += 5
+	LOCALS = %LOCALS% + %TALENTNAME:83%(5)
+ENDIF
+
+IF PENIS(PLAYER)
+	LOCAL:1 = COM_ORDER_STAIN("Ｐ", "") / 5
+ELSE
+	LOCAL:1 = COM_ORDER_STAIN("Ｖ", "") / 5
+ENDIF
+;汚れあり
+IF LOCAL:1
+	LOCAL -= LOCAL:1
+	LOCALS = %LOCALS% - 汚れあり
+	;汚臭鈍感
+	SIF TALENT:汚臭鈍感 || TALENT:汚臭敏感
+		LOCALS = %LOCALS%、\@TALENT:汚臭鈍感 ? %TALENTNAME:61% # %TALENTNAME:62%\@
+	LOCALS = %LOCALS%({LOCAL:1})
+ENDIF
+
+;合計を表示(30以上で実行)
+CALL PRINT_COM_ORDER_COM, LOCALS, ARG, LOCAL, 30
+
+RETURN RESULT

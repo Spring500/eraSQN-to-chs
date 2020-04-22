@@ -1,0 +1,459 @@
+﻿@COM87
+;尿道背面座位
+;指挿入れ同様に非常に入れ辛いので、拡張レベル自体が上昇するような段階では入れることは出来ない
+;非常に危険なコマンド。消耗は大きい
+CALL PRINT_TRAIN_NAME(SELECTCOM)
+
+CALL TRAIN_MESSAGE_B
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+STR:0 = %STR:2%
+
+;-------------------------------------------------
+;射精チェック
+;-------------------------------------------------
+CALL SAMEN_CHECK
+
+RETURN 1
+
+@FLAG_COM87, ARG
+;尿の汚れ発生
+STAIN:PLAYER:Ｐ = SET_STAIN(STAIN:PLAYER:Ｐ, "尿")
+IF PENIS(TARGET)
+	STAIN:Ｐ = SET_STAIN(STAIN:Ｐ, "尿")
+	;対象のＰ⇔調教者のＰの汚れが移動
+	CALL EQ_STAIN, TARGET, PLAYER, 2, 2
+ELSE
+	STAIN:Ｖ = SET_STAIN(STAIN:Ｖ, "尿")
+ENDIF
+
+;パンツをずらす
+SIF !CHECK_CLO("Ｖ露出")
+	CALL SETFLAG, "ボトムを露出：テキスト無し", TARGET
+
+
+@SOURCE_COM87, ARG
+VARSET LOCAL
+
+LOCAL:20 += 200
+LOCAL:21 += 240
+
+LOCAL:3 = 3000
+LOCAL:8 = 5000 + COM_ORDER_STAIN("Ｐ", "尿道")*200
+LOCAL:11 = 2000 + SIZE("ペニス", PLAYER)*1000
+LOCAL:12 = 300
+LOCAL:13 = 10000
+LOCAL:14 = 20000 + SIZE("ペニス", PLAYER)*5000
+
+;どっちの尿道か
+IF PENIS(TARGET)
+	LOCALS = %CSTR:4%
+	LOCAL:6 = 9000
+	LOCAL:9 = 9000
+ELSE
+	LOCALS = %CSTR:3%
+	LOCAL:6 = 2000
+	LOCAL:9 = 2000
+ENDIF
+
+;初めて
+IF EXP:尿道性交経験 == 0 && TALENT:倒錯的 == 0 && TALENT:マゾ == 0
+	LOCAL:9 += 5000
+	LOCAL:14 += 20000
+ENDIF
+
+;ABL:Ｃ感覚をみる
+LOCAL:0 = CALCF("尿道刺激", 2)
+;調教者の腰使いをみる
+LOCAL:0 = SOURCE_EXABL(LOCAL:0, 33, PLAYER)
+CALL SETFLAG, "尿道性感フラグ", TARGET
+
+;尿道の方がペニスの太さよりも太いなら痛みが軽減。逆だと痛い。しかしブジーに比べれば柔らかいので大分マシ
+SELECTCASE (SIZE("ペニスの直径", PLAYER) - MIN_STR(LOCALS) - GET_EXP_LV(EXP:尿道性交経験) )/3
+CASE IS <= -4
+	TIMES LOCAL:6, 0.05
+CASE -3
+	TIMES LOCAL:6, 0.10
+CASE -2
+	TIMES LOCAL:6, 0.25
+CASE -1
+	TIMES LOCAL:6, 0.50
+CASE 1
+	TIMES LOCAL:0, 0.50
+	TIMES LOCAL:6, 1.50
+	TIMES LOCAL:9, 2.00
+	TIMES LOCAL:20, 1.50
+	TIMES LOCAL:21, 1.50
+CASE 2
+	LOCAL:6 += 3000
+	LOCAL:9 += 3000
+	TIMES LOCAL:0, 0.10
+	TIMES LOCAL:6, 2.50
+	TIMES LOCAL:9, 3.00
+	TIMES LOCAL:20, 2.00
+	TIMES LOCAL:21, 2.00
+CASE IS >= 3
+	LOCAL:6 += 10000
+	LOCAL:9 += 6000
+	TIMES LOCAL:0, 0.01
+	TIMES LOCAL:6, 5.00
+	TIMES LOCAL:9, 5.00
+	TIMES LOCAL:20, 3.00
+	TIMES LOCAL:21, 3.00
+ENDSELECT
+
+;尿道拡張経験が5, 20, 50, 150…と区切りを越えて大きいなら、恐怖を軽減する
+SELECTCASE GET_EXP_LV(EXP:尿道拡張経験)
+CASE 1
+	TIMES LOCAL:9, 0.50
+CASE 2
+	TIMES LOCAL:9, 0.30
+CASE IS >= 3
+	TIMES LOCAL:9, 0.15
+ENDSELECT
+
+SELECTCASE EXP:尿道性交経験 + MIN(EXP:PLAYER:尿道挿入経験, EXP:PLAYER:尿道責め経験/10, 20)
+CASE IS < 5
+CASE IS < 20
+	TIMES LOCAL:6, 0.80
+	TIMES LOCAL:9, 0.80
+CASE IS < 50
+	TIMES LOCAL:0, 1.20
+	TIMES LOCAL:6, 0.60
+	TIMES LOCAL:9, 0.60
+CASE IS < 150
+	TIMES LOCAL:0, 1.35
+	TIMES LOCAL:6, 0.40
+	TIMES LOCAL:9, 0.40
+CASEELSE
+	TIMES LOCAL:0, 1.50
+	TIMES LOCAL:6, 0.20
+	TIMES LOCAL:9, 0.20
+ENDSELECT
+
+;PALAM:欲情をみる
+SELECTCASE PALAM:欲情
+CASE IS < PALAMLV:1
+	TIMES LOCAL:14, 1.50
+CASE IS < PALAMLV:2
+	TIMES LOCAL:14, 1.00
+CASE IS < PALAMLV:3
+	TIMES LOCAL:14, 0.90
+CASE IS < PALAMLV:4
+	TIMES LOCAL:14, 0.70
+CASE IS >= PALAMLV:4
+	TIMES LOCAL:14, 0.50
+ENDSELECT
+
+;ABL:マゾっ気をみる
+SELECTCASE ABL:マゾっ気
+CASE 0
+	TIMES LOCAL:11, 0.05
+CASE 1
+	TIMES LOCAL:11, 0.50
+CASE 2
+
+CASE 3
+	TIMES LOCAL:11, 1.50
+CASE 4
+	TIMES LOCAL:11, 2.00
+CASEELSE
+	TIMES LOCAL:11, 3.00
+ENDSELECT
+
+
+;快Ｃについては既に参照済み
+IF TALENT:尿道狂い
+	TIMES LOCAL:6, 0.10
+	TIMES LOCAL:9, 0.10
+	LOCAL:7 += 10000 + SIZE("ペニスの直径", PLAYER)*200
+	LOCAL:11 += LOCAL:14
+	TIMES LOCAL:14, 0.05
+ELSEIF TALENT:尿道性感
+	TIMES LOCAL:6, 0.20
+	TIMES LOCAL:9, 0.20
+	LOCAL:7 += 5000 + SIZE("ペニスの直径", PLAYER)*100
+	LOCAL:11 += LOCAL:14
+	TIMES LOCAL:14, 0.20
+ENDIF
+
+;場所をみる
+IF TEQUIP:館内露出プレイ || TEQUIP:野外プレイ
+	TIMES LOCAL:14, 2.50
+	TIMES LOCAL:12, 1.50
+ELSEIF TEQUIP:羞恥プレイ
+	TIMES LOCAL:14, 1.50
+	TIMES LOCAL:12, 1.20
+ELSEIF TEQUIP:お風呂プレイ
+	TIMES LOCAL:14, 0.50
+ENDIF
+
+SELECTCASE EXP:放尿経験 + EXP:お漏らし経験
+CASE IS < EXPLV:1
+	TIMES LOCAL:14, 3.00
+CASE IS < EXPLV:2
+	TIMES LOCAL:14, 2.50
+CASE IS < EXPLV:3
+	TIMES LOCAL:14, 2.00
+CASE IS < EXPLV:4
+	TIMES LOCAL:14, 1.00
+CASE IS < EXPLV:5
+	TIMES LOCAL:14, 0.80
+CASEELSE
+	TIMES LOCAL:14, 0.60
+ENDSELECT
+
+;筋弛緩剤
+SIF GETBIT(TEQUIP:筋弛緩剤, 1)
+	TIMES LOCAL:6, 0.20
+
+CALL CALC, "調教ソース", LOCAL:0, LOCAL:1, LOCAL:2, LOCAL:3, LOCAL:4, LOCAL:5, LOCAL:6, LOCAL:7, LOCAL:8, LOCAL:9, LOCAL:10, LOCAL:11, LOCAL:12, LOCAL:13, LOCAL:14, LOCAL:15, LOCAL:16, LOCAL:17, LOCAL:18, LOCAL:19, LOCAL:20, LOCAL:21, ARG
+
+
+
+@TRAIN_MESSAGE_COM87
+#DIMS CALLNAME_URETHRA
+
+;尿道の呼び方設定
+IF PENIS(TARGET)
+	CALLNAME_URETHRA = ペニス
+ELSE
+	CALLNAME_URETHRA = 尿道
+ENDIF
+
+;同時押し倒し
+IF TEQUIP:Ｗ押し倒し
+	PRINTFORM %CALLNAME:TARGET%は
+	;助手が前回と同じ行動(違う行動の時は、ここでなく、EQUIP_COM32で記述)
+	IF SELECTCOM:1 == PREVCOM:1 && SELECTCOM:1 >= 0
+		PRINTFORM %TEXTS("Ｗ押し倒し中")%
+	ELSEIF PREVCOM:1 == 65 || PREVCOM:1 == 66 || PREVCOM:1 == 67 || PREVCOM:1 == 75
+		PRINTFORM %CALLNAME:(TARGET:1)%の下の口から解放されたばかりの
+	ELSEIF PREVCOM:1 == 75 || PREVCOM:1 == 88
+		PRINTFORM %CALLNAME:(TARGET:1)%から解放されたばかりの
+	ENDIF
+	IF INSERT("Ａインサート")
+		PRINTFORMW %CALLNAME:MASTER%のペニスを肛門から解放し、今度は尿道で締め付けてきた…
+	ELSEIF INSERT("Ｖインサート")
+		PRINTFORMW %CALLNAME:MASTER%のペニスを膣から抜き、今度は尿道を使って呑み込んできた…
+	ELSEIF INSERT("尿道インサート")
+		PRINTFORMW %CALLNAME:MASTER%のペニスを、艶かしく腰を振りながら味わい続けている…
+	ELSE
+		PRINTFORMW %CALLNAME:MASTER%のペニスにまたがり、ゆっくりと小さな尿道で呑み込んできた…
+	ENDIF
+	;アソコを露出させる
+	SIF CHECK_CLO("Ｖ露出") == 0
+		CALL SETFLAG, "ボトムを露出：テキスト無し", TARGET
+;連続実行
+ELSEIF TEQUIP:押し倒し == 0 && CHECK_COM("連続実行")
+	PRINTFORM %CALLNAME:PLAYER%は
+	IF TALENT:尿道性感 == 0 && SIZE("ペニスの直径", PLAYER) >  MIN_STR(CONDS("尿道拡張度") )
+		PRINTFORM 腰の引けた%CALLNAME:TARGET%をグッと引き寄せて、
+	ELSEIF CHECK("尿道インサート") && RAND:2
+		PRINTFORM 余裕の表情で腰を動かす%CALLNAME:TARGET%に合わせて、
+	ELSE
+		IF PENIS(TARGET)
+			PRINTFORM %CALLNAME:TARGET%の\@ SIZE("ペニス", TARGET) >= 3 ? 馬鹿でかい # \@ペニスをしっかりと握って、
+			CALLNAME_URETHRA = ソコ
+		ELSE
+			IF INSERT("背面座位")
+				IF TEQUIP:羞恥プレイ
+					P = CALCF("尿道径") / 10
+				IF RAND:2
+					IF P >= SIZE("ペニスの直径", PLAYER)
+						PRINTFORMW 限界まで広がってる尿道を%CALLNAME:TARGET%へ見せ付けた…
+					ELSE
+						PRINTFORMW ペニスの直径よりも広がってしまい尿が漏れる様子を%CALLNAME:TARGET%へ見せ付けた…
+					ENDIF
+				ELSEIF RAND:1
+					PRINTFORMW 出入りするペニスに食いつく尿道の様を%CALLNAME:TARGET%へ見せ付けた…
+				ELSE
+					PRINTFORMW 脚を大きく開かせた…
+				ENDIF
+				ELSEIF TEQUIP:キス
+					PRINTFORMW %CALLNAME:PLAYER%は%CALLNAME:TARGET%%TEXTS("キス継続助詞付き")%、背後から抱きしめつつ再び腰を動かし始めた…
+					CALL SETFLAG, "追加キスフラグ", TARGET
+				ELSE
+					PRINTFORMW %CALLNAME:TARGET%を背後から抱きしめ、再び%CALLNAME:TARGET%の身体を揺らし始めた…
+				ENDIF
+			ELSE
+				PRINTFORM 尿道内から抜き去ることなく%CALLNAME:TARGET%の身体を背中から抱き寄せ、
+				IF TEQUIP:羞恥プレイ
+					PRINTFORMW 脚を大きく開かせた…
+				ELSEIF TEQUIP:キス
+					PRINTFORMW %TEXTS("キス継続")%身体を揺さぶり始めた…
+					CALL SETFLAG, "追加キスフラグ", TARGET
+				ELSE
+					PRINTFORMW 身体を揺さぶり始めた…
+				ENDIF
+			ENDIF
+		ENDIF
+	ENDIF
+	;尿道内射精直後
+	IF PREVEX("尿道内射精")
+		IF TALENT:尿道性感 && RAND:2
+			PRINTFORM 更なる精液を搾り取らんと締め付けてくる%CALLNAME_URETHRA%を
+			SIF PENIS(TARGET) == 0
+				PRINTFORM \@ SIZE("ペニス", PLAYER) >= 2 ? 太い # \@ペニスで
+			PRINTFORMW 掘削し続けた…
+		ELSE
+			IF CALLNAME_URETHRA == "尿道"
+				PRINTFORMW 精液を注ぎ込んだばかりの排泄器官を執拗に責め立て続けた…
+			ELSE
+				PRINTFORMW 精液を注ぎ込んだばかりの%CALLNAME_URETHRA%を執拗に責め立て続けた…
+			ENDIF
+		ENDIF
+	ELSE
+		;尿道性感orPLAYERがサド
+		SIF (TALENT:PLAYER:サド || TALENT:尿道性感) && RAND:3 == 0
+			PRINT セックスする時のように
+
+		IF (TALENT:PLAYER:サド || TALENT:尿道性感) && RAND:3 == 0
+			PRINTFORMW 荒々しく%CALLNAME_URETHRA%を犯し続けた…
+		ELSEIF PENIS(TARGET) == 0 && TALENT:PLAYER:サド || (TALENT:尿道性感 && RAND:2 == 0)
+			PRINTFORMW 激しくペニスを突き立てた…
+		ELSE
+			PRINTFORMW 腰を使いながら\@ PENIS(TARGET) ? 海綿体 # 尿道 \@の締め付けを楽しんだ…
+		ENDIF
+	ENDIF
+ELSEIF CHECK_COM("３Ｐ奉仕")
+	CALL TRAIN_MESSAGE_3P
+
+;前回と今回の調教者が同じで、抜かないフラグがある場合
+ELSEIF INSERT("インサート") && COND("前Ｔ調教者") == PLAYER
+	IF INSERT("Ｖインサート")
+		LOCALS = 膣
+	ELSEIF INSERT("Ａインサート")
+		LOCALS = アナル
+	ELSEIF INSERT("尿道インサート")
+		LOCALS = 尿道
+	ENDIF
+
+	;押し倒されているとき（騎乗位）
+	IF TEQUIP:押し倒し
+		;ワイルドスウィング
+		IF INSERT("ワイルドスウィング")
+			CALL TEXT, "ワイルドスウィング"
+		ELSEIF INSERT("尿道インサート")
+			IF TEQUIP:キス
+				PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%を解放せず、%TEXTS("キス継続")%再び腰を動かし始めた…
+				CALL SETFLAG, "追加キスフラグ", TARGET
+			ELSE
+				PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%を解放せず、繊細な粘膜をきつく締めたまま再び腰を動かし始めた…
+				CALL TEXT, "追加地の文：騎乗位"
+			ENDIF
+		ELSEIF INSERT("Ａインサート")
+			PRINTFORM %CALLNAME:TARGET%は腰を浮かしてアナルから%NAMES("ペニス", PLAYER)%を\@ PENIS(PLAYER) ? 解放する # 抜く \@と、腸液に塗れたソレを今度は尿道で
+			IF RAND:2 && ABL:尿道拡張 >= SIZE("ペニス", PLAYER)
+				PRINT 根元まで
+			ELSEIF ABL:尿道拡張 >= 1
+				PRINT 深々と
+			ENDIF
+			PRINTFORMW 咥え込んできた…
+		ELSEIF INSERT("Ｖインサート")
+			PRINTFORM %CALLNAME:TARGET%は腰を浮かして膣から%NAMES("ペニス", PLAYER)%を\@ PENIS(PLAYER) ? 解放する # 抜く \@と、濡れたソレを今度は尿道で
+			IF RAND:2 && ABL:尿道拡張 >= SIZE("ペニス", PLAYER)
+				PRINT 根元まで
+			ELSEIF ABL:尿道拡張 >= 1
+				PRINT 深々と
+			ENDIF
+			PRINTFORMW 咥え込んできた…
+		ENDIF
+	ELSEIF INSERT("尿道インサート")
+		IF INSERT("背面座位")
+			IF TEQUIP:羞恥プレイ
+				PRINTFORMW %CALLNAME:TARGET%の結合部と胸に再び手を這わせ、見せ付けるように腰を動かした…
+			ELSEIF TEQUIP:キス
+				PRINTFORMW %CALLNAME:PLAYER%は%CALLNAME:TARGET%%TEXTS("キス継続助詞付き")%、背後から抱きしめつつ再び腰を動かし始めた…
+				CALL SETFLAG, "追加キスフラグ", TARGET
+			ELSE
+				PRINTFORMW %CALLNAME:TARGET%を背後から抱きしめ、再び%CALLNAME:TARGET%の身体を揺らし始めた…
+			ENDIF
+		ELSE
+			PRINTFORM 尿道内から抜き去ることなく%CALLNAME:TARGET%の身体を背中から抱き寄せ、
+			IF TEQUIP:羞恥プレイ
+				P = CALCF("尿道径") / 10
+				IF RAND:2
+					IF P >= SIZE("ペニスの直径", PLAYER)
+						PRINTFORMW 限界まで広がってる尿道を%CALLNAME:TARGET%へ見せ付けた…
+					ELSE
+						PRINTFORMW ペニスの直径よりも広がってしまい尿が漏れる様子を%CALLNAME:TARGET%へ見せ付けた…
+					ENDIF
+				ELSEIF RAND:1
+					PRINTFORMW 出入りするペニスに食いつく尿道の様を%CALLNAME:TARGET%へ見せ付けた…
+				ELSE
+					PRINTFORMW 脚を大きく開かせた…
+				ENDIF
+			ELSEIF TEQUIP:キス
+				PRINTFORMW %TEXTS("キス継続")%身体を揺さぶり始めた…
+				CALL SETFLAG, "追加キスフラグ", TARGET
+			ELSE
+				PRINTFORMW 身体を揺さぶり始めた…
+			ENDIF
+		ENDIF
+	ELSE
+		IF INSERT("Ｖインサート")
+			PRINTFORM ペニスを膣から引き抜いて、
+		ELSEIF INSERT("Ａインサート")
+			PRINTFORM ペニスをアナルから引き抜いて、
+		ENDIF
+		
+		PRINTFORM %CALLNAME:TARGET%を
+		SIF INSERT("正常位") || INSERT("屈曲位") || INSERT("対面座位")
+			PRINTFORM 背中から
+		PRINTFORM 抱き寄せ、%NAMES("ペニス", PLAYER)%を尿道に
+		SIF TALENT:妊娠 == 0 || TALENT:PLAYER:サド
+			PRINT 深々と
+		PRINTFORM 呑み込ませ
+		SIF TEQUIP:羞恥プレイ
+			PRINTFORM て脚を大きく広げさせ
+		PRINTFORMW た…
+	ENDIF
+ELSE
+	PRINTFORM %CALLNAME:PLAYER%は
+	SIF PREVCOM == 13 && PENIS(TARGET) == 0
+		PRINT 尿道を指で割り広げている
+	PRINTFORM %CALLNAME:TARGET%の
+	;前回尿道で射精された
+	IF PREVEX("尿道内射精")
+		PRINTFORM 精液を注ぎ込まれたばかりの
+	;前回放尿
+	ELSEIF PREVPLAY("放尿")
+		PRINTFORM 排尿したばかりの
+	ELSEIF PREVPLAY("膀胱内浴尿")
+		PRINTFORM 輸尿直後の
+	ELSEIF PENIS(TARGET) && PREVEX("射精")
+		PRINTFORM 射精したばかりで敏感な
+	ELSEIF PREVCOM == 15
+		PRINTFORM 指で弄ばれて開き気味な
+	ELSEIF PREVCOM == 149
+		PRINTFORM カテーテルを引き抜かれた直後の
+	ELSEIF PREVCOM == 151
+		PRINTFORM ブジーで虐め抜いた直後の
+	ENDIF
+
+	;初めてのペニス受け入れ
+	IF EXP:尿道性交経験 == 0
+		IF PENIS(TARGET)
+			PRINTFORMW ペニスを握って尿道口を押し広げ、オナホールにそうするかのように自らのペニスの挿入を試みた。
+		ELSE
+			PRINTFORMW 尿道にペニスの先端を押し付け、グッと力を込めて腰を突き出した。
+		ENDIF
+	ELSE
+		IF PENIS(TARGET)
+			PRINTFORMW ペニスを、\@ CHOSECOM(SELECTCOM) ? 再び # \@自らのソレで\@ SIZE("ペニス", PLAYER) >= 1 ? 深々と # \@貫いた。
+		ELSE
+			PRINTFORM 尿道を、
+			IF RAND:2
+				PRINTFORMW \@ CHOSECOM(SELECTCOM) ? 再び # \@ペニスで貫いた。
+			ELSEIF RAND:1
+				PRINTFORMW 獣の様に犯し始めた。
+			ELSE
+				PRINTFORMW 壊さんばかりの勢いで犯し始めた
+			ENDIF
+		ENDIF
+	ENDIF
+ENDIF
+

@@ -1,0 +1,684 @@
+﻿@COM152
+;尿道バイブ
+;-------------------------------------------------
+;実行できるかの判定
+;-------------------------------------------------
+CALL SHOW_COM_ORDER_COM, 152
+
+;実行できない
+SIF TCVAR:28 == 0
+	RETURN 0
+;-------------------------------------------------
+;実行決定
+;-------------------------------------------------
+CALL TRAIN_MESSAGE_B
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+STR:0 = %STR:2%
+
+RETURN 1
+
+IF TEQUIP:尿道バイブ
+	PRINTFORML 尿道バイブを抜く
+ELSE
+	PRINTFORML 尿道バイブ\@ TALENT:妖精 ? (妖精用) # \@
+ENDIF
+
+CALL TRAIN_MESSAGE_B
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+IF TEQUIP:尿道バイブ == 0
+	STR:0 = 尿道バイブを抜く
+ELSE
+	STR:0 = 尿道バイブ
+ENDIF
+
+RETURN 1
+
+CALL TRAIN_MESSAGE_B
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+STR:0 = %STR:2%
+
+RETURN 1
+
+@FLAG_COM152, ARG
+;尿の汚れ発生
+IF PENIS(TARGET)
+	STAIN:Ｐ = SET_STAIN(STAIN:Ｐ, "尿")
+ELSE
+	STAIN:Ｖ = SET_STAIN(STAIN:Ｖ, "尿")
+ENDIF
+;パンツをずらす
+SIF !CHECK_CLO("Ｖ露出") && INSERT("インサート") == 0
+	CALL SETFLAG, "ボトムを露出：テキスト無し", TARGET
+
+
+@SOURCE_COM152, ARG
+VARSET LOCAL
+
+;くぱぁ
+CALL SOURCE_COM13, 50
+
+;消耗はかなり激しい
+LOCAL:6 += MAX(TEQUIP:尿道バイブ - MIN_STR(LOCALS), 0) * 500
+LOCAL:9 += MAX(TEQUIP:尿道バイブ - MIN_STR(LOCALS), 0) * 1000
+
+LOCAL:8 = 1000
+LOCAL:11 = 500 + TEQUIP:尿道バイブ*100
+LOCAL:12 = 2000
+LOCAL:13 = 5000
+LOCAL:14 = 5000 + TEQUIP:尿道バイブ*100
+
+;どっちの尿道か
+LOCALS = %CONDS("尿道拡張度")%
+IF PENIS(TARGET)
+	LOCAL:6 = 2500
+	LOCAL:9 = 2500
+ELSE
+	LOCAL:6 = 500
+	LOCAL:9 = 500
+ENDIF
+
+;ABL:Ｃ感覚をみる
+LOCAL:0 = CALCF("尿道刺激", 0)
+;これは凹凸もないし快楽用の道具ではない
+TIMES LOCAL:0, 0.20
+CALL SETFLAG, "尿道性感フラグ", TARGET
+
+;初めて経験する太さは痛い。２回目以降は軽減
+IF TEQUIP:尿道バイブ > MAX_STR(LOCALS)
+	LOCAL:6 += 500
+	LOCAL:9 += 500
+ENDIF
+
+;痛み(LOCAL:6)と恐怖(LOCAL:9)は、主にペニスの有無、TEQUIP:尿道バイブとMIN_STR(LOCALS)依存
+;尿道性感についてはここの最後で大きな補正あり
+LOCAL:6 += MAX(TEQUIP:尿道バイブ - SIZE("尿道バイブ", TARGET) ) * 500
+LOCAL:9 += MAX(TEQUIP:尿道バイブ - SIZE("尿道バイブ", TARGET) ) * 1000
+
+SELECTCASE TEQUIP:尿道バイブ - MIN_STR(LOCALS)
+CASE 1
+	TIMES LOCAL:0, 0.80
+	TIMES LOCAL:6, 1.20
+	TIMES LOCAL:9, 1.50
+CASE 2
+	TIMES LOCAL:0, 0.50
+	TIMES LOCAL:6, 1.50
+	TIMES LOCAL:9, 2.00
+CASE 3
+	TIMES LOCAL:0, 0.30
+	TIMES LOCAL:6, 2.00
+	TIMES LOCAL:9, 3.00
+CASE 4
+	TIMES LOCAL:0, 0.15
+	TIMES LOCAL:6, 2.50
+	TIMES LOCAL:9, 4.00
+CASE IS >= 5
+	TIMES LOCAL:0, 0.05
+	TIMES LOCAL:6, 3.00
+	TIMES LOCAL:9, 5.00
+ENDSELECT
+
+;尿道拡張経験が5, 20, 50, 150…と区切りを越えて大きいなら、恐怖を軽減する
+SELECTCASE GET_EXP_LV(EXP:尿道拡張経験) - (TEQUIP:尿道バイブ - SIZE("尿道バイブ", TARGET) )
+CASE 1
+	TIMES LOCAL:9, 0.50
+CASE 2
+	TIMES LOCAL:9, 0.30
+CASE IS >= 3
+	TIMES LOCAL:9, 0.15
+ENDSELECT
+
+SELECTCASE EXP:尿道経験 + MIN(EXP:PLAYER:尿道責め経験, 50)
+CASE IS < 5
+CASE IS < 20
+	TIMES LOCAL:6, 0.80
+	TIMES LOCAL:9, 0.80
+CASE IS < 50
+	TIMES LOCAL:0, 1.20
+	TIMES LOCAL:6, 0.60
+	TIMES LOCAL:9, 0.60
+CASE IS < 150
+	TIMES LOCAL:0, 1.35
+	TIMES LOCAL:6, 0.40
+	TIMES LOCAL:9, 0.40
+CASEELSE
+	TIMES LOCAL:0, 1.50
+	TIMES LOCAL:6, 0.20
+	TIMES LOCAL:9, 0.20
+ENDSELECT
+
+;PALAM:欲情をみる
+SELECTCASE PALAM:欲情
+CASE IS < PALAMLV:1
+	TIMES LOCAL:14, 1.50
+CASE IS < PALAMLV:2
+	TIMES LOCAL:14, 1.00
+CASE IS < PALAMLV:3
+	TIMES LOCAL:14, 0.90
+CASE IS < PALAMLV:4
+	TIMES LOCAL:14, 0.70
+CASE IS >= PALAMLV:4
+	TIMES LOCAL:14, 0.50
+ENDSELECT
+
+;ABL:マゾっ気をみる
+SELECTCASE ABL:マゾっ気
+CASE 0
+	TIMES LOCAL:11, 0.05
+CASE 1
+	TIMES LOCAL:9, 0.90
+	TIMES LOCAL:11, 0.50
+CASE 2
+	TIMES LOCAL:9, 0.80
+CASE 3
+	TIMES LOCAL:9, 0.70
+	TIMES LOCAL:11, 1.50
+CASE 4
+	TIMES LOCAL:9, 0.60
+	TIMES LOCAL:11, 2.00
+CASEELSE
+	TIMES LOCAL:9, 0.50
+	TIMES LOCAL:11, 3.00
+ENDSELECT
+
+;快Ｃについては既に参照済み
+IF TALENT:尿道狂い
+	TIMES LOCAL:6, 0.10
+	TIMES LOCAL:9, 0.10
+	LOCAL:7 += 10000 + SIZE("ペニスの直径", PLAYER)*200
+	LOCAL:11 += LOCAL:14
+	TIMES LOCAL:14, 0.05
+ELSEIF TALENT:尿道性感
+	TIMES LOCAL:6, 0.20
+	TIMES LOCAL:9, 0.20
+	LOCAL:7 += 5000 + SIZE("ペニスの直径", PLAYER)*100
+	LOCAL:11 += LOCAL:14
+	TIMES LOCAL:14, 0.20
+ENDIF
+
+SELECTCASE EXP:放尿経験 + EXP:お漏らし経験
+CASE IS < EXPLV:1
+	TIMES LOCAL:14, 3.00
+CASE IS < EXPLV:2
+	TIMES LOCAL:14, 2.50
+CASE IS < EXPLV:3
+	TIMES LOCAL:14, 2.00
+CASE IS < EXPLV:4
+	TIMES LOCAL:14, 1.00
+CASE IS < EXPLV:5
+	TIMES LOCAL:14, 0.80
+CASEELSE
+	TIMES LOCAL:14, 0.60
+ENDSELECT
+
+;筋弛緩剤
+SIF GETBIT(TEQUIP:筋弛緩剤, 1)
+	TIMES LOCAL:6, 0.20
+
+;連続実行だと少々お得
+IF PREVCOM == SELECTCOM
+	TIMES LOCAL:0, 1.50
+	TIMES LOCAL:6, 1.50
+	TIMES LOCAL:8, 1.50
+	TIMES LOCAL:9, 1.50
+	TIMES LOCAL:11, 1.50
+	TIMES LOCAL:12, 1.50
+	TIMES LOCAL:13, 1.50
+	TIMES LOCAL:14, 1.50
+ENDIF
+
+IF B > CALCF("尿道径")
+	C = RAND:5
+	IF C == 5
+		IF CALCF("尿道径") < CALCF("尿道拡張の限界")
+			; BUG HERE
+			; Original edition code is the line with comment ; below
+			; CALCF("尿道拡張の限界") += 1
+			CFLAG:452 += 1
+		ENDIF
+	ENDIF
+ENDIF
+
+; for the BUG above, I searched the all the code with some keyword like `尿道径`, or `尿道`.
+; I think the code was trying to increase the var `尿道径`(urethra diameter),
+; So, in file `Comf151.erb`, it seems what means `CFLAG:452` means, means `尿道径` too,
+; Also, in original edition, .\資料\CFLAG.txt L269 said `452	尿道ブジー（受け入れた最大の太さの記録に使用）`
+; So, I fix it with `CFLAG:452 += 1`
+; .\ERB\COMF\Comf151.erb:PRINTFORML %CALLNAME:TARGET%に使用したブジーで一番太い物は{CFLAG:452}mmですが……それよりも緩くなっているように見受けられます
+; .\ERB\COMF\Comf151.erb:PRINTFORML %CALLNAME:TARGET%の尿道は直径{MAX(MAX_STR(LOCALS), CFLAG:452)}mmまで経験済みですが、痛みが少ないのは{MIN_STR(LOCALS)*21\20}mmまでのようです
+; .\ERB\COMF\Comf151.erb:PRINTFORML %CALLNAME:TARGET%の尿道は直径{MAX(MAX_STR(LOCALS), CFLAG:452)}mmまで経験済みで、ここまでなら痛みが少ないようです
+; .\ERB\COMF\Comf151.erb:PRINTFORML {MAX(MAX_STR(LOCALS), CFLAG:452)}mm以下の太さが良いと思われますが……\@ PREVCOM == SELECTCOM ? 引き続き # 今回は \@、どの太さのブジーを使いますか？
+; .\ERB\COMF\Comf151.erb:PRINTFORML %CALLNAME:TARGET%の尿道は直径{MAX(MAX_STR(LOCALS), CFLAG:452)}mmまで経験済みで、この太さまでは大丈夫のようです
+
+A = SIZE("尿道バイブ", TARGET)
+
+CALL CALC, "調教ソース", LOCAL:0, LOCAL:1, LOCAL:2, LOCAL:3, LOCAL:4, LOCAL:5, LOCAL:6, LOCAL:7, LOCAL:8, LOCAL:9, LOCAL:10, LOCAL:11, LOCAL:12, LOCAL:13, LOCAL:14, LOCAL:15, LOCAL:16, LOCAL:17, LOCAL:18, LOCAL:19, LOCAL:20, LOCAL:21, ARG
+
+;ARGに入れられるキャラ、ARGSは補足。
+;現状だとARGS == "強制挿入"で[100] やめる を選択不可にできる
+@SELECT_VIB_U, ARG, ARGS
+#DIM LCOUNT
+#DIM SIZE_DILDO
+
+VARSET LOCAL, 1
+
+SIF ITEM:尿道責めキット == 0
+	LOCAL:11 = 0
+
+PRINTFORML どれを使\@ ARG == PLAYER ? ってもら # \@いますか？
+
+VARSET LOCALS
+LOCALS:1 = [\@ LOCAL:1 ? {1, 2} # × \@] 細身のバイブ　　　\@ ABL:ARG:尿道拡張 <= -1 - TALENT:ARG:妖精 ? ※初心者厳禁！ # \@
+LOCALS:2 = [\@ LOCAL:2 ? {2, 2} # × \@] 普通のバイブ　　　\@ ABL:ARG:尿道拡張 <= 0 - TALENT:ARG:妖精 ? ※慣れた人用！ # \@
+LOCALS:3 = [\@ LOCAL:3 ? {3, 2} # × \@] 太めバイブ　　　　\@ ABL:ARG:尿道拡張 <= 1 - TALENT:ARG:妖精 ? ※上級者専用！ # \@
+LOCALS:4 = [\@ LOCAL:4 ? {4, 2} # × \@] 極太バイブ　　　　\@ ABL:ARG:尿道拡張 <= 2 - TALENT:ARG:妖精 ? ※慣れた人用！ # \@
+LOCALS:5 = [\@ LOCAL:5 ? {5, 2} # × \@] 尿道パール　　　　\@ ABL:ARG:尿道拡張 <= 0 - TALENT:ARG:妖精 ? ※慣れた人用！ # \@
+
+FOR LCOUNT, 0, 20
+	SIF STRLENS(LOCALS:LCOUNT) == 0
+		CONTINUE
+
+	SIF LOCAL:LCOUNT == 0
+		SETCOLOR DEF_COLOR("灰色")
+	PRINTFORML  %LOCALS:LCOUNT%
+	RESETCOLOR
+NEXT
+
+SIF ARGS != "強制挿入"
+	PRINTFORML [100] やめる
+
+$INPUT_LOOP
+INPUT
+
+IF RESULT == 100 && ARGS != "強制挿入"
+	TEQUIP:ARG:尿道バイブ = 0
+	TFLAG:14 = 1
+	RETURN 0
+ELSEIF RESULT == 1 && LOCAL:1
+	TEQUIP:ARG:尿道バイブ = 1p1
+	B = (CALCF("尿道径") - 3)
+ELSEIF RESULT == 2 && LOCAL:2
+	TEQUIP:ARG:尿道バイブ = 1p2
+	B = (CALCF("尿道径"))
+ELSEIF RESULT == 3 && LOCAL:3
+	TEQUIP:ARG:尿道バイブ = 1p3
+	B = (CALCF("尿道径") + 3)
+ELSEIF RESULT == 4 && LOCAL:4
+	TEQUIP:ARG:尿道バイブ = 1p4
+	B = (CALCF("尿道径") + 5)
+ELSEIF RESULT == 5 && LOCAL:5
+	TEQUIP:ARG:尿道バイブ = 1p5
+	B = (CALCF("尿道径") + 2)
+ELSE
+	GOTO INPUT_LOOP
+ENDIF
+RETURN 1
+
+
+@TRAIN_MESSAGE_COM152
+;尿道バイブの着脱
+IF TEQUIP:尿道バイブ
+	A = SIZE("尿道バイブ", TARGET)
+	PRINTFORM %CALLNAME:TARGET%\@ TEQUIP:押し倒し ? は # の \@尿道から
+
+	SIF A == 5
+		PRINT 尿道パール
+	SIF A == 4
+		PRINT 極太のバイブ
+	SIF A == 3
+		PRINT 太目のバイブ
+	SIF A == 2
+		PRINT 尿道バイブ
+	SIF A == 1
+		PRINT 細身のバイブ
+	PRINTFORMW を抜いた…
+	TFLAG:16 = TEQUIP:尿道バイブ
+	TEQUIP:尿道バイブ = 0
+	RETURN 0
+ENDIF
+
+;バイブの品揃えを見た、夢魔の反応です
+CALL SELF_KOJO, "尿道バイブ追加口上"
+
+$SELECT_VIB
+;バイブ選択
+CALL SELECT_VIB_U, TARGET
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+;使われるバイブが決定された時の、夢魔の反応です
+CALL SELF_KOJO, "尿道バイブ追加口上"
+
+IF TEQUIP:尿道バイブ == 0
+	TFLAG:16 = 1
+	GOTO SELECT_VIB
+ENDIF
+;-------------------------------------------------
+;ソースの計算(予測値)
+;-------------------------------------------------
+CALL CALC, "調教ソースの試算"
+
+PRINTFORM %CALLNAME:PLAYER%は%CALLNAME:TARGET%の
+;尿道が露出していないで、パンツをずらしていないなら自動的にずらす
+IF !CHECK_CLO("Ｖ露出")
+	CALL SETFLAG, "ボトムを露出：テキスト有り", TARGET
+	PRINT 、
+ENDIF
+IF (ABL:尿道拡張 >= 5 || (PREVCOM >= 70 && PREVCOM <= 79) || PREVCOM == 142 || PREVCOM == 143) && ABL:尿道拡張 >= 2 && RAND:3 == 0
+	PRINT だらしなく口を開けている
+ELSEIF ABL:尿道拡張 >= 2
+	PRINT すっかり柔らかくなった
+ELSEIF TALENT:恋慕 || RAND:3 == 0
+	PRINT 可愛い
+ELSEIF EXP:尿道経験 < 50 && RAND:2 == 0
+	PRINT 経験の少ない
+ELSE
+	PRINT キュッと窄まった
+ENDIF
+PRINT 尿道
+IF TALENT:恋慕
+	PRINTFORM を揉みほぐしてから\@ COND("ボトムを露出させた") ? # 、 \@
+ELSE
+	PRINTFORM に
+ENDIF
+
+SELECTCASE SIZE("尿道バイブ", TARGET)
+CASE 5
+	PRINT 球体が連結された
+CASE 4
+	PRINT 極太の
+CASE 3
+	PRINT 太目の
+CASE 2
+	PRINT 尿道
+CASE 1
+	PRINT 細身の
+ENDSELECT
+
+IF SIZE("尿道バイブ", TARGET) == 5
+	PRINT パールを
+ELSE
+	PRINT バイブを
+ENDIF
+;拡張不足
+IF ABL:尿道拡張 < (SIZE("尿道バイブ", TARGET) - 2 )
+	PRINTFORMW %TEXTR("力任せに", "強引に", "無理矢理に", "抉るように", "肉を押しのける感触を味わいながら", "抵抗をものともせずに")%捻じ込んだ。
+ELSE
+	IF SIZE("尿道バイブ", TARGET) == 5
+		PRINT 一つ一つ強引に
+	ELSEIF CHECK("尿道バイブ") == 0 && TALENT:PLAYER:サド && RAND:2 == 0
+		PRINT 力任せに
+	ELSEIF (TALENT:恋慕 || ABL:サドっ気 >= 3) && RAND:3 == 0
+		PRINT 深々と
+	ELSEIF TALENT:恋慕 && RAND:3 == 0
+		PRINT 優しく
+	ELSEIF (TALENT:恋慕 || ABL:サドっ気 >= 3) && RAND:2 == 0
+		PRINT 一気に
+	ELSE
+		PRINT ゆっくりと
+	ENDIF
+	IF RAND:4 == 0
+		PRINTW 飲み込ませた。
+	ELSEIF CHECK("尿道バイブ") == 0 && TALENT:PLAYER:サド && RAND:2 == 0
+		PRINTW 侵入させた。
+	ELSEIF (TALENT:恋慕 || ABL:サドっ気 >= 3) && RAND:3 == 0
+		PRINTW 沈めた。
+	ELSEIF (TALENT:恋慕 || ABL:サドっ気 >= 3) && RAND:2 == 0
+		PRINTW 挿し込んだ。
+	ELSE
+		PRINTW 挿入した。
+	ENDIF
+ENDIF
+
+;拡張十分
+IF CHECK("尿道バイブ") && RAND:3
+	PRINTFORM %CALLNAME:TARGET%の
+	IF TALENT:小柄体型 && EXP:尿道経験 < 100 && ABL:尿道拡張 <= 1
+		PRINT 小さな
+	ELSEIF TALENT:小柄体型 && ABL:尿道拡張 >= 2
+		SIF ABL:尿道拡張 > SIZE("尿道バイブ", TARGET)
+			PRINT 十分に
+		PRINT 拡張された
+	ELSEIF EXP:尿道経験 >= 100 && RAND:2 == 0
+		PRINT 経験豊富な
+	ELSEIF ABL:尿道拡張 > SIZE("尿道バイブ", TARGET)
+		PRINT 柔らかな
+	ENDIF
+	PRINT 尿道は
+	IF SIZE("尿道バイブ", TARGET) >= 2 && ABL:尿道拡張 > SIZE("尿道バイブ", TARGET) && RAND:2
+		IF RAND:3 == 0
+			PRINT いとも簡単に
+		ELSEIF RAND:2
+			PRINT 何の抵抗もなく
+		ELSE
+			PRINT 吸い込むように
+		ENDIF
+	ELSEIF ABL:尿道拡張 >= SIZE("尿道バイブ", TARGET) + 1 && RAND:2 == 0
+		SIF TALENT:内気 || TALENT:清楚
+			PRINT 大人しそうな外見に反して
+		PRINT 易々と拡がり、
+	ELSEIF ABL:尿道拡張 >= SIZE("尿道バイブ", TARGET)
+		PRINT ゴムのように伸び、
+	ENDIF
+
+	SELECTCASE SIZE("尿道バイブ", TARGET)
+	CASE IS >= 3
+		PRINT 凶悪な
+	CASE 2
+		PRINT 野太い
+	CASE 0
+		PRINT 尿道
+	ENDSELECT
+	PRINT バイブを
+
+	PRINTW 尿道の奥まで呑み込んだ…
+ELSEIF CHECK("尿道バイブ") == 0 && ABL:尿道拡張 < (SIZE("尿道バイブ", TARGET) - 2 )
+	PRINTFORM %CALLNAME:TARGET%の
+	SIF TALENT:小柄体型 && EXP:尿道経験 < 100 && ABL:尿道拡張 == 0
+		PRINT 小さな
+	PRINT 尿道口は
+	IF SIZE("尿道バイブ", TARGET) == 5
+		PRINT パールを
+	ELSE
+		PRINT バイブを
+	ENDIF
+	IF SIZE("尿道バイブ", TARGET) >= 1 && ABL:尿道拡張 < (SIZE("尿道バイブ", TARGET) - 2 )
+		PRINTW の大きさに耐え切れず、悲鳴を上げている…
+	ELSE
+		PRINT 今にも裂けそうな程に拡がるが、なんとか
+		IF SIZE("尿道バイブ", TARGET) == 0
+			PRINT 尿道バイブ
+		ELSEIF SIZE("尿道バイブ", TARGET) == 5
+			PRINT パール
+		ELSE
+			PRINT バイブ
+		ENDIF
+		PRINTW を呑み込んでいく…
+	ENDIF
+ELSEIF TALENT:尿道狂い
+	IF SIZE("尿道バイブ", TARGET) == 5
+		PRINTFORMW 膀胱に鎮座するパールがもたらす快感に、%CALLNAME:TARGET%は熱い濡れた声を漏らした…
+	ELSE
+		PRINTFORMW 尿道で震えるバイブのもたらす快感に、%CALLNAME:TARGET%は熱い濡れた声を漏らした…
+	ENDIF
+ELSEIF TALENT:尿道性感 && CUP:苦痛 < 500
+	PRINTFORMW %CALLNAME:TARGET%は奇妙な感覚に戸惑っている…
+ELSE
+	PRINTFORM 慣れない
+
+	IF SIZE("尿道バイブ", TARGET) == 5
+		PRINT パール
+	ELSE
+		PRINT バイブ
+	ENDIF
+
+	PRINTFORMW の刺激に%CALLNAME:TARGET%の尿道口はきつく引き締まり、強烈な抵抗を見せる…
+ENDIF
+
+
+
+
+@FLAG_COM152, ARG
+CALL FLAG_INSERTION, "尿道バイブ", ARG, 100
+;尿道が露出していないなら自動的にずらす
+SIF CHECK_CLO("Ｖ露出") == 0
+	CALL SETFLAG, "ボトムを露出：テキスト無し", TARGET
+
+@SOURCE_COM152, ARG
+CALL SOURCE_INSERTION, "尿道バイブ", ARG, 100
+
+
+@EQUIP_COM20
+;尿道バイブ挿入中
+SIF SELECTCOM == 152 || SELECTCOM == 202
+	RETURN 0
+
+CALL SOURCE_COM152, 30
+CALL FLAG_COM152, 30
+
+RETURN 1
+
+@EQUIP_COM20_2
+;尿道バイブ挿入中
+SIF SELECTCOM == 152
+	RETURN 0
+
+IF TEQUIP:触手
+	SELECTCASE SIZE("尿道バイブ", TARGET)
+	CASE IS >= 3
+		PRINTL ＜尿道極太触手挿入中＞
+	CASEELSE
+		PRINTL ＜尿道触手挿入中＞
+	ENDSELECT
+ELSE
+	SELECTCASE SIZE("尿道バイブ", TARGET)
+	CASE 5
+		PRINTL ＜尿道パール挿入中＞
+	CASE 4
+		PRINTL ＜極太尿道バイブ挿入中＞
+	CASE 3
+		PRINTL ＜尿道バイブ挿入中＞
+	CASEELSE
+		PRINTL ＜細身尿道バイブ挿入中＞
+	ENDSELECT
+
+ENDIF
+
+LOCAL = 1
+IF TEQUIP:触手
+	LOCAL += 1
+;自慰実行時は経験＋１
+ELSEIF SELECTCOM == 3
+	SIF ABL:尿道拡張 < SIZE("尿道バイブ", TARGET)
+		LOCAL += 1
+ENDIF
+
+EXP:尿道経験 += LOCAL
+PRINTFORML 尿道経験＋{LOCAL}
+
+VARSET LOCAL
+;尿道拡張経験
+IF TEQUIP:触手 || SELECTCOM == 3 || SELECTCOM == 2
+	SIF SIZE("尿道バイブ", TARGET) >= 2 - TALENT:妖精
+		LOCAL = MAX(SIZE("尿道バイブ", TARGET) - ABL:尿道拡張 + 1, SIZE("尿道バイブ", TARGET)/3)
+ENDIF
+
+IF LOCAL
+	EXP:尿道拡張経験 += LOCAL
+	PRINTFORML 尿道拡張経験＋{LOCAL}
+	;拡張経験による追加の疲労
+	DOWNBASE:体力 += LOCAL*50
+	DOWNBASE:気力 += LOCAL*50
+ENDIF
+
+@COM_ORDER_COM152, ARG
+VARSET LOCAL
+LOCALS =
+
+;すべての命令に共通の要素を考慮
+;(従順が高いと命令に従いやすいなど)
+CALL COM_ORDER, ARG
+
+LOCAL = RESULT
+
+;ABL:露出癖
+IF ABL:露出癖
+	LOCAL += ABL:露出癖 * 4
+	LOCALS = %LOCALS% + %ABLNAME:7%LV{ABL:露出癖}({ABL:露出癖 * 4})
+ENDIF
+;ABL:マゾっ気
+IF ABL:マゾっ気
+	LOCAL += ABL:マゾっ気 * 3
+	LOCALS = %LOCALS% + %ABLNAME:8%LV{ABL:マゾっ気}({ABL:マゾっ気 * 3})
+ENDIF
+;自制心
+IF TALENT:冷静
+	LOCAL -= 5
+	LOCALS = %LOCALS% - %TALENTNAME:20%(5)
+ENDIF
+;恥じらい
+IF TALENT:恥じらい
+	LOCAL -= 15
+	LOCALS = %LOCALS% - %TALENTNAME:35%(15)
+ENDIF
+;恥薄い
+IF TALENT:恥薄い
+	LOCAL += 2
+	LOCALS = %LOCALS% + %TALENTNAME:36%(2)
+ENDIF
+;清楚
+IF TALENT:清楚
+	LOCAL -= 10
+	LOCALS = %LOCALS% - %TALENTNAME:39%(10)
+ENDIF
+;快感に素直
+IF TALENT:快感に素直
+	LOCAL += 5
+	LOCALS = %LOCALS% + %TALENTNAME:70%(5)
+ENDIF
+;快感の否定
+IF TALENT:快感の否定
+	LOCAL -= 5
+	LOCALS = %LOCALS% - %TALENTNAME:71%(5)
+ENDIF
+;倒錯的
+IF TALENT:倒錯的
+	LOCAL += 10
+	LOCALS = %LOCALS% + %TALENTNAME:80%(10)
+ENDIF
+IF TEQUIP:拘束
+	LOCAL += 30
+	LOCALS = %LOCALS% + 拘束中(30)
+ENDIF
+;媚薬
+IF TEQUIP:媚薬
+	LOCAL += 2
+	LOCALS = %LOCALS% + %ITEMNAME:31%(2)
+ENDIF
+;ビデオ撮影
+IF TEQUIP:ビデオカメラ
+	LOCAL -= 20
+	LOCALS = %LOCALS% - 撮影中(20)
+ENDIF
+;野外or館内露出
+IF TEQUIP:野外プレイ
+	LOCAL -= 10
+	LOCALS = %LOCALS% - 野外プレイ(10)
+ELSEIF TEQUIP:館内露出プレイ
+	LOCAL -= 10
+	LOCALS = %LOCALS% - 館内露出(10)
+ENDIF
+
+;合計を表示(55以上で実行)
+CALL PRINT_COM_ORDER_COM, LOCALS, ARG, LOCAL, 60
+
+RETURN RESULT

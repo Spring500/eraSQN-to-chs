@@ -1,0 +1,299 @@
+﻿@COM2
+;アナル愛撫
+IF TEQUIP:アナルバイブ && TEQUIP:触手 == 0
+	LOCALS = Ａバイブ弄り
+ELSE
+	LOCALS = アナル愛撫
+ENDIF
+PRINTFORML %LOCALS%
+
+CALL TRAIN_MESSAGE_B
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+STR:0 = %LOCALS%
+
+RETURN 1
+
+@FLAG_COM2, ARG
+IF PREVCOM == 5
+	CALL FLAG_COM5, 30
+ELSEIF PREVCOM == 6
+	CALL FLAG_COM6, 30
+ENDIF
+
+IF TEQUIP:アナルバイブ
+	CALL FLAG_COM33, 130
+ELSEIF CHECK("Ａ指挿入れ")
+	CALL FLAG_INSERTION, "Ａ指挿入れ", ARG, 100
+ENDIF
+
+@SOURCE_COM2, ARG
+IF PREVCOM == 5
+	CALL SOURCE_COM5, 30
+ELSEIF PREVCOM == 6
+	CALL SOURCE_COM6, 30
+ENDIF
+IF TEQUIP:アナルバイブ
+	CALL SOURCE_INSERTION, "Ａバイブ", ARG, 130
+ELSEIF CHECK("Ａ指挿入れ")
+	CALL SOURCE_INSERTION, "Ａ指挿入れ", ARG, 100
+ELSE
+	VARSET LOCAL
+
+	LOCAL:20 += 20
+	LOCAL:21 += 50
+
+	LOCAL:3 = ABL:Ａ感覚 * 100
+	LOCAL:12 = 400
+	LOCAL:14 = 1000
+
+	;ABL:Ａ感覚をみる
+	LOCAL:2 = CALCF("Ａ刺激", 1)
+	;調教者の指使いをみる
+	LOCAL:2 = SOURCE_EXABL(LOCAL:2, 31, PLAYER)
+
+	;EXP:Ａ経験に応じたＡ快感、苦痛、恐怖、逸脱(反感)補正
+	SELECTCASE EXP:Ａ経験
+	CASE IS >= 300
+		TIMES LOCAL:2, 1.60
+		TIMES LOCAL:6, 0.50
+		TIMES LOCAL:9, 0.20
+		TIMES LOCAL:14, 0.20
+	CASE IS >= 150
+		TIMES LOCAL:2, 1.40
+		TIMES LOCAL:6, 0.60
+		TIMES LOCAL:9, 0.40
+		TIMES LOCAL:14, 0.60
+	CASE IS >= 50
+		TIMES LOCAL:2, 1.20
+		TIMES LOCAL:6, 0.80
+		TIMES LOCAL:9, 0.70
+	CASE IS >= 20
+		TIMES LOCAL:14, 1.20
+	CASE IS >= 5
+		TIMES LOCAL:2, 0.50
+		TIMES LOCAL:6, 1.50
+		TIMES LOCAL:9, 1.50
+		TIMES LOCAL:14, 1.50
+	CASEELSE
+		TIMES LOCAL:2, 0.10
+		TIMES LOCAL:6, 2.00
+		TIMES LOCAL:9, 2.00
+		TIMES LOCAL:14, 2.00
+	ENDSELECT
+
+	;PALAM:欲情をみる
+	SELECTCASE PALAM:欲情
+	CASE IS < PALAMLV:1
+		TIMES LOCAL:13, 0.30
+	CASE IS < PALAMLV:2
+		TIMES LOCAL:13, 0.50
+	CASE IS < PALAMLV:3
+		TIMES LOCAL:13, 0.80
+	CASE IS < PALAMLV:4
+	CASE IS >= PALAMLV:4
+		TIMES LOCAL:13, 1.20
+	ENDSELECT
+
+	;Ａ敏感、鈍感をみる
+	;快Ａ自体のチェックは後でまとめてやる
+	IF TALENT:Ａ鈍感
+		TIMES LOCAL:6, 0.50
+		TIMES LOCAL:11, 0.50
+		TIMES LOCAL:13, 0.50
+		TIMES LOCAL:14, 0.50
+	ELSEIF TALENT:Ａ敏感
+		TIMES LOCAL:6, 1.50
+		TIMES LOCAL:11, 1.50
+		TIMES LOCAL:13, 1.50
+		TIMES LOCAL:14, 1.50
+	ENDIF
+
+	;処女で貞操観念orお尻許可フラグ
+	IF (TALENT:処女 == 1 && TALENT:貞操観念) || CFLAG:100
+		LOCAL:14 /= 3
+		LOCAL:15 /= 3
+	ENDIF
+
+	CALL CALC, "調教ソース", LOCAL:0, LOCAL:1, LOCAL:2, LOCAL:3, LOCAL:4, LOCAL:5, LOCAL:6, LOCAL:7, LOCAL:8, LOCAL:9, LOCAL:10, LOCAL:11, LOCAL:12, LOCAL:13, LOCAL:14, LOCAL:15, LOCAL:16, LOCAL:17, LOCAL:18, LOCAL:19, LOCAL:20, LOCAL:21, ARG
+ENDIF
+
+@TRAIN_MESSAGE_COM2
+;特に[恋慕]、[Ａ潤Lv2]、[A感覚Lv3]、[ラミア]、[直前の調教]、[アナルバイブorパールorプラグorバルーンor電極]、[縄]等でテキストが変わります。
+;アナル触手中なら
+IF TEQUIP:触手
+	IF RAND:3 == 0
+		PRINTFORMW 粘液に塗れた触手で%CALLNAME:TARGET%のアナルを掻き回した…
+	ELSEIF RAND:2 == 0
+		PRINTFORMW ブラシ状の触手が%CALLNAME:TARGET%の腸壁を擦りあげた…
+	ELSE
+		PRINTFORMW イボ状の触手が腸壁を刺激しながら奥深くまで侵入してきた…
+	ENDIF
+ELSEIF PREVCOM == SELECTCOM && COND("前Ｔ調教者") == PLAYER
+	PRINTFORMW %CALLNAME:PLAYER%は%CALLNAME:TARGET%のアナルを念入りにほぐした…
+;インサート中
+ELSEIF INSERT("Ｖインサート") || INSERT("尿道インサート")
+	IF INSERT("騎乗位")
+		PRINTFORMW %CALLNAME:PLAYER%は%CALLNAME:TARGET%に腰を振らせながら、アナルに悪戯した…
+	ELSE
+		PRINTFORMW %CALLNAME:PLAYER%は腰を突き入れながら、%CALLNAME:TARGET%のアナルに悪戯した…
+	ENDIF
+;Ａインサート中
+ELSEIF INSERT("Ａインサート")
+	PRINTFORM %CALLNAME:PLAYER%は、
+	IF TALENT:PLAYER:ふたなり || TALENT:PLAYER:オトコ
+		PRINT 肉棒
+	ELSE
+		PRINT ディルドー
+	ENDIF
+	PRINTFORMW の動きに合わせて引きずり動かされている%CALLNAME:TARGET%のアナルに悪戯した…
+;それ以外
+ELSE
+	SIF PLAYER != MASTER
+		PRINTFORM %CALLNAME:PLAYER%は
+	IF TEQUIP:キス
+		PRINTFORM %CALLNAME:TARGET%%TEXTS("キス継続助詞付き")%、
+		CALL SETFLAG, "追加キスフラグ", TARGET
+	ELSEIF PREVCOM == 5
+		PRINTFORM %CALLNAME:TARGET%の胸を愛撫しながら、
+	ELSE
+		;シックスナイン
+		IF TEQUIP:シックスナイン
+			PRINTFORM %TEXTS("６９")%
+		;プレイを受け入れ可能かつ好色
+		ELSEIF CHECK("Ａ指挿入れ") && TALENT:好色 && RAND:2 == 0
+			PRINT 妖艶に微笑んでいる
+		;縄
+		ELSEIF TEQUIP:拘束
+			PRINT 身動きの取れない
+		ELSEIF CHECK("Ａ指挿入れ") && COND("脚の使用")
+			;恥じらいで快Ａ or欲情が低いなら追加したり
+			SIF TALENT:恥じらい && (PALAM:快Ａ <= PALAMLV:3 || PALAM:欲情 <= PALAMLV:4)
+				PRINT 恥ずかしがりつつ
+			PRINT 率先して脚を開いている
+		;Ａ感覚1以下or反抗的or恥じらい
+		ELSEIF (ABL:Ａ感覚 <= 1 || TALENT:反抗的 || TALENT:恥じらい) && RAND:3 >= 1
+			;恥じらいで快Ａ or欲情が低いなら追加したり
+			SIF TALENT:恥じらい && (PALAM:快Ａ <= PALAMLV:3 || PALAM:欲情 <= PALAMLV:4)
+				PRINT 羞恥に震える
+		ENDIF
+		PRINTFORM %CALLNAME:TARGET%の
+		;ラミアにお尻は無い方針で
+		IF COND("脚が無い")
+			SIF CHECK_CLO("Ａ露出") == 0
+				CALL SETFLAG, "ボトムを露出：テキスト無し", TARGET
+		;アナルが露出していないで、パンツをずらしていないなら自動的にずらす
+		ELSE
+			SIF !CHECK_CLO("Ａ露出") && CHECK_CLO("Ａ露出可")
+				CALL SETFLAG, "ボトムを露出：テキスト有り", TARGET
+
+			;小柄体型か妖精なら
+			IF TALENT:小柄体型 || TALENT:妖精
+				PRINT 小さな
+			;Ａ敏感なら
+			ELSEIF TALENT:Ａ敏感 && RAND:3 >= 1
+				PRINT 柔らかい
+			;淫乱なら
+			ELSEIF TALENT:淫乱 && RAND:3 >= 1
+				PRINT 弾力のある
+			;それ以外
+			ELSEIF RAND:2 == 0
+				PRINT 形の良い
+			ENDIF
+			;乱数分岐
+			IF RAND:2 == 0
+				PRINT お尻を
+			ELSE
+				PRINT 尻たぶを
+			ENDIF
+			;Ａ感覚1以下or反抗的or恥じらい
+			SIF (ABL:Ａ感覚 <= 1 || TALENT:反抗的 || TALENT:恥じらい)&& TALENT:恋慕 == 0 && RAND:3 >= 1
+				PRINT 無理やり
+			;恋慕orＡ指挿入れを楽しめる状態かつ従順3以上で縛ってないと夢魔にお尻を広げさせます
+			IF CHECK("Ａ指挿入れ") + TALENT:恋慕 && ABL:従順 >= 3 && TEQUIP:拘束 == 0 && RAND:2 == 0
+				PRINT 広げさせると、
+			ELSE
+				PRINT 開くと、
+			ENDIF
+		ENDIF
+	ENDIF
+	;アナルバイブorパールorアナルプラグorバルーンか、直前にアナル系調教かで分岐。
+	IF COND("アナル栓")
+		PRINT アナル
+		;乱数分岐
+		IF COND("アナルプラグ")
+			PRINT を塞いでいる
+		ELSEIF TEQUIP:拡張バルーン == 2
+			PRINT をみっちりと広げている
+		ELSEIF RAND:3 == 0
+			PRINT をみっちりと広げている
+		ELSEIF RAND:2 == 0
+			PRINT から突き出た
+		ELSE
+			PRINT で咥えたままの
+		ENDIF
+		;Ａ潤3以上で追加
+		SIF PALAM:Ａ潤 >= PALAMLV:3 && (TEQUIP:アナルバイブ || TEQUIP:拡張バルーン == 2)
+			PRINT 粘液にまみれた
+		IF COND("アナルパール")
+			PRINT アナルパールを
+		ELSEIF TEQUIP:アナルバイブ
+			PRINT アナルバイブを
+		ELSEIF COND("アナルプラグ")
+			PRINT アナルプラグを
+		ELSEIF TEQUIP:拡張バルーン == 2
+			PRINT アナルバルーンを
+		ENDIF
+		;乱数分岐
+		IF COND("アナルプラグ") || TEQUIP:拡張バルーン == 2
+			PRINT グリグリと
+		ELSEIF RAND:3 == 0
+			PRINT ズボズボと
+		ELSEIF RAND:2 == 0
+			PRINT 優しく
+		ELSE
+			PRINT ゆっくりと
+		ENDIF
+		IF COND("アナルパール") ||COND("アナルプラグ") || TEQUIP:拡張バルーン == 2
+			PRINTFORMW 弄んだ…
+		ELSE
+			PRINTFORMW 出し入れした…
+		ENDIF
+	ELSE
+		PRINTFORM %TEXTS("アナル")%アヌス
+		;アナル系調教やＡ敏感やＡ経験150以上にあわせて乱数分岐。ハーピーのときは舐めます。
+		IF (PREVCOM == 33 || (PREVCOM >= 60 && PREVCOM <= 69) || (PREVCOM >= 136 && PREVCOM <= 138) || PREVCOM == 142 || PREVCOM == 143 || PREVCOM == 202 || EXP:Ａ経験 >= 150) && TALENT:妖精 == 0 && RAND:3
+			PRINT に指を何本も入れて
+		ELSEIF (PREVCOM == 33 || (PREVCOM >= 60 && PREVCOM <= 69) || (PREVCOM >= 136 && PREVCOM <= 138) || PREVCOM == 142 || PREVCOM == 143 || PREVCOM == 202 || EXP:Ａ経験 >= 150 || TALENT:Ａ敏感) && TALENT:妖精 == 0 && RAND:2
+			PRINT に指を根元まで入れて
+		ELSEIF TALENT:妖精 && EXP:Ａ経験 < 150
+			PRINT を指先で
+		ELSEIF CHECK("Ａ指挿入れ")
+			PRINTFORM に\@ TALENT:妖精 ? %CALLNAME:TARGET%にとっては腕ほどの太さがある # \@指を入れて
+		ELSE
+			PRINTFORM に指を這わせて
+		ENDIF
+		IF TALENT:妖精 && EXP:Ａ経験 < 150
+			PRINT グリグリと
+		ELSEIF CUP:屈服 < 500 && (PREVCOM == 33 || (PREVCOM >= 60 && PREVCOM <= 69) || (PREVCOM >= 136 && PREVCOM <= 138) || PREVCOM == 142 || PREVCOM == 143 || PREVCOM == 202 || EXP:Ａ経験 >= 150) && RAND:3
+			PRINT ズボズボと
+		ELSEIF RAND:3 == 0 && CHECK("Ａ指挿入れ")
+			PRINT 激しく
+		ELSEIF RAND:2 == 0
+			PRINT 優しく
+		ELSE
+			PRINT くるくると穴のふちに沿って
+		ENDIF
+		;乱数分岐
+		IF (TALENT:妖精 && EXP:Ａ経験 < 150) || RAND:3 == 0
+			PRINTFORMW 弄った…
+		ELSEIF RAND:2 && CHECK("Ａ指挿入れ")
+			PRINTFORMW 出し入れした…
+		ELSE
+			PRINTFORMW ほぐした…
+		ENDIF
+	ENDIF
+ENDIF
+

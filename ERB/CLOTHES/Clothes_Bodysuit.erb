@@ -1,0 +1,339 @@
+﻿;-------------------------------------------------
+;ボディスーツを着せる関数
+;指定番号によって名前がCSTR:44に代入される。
+;99番までは、その番号の夢魔の下着。
+;EQUIP:ボディスーツはボディスーツの特徴フラグ。ビット管理する
+;-------------------------------------------------
+@SET_BODYS, ARG, ARG:1
+;ARGのボディスーツをARG:1番のものにする。ARG:1==0ならボディスーツを脱がす
+;汚れ＆ずれたりしたフラグ等を初期化して新品にする
+STAIN:ARG:ボディスーツボトム = 0
+STAIN:ARG:ボディスーツトップ = 0
+TCVAR:ARG:26 = 0
+
+IF ARG:1 == 0 || COND("脚の使用", ARG) == 0
+	EQUIP:ARG:ボディスーツ = 0
+	CSTR:ARG:44 = 
+	RETURN 0
+ENDIF
+
+;名前記録
+CSTR:ARG:44 = %PALAM_BODYS(ARG:1, ARG, 1)%
+
+;SIF EQUIP:ARG:上着
+;	CALL SET_SHIRT, ARG
+SIF EQUIP:ARG:アウター
+	CALL SET_OUTER, ARG
+;SIF EQUIP:ARG:アウター && !CHECK_OUTER("パンスト", ARG)
+;	CALL SET_OUTER, ARG
+SIF EQUIP:ARG:ブラ
+	CALL SET_BRA, ARG
+IF EQUIP:ARG:ボディスーツ && EQUIP:ARG:パンツ
+	SIF CHECK_BODYS("食い込み", ARG) && !CHECK_PANTIES("食い込み", ARG) && !CHECK_PANTIES("Ｔバック", ARG) && !CHECK_PANTIES("Ｖバック", ARG)
+		CALL SET_PANTIES, ARG
+	SIF CHECK_BODYS("水着", ARG) || CHECK_BODYS("ファスナー", ARG) || CHECK_BODYS("Ｖ露出", ARG) || CHECK_BODYS("Ａ露出", ARG)
+		CALL SET_PANTIES, ARG
+ENDIF
+
+
+TCVAR:ARG:26 = 0
+RETURN ARG:1
+;-------------------------------------------------
+;ARGの穿いているボディスーツの名前。ARG:1==0なら正式名称 by CSTR。ARG:1==2なら色要素なし
+;ARG:1==1なら短縮名称 by EQUIP。
+;-------------------------------------------------
+@BODYS(ARG, ARG:1)
+#FUNCTIONS
+SELECTCASE ARG:1
+CASE 0
+	LOCALS = %CSTR:ARG:44%
+	SIF CONFIG("衣装の細かい色表示の禁止")
+		RETURNF LOCALS
+	LOCALS:1 = %TEXTS("衣装の色", EQUIP:ARG:ボディスーツ)%
+	SIF LOCALS:1 != "" && (SUBSTRING(CSTR:ARG:44, 0, 2) != SUBSTRING(LOCALS:1, 0, 2) )
+		LOCALS = %LOCALS%(%LOCALS:1%)
+CASE 1
+	IF CHECK_BODYS("競泳水着", ARG)
+		LOCALS = 競泳水着
+	ELSEIF CHECK_BODYS("ワンピース水着", ARG)
+		IF CHECK_BODYS("食い込み", ARG)
+			LOCALS = ハイレグ水着
+		ELSE
+			LOCALS = ワンピース
+		ENDIF
+	ELSEIF CHECK_BODYS("ボンデージ", ARG)
+		LOCALS = ボンデージ
+	ELSEIF CHECK_BODYS("バニースーツ", ARG)
+		LOCALS = バニースーツ
+	ELSEIF CHECK_BODYS("スク水", ARG)
+		LOCALS = スク水
+	ELSEIF CHECK_BODYS("レオタード", ARG)
+		LOCALS = レオタード
+	ELSE
+		LOCALS = ボディスーツ
+	ENDIF
+CASE 2
+	LOCALS = %CSTR:ARG:44%
+ENDSELECT
+RETURNF LOCALS
+
+;-------------------------------------------------
+;ARG番のボディスーツの正式名称
+;ARG:1 > 0ならARG:1はキャラ番号として働く
+;-------------------------------------------------
+@NAME_BODYS(ARG, ARG:1)
+#FUNCTIONS
+LOCALS = %PALAM_BODYS(ARG, ARG:1)%
+RETURNF LOCALS
+
+;-------------------------------------------------
+;ARG番のボディスーツの詳細パラ
+;ARG:1 > 0ならARG:1はキャラ番号として働き、ARG:1 > 0 && ARG:2 > 0ならEQUIPを定める
+;-------------------------------------------------
+@PALAM_BODYS(ARG, ARG:1, ARG:2)
+#FUNCTIONS
+VARSET LOCAL
+VARSET LOCALS
+IF ARG:1 > 0 && COND("脚の使用", ARG:1) == 0
+	SIF ARG:2 > 0
+		EQUIP:(ARG:1):ボディスーツ = LOCAL
+	RETURNF LOCALS
+ENDIF
+
+SELECTCASE ARG
+CASE 5
+	IF CFLAG:(ARG:1):8 == 1
+		LOCALS = 紺スク水
+		LOCAL = SETFLAG_BODYS("ズリ不可", "スク水", "紺")
+	ENDIF
+CASE 7
+	IF TALENT:(ARG:1):四足歩行
+		LOCALS = 人狼のレオタード
+		LOCAL = SETFLAG_BODYS("ズリ不可", "ハイレグ", "レオタード", "毛皮", "黒")
+	ENDIF
+CASE 11
+	IF CFLAG:(ARG:1):8 != 2
+		LOCALS = 妖鳥のレオタード
+		LOCAL = SETFLAG_BODYS("ハイレグ", "Ｔバック", "レオタード", "羽", "谷間露出")
+	ENDIF
+CASE 12
+	IF CFLAG:(ARG:1):8 == 4
+		LOCALS = レオタード
+		LOCAL = SETFLAG_BODYS("ズリ不可", "Ｖバック", "レオタード", "黒")
+	ELSEIF CFLAG:(ARG:1):8 != 2
+		LOCALS = レオタード
+		LOCAL = SETFLAG_BODYS("ズリ不可", "Ｖバック", "レオタード", "薄緑")
+	ENDIF
+CASE 17
+	IF CFLAG:(ARG:1):8 == 1
+		LOCALS = エナメルレオタード
+		LOCAL = SETFLAG_BODYS("Ｖバック", "レオタード", "エナメル", "黒", "谷間露出")
+	ENDIF
+CASE 29
+	LOCALS = スライムスキン
+	LOCAL = SETFLAG_BODYS("レオタード", "薄桃", "谷間露出")
+CASE 35
+	LOCALS = Ｈなボディスーツ
+	SIF ARG:1 > 0
+		LOCALS = %CALLNAME:(ARG:1)%の衣装
+	LOCAL = SETFLAG_BODYS("ズリ不可", "ハイレグ", "Ｔバック", "ボディスーツ", "紫")
+CASE 41
+	LOCALS = 不思議なレオタード
+	LOCAL = SETFLAG_BODYS("ハイレグ", "Ｔバック", "レオタード", "ファスナー", "黒", "谷間露出")
+CASE 42
+	IF CFLAG:(ARG:1):209 == 1
+		LOCALS = 不思議なレオタード
+		LOCAL = SETFLAG_BODYS("ハイレグ", "Ｔバック", "レオタード", "ファスナー", "黒", "谷間露出")
+	ENDIF
+CASE 48
+	LOCALS = ドリームシュラウド
+	LOCAL = SETFLAG_BODYS("ハイレグ", "Ｔバック", "レオタード", "紫", "谷間露出")
+CASE 100
+	LOCALS = レオタード
+	LOCAL = SETFLAG_BODYS("ズリ不可", "レオタード")
+CASE 101
+	LOCALS = セクシーレオタード
+	LOCAL = SETFLAG_BODYS("ハイレグ", "Ｖバック", "レオタード", "谷間露出")
+CASE 102
+	LOCALS = エナメルレオタード
+	LOCAL = SETFLAG_BODYS("ハイレグ", "Ｔバック", "レオタード", "エナメル", "ファスナー", "谷間露出")
+CASE 103
+	IF ITEM:危ないレオタード
+		LOCALS = 危ないレオタード
+		LOCAL = SETFLAG_BODYS("ハイレグ", "Ｖバック", "危ないレオタード", "ＶＡ露出", "谷間露出", "乳首露出")
+	ENDIF
+CASE 104
+	IF ITEM:バニースーツ
+		LOCALS = バニースーツ
+		LOCAL = SETFLAG_BODYS("Ｖバック", "バニースーツ", "バニーカラー")
+	ENDIF
+CASE 105
+	IF ITEM:バニースーツ
+		LOCALS = ハイレグバニー
+		LOCAL = SETFLAG_BODYS("ハイレグ", "Ｔバック", "バニースーツ", "エナメル", "バニーカラー")
+	ENDIF
+CASE 106
+	IF ITEM:ボンデージ
+		LOCALS = ボンデージ
+		LOCAL = SETFLAG_BODYS("ボンデージ", "レザー", "ファスナー", "谷間露出", "乳首露出")
+	ENDIF
+CASE 107
+	IF ITEM:スク水
+		LOCALS = スク水
+		LOCAL = SETFLAG_BODYS("ズリ不可", "スク水")
+		IF RAND:2
+			LOCAL += SETFLAG_BODYS("紺")
+		ELSE
+			LOCAL += SETFLAG_BODYS("白")
+		ENDIF
+	ENDIF
+CASE 108
+	IF ITEM:ワンピース水着
+		LOCALS = ワンピース水着
+		LOCAL = SETFLAG_BODYS("ズリ不可", "ワンピース水着", "白")
+	ENDIF
+CASE 109
+	IF ITEM:ワンピース水着
+		LOCALS = ハイレグ水着
+		LOCAL = SETFLAG_BODYS("ハイレグ", "Ｔバック", "ズリ不可", "ワンピース水着")
+	ENDIF
+CASE 110
+	IF ITEM:ワンピース水着
+		LOCALS = 競泳水着
+		LOCAL = SETFLAG_BODYS("ハイレグ", "Ｖバック", "ズリ不可", "競泳水着")
+		IF RAND:2
+			LOCAL += SETFLAG_BODYS("紺")
+		ELSE
+			LOCAL += SETFLAG_BODYS("黒")
+		ENDIF
+	ENDIF
+ENDSELECT
+
+SIF ARG:1 > 0 && ARG:2 > 0
+	EQUIP:(ARG:1):ボディスーツ = LOCAL
+
+RETURNF LOCALS
+
+;-------------------------------------------------
+;指示されたとおりのボディスーツのフラグを設定するために使う
+;-------------------------------------------------
+@SETFLAG_BODYS(ARGS:1, ARGS:2, ARGS:3, ARGS:4, ARGS:5, ARGS:6, ARGS:7, ARGS:8, ARGS:9, ARGS:10)
+#FUNCTION
+#DIM LCOUNT
+
+LOCAL = 0
+FOR LCOUNT, 1, 11
+	ARGS = %ARGS:LCOUNT%
+	SELECTCASE ARGS
+	CASE "ボディスーツ"
+		SETBIT LOCAL, 0
+	CASE "ハイレグ"
+		SETBIT LOCAL, 1
+	CASE "Ｔフロント", "Tフロント"
+		SETBIT LOCAL, 2
+	CASE "Ｖバック", "Vバック"
+		SETBIT LOCAL, 3
+	CASE "Ｔバック", "Tバック"
+		SETBIT LOCAL, 4
+	CASE "レオタード"
+		SETBIT LOCAL, 5
+	CASE "スク水"
+		SETBIT LOCAL, 6
+		LOCAL |= SETFLAG_COMMON("水着")
+	CASE "バニースーツ"
+		SETBIT LOCAL, 7
+		LOCAL |= SETFLAG_COMMON("谷間露出")
+	CASE "ボンデージ"
+		SETBIT LOCAL, 8
+	CASE "ワンピース水着"
+		SETBIT LOCAL, 9
+		LOCAL |= SETFLAG_COMMON("水着")
+	CASE "競泳水着"
+		SETBIT LOCAL, 10
+		LOCAL |= SETFLAG_COMMON("水着")
+	CASE "危ないレオタード"
+		SETBIT LOCAL, 5
+		SETBIT LOCAL, 11
+	CASE "バニーカラー"
+		IF RAND:3 == 0
+			LOCAL |= SETFLAG_COMMON("白")
+		ELSEIF RAND:2
+			LOCAL |= SETFLAG_COMMON("真紅")
+		ELSE
+			LOCAL |= SETFLAG_COMMON("黒")
+		ENDIF
+	CASEELSE
+		SIF STRLENS(ARGS)
+			LOCAL |= SETFLAG_COMMON(ARGS)
+	ENDSELECT
+	SIF STRLENS(ARGS:(LCOUNT + 1) ) == 0
+		RETURNF LOCAL
+NEXT
+RETURNF LOCAL
+
+;-------------------------------------------------
+;ARGのボディスーツが条件ARGSを満たすか確認する
+;-------------------------------------------------
+@CHECK_BODYS(ARGS, ARG)
+#FUNCTION
+SIF ARG == 0 && TARGET
+	ARG = TARGET
+SIF EQUIP:ARG:ボディスーツ == 0
+	RETURNF 0
+SELECTCASE ARGS
+CASE "はだけ可"
+	SIF SETFLAG_BODYS("はだけた")&EQUIP:ARG:ボディスーツ
+		RETURNF 0
+	SIF SETFLAG_BODYS("はだけ不可")&EQUIP:ARG:ボディスーツ
+		RETURNF 0
+	RETURNF 1
+;ずれ不可でなく、ずらしていない
+CASE "ずらし可", "ずらせる"
+	SIF SETFLAG_BODYS("Ｖ露出")&EQUIP:ARG:ボディスーツ
+		RETURNF 0
+	IF SETFLAG_BODYS("ファスナー")&EQUIP:ARG:ボディスーツ
+		SIF SETFLAG_BODYS("ファスナー開")&EQUIP:ARG:ボディスーツ
+			RETURNF 0
+		SIF CHECK_BODYS("ファスナー閉")
+			RETURNF 1
+	ENDIF
+	SIF SETFLAG_BODYS("ずらした")&EQUIP:ARG:ボディスーツ
+		RETURNF 0
+	SIF SETFLAG_BODYS("ずれ不可")&EQUIP:ARG:ボディスーツ
+		RETURNF 0
+	RETURNF 1
+;ファスナーがあり、あけていない
+CASE "ファスナー閉"
+	SIF SETFLAG_BODYS("ファスナー開")&EQUIP:ARG:ボディスーツ
+		RETURNF 0
+	SIF SETFLAG_BODYS("ファスナー")&EQUIP:ARG:ボディスーツ
+		RETURNF 1
+CASE "クロッチ"
+	SIF SETFLAG_BODYS("ファスナー開", "ずらした", "破いた", "Ｖ露出", "スリット")&EQUIP:ARG:ボディスーツ
+		RETURNF 0
+	RETURNF 1
+CASE "Ａクロッチ"
+	SIF SETFLAG_BODYS("ファスナー開", "ずらした", "破いた", "Ａ露出", "スリット")&EQUIP:ARG:ボディスーツ
+		RETURNF 0
+	RETURNF 1
+CASE "食い込み"
+	SIF SETFLAG_BODYS("ずらした", "ファスナー開", "Ｖ露出", "スリット", "破いた")&EQUIP:ARG:ボディスーツ
+		RETURNF 0
+	SIF SETFLAG_BODYS("ハイレグ", "Ｔフロント")&EQUIP:ARG:ボディスーツ
+		RETURNF 1
+CASE "蒸れ"
+	SIF SETFLAG_BODYS("ずらした", "ファスナー開", "Ｖ露出", "スリット", "破いた")&EQUIP:ARG:ボディスーツ
+		RETURNF 0
+	SIF CHECK_STAIN(STAIN:ARG:ボディスーツボトム, "蒸れ")
+		RETURNF 1
+CASE "染み"
+	SIF SETFLAG_BODYS("ずらした", "ファスナー開", "Ｖ露出", "スリット", "破いた", "通気性無し")&EQUIP:ARG:ボディスーツ
+		RETURNF 0
+	SIF CHECK_STAIN(STAIN:ARG:ボディスーツボトム, "濡れ")
+		RETURNF 1
+CASEELSE
+	SIF (SETFLAG_BODYS(ARGS)&EQUIP:ARG:ボディスーツ) == SETFLAG_BODYS(ARGS)
+		RETURNF 1
+ENDSELECT
+
+RETURNF 0

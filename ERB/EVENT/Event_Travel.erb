@@ -1,0 +1,4031 @@
+﻿@EVENT_TRAVEL_SELECT
+#DIM LCOUNT
+PRINTL 
+;色々とイベント有るときはダメ
+IF CHARA_NUM("出産間近")
+	LOCAL = 1
+	FOR LCOUNT, 2, CHARANUM
+		SIF TALENT:LCOUNT:妊娠 != 3
+			CONTINUE
+		SIF RAND:LOCAL == 0
+			LOCALS = %CALLNAME:LCOUNT%
+		LOCAL += 1
+	NEXT
+	PRINTFORMW %LOCALS%の出産が近いというのに家を空けるわけにはいかないだろう…
+	RETURN 0
+ENDIF
+
+PRINTFORM 日頃の労をねぎらうため、%CALLNAME:TARGET%
+SIF ASSI
+	PRINTFORM と%CALLNAME:ASSI%
+PRINTFORML を連れてキアズマの温泉へ旅行に行きます。
+PRINTFORML どこに予約を入れますか？(所持金：%MONEY_C(MONEY)%)
+PRINTFORML 
+
+VARSET LOCAL
+;デフォルトの行き先
+SIF MONEY >= 3000
+	PRINTFORML  [ 0] 小さな民宿　　$ 3,000
+;淫乱で追加
+IF MONEY >= 10000 && TALENT:淫乱
+	PRINTFORML  [ 1] 温泉街の旅館　$10,000
+	LOCAL:1 = 1
+ENDIF
+;相思相愛で追加
+IF MONEY >= 10000 && TALENT:相思相愛
+	PRINTFORML  [ 2] 秘湯の温泉宿　$10,000　※助手同行不可
+	LOCAL:2 = 2
+ENDIF
+PRINTFORML [100] やっぱやめる
+
+CALL INPUT_SELECT, 1, LOCAL:1, LOCAL:2, 100
+
+;FLAG:60は温泉の場所フラグ
+;CFLAG:70は温泉旅行に行くフラグ。0bitがONならTARGET、1bitなら助手として付いていく
+SELECTCASE RESULT
+CASE 100
+	RETURN 0
+CASE 0
+	LOCALS = 小さな民宿
+	FLAG:60 = 1
+	SETBIT CFLAG:70, 0
+	SIF ASSI
+		SETBIT CFLAG:ASSI:70, 1
+	MONEY -= 3000
+CASE 1
+	LOCALS = 温泉街の旅館
+	FLAG:60 = 2
+	SETBIT CFLAG:70, 0
+	SIF ASSI
+		SETBIT CFLAG:ASSI:70, 1
+	MONEY -= 10000
+CASE 2
+	LOCALS = 秘湯の温泉宿
+	FLAG:60 = 3
+	SETBIT CFLAG:70, 0
+	MONEY -= 10000
+ENDSELECT
+
+PRINTFORMW 今回は%LOCALS%へと向かう事とします。
+PRINTL 
+
+
+@EVENT_TRAVEL_PRE
+#DIM LCOUNT
+
+SELECTCASE FLAG:60
+CASE 1
+	LOCALS = 小さな民宿
+CASE 2
+	LOCALS = 温泉街の旅館
+CASE 3
+	LOCALS = 秘湯の温泉宿
+ENDSELECT
+
+;助手は居るか分からない
+ASSI = 0
+
+FOR LCOUNT, 1, CHARANUM
+	SIF CFLAG:LCOUNT:70 == 0
+		CONTINUE
+	SIF GETBIT(CFLAG:LCOUNT:70, 0)
+		TARGET = LCOUNT
+	SIF GETBIT(CFLAG:LCOUNT:70, 1)
+		ASSI = LCOUNT
+NEXT
+
+CALL TRAVEL_TIME("旅行前日", "あなたの館", "旅行の準備中")
+;道中・到着描写(季節を考慮する)
+;（更新）キャラ口上の呼び出し
+CALL SELF_KOJO, "旅行前日"
+;出発準備の描写
+SELECTCASE TEXTS("季節")
+CASE "秋"
+	PRINTFORM %CALLNAME:TARGET%
+	SIF ASSI
+		PRINTFORM と%CALLNAME:ASSI%
+	PRINTFORMW は早速、図書館から借りてきたキアズマの旅行記を見てどこへ観光へ行くか吟味しているようです…
+	PRINTFORM 秋のキアズマは大変風光明媚であるという噂もあり、%CALLNAME:TARGET%
+	SIF ASSI
+		PRINTFORM 達
+	PRINTFORMW はうんうんと唸りながら考え込んでいます。
+	PRINTFORMW 果たしてどこへ行くつもりなのかと、頭越しに旅行記を見てみると…
+	PRINTFORM 開いていたのは
+	IF RAND:2 == 0
+		PRINTFORMW 『特集！キアズマ食い倒れリポート！』のページでした…
+		PRINTFORMW どうやら食欲の秋ということらしい……美味しい店を見つけてくれればいいのですが…
+		PRINTFORM %CALLNAME:MASTER%は
+		IF ASSI
+			PRINTFORM 二人
+		ELSE
+			PRINTFORM %CALLNAME:TARGET%
+		ENDIF
+		PRINTFORMW の美味しそうな店を探す嗅覚を信じ、そっとその場を離れて旅行の準備を再開しました…
+	ELSE
+		PRINTFORMW 『キアズマ紅葉デートスポットベスト１０』のページでした…
+		PRINTFORM %CALLNAME:MASTER%は行き先を決めるのを
+		IF ASSI
+			PRINTFORM 二人
+		ELSE
+			PRINTFORM %CALLNAME:TARGET%
+		ENDIF
+		PRINTFORMW に任せてそっとその場を離れ、旅行の準備を進めることにしました…
+	ENDIF
+CASE "冬"
+	PRINTFORM 季節も冬と言うことで、%CALLNAME:TARGET%
+	SIF ASSI
+		PRINTFORM 達
+	PRINTFORMW は防寒着を旅行鞄に詰め込んでいる。
+	PRINTFORMW もこもこのファーが付いた見た目にも暖かそうなコートや、スタイリッシュなトレンチコート、可愛いらしいダッフルコートにダウンの…
+	PRINTFORM ありったけのコートを詰め込まれた鞄は溢れる寸前で、%CALLNAME:TARGET%
+	SIF ASSI
+		PRINTFORM 達
+	PRINTFORMW では蓋を閉めることができないようです。
+	IF RAND:2 == 0
+		PRINTFORM %CALLNAME:MASTER%は
+		IF ASSI
+			PRINTFORM 二人
+		ELSE
+			PRINTFORM %CALLNAME:TARGET%
+		ENDIF
+		PRINTFORMW と協力し、やっとの思いで閉めることができましたが…
+		PRINTFORMW 着ていくコートまで鞄に仕舞い込んでしまったことに気付き、すぐに開けるハメになってしまいました…
+	ELSE
+		PRINTFORM %CALLNAME:MASTER%は鞄の中から「あれもいらないこれもいらない」と
+		IF ASSI
+			PRINTFORM 二人
+		ELSE
+			PRINTFORM %CALLNAME:TARGET%
+		ENDIF
+		PRINTFORMW が無理矢理押し込んだものを次々に取り出し、一回り小さな鞄に収めてしまいました…！
+		PRINTFORM お気に入りの服をいらないと言われて最初はむくれていた%CALLNAME:TARGET%も、%CALLNAME:MASTER%の手際の良さに
+		IF TALENT:恋慕
+			PRINTFORMW 惚れ直したようです。
+		ELSE
+			PRINTFORMW 感心しているようです。
+		ENDIF
+	ENDIF
+;汎用（春夏用）
+CASEELSE
+	IF TALENT:幼稚 || TALENT:陽気 || COND("成長済み") == 0
+		PRINTFORM %CALLNAME:MASTER%と
+		IF ASSI
+			PRINTFORM %CALLNAME:ASSI%の三
+		ELSE
+			PRINTFORM 二
+		ENDIF
+		PRINTFORMW 人で用意した旅行鞄の他に、%CALLNAME:TARGET%は小さな自分用の鞄に溢れんばかりのお菓子を詰め込んでいます！
+		PRINTFORM そのあまりの量を見咎めた%CALLNAME:MASTER%が「おやつは$300まで」と釘を刺すと、%CALLNAME:TARGET%は
+		IF RAND:2 == 0
+			PRINTFORMW この世の終わりが来たような顔をして、詰め込んだお菓子を鞄から取り出しはじめました…
+			PRINTFORMW その様子があまりに気の毒だったので、%CALLNAME:MASTER%は「おやつは$500まで」におまけしてあげることにしました…
+			PRINTFORMW %CALLNAME:TARGET%は泣いて喜んでいます…
+		ELSE
+			PRINTFORMW 「バナナはおやつに入らないよね！？」と食い下がってきました…！
+			PRINTFORMW 「バナナはおやつです」
+			PRINTFORMW それが%CALLNAME:MASTER%の答えでした…
+		ENDIF
+	ELSE
+		PRINTFORM %CALLNAME:TARGET%
+		SIF ASSI
+			PRINTFORM と%CALLNAME:ASSI%
+		PRINTFORMW は、早速図書館から借りてきたキアズマの旅行記を見てどこへ観光へ行くか吟味しているようです…
+		PRINTFORM 秋のキアズマは大変風光明媚であるという噂もあり、%CALLNAME:TARGET%
+		SIF ASSI
+			PRINTFORM 達
+		PRINTFORMW はうんうんと唸りながら考え込んでいます。
+		PRINTFORMW 果たしてどこへ行くつもりなのかと、頭越しに旅行記を見てみると…
+		PRINTFORM 開いていたのは
+		PRINTFORMW 『キアズマ夜の繁華街特集！あなたの息子も大MANZOKU！』のページでした…
+		PRINTFORM 夜遊び禁止と%CALLNAME:MASTER%が釘を刺すと、
+		IF ASSI
+			PRINTFORM 二人
+		ELSE
+			PRINTFORM %CALLNAME:TARGET%
+		ENDIF
+		PRINTFORMW はぶーぶーと不平を言い始めました…
+		PRINTFORM %CALLNAME:MASTER%は
+		IF ASSI
+			PRINTFORM 二人
+		ELSE
+			PRINTFORM %CALLNAME:TARGET%
+		ENDIF
+		PRINTFORMW に任せたのがそもそも間違いだったと旅行記を取り上げ、旅行プランをイチから自分で考え直すことにしました…
+	ENDIF
+ENDSELECT
+PRINTFORMW わいわいと騒がしく旅行の準備をしていると、あっという間に時間は過ぎ、とっぷりと夜が更けていきました…
+
+DRAWLINE
+
+
+@EVENT_TRAVEL
+#DIM LCOUNT
+#DIMS OKAMI
+#DIMS ESA
+#DIMS ESB
+#DIMS ESC
+#DIM MOB
+#DIMS OMIYAGE, 3
+
+;二人を選ぶのなら、特殊な関数を使わないで済むようにTARGETとASSIと一緒に旅行に行くこととします
+;旅行はあくまでもTARGETと行くのがメイン。ASSIはオマケというスタンス。
+;それぞれの項目が入り組んでくるようでしたら@EVENT_TRAVELの派生関数を作るのも有り
+
+;助手は居るか分からない
+ASSI = 0
+
+FOR LCOUNT, 1, CHARANUM
+	SIF CFLAG:LCOUNT:70 == 0
+		CONTINUE
+	SIF GETBIT(CFLAG:LCOUNT:70, 0)
+		TARGET = LCOUNT
+	SIF GETBIT(CFLAG:LCOUNT:70, 1)
+		ASSI = LCOUNT
+NEXT
+
+;TARGETがいないと終了
+SIF TARGET <= 0
+	RETURN 0
+
+IF ASSI
+	TARGET:1 = ASSI
+	CALL SIMULATE_TRAIN_FIRST, 2
+ELSE
+	CALL SIMULATE_TRAIN_FIRST
+ENDIF
+
+;行き先
+SELECTCASE FLAG:60
+CASE 1
+	LOCALS = 小さな民宿
+CASE 2
+	LOCALS = 温泉街の旅館
+CASE 3
+	LOCALS = 秘湯の温泉宿
+ENDSELECT
+
+;OKAMIは宿の従業員（キアズマ系）、女将も仲居もみんな同種の夢魔。
+$OKAMI_SELECT
+OKAMI = %TEXTR("ネコマタ", "クズノハ", "タマモ", "クノイチ", "ハツメ", "ユキジョロウ", "ヒノエンマ", "キヨヒメ")%
+;TARGETかASSIと名前が被っていたら選び直し
+SIF (OKAMI == CALLNAME:TARGET) || (ASSI && (OKAMI == CALLNAME:ASSI))
+	GOTO OKAMI_SELECT
+
+;ESA、ESB、ESCは旅先で出会う夢魔。エネミーサキュバスABC3人組。将来的にはユニーク対応もしたい（ストメロ、ハーピ−三姉妹、モルン姉妹など）
+$ES_SELECT
+;ESA
+IF RAND:4 == 0
+	ESA = %TEXTR("アルケニー", "ナシュジェアスダ", "アプサラス", "ダーキニー", "ヤクシニー", "キンナリー", "バンダースナッチ", "ジャバウォック")%
+ELSEIF RAND:3 == 0
+	ESA = %TEXTR("ケルベロス", "ルーガルー", "ストリガ", "ケットシー", "アスカフロア", "ヴィヴィアン", "ウンディーネ", "ジャブジャブ")%
+ELSEIF RAND:2 == 0
+	ESA = %TEXTR("リリス", "アルラウネ", "エアリアル", "ルサルカ", "ユキジョロウ", "ランダ", "ナイトメア", "キヨヒメ")%
+ELSE
+	ESA = %TEXTR("サキュバス", "ドライアド", "シルフ", "ネコマタ", "クズノハ", "ワーウルフ", "クノイチ", "ウィッチ")%
+ENDIF
+;ESBはロリ系
+ESB = %TEXTR("インプ", "アルプ", "リリム", "ピクシー", "リャナンシー", "ノルン", "ティターニア")%
+;ESCはサド系（ふたなりかも）
+IF RAND:2 == 0
+	ESC = %TEXTR("モーショボー", "キュウビ", "シェロブ", "ブラックキャット", "ニュクス", "アスタロテ")%
+ELSE
+	ESC = %TEXTR("ハーピー", "モーリアン", "ダッキ", "ルシフェル", "アスモデ", "メフィスト")%
+ENDIF
+;TARGETかASSI、OKAMIと名前が被っていたら選び直し
+SIF ((ESA == CALLNAME:TARGET) || (ESB == CALLNAME:TARGET) || (ESC == CALLNAME:TARGET)) ||(ASSI && ((ESA == CALLNAME:ASSI) || (ESB == CALLNAME:ASSI) || (ESC == CALLNAME:ASSI))) || ((ESA == OKAMI) || (ESB == OKAMI) || (ESC == OKAMI))
+	GOTO ES_SELECT
+
+ADDCHARA 1
+MOB = CHARANUM-1
+
+SWAP TARGET, MOB
+
+CFLAG:8 = RAND:5
+;@HIGH_RANKER補正は便宜的にサキュバス族のものを使う
+CALL HIGH_RANKER, 1, CFLAG:8
+CALL SETFLAG, "識別番号", TARGET
+CALL RESET_EXP_GAIN, TARGET
+CALL GET_EXABL, TARGET
+CALL GET_EXTALENT, TARGET
+CALL SET_3SIZE, TARGET
+CALL SETFLAG, "陰毛と腋毛", TARGET
+CALL SETFLAG, "乳首の詳細設定", TARGET
+CALL SETFLAG, "属性", TARGET
+CALL CALC, "好きな体位", TARGET
+CALL SETFLAG, "ペニス詳細設定"
+CALL SET_COUNTER_BASE
+
+;CALL NEW_PRINT_STATE, TARGET, "召喚"
+
+SWAP TARGET, MOB
+
+
+CALL TRAVEL_TIME("朝", "キアズマへの道中", "馬車の中")
+;出発準備の描写
+;館を出発
+PRINTFORMW 準備のできた鞄を馬車へと積み込み、いよいよ館を後にする…
+;（更新）口上の呼び出し
+CALL SELF_KOJO, "旅行出発"
+PRINTFORM さて、キアズマに着くまでどう暇を潰そうかと思案していると、%CALLNAME:TARGET%
+IF RAND:3 == 0
+	PRINTFORMW がトランプに誘ってきました…！
+	PRINTFORMW どうやらキアズマで遊ぶための軍資金を%CALLNAME:MASTER%から巻き上げるつもりのようです…！
+	PRINTFORMW そっちがそのつもりなら望むところだと不敵に微笑み、%CALLNAME:MASTER%はその勝負を受けて立ちました！
+	PRINTFORM 結果は……
+	IF RAND:4 == 0
+		PRINTFORMW %CALLNAME:MASTER%の圧勝でした！
+		PRINTFORMW 巻き上げるどころか逆に%CALLNAME:MASTER%に毟り取られてしまった%CALLNAME:TARGET%は、すっかり拗ねてしまって当分口をきいてくれそうにありません…
+		PRINTFORMW 馬車の中に気まずい空気が漂っています…
+	ELSEIF RAND:3 == 0
+		PRINTFORMW %CALLNAME:MASTER%の辛勝でした！
+		PRINTFORMW よほど負けたのが悔しかったのか、%CALLNAME:TARGET%は「もう一回！」と%CALLNAME:MASTER%に頼み込んできます。
+		PRINTFORMW どうやら、旅行の道中は退屈せずに済みそうです…
+	ELSEIF RAND:2 == 0
+		PRINTFORMW %CALLNAME:TARGET%の辛勝でした！
+		PRINTFORMW 気をよくした%CALLNAME:TARGET%でしたが、まだまだ稼ぎ足りないのか、「もう一回！」と%CALLNAME:MASTER%に頼み込んできます。
+		PRINTFORMW %CALLNAME:MASTER%も負け分を取り戻すべく、腕まくりをしてそれに応じてやります……どうやら、旅行の道中は退屈せずに済みそうです…
+	ELSE
+		PRINTFORMW %CALLNAME:TARGET%の圧勝でした！
+		PRINTFORMW %CALLNAME:MASTER%は懐がスッカラカンになるまで%CALLNAME:TARGET%にむしり取られてしまいました…
+		PRINTFORMW 軽くなってしまった財布を抱いて、%CALLNAME:MASTER%は到着までの間、ふて寝することにしました
+	ENDIF
+ELSEIF RAND:2 == 0
+	PRINTFORMW が話しかけてきました…！
+	PRINTFORMW 旅行ということで少しはしゃいでいるのか、館ではあまり聞けない話を聞くことができました…
+	PRINTFORMW %CALLNAME:TARGET%の意外な一面を垣間見た気がします…
+ELSE
+	PRINTFORMW はいきなり目の前で寝息を立て始めました！
+	PRINTFORMW 夜遅くまで旅行の準備に頑張っていては無理もないと、%CALLNAME:MASTER%はゆっくり寝かせておいてあげることにしました…
+	PRINTFORMW 景色がよくなってきたあたりで起こしてあげようかな？
+ENDIF
+
+PRINTL 
+PRINTL 
+
+;キアズマに到着
+PRINTFORM 馬のいななきが上がり、馬車が止まります……
+
+SELECTCASE LOCALS
+CASE "小さな民宿"
+	CALL TRAVEL_TIME("昼", "キアズマ", "村の入り口")
+	PRINTFORMW 民宿のある小さな谷間の村に到着したようです。
+	PRINTFORMW 馬車から降りて見る民宿は、なんとも言えない風情があり、なかなか雰囲気も良さそうに思えます。
+	PRINTFORM %CALLNAME:MASTER%と%CALLNAME:TARGET%
+	IF ASSI
+		PRINTFORM 、それに%CALLNAME:ASSI%の三人は
+	ELSE
+		PRINTFORM の二人は
+	ENDIF
+	PRINTFORMW 馬車から荷物を降ろすと、期待を胸に民宿へと向かいました…
+CASE "温泉街の旅館"
+	CALL TRAVEL_TIME("昼", "キアズマ", "温泉街の入り口")
+	PRINTFORMW 旅館のある温泉街に到着したようです。
+	PRINTFORMW 温泉街の通りは人通りが多く馬車が入れないため、徒歩で温泉街を横切っていかなくてはなりません。
+	PRINTFORM %CALLNAME:MASTER%と%CALLNAME:TARGET%
+	IF ASSI
+		PRINTFORM 、それに%CALLNAME:ASSI%の三人は
+	ELSE
+		PRINTFORM の二人は
+	ENDIF
+	PRINTFORMW 馬車から荷物を降ろすと、旅館の方へと歩き始めました…
+CASE "秘湯の温泉宿"
+	CALL TRAVEL_TIME("昼", "キアズマ", "温泉宿への山道入り口")
+	PRINTFORMW 温泉宿がある山の麓へと到着したようです。
+	PRINTFORMW ここから先は山道になり、徒歩でひとつ尾根を越えなければなりません…
+	PRINTFORM %CALLNAME:MASTER%
+	IF ASSI
+		PRINTFORM 達
+	ELSE
+		PRINTFORM と%CALLNAME:TARGET%
+	ENDIF
+	PRINTFORMW は馬車から荷物を降ろし、馬車を見送ると、山道を登りはじめました…
+ENDSELECT
+
+CALL TRAVEL_TIME("昼", "キアズマ", "宿への道のり")
+;（更新）口上の呼び出し
+CALL SELF_KOJO, "旅行到着"
+;宿に到着の描写
+SELECTCASE LOCALS
+CASE "小さな民宿"
+	SELECTCASE TEXTS("季節")
+	CASE "春"
+		IF RAND:2 == 0
+			PRINTFORMW ここ最近天気が崩れたせいか、春だというのに風を肌寒く感じます。
+			PRINTFORM 薄着の
+			IF ASSI && RAND:2 == 0
+				PRINTFORM %CALLNAME:ASSI%
+			ELSE
+				PRINTFORM %CALLNAME:TARGET%
+			ENDIF
+			PRINTFORMW が小さなくしゃみをしています……民宿へ急いだ方がよさそうです
+		ELSE
+			PRINTFORMW 季節はすっかり春となり、ぽかぽかした陽気が降り注いでいます。
+			PRINTFORMW %CALLNAME:MASTER%達は柔らかい春風を感じつつ、今回宿泊する民宿を訪れました…
+		ENDIF
+	CASE "夏"
+		IF RAND:2 == 0
+			PRINTFORMW 予約していた民宿に着いた%CALLNAME:MASTER%達に、真っ赤なスイカが振舞われました
+			PRINTFORMW みずみずしいスイカが夏の暑さを和らげてくれます…
+		ELSE
+			PRINTFORMW 民宿の軒先には風鈴が下がっており、夏らしさを感じさせます。
+			PRINTFORMW ちりんちりんという透き通った音色が、%CALLNAME:MASTER%達に安らぎをもたらしました…
+		ENDIF
+	CASE "秋"
+		PRINTFORMW 民宿の庭には落ち葉の山が出来上がっており、そこからは白い煙が立ち上っています。
+		PRINTFORMW 民宿の主人が手に持った棒でそこをかき回すと……中からサツマイモが出てきました！
+		PRINTFORMW %CALLNAME:MASTER%達は甘い甘い秋の味覚を堪能しました…
+	CASE "冬"
+		PRINTFORMW 民宿の庭には人間と夢魔の子供たちが集まり、二つのチームに分かれて雪合戦をしています。
+		IF ASSI
+			PRINTFORMW 冬の風物詩とも言えるその光景を見ていると、やがて%CALLNAME:TARGET%達はうずうずし始めます。
+			PRINTFORMW ……帰ったらみんなでやってみようか？
+		ELSE
+			PRINTFORMW 冬の風物詩とも言えるその光景を、%CALLNAME:TARGET%は興味津々と言った様子で見つめています。
+			PRINTFORMW ……帰ったらやってみようか？
+		ENDIF
+	ENDSELECT
+CASE "温泉街の旅館"
+	IF RAND:2 == 0
+		SELECTCASE TEXTS("季節")
+		CASE "春"
+			PRINTFORMW ―季節は春。旅行シーズンの温泉街はどこもかしこも旅行客で溢れ、歩くことさえままなりません。少しでも気を抜けば人の波に流されてしまいそうです。
+			PRINTFORM %CALLNAME:MASTER%は
+			IF ASSI
+				PRINTFORM 二人
+			ELSE
+				PRINTFORM %CALLNAME:TARGET%
+			ENDIF
+			PRINTFORM とはぐれないようにと手を握ると、彼女
+			SIF ASSI
+				PRINTFORM 達
+			PRINTFORMW は嬉しそうに微笑みます…
+		CASE "夏"
+			IF RAND:3 == 0
+				PRINTFORMW うだるような暑さの中、温泉街を回っていた%CALLNAME:MASTER%達はかき氷ののれんを見つけました！
+				PRINTFORMW %CALLNAME:MASTER%達は一息入れようと店に入り、それぞれ思い思いのかき氷を注文します。
+				PRINTFORMW 数分後、見ているだけで涼しくなれそうなかき氷が%CALLNAME:MASTER%達の前に並びました。
+				PRINTFORMW %CALLNAME:MASTER%がさっそく自分のかき氷を食べようとすると――
+				PRINTFORM %CALLNAME:TARGET%
+				SIF ASSI
+					PRINTFORM と%CALLNAME:ASSI%
+				PRINTFORMW は銀色のスプーンにかき氷を掬うと、%CALLNAME:MASTER%に向けて「はい、あ〜ん♪」とスプーンを差し出してきました！
+				PRINTFORMW 周りの目がある中での「あ〜ん」は格別の味がします…
+			ELSEIF RAND:2 == 0
+				PRINTFORMW 夏の温泉街には熱気が溢れ、誰もが熱そうに歩いています。
+				PRINTFORM そしてそんな中、
+				IF ASSI
+					PRINTFORM %CALLNAME:TARGET%と%CALLNAME:ASSI%に両手を握られて
+				ELSE
+					PRINTFORM %CALLNAME:TARGET%と手を握って
+				ENDIF
+				PRINTFORMW 歩く%CALLNAME:MASTER%の姿が、周囲の人々を一層暑苦しくさせています…
+			ELSE
+				PRINTFORMW 正午を過ぎると温泉街には日差しがじりじりと降り注ぎ、辺りは気だるげな空気に包まれ始めます。
+				PRINTFORMW 散策していた%CALLNAME:MASTER%達は、売っていた%TEXTR("アイスクリーム", "ソフトクリーム", "ジェラート", "水ようかん", "かき氷")%を食べて涼みました…
+			ENDIF
+		CASE "秋"
+			IF RAND:2 == 0
+				PRINTFORMW 温泉街には木枯らしが吹きすさび、道行く人々は寒そうにしています。
+				PRINTFORM %CALLNAME:TARGET%
+				SIF ASSI
+					PRINTFORM と%CALLNAME:ASSI%
+				PRINTFORMW もぶるりと体を振るわせ―――%CALLNAME:MASTER%に体を密着させてきました！
+				PRINTFORMW %CALLNAME:MASTER%は「しばらくこのままでもいいかもしれない」という気持ちになりました……
+			ELSE
+				PRINTFORMW 温泉街にもすっかり秋が訪れ、冷たい風が吹いています。
+				PRINTFORM %CALLNAME:MASTER%は%CALLNAME:TARGET%
+				SIF ASSI
+					PRINTFORM 達
+				PRINTFORMW と%TEXTR("肉まん", "焼き芋", "おでん")%を食べ、体を温めてから街の中を歩き回りました…
+			ENDIF
+		CASE "冬"
+			IF RAND:2 == 0
+				PRINTFORMW 温泉街は雪化粧を施されて真っ白に染まり、なんとも幻想的な雰囲気をしています。
+				PRINTFORM 珍しい光景に%CALLNAME:TARGET%
+				SIF ASSI
+					PRINTFORM 達
+				PRINTFORM も浮き足立ち、%CALLNAME:MASTER%はいつもより元気な彼女
+				SIF ASSI
+					PRINTFORM 達
+				PRINTFORMW に振り回されました…
+			ELSE
+				PRINTFORMW 雪の積もった温泉街は思いのほか寒く、冷たい空気が徐々に体の熱を奪っていきます…
+				PRINTFORM %CALLNAME:MASTER%が寒さから体を振るわせると――%CALLNAME:TARGET%
+				SIF ASSI
+					PRINTFORM と%CALLNAME:ASSI%
+				PRINTFORMW がそっと寄り添ってきました！
+				PRINTFORMW …%CALLNAME:MASTER%は心まで温かくなった気がしました。
+			ENDIF
+		ENDSELECT
+	ELSE
+		IF RAND:7 == 0
+			;MASTERが女性
+			IF TALENT:MASTER:オンナ && RAND:2 == 0
+				PRINTFORMW 旅館に向かって温泉街を歩いていると、一人の男性が%CALLNAME:MASTER%に声を掛けてきました。どうやらナンパのようです…
+				;TARGETが恋慕
+				IF TALENT:恋慕 && RAND:2 == 0
+					PRINTFORM %CALLNAME:MASTER%が男を追い返そうとした瞬間、%CALLNAME:TARGET%
+					SIF ASSI
+						PRINTFORM と%CALLNAME:ASSI%
+					PRINTFORMW は、この人は自分のものだとばかりに%CALLNAME:MASTER%に抱きついてきました！
+					PRINTFORMW そんな光景を見せつけられた男は、すごすごと悔しそうに去っていきました…
+				ELSE
+					PRINTFORMW 自信たっぷりにナンパをする男でしたが、%CALLNAME:MASTER%が見事に一言で断ると、男は諦めて去っていきました…
+					PRINTFORM %CALLNAME:TARGET%は%CALLNAME:MASTER%の\@ RAND:2 ? 毅然とした態度 # 見事な手腕 \@に
+					IF TALENT:恋慕
+						PRINTFORMW 惚れ惚れしています。
+					ELSE
+						PRINTFORMW 感心しているようです。
+					ENDIF
+				ENDIF
+			ELSE
+				PRINTFORMW 旅館に向かって温泉街を歩いていると、一人の男性が%CALLNAME:TARGET%に声を掛けてきました。どうやらナンパのようです…
+				;TARGETが内気＆ASSIが強気
+				IF ASSI && TALENT:内気 && TALENT:ASSI:強気 && RAND:4 == 0
+					PRINTFORMW 男性は自慢げに自分をアピールしましたが、%CALLNAME:TARGET%は角が立たないように気をつけながらやんわりと断ります…
+					PRINTFORMW しかしナンパ男は諦めず、どうにか%CALLNAME:TARGET%を口説こうと食い下がってきました！
+					PRINTFORMW %CALLNAME:TARGET%はしつこいナンパに困ってしまいますが…見かねた%CALLNAME:ASSI%が割って入り、男を追い払いました！
+					PRINTFORMW %CALLNAME:TARGET%はホっと息をついています…
+				;内気
+				ELSEIF TALENT:内気 && RAND:3 == 0
+					PRINTFORMW 男性は自慢げに自分をアピールしましたが…%CALLNAME:TARGET%が%CALLNAME:MASTER%の陰に隠れるのを見ると、悔しそうに去っていきました…
+					SIF TALENT:恋慕
+						PRINTFORMW %CALLNAME:TARGET%は二度とナンパなどされないようにと、%CALLNAME:MASTER%の手を握ってきました…
+				;強気
+				ELSEIF TALENT:強気 && RAND:2 == 0
+					PRINTFORMW 男性は自慢げに自分をアピールしましたが…%CALLNAME:TARGET%は男性を鼻で笑って追い返してしまいました！
+				ELSE
+					PRINTFORMW 男性は自慢げに自分をアピールしましたが、%CALLNAME:TARGET%が笑顔で%CALLNAME:MASTER%に抱きつくとすごすごと去っていきました…
+				ENDIF
+			ENDIF
+		ELSEIF RAND:6 == 0
+			PRINTFORMW 温泉街の通りには多くのカップルが溢れ、王都もかくやという賑わいを見せています。
+			IF RAND:2 == 0
+				PRINTFORM そんな中、%CALLNAME:TARGET%
+				SIF ASSI
+					PRINTFORM と%CALLNAME:ASSI%
+				PRINTFORMW は目の前のカップルが%TEXTR("腕を組んで", "手を握って", "指を絡ませるように手を握って", "手を繋いで", "寄り添うように", "肩を密着させて")%歩いているのを見つけました！
+				PRINTFORM %TEXTR("対抗心に燃えた", "それを見て閃いた", "それを羨ましく思った")%
+				IF ASSI
+					PRINTFORM 二人
+				ELSE
+					PRINTFORM %CALLNAME:TARGET%
+				ENDIF
+				PRINTFORMW は、すぐさま%CALLNAME:MASTER%に同じことをしようと誘ってきます…
+				PRINTFORMW %CALLNAME:MASTER%は断り切れずにそれに応じてあげますが、嬉し恥ずかし、周囲からの視線をむずがゆく感じました…
+			;キスver
+			ELSE
+				PRINTFORM そんな中、%CALLNAME:TARGET%
+				SIF ASSI
+					PRINTFORM と%CALLNAME:ASSI%
+				PRINTFORMW は目の前のカップルがキスをしているのを見つけました！
+				PRINTFORM %TEXTR("対抗心に燃えた", "それを見て閃いた", "それを羨ましく思った")%
+				IF ASSI
+					PRINTFORM 二人
+				ELSE
+					PRINTFORM %CALLNAME:TARGET%
+				ENDIF
+				PRINTFORMW は、すぐさま%CALLNAME:MASTER%に熱い熱いキスをしてきます！
+				PRINTFORMW それを見た周囲からは囃し立てるかのように大きな歓声が上がりました…
+			ENDIF
+		ELSEIF RAND:5 == 0
+			;巨乳ver
+			IF TALENT:巨乳
+				PRINTFORM 旅館へ向かう温泉街の道中では%CALLNAME:TARGET%
+				SIF ASSI && TALENT:ASSI:巨乳
+					PRINTFORM と%CALLNAME:ASSI%
+				PRINTFORM がその大きな胸を%CALLNAME:MASTER%の
+				SIF ASSI && TALENT:ASSI:巨乳
+					PRINTFORM 両
+				PRINTFORMW 腕にぎゅうと密着させて歩く格好になりました…
+				PRINTFORMW むにむにと押し付けられるその感触に、%CALLNAME:MASTER%は何だか幸せな気分に包まれます……
+				PRINTFORMW 周囲の男性から恨みがましそうな視線を向けられますが―――全く気になりませんでした。
+			ELSE
+				PRINTFORM 旅館へ向かうついでに温泉街を散策している間、%CALLNAME:MASTER%は%CALLNAME:TARGET%
+				SIF ASSI
+					PRINTFORM と%CALLNAME:ASSI%
+				PRINTFORM に
+				SIF ASSI
+					PRINTFORM 両
+				PRINTFORMW 腕を掴まれて歩くことになりました。
+				PRINTFORMW %CALLNAME:MASTER%が周囲の%TEXTR("男性", "女性")%から%TEXTR("好奇の視線を集める", "羨望の眼差しを向けられる", "羨ましげな視線を集める")%こととなったのは言うまでもありませんでした…
+			ENDIF
+		ELSEIF RAND:4 == 0
+			PRINTFORMW 旅館に向かって温泉街を歩いていると、一人の男性が%CALLNAME:TARGET%に声を掛けてきました。どうやらナンパのようです。
+			PRINTFORMW 男性は自慢げに自分をアピールしてきましたが、%CALLNAME:TARGET%が笑顔で%CALLNAME:MASTER%に抱きつくとすごすごと去っていきました……
+		ELSEIF RAND:3 == 0
+			PRINTFORMW 温泉街には多くの店が立ち並び、珍しい商品が購買欲をかき立ててきます。
+			PRINTFORM どんなものがあるのかと
+			IF ASSI
+				PRINTFORM みんな
+			ELSE
+				PRINTFORM 二人
+			ENDIF
+			PRINTFORM で見て回っていると、%CALLNAME:TARGET%は目の前の「
+			;分岐
+			IF RAND:6 == 0
+				PRINTFORMW ムーンドロップスまんじゅう」を指差しました！
+				PRINTFORMW ……果たしておいしいのだろうか？
+			ELSEIF RAND:5 == 0
+				PRINTFORMW 五十年物のレッドグルッペン」を指差しました！
+				PRINTFORMW …温泉街にあっていいものではない気がします。
+			ELSEIF RAND:4 == 0
+				PRINTFORMW ホロス産魔法美肌石鹸」を指差しました！
+				PRINTFORMW …普通の石鹸とどう違うのか気になりました。
+			ELSEIF RAND:3 == 0
+				PRINTFORMW まるで本物！白濁ドロドロ入浴剤」を指差しました！
+				PRINTFORMW …館で使われたら掃除が大変そうです。
+			ELSEIF RAND:2 == 0
+				PRINTFORMW カルビスの温泉割り」を指差しました！
+				PRINTFORMW 飲みたいのかと%CALLNAME:TARGET%に尋ねると、もっと飲みたいものがあると抱き付き、そっと手で股間を撫で上げてきました！
+				PRINTFORMW 密着していれば周囲に見えないと思っているのかもしれませんが、%CALLNAME:MASTER%は周囲にバレないか気が気でありませんでした…
+			ELSE
+				PRINTFORMW エスト印の\@ TALENT:MASTER:オトコ ? ビンビン # ビンカン \@ドリンク」を指差しました！
+				PRINTFORMW …後で飲めということだろう。彼女がくすくす笑っているのは多分そういう意味のはずです。
+				PRINTFORMW %CALLNAME:MASTER%は無事に帰れるだろうか不安になってきました…
+			ENDIF
+		ELSEIF RAND:2 == 0
+			PRINTFORMW 街の中を移動中も、%CALLNAME:TARGET%は調教道具を大事そうに持って歩いています。
+			PRINTFORMW …周囲からは痛い視線が突き刺さります。
+			PRINTFORMW せめて鞄にしまってくれないかなぁ……
+		ELSE
+			PRINTFORMW 温泉街には各地から人が来ているようで、様々な格好をした人と夢魔が行き交っています。
+			PRINTFORM 道行く%TEXTR("女性", "夢魔")%に%CALLNAME:MASTER%が目を移そうとすると、%CALLNAME:TARGET%
+			SIF ASSI
+				PRINTFORM と%CALLNAME:ASSI%
+			PRINTFORMW に頬を引っ張られてしまいました！
+			PRINTFORMW ちょっと見るくらいは許して欲し……余計なことを言ったばかりに、こんどは思い切り足を踏まれてしまいました！
+		ENDIF
+	ENDIF
+CASE "秘湯の温泉宿"
+	SELECTCASE TEXTS("季節")
+	CASE "春"
+		IF RAND:3 == 0
+			PRINTFORMW 温泉宿へと続く春の山道を歩く%CALLNAME:MASTER%達の前が、少しずつ霞がかってきました…
+			PRINTFORM %CALLNAME:MASTER%は%CALLNAME:TARGET%
+			SIF ASSI
+				PRINTFORM と%CALLNAME:ASSI%
+			PRINTFORMW がはぐれないよう、出来る限り近くを歩くよう指示をします。
+			IF TALENT:幼稚 || COND("成長済み") == 0
+				PRINTFORMW が、珍しい光景に興奮した%CALLNAME:TARGET%ははしゃいで霧の中からイタズラを仕掛けてきました！
+				PRINTFORMW %CALLNAME:MASTER%は%CALLNAME:TARGET%が飽きるまでの間、%CALLNAME:TARGET%の玩具にされてしまいました…
+			ELSE
+				;臆病・内気
+				IF TALENT:臆病 || TALENT:内気
+					PRINTFORMW 不安を感じた%CALLNAME:TARGET%は、僅かに震える手を%CALLNAME:MASTER%に差し出し、手を繋いで欲しいとお願いしてきました…
+					PRINTFORMW %CALLNAME:MASTER%が手を握り返してやると、彼女はホッと安堵の表情を浮かべています…
+				ELSE
+					PRINTFORM すると、%CALLNAME:TARGET%
+					SIF ASSI
+						PRINTFORM 達
+					PRINTFORMW はこれ幸いと%CALLNAME:MASTER%の腕を取り、身体を密着させて歩き始めました。
+					PRINTFORMW …………歩きづらい
+				ENDIF
+			ENDIF
+		ELSEIF RAND:2 == 0
+			PRINTFORMW 温泉宿への道中、山の中には花の匂いが立ち込めていました。
+			PRINTFORMW %CALLNAME:MASTER%達は春の訪れを感じつつ、ゆっくりと山を登りました…
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%は山道に歩き慣れていないらしく、あと少しで温泉宿という所でへたり込んでしまいました。
+			PRINTFORMW %CALLNAME:MASTER%は奮起して、温泉宿まで%CALLNAME:TARGET%をおんぶして運んでみせました。
+		ENDIF
+	CASE "夏"
+		IF RAND:3 == 0
+			PRINTFORMW 順調に山道を登っていた%CALLNAME:MASTER%達でしたが、先程まで晴れていた空は徐々に暗くなってきました。
+			PRINTFORMW 一雨降りそうだな…と%CALLNAME:MASTER%がそう思った瞬間、大きな雷鳴が辺りに轟きます！
+			IF TALENT:強気
+				IF RAND:3 == 0
+					PRINTFORMW しかし%CALLNAME:TARGET%は驚くどころか、雨が降って自分の服が濡れないか心配しています…
+				ELSE
+					PRINTFORMW %CALLNAME:TARGET%は突然の雷鳴に驚いたのか、その口から普段は聞けないような可愛らしい悲鳴が響き渡ります。
+					IF RAND:3 == 0
+						PRINTFORMW 残りの山道を歩く間中その悲鳴を%CALLNAME:MASTER%にからかわれ、%CALLNAME:TARGET%は拗ねてしまいました。
+					ELSEIF RAND:2 == 0
+						PRINTFORMW しかし%CALLNAME:MASTER%がその声に気付かなかったフリをすると、%CALLNAME:TARGET%は何事もなかったようにまた歩き始めました。
+					ELSE
+						PRINTFORMW しかし%CALLNAME:MASTER%はそのことを茶化したりせず、「大丈夫か？」と声をかけてあげました。
+						PRINTFORMW %CALLNAME:TARGET%はそういう事を言われるとは考えていなかったのか、ぎくしゃくしながら返事をしました。
+						PRINTFORMW …心なしか、%CALLNAME:TARGET%の頬が赤みを帯びているように見えます。
+					ENDIF
+				ENDIF
+			ELSE
+				IF RAND:2 == 0
+					PRINTFORMW 普段の何倍も大きな雷鳴に、%CALLNAME:TARGET%はすくみ上がってしまいました。
+					PRINTFORMW 旅館に着くまで、%CALLNAME:MASTER%は震える%CALLNAME:TARGET%の手を握って歩いてあげました。
+				ELSE
+					PRINTFORMW 大きな雷鳴に%CALLNAME:TARGET%は腰を抜かし、その場にへたり込んでしまいました。
+					PRINTFORMW %CALLNAME:MASTER%は%CALLNAME:TARGET%を抱きかかえ、頑張って旅館まで運びました。
+				ENDIF
+			ENDIF
+		ELSEIF RAND:2 == 0
+			PRINTFORMW 気温が高い中山道を歩いたおかげで、%CALLNAME:TARGET%達はすっかり汗だくになってしまいました。
+			PRINTFORMW %CALLNAME:TARGET%の薄手の服が汗で透けています……それを見た%CALLNAME:MASTER%は思わず口元を緩めてしまいますが…
+			PRINTFORMW どうやら%CALLNAME:TARGET%はわざと見せつけているようです！
+			PRINTFORMW 急にありがたみが薄れ、%CALLNAME:MASTER%はため息をつきました…
+		ELSE
+			PRINTFORMW 目的の温泉宿が見えてきた時、それまで晴れていた空は急に曇り始め、ぽつぽつと雨をこぼし始めました！
+			PRINTFORMW %CALLNAME:MASTER%達は目の前の宿まで全力で走ったが、濡れずに済むというわけにはいきませんでした。
+			PRINTFORMW 風邪を引く前に温泉で体を温めることにしよう…
+		ENDIF
+	CASE "秋"
+		IF RAND:2 == 0
+			PRINTFORMW ―秋。山はすっかり紅葉の季節となり、赤や黄色で美しく彩られています。
+			PRINTFORMW %CALLNAME:TARGET%達は宿に着くまでの間、山の風景を楽しみながら歩きました。
+		ELSE
+			PRINTFORMW 山の木々は葉を落とし始め、山道には落ち葉が積もりかけています。
+			PRINTFORMW %CALLNAME:TARGET%達が歩く度、さくさくという足音が耳に残ります……
+		ENDIF
+	CASE "冬"
+		PRINTFORMW 山奥の温泉宿への道はほとんど雪に埋もれていました。
+		IF RAND:2 == 0
+			PRINTFORM 静寂に支配された山道に、
+			IF ASSI
+				PRINTFORM 三人
+			ELSE
+				PRINTFORM 二人
+			ENDIF
+			PRINTFORMW の雪を踏む音だけが響き渡ります……
+		ELSE
+			PRINTFORMW それを乗り越え、やっとの思いでたどり着いた旅館の入り口には、いくつもの雪だるまが並んでいました。おそらく誰かが作って置いているのだろう。
+			PRINTFORMW 館に帰ったら作ってみるのも悪くないかもしれない…
+		ENDIF
+	ENDSELECT
+ENDSELECT
+
+PRINTL 
+PRINTL ………………
+PRINTL …………
+PRINTW ……
+PRINTL 
+SELECTCASE LOCALS
+CASE "小さな民宿"
+	CALL TRAVEL_TIME("昼", "小さな民宿", "玄関")
+CASE "温泉街の旅館"
+	CALL TRAVEL_TIME("昼", "温泉街の旅館", "ロビー")
+CASE "秘湯の温泉宿"
+	CALL TRAVEL_TIME("昼", "秘湯の温泉宿", "玄関")
+ENDSELECT
+;チェックイン(ここはどの宿も共通)
+PRINTFORM 宿に到着した%CALLNAME:MASTER%
+IF ASSI
+	PRINTFORM 達
+ELSE
+	PRINTFORM と%CALLNAME:TARGET%
+ENDIF
+PRINTFORMW は、%OKAMI%達の%TEXTR("歓迎", "出迎え", "歓待")%を受けました。
+PRINTFORMW 驚いたことに、宿は女将さんから仲居まで、%OKAMI%達だけで運営されているのだといいます。
+PRINTFORM %CALLNAME:MASTER%と%CALLNAME:TARGET%
+SIF ASSI
+	PRINTFORM 、それに%CALLNAME:ASSI%
+PRINTFORMW は%OKAMI%達に旅の疲れを労われながら、荷物を運んでもらいました…
+
+PRINTL 
+
+PRINTFORM 宿の受付で宿泊手続きをしていると、
+;TARGETが子供っぽい夢魔や娘
+SELECTCASE NO:TARGET
+CASE 2, 4, 20, 31, 33, 40, 55, 97
+	IF LOCALS == "小さな民宿" && RAND:3 == 0
+		PRINTFORMW %CALLNAME:TARGET%は受付から程近い場所にある%TEXTR("土産物屋", "甘味所", "無料足湯")%の前で足を止めて、その場から動こうとしません。
+		IF RAND:3 == 0
+			PRINTFORMW %CALLNAME:MASTER%は「まずは部屋に行ってから」と言って、どうにか%CALLNAME:TARGET%をそこから引き剥がすことに成功しました…
+		ELSEIF RAND:2
+			PRINTFORMW %CALLNAME:MASTER%は少しだけ%CALLNAME:TARGET%に付き合ってあげることにしました…
+		ELSE
+			PRINTFORMW %CALLNAME:MASTER%は部屋に連れて行こうとしましたが、%CALLNAME:TARGET%が動くまでに結構な時間がかかってしまいました…
+		ENDIF
+	ELSEIF RAND:3 == 0
+		PRINTFORMW %CALLNAME:TARGET%と同じくらいの年頃の男の子が現れました。
+		PRINTFORMW %CALLNAME:TARGET%が手を振ると、相手の子も顔を赤くして手を振り返してきました。
+	ELSEIF RAND:2 == 0
+		PRINTFORMW %CALLNAME:TARGET%と同じくらいの年頃の女の子が現れました。
+		PRINTFORMW %CALLNAME:TARGET%が手を振ると、相手の子も元気に手を振り返してきました。
+	ELSE
+		PRINTFORMW %CALLNAME:TARGET%と%TEXTR("同じくらい", "少し年上くらい", "少し年下くらい")%の頃の夢魔の子が現れました。
+		PRINTFORMW %CALLNAME:TARGET%が手を振ろうとすると、それに気付いた相手の子が近寄ってきます。
+		PRINTFORMW 二人はあっという間に打ち解けて、%TEXTR("好みのタイプ", "ナイスバディの秘訣", "自慢のテクニック", "化粧の仕方")%について話し始めました…
+	ENDIF
+CASEELSE
+	IF RAND:4 == 0 && TALENT:淫乱
+		PRINTFORMW %CALLNAME:MASTER%が宿泊の手続きを終えようかというタイミングで、人間の団体客が到着しました。
+		PRINTFORMW %CALLNAME:TARGET%はその中の一人、%TEXTR("背の低い少年", "幼い少女", "ボーイッシュな少女", "優雅なお嬢様", "大人しそうな女性", "おしとやかな雰囲気の女性", "男装の麗人")%に視線を合わせ、ぺろりと舌なめずりしています。
+		IF RAND:2 == 0
+			PRINTFORMW %CALLNAME:MASTER%は「あまり迷惑をかけないように」と言って釘を刺しておきました…
+		ELSE
+			PRINTFORM しかし%CALLNAME:TARGET%はすぐに
+			IF RAND:3 == 0
+				PRINTFORM 「%CALLNAME:MASTER%の方がいい」
+			ELSEIF RAND:2
+				PRINTFORM 「でも%CALLNAME:MASTER%が一番」
+			ELSE
+				PRINTFORM 「やきもち焼いちゃったかしら♪」
+			ENDIF
+			PRINTFORMW と言って%CALLNAME:MASTER%に抱きつきました…
+		ENDIF
+	ELSEIF RAND:3 == 0
+		PRINTFORMW 少し目を離した隙に%CALLNAME:TARGET%の姿が見えなくなってしまいます…
+		SELECTCASE TEXTS("季節")
+		CASE "春"
+			PRINTFORMW 手続きを終えて待っていると、%CALLNAME:TARGET%が髪に花を挿して戻ってきました…
+			PRINTFORMW どうやら宿の近くで花畑を見つけ、そこで花を一輪摘んで来たようです…
+			PRINTFORMW 部屋に荷物を降ろしたら見に行ってみようか…？
+		CASE "夏"
+			PRINTFORMW 手続きを終えて待っていると、%CALLNAME:TARGET%が団扇を片手に戻ってきました…
+			PRINTFORMW その団扇には大きく「祭」の文字…宿の人に話を聞くと、なんとちょうど今夜が夏祭りということのようです！
+			PRINTFORMW 夜になったら行ってみようか…？
+		CASE "秋"
+			PRINTFORMW 手続きを終えて待っていると、%CALLNAME:TARGET%が何やらホクホク顔で戻ってきました…
+			PRINTFORMW 不審に思った%CALLNAME:MASTER%が問いただすと、なんと%CALLNAME:TARGET%は自分だけ%TEXTR("肉まん", "焼き芋", "おでん")%を食べてきたのだといいます！
+			IF RAND:2 == 0
+				PRINTFORMW %CALLNAME:MASTER%が一言だけ「太るぞ」と言うと、%CALLNAME:TARGET%は慌ててお腹周りを気にし始めました…
+			ELSE
+				PRINTFORMW %CALLNAME:MASTER%の「太るぞ」の一言に即座に「どうせこれから運動するんだから」と返す%CALLNAME:TARGET%に反省の色は見られません…
+			ENDIF
+		CASE "冬"
+			PRINTFORMW 手続きを終えて待っていると、%CALLNAME:TARGET%が外から息を白ませながら戻ってきました
+			PRINTFORMW どうやら%CALLNAME:MASTER%と%CALLNAME:TARGET%をモチーフにした雪だるまを作っていたようです…
+			PRINTFORMW 相当な力作らしいので、後で見に行くこととしよう…
+		ENDSELECT
+	ELSEIF RAND:2 == 0
+		PRINTFORMW 待つのに飽きた%CALLNAME:TARGET%が%CALLNAME:MASTER%の袖を引っ張ってきました。
+		PRINTFORMW どうやら早く温泉に入りたくて仕方がないようです…
+		PRINTFORMW まるで子供のようにふくれっ面をする%CALLNAME:TARGET%に急かされ、%CALLNAME:MASTER%は%CALLNAME:TARGET%の頭を撫でて宥めながら、手短に宿泊手続きを進めました…
+	ELSE
+		PRINTFORMW %TEXTR("宿", "宿泊客")%の子供らしい女の子が%CALLNAME:TARGET%のことをじっと見ています。
+		PRINTFORMW それに気付いた%CALLNAME:TARGET%が挨拶すると、女の子も挨拶を返してきました。
+		PRINTFORMW そして女の子は一旦深呼吸をして、%CALLNAME:TARGET%に「%TEXTR("おねーさんみたいになるにはどうすればいいの", "どーやっておとこのひとをろうらくするの", "おねーさんはこのひととラブラブなの")%？」という質問をぶつけてきました！
+		PRINTFORMW 珍しい質問に%CALLNAME:TARGET%も悪い気がしないようで、ノリノリで答えています…余計なことを言わなければいいのですが…
+	ENDIF
+ENDSELECT
+
+SELECTCASE LOCALS
+CASE "小さな民宿"
+	CALL TRAVEL_TIME("昼", "小さな民宿", "宿泊部屋")
+CASE "温泉街の旅館"
+	CALL TRAVEL_TIME("昼", "温泉街の旅館", "宿泊部屋")
+CASE "秘湯の温泉宿"
+	CALL TRAVEL_TIME("昼", "秘湯の温泉宿", "離れの部屋")
+ENDSELECT
+
+;部屋の描写
+PRINTFORM 宿泊手続きも終わり、仲居の%OKAMI%に案内されたのは
+;どんな部屋か簡単に描写
+SELECTCASE LOCALS
+CASE "小さな民宿"
+	PRINTFORMW 『%TEXTR("みすず", "あずま", "あけぼの", "あかね", "みやま", "いぶき")%』という名前の小さな部屋でした。
+	PRINTFORMW こぢんまりとはしているが日当たりも良く、眺めも悪くない、値段の割りには少し得した気分になりました…
+CASE "温泉街の旅館"
+	PRINTFORMW 広い旅館の二階、%TEXTR("曲がりくねった廊下の突き当たり", "宴会場の近く", "大浴場からほど近い場所")%の『%TEXTR("葵", "藤", "百合", "桜", "蓮", "牡丹", "椿")%の間』という名前の部屋でした。
+	PRINTFORMW 大きな窓からは温泉街が一望でき、これまで歩いてきた通りを見渡すことができる開放感に溢れています…
+CASE "秘湯の温泉宿"
+	PRINTFORMW 『%TEXTR("桔梗", "皐月", "朱鳥", "白雉", "弥生")%%TEXTR("荘", "庵")%』という名前の離れでした。
+	PRINTFORMW 古い家屋を改装したものであるらしく、なかなか趣のある佇まいで、何より、露天風呂が備え付けられているのがなんとも魅力的です…
+	PRINTFORM 露天風呂からは
+	SELECTCASE TEXTS("季節")
+	CASE "春"
+		PRINTFORM 稜線を桜で染めた山々
+	CASE "夏"
+		PRINTFORM 深い緑の谷間を流れる涼しげな渓流
+	CASE "秋"
+		PRINTFORM 赤や黄色に燃え上がるような紅葉
+	CASE "冬"
+		PRINTFORM 銀白の雪で彩られた雄大な景色
+	ENDSELECT
+	PRINTFORMW を一望にでき、湯船に浸かりながら素晴らしい絶景を楽しむことができるようです…
+ENDSELECT
+
+;部屋に入って夢魔が何をしたか（どの宿でも共通）
+SELECTCASE TEXTS("季節")
+CASE "夏"
+	;とっておきの浴衣
+	IF RAND:2
+		PRINTFORMW %CALLNAME:MASTER%は荷物を置き、さっそく用意された浴衣に着替えました。
+		PRINTFORMW が…%CALLNAME:TARGET%はごそごそと自分の鞄を漁っています。
+		PRINTFORMW なんでもこういう機会の為に前々から自分用の浴衣を準備しておいたのだとか。
+		PRINTFORM ようやく着替えた%CALLNAME:TARGET%は、とっておきの
+		PRINTFORM %TEXTR("朝顔", "向日葵", "桔梗", "紫陽花", "梔子", "鬼灯")%
+		PRINTFORMW の柄の浴衣姿を%CALLNAME:MASTER%に見せることが出来て満足そうにしています…
+	ELSE
+		PRINTFORM 部屋に入るとすぐに、%CALLNAME:TARGET%
+		SIF ASSI
+			PRINTFORM と%CALLNAME:ASSI%
+		PRINTFORMW は汗をかいた服を着替えようと服を脱ぎ始めました！
+		PRINTFORM %CALLNAME:MASTER%は、突然の事態に目のやり場に困り視線を逸らします……
+		PRINTFORM が、肝心の
+		IF ASSI
+			PRINTFORM 二人
+		ELSE
+			PRINTFORM %CALLNAME:TARGET%
+		ENDIF
+		PRINTFORMW は%CALLNAME:MASTER%に着替えを見られて喜んでいるようです…！
+		;プレイヤー女
+		IF TALENT:MASTER:オンナ
+			PRINTFORM %CALLNAME:MASTER%は温泉に入る時に着替えるつもりでしたが、
+			IF ASSI
+				PRINTFORM 二人
+			ELSE
+				PRINTFORM %CALLNAME:TARGET%
+			ENDIF
+			PRINTFORMW に無理矢理服を剥ぎ取られ、浴衣に着替えさせられてしまいました…
+		ENDIF
+	ENDIF
+CASE "冬"
+	PRINTFORM 部屋に入ると、%CALLNAME:TARGET%
+	SIF ASSI
+		PRINTFORM 達
+	PRINTFORMW は館にはない「こたつ」に興味を持ったようです…
+	IF ASSI
+		PRINTFORM 二人
+	ELSE
+		PRINTFORM %CALLNAME:TARGET%
+	ENDIF
+	PRINTFORM は中を覗き込み、それが暖房器具であることを確認すると、
+	IF RAND:2 == 0
+		PRINTFORMW 笑顔で%CALLNAME:MASTER%に隣へ座るよう手招きしてきます…
+		IF RAND:2 == 0
+			PRINTFORMW その手招きに応じては温泉どころではなくなってしまうと感じた%CALLNAME:MASTER%は、寒いのを我慢して丁重にお断りしました…
+		ELSE
+			PRINTFORM %CALLNAME:MASTER%が手招きに応じてこたつに入ると、さっそく
+			IF ASSI
+				PRINTFORM 二人
+			ELSE
+				PRINTFORM %CALLNAME:TARGET%
+			ENDIF
+			PRINTFORMW がイタズラを仕掛けてきました！
+			;エッチなイタズラ
+			IF RAND:2 == 0
+				PRINTFORM %CALLNAME:TARGET%
+				SIF ASSI
+					PRINTFORM と%CALLNAME:ASSI%
+				PRINTFORMW はまだ仲居の%OKAMI%が部屋にいるというのに、%CALLNAME:MASTER%の股間へ脚を伸ばし、器用に弄んできます…！
+				IF RAND:2 == 0
+					PRINTFORM %CALLNAME:MASTER%は必死に平静を装おうとするが、%CALLNAME:TARGET%
+					SIF ASSI
+						PRINTFORM と%CALLNAME:ASSI%
+					PRINTFORMW の巧みな足使いに負け、仲居さんの見ている前でイカされてしまいます…！
+					PRINTFORM 堪らず声を漏らした%CALLNAME:MASTER%と、それを不審そうに見る仲居さんの様子に、%CALLNAME:TARGET%
+					SIF ASSI
+						PRINTFORM と%CALLNAME:ASSI%
+					PRINTFORMW はクスクスと笑っています…
+					CALL EXP_CALC_TRAVEL, "足コキ", TARGET, 1
+					CALL EXP_CALC_TRAVEL, "足コキ", ASSI, 1
+					CALL EXP_CALC_TRAVEL, "絶頂", MASTER, 1
+				ELSE
+					PRINTFORM %CALLNAME:MASTER%はどうにか平静を装い、仲居さんからの夕食の説明をやり過ごそうとしますが、漏れる吐息を不審に思った仲居さん…%OKAMI%とはたと目が合った瞬間に%CALLNAME:TARGET%
+					SIF ASSI
+						PRINTFORM と%CALLNAME:ASSI%
+					PRINTFORMW に一際強く、抉られるように股間を弄ばれ、堪えることもできずにイカされてしまいます…！
+					PRINTFORM 流石にそれに気付いた仲居さんが赤面しながら部屋を出て行った後
+					IF RAND:2 == 0
+						PRINTFORM も、%CALLNAME:MASTER%は%CALLNAME:TARGET%
+						SIF ASSI
+							PRINTFORM と%CALLNAME:ASSI%
+						PRINTFORMW に責められ続け、ぐったりとなるまで弄ばれてしまいました…
+						CALL EXP_CALC_TRAVEL, "足コキ", TARGET, 3 + RAND:5
+						CALL EXP_CALC_TRAVEL, "足コキ", ASSI, 3 + RAND:5
+						CALL EXP_CALC_TRAVEL, "絶頂", MASTER, 3 + RAND:5
+					ELSE
+						PRINTFORM 、%CALLNAME:MASTER%は%CALLNAME:TARGET%
+						SIF ASSI
+							PRINTFORM と%CALLNAME:ASSI%
+						PRINTFORM に
+						IF RAND:2 == 0
+							PRINTFORMW ゲンコツというキツイお灸を据えてやりました…
+						ELSE
+							PRINTFORMW 電気按摩というキツイお灸を据えてやりました…
+							PRINTFORMW 途中から甘い声が漏れていた気がするのはきっと気のせいだろう…
+						ENDIF
+						CALL EXP_CALC_TRAVEL, "足コキ", TARGET, 1
+						CALL EXP_CALC_TRAVEL, "足コキ", ASSI, 1
+						CALL EXP_CALC_TRAVEL, "絶頂", MASTER, 1
+					ENDIF
+				ENDIF
+			ELSE
+				PRINTFORM %CALLNAME:TARGET%
+				SIF ASSI
+					PRINTFORM と%CALLNAME:ASSI%
+				PRINTFORMW はこたつの下に潜り込むと、%CALLNAME:MASTER%の足の裏を擽ってきました…！
+				PRINTFORM %CALLNAME:MASTER%への擽り攻撃は、%CALLNAME:TARGET%
+				SIF ASSI
+					PRINTFORM と%CALLNAME:ASSI%
+				PRINTFORMW がこたつの熱にのぼせ、目を回して這い出てくるまで続きました…
+			ENDIF
+		ENDIF
+	ELSE
+		PRINTFORMW すっぽりと首まで入り込んでしまいました！
+		PRINTFORM 亀のようになってしまった彼女
+		SIF ASSI
+			PRINTFORM 達
+		PRINTFORMW はちょっとやそっとでは出てきそうにありません…
+		IF RAND:2 == 0
+			PRINTFORMW 仕方がないので%CALLNAME:MASTER%も一緒になってこたつに横になっていると、三人揃って睡魔の餌食になってしまいました…
+			PRINTFORMW 夕食の説明に仲居の%OKAMI%がやってきてくれなければ危うく温泉に入りそびれるところでした！
+		ELSE
+			PRINTFORM 退屈なので、そのままこたつでうとうとし始めた%CALLNAME:TARGET%
+			SIF ASSI
+				PRINTFORM と%CALLNAME:ASSI%
+			PRINTFORMW にイタズラを仕掛けてやりました…
+			PRINTFORM 夕食の説明にやってきた仲居の%OKAMI%は落書きされた%CALLNAME:TARGET%
+			SIF ASSI
+				PRINTFORM と%CALLNAME:ASSI%
+			PRINTFORM の顔に我慢できず吹き出してしまいましたが、イタズラされているとは知らない当の
+			IF ASSI
+				PRINTFORM 二人
+			ELSE
+				PRINTFORM %CALLNAME:TARGET%
+			ENDIF
+			PRINTFORMW はきょとんとしています…
+			IF RAND:2 == 0
+				PRINTFORM %CALLNAME:MASTER%がネタばらしをすると、恥ずかしい思いをした
+				IF ASSI
+					PRINTFORM 二人
+				ELSE
+					PRINTFORM %CALLNAME:TARGET%
+				ENDIF
+				PRINTFORMW はまるで河豚のように頬を膨らませて拗ねてしまいました…
+			ELSE
+				PRINTFORM イタズラが発覚した後、%CALLNAME:MASTER%は
+				IF ASSI
+					PRINTFORM 二人
+				ELSE
+					PRINTFORM %CALLNAME:TARGET%
+				ENDIF
+				PRINTFORMW にこってりと怒られました…
+			ENDIF
+		ENDIF
+	ENDIF
+;汎用
+CASEELSE
+	IF RAND:3 == 0
+		PRINTFORMW 部屋に入って荷物を置くと、%CALLNAME:TARGET%はいきなり床に寝っ転がりました！
+		PRINTFORMW 館では見られないほど%CALLNAME:TARGET%はリラックスしています……
+	ELSEIF RAND:2 == 0
+		PRINTFORM 宿泊する部屋に入ると、%CALLNAME:TARGET%
+		SIF ASSI
+			PRINTFORM 達
+		PRINTFORMW は館にはない「押入れ」を興味深く見ています…
+		IF ASSI
+			PRINTFORM 二人
+		ELSE
+			PRINTFORM %CALLNAME:TARGET%
+		ENDIF
+		PRINTFORMW は中を覗き込み、そこに充分なスペースがあることを確認すると、笑顔で%CALLNAME:MASTER%を手招きしました！
+		PRINTFORMW その手招きが何を意味するかは予想出来ましたが…流石にそれは迷惑だと思った%CALLNAME:MASTER%は押し入れから出てくるように促しました。
+	ELSE
+		PRINTFORM 部屋に着くや否や、%CALLNAME:TARGET%
+		SIF ASSI
+			PRINTFORM と%CALLNAME:ASSI%
+		PRINTFORMW は%CALLNAME:MASTER%に飛び掛りそのまま床に押し倒してきました！
+		PRINTFORM どうやら
+		IF ASSI
+			PRINTFORM 二人
+		ELSE
+			PRINTFORM %CALLNAME:TARGET%
+		ENDIF
+		PRINTFORMW は温泉に入るまで我慢が出来ず、このままここで始めるつもりのようです！
+		PRINTFORM %CALLNAME:MASTER%を押さえ込んだ
+		IF ASSI
+			PRINTFORM 二人
+		ELSE
+			PRINTFORM %CALLNAME:TARGET%
+		ENDIF
+		PRINTFORMW はゆっくりと服を脱ぎ始め……
+		PRINTFORMW 直後、扉の向こうから人の声が投げかけられました！
+		PRINTFORM 本番までもう少しでしたが、
+		IF ASSI
+			PRINTFORM 二人
+		ELSE
+			PRINTFORM %CALLNAME:TARGET%
+		ENDIF
+		PRINTFORMW の欲望は夕食の説明に訪れた仲居さんによってお預けとなりました。
+		PRINTFORMW 危ないところでした……
+	ENDIF
+ENDSELECT
+
+PRINTL 
+PRINTL 
+
+;夕食前に散策
+PRINTFORMW はてさて、仲居さんの%OKAMI%の話によると夕食までまだしばらく時間があるようです。
+PRINTFORM それまでどう時間を潰そうか%CALLNAME:TARGET%
+SIF ASSI
+	PRINTFORM 達
+PRINTFORMW に相談したところ、せっかくなので宿の周囲を散策しようということになりました。
+PRINTFORML 女将の%OKAMI%に聞いたところ、いくつか見所はあるようですが…
+PRINTFORMW どこへ行きますか？
+SELECTCASE TEXTS("季節")
+CASE "春"
+	PRINTFORML [0] お花見
+CASE "夏"
+	PRINTFORML [0] 谷間の沢で川遊び
+CASE "秋"
+	PRINTFORML [0] 紅葉狩り
+CASE "冬"
+	PRINTFORML [0] キアズマ雪まつり
+ENDSELECT
+PRINTFORML [1] 川下り
+
+CALL INPUT_SELECT, 2
+
+SELECTCASE RESULT
+;季節ごとの行き先
+CASE 0
+	;浮気判定
+	IF CHECK_UNFAITHFUL_TRAVEL(TARGET) > 0
+		SELECTCASE TEXTS("季節")
+		CASE "春"
+			CALL TRAVEL_TIME("昼", "桜並木", "お花見")
+		CASE "夏"
+			CALL TRAVEL_TIME("昼", "谷間の沢", "川遊び")
+		CASE "秋"
+			CALL TRAVEL_TIME("昼", "神社の参道", "紅葉狩り")
+		CASE "冬"
+			SELECTCASE LOCALS
+			CASE "温泉街の旅館"
+				CALL TRAVEL_TIME("昼", "温泉街の広場", "雪まつり")
+			CASEELSE
+				CALL TRAVEL_TIME("昼", "村の広場", "雪まつり")
+			ENDSELECT
+		ENDSELECT
+		PRINTFORM %OKAMI%に教えてもらったとおりに道を進み、
+		SELECTCASE TEXTS("季節")
+		CASE "春"
+			PRINTFORM 満開の桜並木の通りに行き着いた
+		CASE "夏"
+			PRINTFORM 谷を下った先、小さな沢に行き着いた
+		CASE "秋"
+			PRINTFORM 紅葉に艶やかに燃えた並木の通りに行き着いた
+		CASE "冬"
+			PRINTFORM 大小様々な雪像が並ぶ雪まつりの会場へと行き着いた
+		ENDSELECT
+		PRINTFORML ところまでは良かったのですが、%CALLNAME:TARGET%の姿が見えません。
+		PRINTFORMW どうやらはぐれてしまったようです！
+		PRINTFORM %CALLNAME:MASTER%
+		IF ASSI
+			PRINTFORM と%CALLNAME:ASSI%は手分けをして
+		ELSE
+			PRINTFORM は散策を諦め、
+		ENDIF
+		PRINTFORMW %CALLNAME:TARGET%を探すことにしました…
+		PRINTL 
+		PRINTL 
+		PRINTL ………………
+		PRINTL …………
+		PRINTW ……
+		PRINTL 
+
+		;浮気キャプション設定
+		;季節
+		SELECTCASE TEXTS("季節")
+		CASE "春"
+			CALL TRAVEL_TIME("昼", "桜並木の木陰", "ちょっと火遊び")
+		CASE "夏"
+			CALL TRAVEL_TIME("昼", "沢を渡る橋の下", "ちょっと火遊び")
+		CASE "秋"
+			CALL TRAVEL_TIME("昼", "神社の社の中", "ちょっと火遊び")
+		CASE "冬"
+			CALL TRAVEL_TIME("昼", "連れ込み宿", "ちょっと火遊び")
+		ENDSELECT
+
+		;浮気本編
+		CALL UNFAITHFUL_TRAVEL, TARGET
+
+		PRINTL 
+		PRINTL 
+		PRINTL ………………
+		PRINTL …………
+		PRINTW ……
+		PRINTL 
+		PRINTFORM 方々を探し回った
+		PRINTFORM %CALLNAME:MASTER%
+		IF ASSI
+			PRINTFORM と%CALLNAME:ASSI%
+		ENDIF
+		PRINTFORM は、%CALLNAME:TARGET%を
+		SELECTCASE TEXTS("季節")
+		CASE "春"
+			PRINTFORMW 桜並木の屋台で見つけました！
+		CASE "夏"
+			PRINTFORMW 沢のほとりの茶屋で見つけました！
+		CASE "秋"
+			PRINTFORMW 小さな神社の境内で見つけました！
+		CASE "冬"
+			PRINTFORMW 雪像展示会の会場で見つけました！
+		ENDSELECT
+		PRINTFORMW 何をしていたのかと%CALLNAME:MASTER%が問い質しても、%CALLNAME:TARGET%は歯切れの悪い弁解を繰り返すばかりです…
+		PRINTFORML ともかく無事でよかったと胸を撫で下ろした%CALLNAME:MASTER%は%CALLNAME:TARGET%を連れ、宿へ戻ることにしました…
+	ELSE
+		SELECTCASE TEXTS("季節")
+		CASE "春"
+			CALL TRAVEL_TIME("昼", "桜並木", "お花見")
+		CASE "夏"
+			CALL TRAVEL_TIME("昼", "谷間の沢", "川遊び")
+		CASE "秋"
+			CALL TRAVEL_TIME("昼", "神社の参道", "紅葉狩り")
+		CASE "冬"
+			SELECTCASE LOCALS
+			CASE "温泉街の旅館"
+				CALL TRAVEL_TIME("昼", "温泉街の広場", "雪まつり")
+			CASEELSE
+				CALL TRAVEL_TIME("昼", "村の広場", "雪まつり")
+			ENDSELECT
+		ENDSELECT
+		PRINTFORM %OKAMI%に教えてもらったとおりに道を進んでいくと、
+		SELECTCASE TEXTS("季節")
+		CASE "春"
+			PRINTFORMW 満開の桜並木の通りに行き着きました。
+			PRINTFORMW その脇には屋台もたくさん出ており、観光客や地元の人々で溢れ、大変な賑わいになっています。
+			;食い意地の張っているTARGET
+			IF RAND:2 == 0
+				PRINTFORMW %CALLNAME:TARGET%はさっそく屋台の食べ物を片っ端から買い漁り、口いっぱいに頬張っています！
+				PRINTFORMW それに呆れる%CALLNAME:MASTER%の視線もものともせず、次から次へと食べ物に齧りついていきます……が、
+				PRINTFORMW 一気に食べ過ぎて喉を詰まらせたのか、顔を真っ赤にして苦しみ始めました！
+				PRINTFORMW %CALLNAME:MASTER%が手渡したお茶でどうにかその場は事なきを得ました……
+				PRINTFORMW しかし%CALLNAME:TARGET%はまったく懲りていないようで、また屋台の列に並んでいます…
+				PRINTFORMW 『花より団子』なお花見をお腹一杯になるまで満喫し、%CALLNAME:TARGET%は満足そうにしています…
+			ELSE
+				PRINTFORM %CALLNAME:MASTER%は薄桃色に色づいた花びらがひらひらと舞う中を、
+				IF ASSI
+					PRINTFORM 両脇に二人を従えるようにして
+				ELSE
+					PRINTFORM %CALLNAME:TARGET%と手をつないで
+				ENDIF
+				PRINTFORMW ゆっくりと歩いていきます。
+				PRINTFORM %CALLNAME:TARGET%は
+				IF (TALENT:幼稚 || TALENT:陽気 || COND("成長済み") == 0) && RAND:2 == 0
+					PRINTFORMW 雪のように舞い散る花びらにはしゃぎ、くるくると舞いでも踊るようにして楽しそうにしています…
+				ELSE
+					PRINTFORMW 儚く散っていく花びらに何か思うところがあるのか、花びらを手のひらの上に乗せ、物憂げに見つめています…
+					PRINTFORMW %CALLNAME:TARGET%の意外な一面を垣間見た気がします…
+				ENDIF
+			ENDIF
+		CASE "夏"
+			PRINTFORMW 谷を下った先、小さな沢に行き着きました。
+			PRINTFORMW 緑の葉が生い茂る下にさらさらと水が流れており、魚がぴしゃりと跳ね、とても涼しげです。
+			;食い意地の張っているTARGET
+			IF RAND:2 == 0
+				PRINTFORMW %CALLNAME:MASTER%は沢に足を浸して涼をとろうとしますが、一方の%CALLNAME:TARGET%はどこから持ってきたのか、釣竿を取り出しました！
+				PRINTFORMW 妙に手馴れた手付きで水面に糸を垂らし、悠然と太公望を決め込む%CALLNAME:TARGET%に%CALLNAME:MASTER%も呆れるほかありませんでした…
+				PRINTFORMW そして待つこと数十分……
+				IF RAND:3 == 0
+					PRINTFORMW 見事%CALLNAME:TARGET%は大きな川魚を釣り上げました！
+					PRINTFORMW 釣り上げた魚は宿へ持って帰り、夕食に一品加えてもらうことにしました。
+				ELSEIF RAND:2 == 0
+					PRINTFORMW %CALLNAME:TARGET%は小さな沢蟹を釣り上げました！　が、食べるにはいささか小さすぎるようです。
+					PRINTFORMW %CALLNAME:TARGET%は沢蟹を川へ返してやりますが、諦めきれない%CALLNAME:TARGET%はふたたび水の中へと糸を垂らします…
+					PRINTFORMW しかし結局帰る時までに食べられそうな獲物を釣り上げることはできませんでした…
+				ELSE
+					PRINTFORMW %CALLNAME:TARGET%は魚がかかるのを待ちきれず眠りこけてしまいました…
+					PRINTFORMW 魚に餌だけとられた釣り針が空しく川の流れを泳いでいます…
+					PRINTFORMW 結局帰る時までに、%CALLNAME:TARGET%は食べられそうな獲物を釣り上げることはできませんでした…
+				ENDIF
+			ELSE
+				IF (TALENT:幼稚 || TALENT:陽気 || COND("成長済み") == 0) && RAND:2 == 0
+					PRINTFORMW %CALLNAME:MASTER%は沢に足を浸して涼をとろうとしますが、%CALLNAME:TARGET%はなんと、周りに誰もいないのをいいことに、服を脱ぎ捨て、川遊びをはじめてしまいました！
+					PRINTFORM その光景をぽかんと口を開けて唖然と見ていた%CALLNAME:MASTER%
+					SIF ASSI
+						PRINTFORM と%CALLNAME:ASSI%
+					PRINTFORMW でしたが、%CALLNAME:TARGET%に水を引っ掛けられ、なし崩し的に川遊びに付き合わされてしまいました…
+				ELSE
+					IF ASSI
+						PRINTFORM 三人
+					ELSE
+						PRINTFORM %CALLNAME:TARGET%と二人で
+					ENDIF
+					PRINTFORMW %CALLNAME:MASTER%は沢で涼を楽しみます。
+					PRINTFORMW 大きめの岩に腰掛け、足を沢の流れに浸していると、普段の喧騒など忘れてしまいそうです。
+					PRINTFORMW %CALLNAME:MASTER%達はせせらぎの音を聞きながら、森林浴を満喫しました…
+				ENDIF
+			ENDIF
+		CASE "秋"
+			PRINTFORMW 紅葉に艶やかに燃えた並木の通りに行き着きました。
+			PRINTFORM 並木の通りを
+			IF ASSI
+				PRINTFORM 両脇に二人を従えるようにして
+			ELSE
+				PRINTFORM %CALLNAME:TARGET%と手をつないで
+			ENDIF
+			PRINTFORMW 奥へと歩いていくと、%CALLNAME:MASTER%達は小ぢんまりとした神社に辿り着きました。
+			PRINTFORMW 静まり返った境内から艶やかな紅葉を見ていると、心が落ち着いてきます…
+			PRINTFORMW ひとしきり紅葉を楽しんだ頃、%CALLNAME:TARGET%がおみくじを引いていこうと誘ってきました。
+			IF RAND:2 == 0 
+				PRINTFORM せっかく来たのだからということでおみくじを引き、“いっせーの”で開いてみると…なんと、
+				IF ASSI
+					PRINTFORM 三人
+				ELSE
+					PRINTFORM 二人
+				ENDIF
+				PRINTFORMW 揃って大吉を引き当てました！
+				PRINTFORMW これは何か良いコトがあるかもしれません……
+				PRINTFORMW その時、%CALLNAME:MASTER%がふとポケットに手を入れてみると……折り畳まれたお札が入っていました。
+				PRINTFORMW どうも以前放り込んだまま、それっきり忘れていたお札のようです。
+				PRINTFORM 旅館への帰り道、%CALLNAME:MASTER%はその臨時収入を使って
+				IF ASSI
+					PRINTFORM 二人と
+				ELSE
+					PRINTFORM %CALLNAME:TARGET%と
+				ENDIF
+				PRINTFORMW 一緒に露店を回りました。
+				PRINTFORMW 予想外の幸運を得て、%CALLNAME:MASTER%達は楽しい時間を過ごすことが出来ました……
+			ELSE
+				PRINTFORMW せっかく来たのだからということでおみくじを引いてみると…なんと、%CALLNAME:MASTER%は大凶を引き当ててしまいました！
+				PRINTFORM 一方、%CALLNAME:TARGET%
+				SIF ASSI
+					PRINTFORM と%CALLNAME:ASSI%
+				PRINTFORMW は大吉を引き当て喜んでいます…
+				PRINTFORMW %CALLNAME:MASTER%はふと嫌な予感を感じて財布を確認してみると……どうやらどこかに落としてしまったようです…！
+				PRINTFORMW 今更もう遅いとは思ったものの、厄払いをかねて%CALLNAME:MASTER%達は神社で旅の安全を祈願し、元来た道を宿へと引き返しました…
+			ENDIF
+		CASE "冬"
+			PRINTFORMW 大小様々な雪像が並ぶ雪まつりの会場へと行き着きました。
+			PRINTFORMW それを見た%CALLNAME:TARGET%は対抗心に燃え、自分もと雪像を作り始めました！
+			PRINTFORM 張り切って作り始めた%CALLNAME:TARGET%でしたが、出来上がったのは……
+			IF ABL:技巧 >= 5
+				PRINTFORMW 自分をモデルにしたセクシーな雪像でした！
+				PRINTFORMW どう見ても子供には見せられないその造詣は、男性客を中心に大変な好評を博しています。
+				PRINTFORMW %CALLNAME:MASTER%は恥ずかしいやら何やらで、%CALLNAME:TARGET%の手を引き、そそくさとその場を後にしました･･･
+			ELSE
+				PRINTFORMW ごくごく普通の雪だるまでした！
+				PRINTFORMW どうやら%CALLNAME:MASTER%を模したもののようですが…下のほうを見ると何故だかアソコだけは詳細に作りこまれています…
+				PRINTFORMW その上%CALLNAME:TARGET%はまったく悪びれた様子もなく、「今夜は期待してるから」と囁きかけてきました…
+				PRINTFORMW %CALLNAME:MASTER%は呆れるあまり何も言えなくなり、軽い頭痛を覚えながらその場を後にしました…
+			ENDIF
+		ENDSELECT
+	ENDIF
+;川下り
+CASE 1
+	;浮気判定
+	IF CHECK_UNFAITHFUL_TRAVEL(TARGET) > 0
+		PRINTFORML %OKAMI%に教えてもらった川下りの船着場までやってきましたが、%CALLNAME:TARGET%の姿が見えません。
+		PRINTFORMW どうやらはぐれてしまったようです！
+		PRINTFORM %CALLNAME:MASTER%
+		IF ASSI
+			PRINTFORM と%CALLNAME:ASSI%は手分けをして
+		ELSE
+			PRINTFORM は川下りを諦め、
+		ENDIF
+		PRINTFORMW %CALLNAME:TARGET%を探すことにしました…
+		PRINTL 
+		PRINTL ………………
+		PRINTL …………
+		PRINTW ……
+		PRINTL 
+		CALL TRAVEL_TIME("昼", "船着場の裏", "ちょっと火遊び")
+
+		;浮気本編
+		CALL UNFAITHFUL_TRAVEL, TARGET, "川下り"
+
+		PRINTL 
+		PRINTL ………………
+		PRINTL …………
+		PRINTW ……
+		PRINTL 
+		PRINTFORM 方々を探し回った
+		PRINTFORM %CALLNAME:MASTER%
+		IF ASSI
+			PRINTFORM と%CALLNAME:ASSI%
+		ENDIF
+		PRINTFORMW は、%CALLNAME:TARGET%を川下りの終着地点で見つけました！
+		PRINTFORMW 何をしていたのかと%CALLNAME:MASTER%が問い質しても、%CALLNAME:TARGET%は歯切れの悪い弁解を繰り返すばかりです…
+		PRINTFORMW ともかく無事でよかったと胸を撫で下ろした%CALLNAME:MASTER%は%CALLNAME:TARGET%を連れ、宿へ戻ることにしました…
+	ELSE
+		;急流下り
+		IF RAND:2 == 0
+			CALL TRAVEL_TIME("昼", "谷間の川", "川下り？")
+			PRINTFORMW %OKAMI%に教えてもらった話では川下りを楽しめるということでしたが…
+			PRINTFORMW その話は真っ赤な嘘で、谷間の川を一気に下っていく急流下りでした！
+			PRINTFORMW 乗り込んだ船は白い水しぶきが立つ中を、岩と岩の隙間を潜り抜けて一気に川を下っていきます！
+			PRINTFORMW 右へ左へと揺さぶられ、全身びしょ濡れになった%CALLNAME:MASTER%達を待ち受けていたのは…落差数メートルの滝でした！
+			PRINTFORM 山奥の谷間の川に、
+			IF ASSI
+				PRINTFORM 三人
+			ELSE
+				PRINTFORM 二人
+			ENDIF
+			PRINTFORMW の悲鳴が響き渡りました…
+		;景色を楽しみながら
+		ELSE
+			CALL TRAVEL_TIME("昼", "谷間の川", "川下り")
+			PRINTFORMW %OKAMI%に教えてもらった船に乗り込み、谷間を流れる川でのんびり川下りを楽しみます。
+			SELECTCASE TEXTS("季節")
+			CASE "春"
+				PRINTFORM 川の両岸に桜の花が咲いている中を、
+				IF ASSI
+					PRINTFORM 三人
+				ELSE
+					PRINTFORM 二人
+				ENDIF
+				PRINTFORMW を乗せた船はゆっくりと進んでいきます…
+				PRINTFORMW サービスで振舞われたお酒を楽しんでいると、桜の花びらがお猪口の中へはらはらと舞い落ちてきました…
+			CASE "夏"
+				PRINTFORM 暑い日差しを遮るように川の両岸から緑が伸びた中を、
+				IF ASSI
+					PRINTFORM 三人
+				ELSE
+					PRINTFORM 二人
+				ENDIF
+				PRINTFORMW を乗せた船はゆっくりと進んでいきます…
+				PRINTFORMW %CALLNAME:TARGET%は船の縁から水面へと手を伸ばし、指先でさらさらと流れる水を弄び涼んでいます…
+			CASE "秋"
+				PRINTFORM 川の両岸が紅葉で艶やかに燃えている中を、
+				IF ASSI
+					PRINTFORM 三人
+				ELSE
+					PRINTFORM 二人
+				ENDIF
+				PRINTFORMW を乗せた船はゆっくりと進んでいきます…
+				PRINTFORMW 静かな水面はまるで鏡のように紅葉を映し出しており、思わず言葉を失い見惚れるほどの美しさです…
+			CASE "冬"
+				PRINTFORM 川の両岸は雪で白く染まっている川を、
+				IF ASSI
+					PRINTFORM 三人
+				ELSE
+					PRINTFORM 二人
+				ENDIF
+				PRINTFORMW を乗せた船はゆっくりと進んでいきます…
+				PRINTFORMW 温泉が流れ込んでいる川は少し温度が高いのか、白い湯気が立ち上っており、雪景色とも相まって幻想的な雰囲気を醸し出しています…
+			ENDSELECT
+			PRINTFORM %CALLNAME:MASTER%と%CALLNAME:TARGET%
+			SIF ASSI
+				PRINTFORM 、それに%CALLNAME:ASSI%
+			PRINTFORMW は川下りを思いゆくまで楽しみました…
+		ENDIF
+	ENDIF
+ENDSELECT
+
+PRINTL 
+PRINTL 
+
+;食事描写（春の夜桜、夏のお祭りはここに含める。お祭りは金銭消費有り）
+;SELECTCASE TEXTS("季節")
+;夏限定
+;CASE "夏"
+	;夏祭りに行こう！青姦！
+	;（たこ焼きorイカ焼き）、わたあめ、かき氷、チョコバナナ、金魚すくい、射的、わなげ、ヨーヨーすくい、お面、迷子、捕り物
+	;↑から重複なしで4イベント消化後、青姦（TARGETのみ、ASSIは参加無し）
+	;：インプとかゴブリンとか娘とか？
+	;今日は夏祭りの日。遊びきれないほどの出店、笑顔で歩く人々、力強い太鼓の響き…楽しそうな光景が%CALLNAME:MASTER%達の眼前に広がっている。
+	;その光景を見た%CALLNAME:TARGET%は、目を輝かせて人の波へと飛び込んでいった！
+	;…数分後、%CALLNAME:TARGET%の大きな泣き声が聞こえ始めた。
+	;%CALLNAME:MASTER%は泣き声を頼りにどうにか%CALLNAME:TARGET%を見つけだした。
+	;目を真っ赤にした%CALLNAME:TARGET%は、二度と%CALLNAME:MASTER%と離れないようにその手を固く握った…
+
+	;泥棒だー！or食い逃げだー！or痴漢だー！or変態だー！
+	;真昼の温泉街に、突如そんな声が響いた。
+	;%CALLNAME:MASTER%達が声の方向を見ると…その方向から一人の男が爆走してきた。
+	;普通：%CALLNAME:MASTER%は突進してくる男を避けるフリをして、男の足を引っ掛けた！
+	;強気：目の前の人垣が崩れていく中%CALLNAME:TARGET%は男の真正面に位置取り、突進してきた男の腕を掴んで投げ飛ばした！
+	;地面に叩きつけられた男はすぐに取り押さえられ、辺りから拍手と喝采が上がった。
+
+	;青姦は淡泊なものとする。薄暗い木陰にTARGETに連れ込まれor連れ込んで、花火が照らす下で木に手を付かせて背面立位
+
+;CASEELSE
+	SELECTCASE LOCALS
+	CASE "小さな民宿"
+		CALL TRAVEL_TIME("夜", "小さな民宿", "宿泊部屋")
+	CASE "温泉街の旅館"
+		CALL TRAVEL_TIME("夜", "温泉街の旅館", "宴会場")
+	CASE "秘湯の温泉宿"
+		CALL TRAVEL_TIME("夜", "秘湯の温泉宿", "離れの部屋")
+	ENDSELECT
+	;（更新）口上の呼び出し
+	SELECTCASE LOCALS
+	CASE "小さな民宿"
+		PRINTFORMW 仲居さんが部屋へお膳を運んできました。
+		IF RAND:3 == 0
+			PRINTFORM 小鉢に彩りも鮮やかな料理が添えられた見事な懐石料理に、%CALLNAME:TARGET%
+			SIF ASSI
+				PRINTFORM 達
+			PRINTFORMW から歓声が上がる。
+			PRINTFORM 見た目だけでなく味も見事な料理に、
+			IF ASSI
+				PRINTFORM 三人
+			ELSE
+				PRINTFORM %CALLNAME:MASTER%と%CALLNAME:TARGET%
+			ENDIF
+			PRINTFORMW は舌鼓を打ちました。
+		ELSEIF RAND:2 == 0
+			PRINTFORM まったく肉を使っていない珍しい精進料理に、%CALLNAME:TARGET%
+			SIF ASSI
+				PRINTFORM 達
+			PRINTFORMW は興味津々といった様子だ。
+			PRINTFORM 仲居の%OKAMI%から美容にもいいと聞くと、
+			IF ASSI
+				PRINTFORM 二人
+			ELSE
+				PRINTFORM %CALLNAME:TARGET%
+			ENDIF
+			PRINTFORMW は目を輝かせて箸を付けはじめました…
+		ELSE
+			PRINTFORMW どんな豪華料理だろうと思っていると…うなぎにすっぽん、熊の肝にますらお茸…挙げ句に食前酒には%TEXTR("マムシ酒", "淫魔の雫で作ったお酒", "キツイ匂いの薬膳酒")%まで並んでいます…
+			PRINTFORM これはどういう意図なのかと仲居さんの%OKAMI%の顔を見ると……
+			IF ASSI
+				PRINTFORM 三人
+			ELSE
+				PRINTFORM %CALLNAME:MASTER%と%CALLNAME:TARGET%
+			ENDIF
+			PRINTFORMW の顔を見て、%TEXTR("にやにやと", "ニヤニヤと", "ニマニマと", "頬を赤くして")%笑っています…
+			PRINTFORMW どうやら民宿側からの余計なサービスのようです…
+			PRINTFORM %CALLNAME:TARGET%
+			SIF ASSI
+				PRINTFORM と%CALLNAME:ASSI%
+			PRINTFORMW は%CALLNAME:MASTER%を押さえつけると、無理矢理口の中に料理を押し込んできました！
+		ENDIF
+	CASE "温泉街の旅館"
+		IF ASSI
+			PRINTFORM 三人
+		ELSE
+			PRINTFORM %CALLNAME:MASTER%と%CALLNAME:TARGET%
+		ENDIF
+		PRINTFORMW は仲居さんである%OKAMI%の案内で宴会場へとやってきました。
+		PRINTFORMW 広い宴会場には既にお膳がずらりと並んでおり、先に夕食を取っている旅行客もいるようです…
+		PRINTFORM %CALLNAME:TARGET%
+		SIF ASSI
+			PRINTFORM 達
+		PRINTFORMW と席に着き、わいわいと楽しく料理をつついていると、宴会場がにわかに騒がしくなりました…
+		PRINTFORM どうやら
+		;夏限定
+		IF FLAG:873 == 1 && RAND:3 == 0
+			PRINTFORMW 『納涼！怪談百物語』が始まるようです！
+			PRINTFORMW 食事の最中にそんな話をするのはどうかという声もちらほら聞かれたのだが、いざ照明を落として怪談が始まると、皆息を飲んで話に聞き入り始めています…
+			PRINTFORMW そしていくつか悲鳴や笑い声が上がり、雰囲気も盛り上がってきた頃…いよいよ%CALLNAME:MASTER%の番がやってきました…！
+			PRINTFORM %CALLNAME:MASTER%が張り切って披露したとっておきの
+			IF RAND:3 == 0
+				PRINTFORM 怖い話は、
+				IF RAND:2 == 0
+					PRINTFORMW あまりの怖さに泣き出す子供が出るほどでした…！
+				ELSE
+					PRINTFORMW あまりの退屈さにまったく受けませんでした…
+					PRINTFORMW %CALLNAME:MASTER%はブーイングを受けながらすごすごと舞台を降りました…
+				ENDIF
+			ELSEIF RAND:2 == 0
+				PRINTFORM ちょっぴりエッチで怖い話は、
+				IF RAND:2 == 0
+					PRINTFORMW 夢魔の客になかなか受けがいいようでした…！
+					PRINTFORMW 宴会場の雰囲気がちょっぴりピンクに染まった気がします…
+				ELSE
+					PRINTFORMW あまりの退屈さにまったく受けませんでした…
+					PRINTFORMW %CALLNAME:MASTER%はブーイングを受けながらすごすごと舞台を降りました…
+				ENDIF
+			ELSE
+				PRINTFORM ちょっぴり笑える怖い話は、
+				IF RAND:2 == 0
+					PRINTFORMW 宴会場を爆笑の渦に巻き込みました…！
+				ELSE
+					PRINTFORMW あまりの退屈さにまったく受けませんでした…
+					PRINTFORMW %CALLNAME:MASTER%はブーイングを受けながらすごすごと舞台を降りました…
+				ENDIF
+			ENDIF
+		;ELSEIF RAND:3 == 0
+			;PRINTFORMW 『大興奮！まないたショー』が始まるようです！
+		ELSEIF RAND:2 == 0
+			PRINTFORMW 『恒例！隠し芸大会』が始まるようです！
+			PRINTFORMW 突然始まった隠し芸大会に%CALLNAME:MASTER%は困惑したが、披露する順番が近づき、とっておきのネタを披露する覚悟を決めました…
+			PRINTFORM %CALLNAME:MASTER%が張り切って披露したとっておきの
+			IF RAND:2 == 0
+				PRINTFORMW 勇者ラルスのモノマネは、夢魔の客を中心に大受けでした…！
+				PRINTFORM 調子に乗った%CALLNAME:MASTER%が
+				IF RAND:2 == 0
+					PRINTFORM エスト・モルンのモノマネを披露すると、これもまた受けに受け、%CALLNAME:MASTER%はしばらく舞台の上でネタを披露し続ける羽目に陥りました…
+				ELSE
+					PRINTFORMW 魔王ギルデンスターンのモノマネを披露すると、ネタのチョイスを誤ったのか今度はまったく受けませんでした…
+					PRINTFORMW %CALLNAME:MASTER%はブーイングを受けながらすごすごと舞台を降りました…
+				ENDIF
+			ELSE
+				PRINTFORM 芸、1秒間にレイプ10回発言は
+				IF RAND:2 == 0
+					PRINTFORMW 夢魔の客を中心に大受けでした…！
+					PRINTFORMW %CALLNAME:MASTER%は宴会場中から尊敬の目で見られています…
+				ELSE
+					PRINTFORMW 舌を噛んで呆気なく失敗してしまいました…
+					PRINTFORMW %CALLNAME:MASTER%はブーイングを受けながらすごすごと舞台を降りました…
+				ENDIF
+			ENDIF
+		ELSE
+			PRINTFORMW 『%TEXTR("未来の歌姫は君だ！カラオケ大会！", "温泉街恒例！のど自慢大会！")%』が始まるようです！
+			PRINTFORMW マーメイドやハーピーといった美声を誇る夢魔たちや腕に覚えのある客達が歌声を披露する中、いよいよ%CALLNAME:MASTER%の番がやってきました…！
+			PRINTFORM %CALLNAME:MASTER%は軽く咳払いをして舞台に立つと、
+			IF RAND:2 == 0
+				PRINTFORMW 情熱的なラブソングを熱唱し始めました！
+				IF RAND:2 == 0
+					PRINTFORMW %CALLNAME:MASTER%の感情の籠もった歌声に客達は聞き入り、うっとりと目を潤ませている…
+					PRINTFORM 歌い終えた%CALLNAME:MASTER%は割れんばかりの拍手で称えられ、
+					IF RAND:2 == 0
+						PRINTFORMW 度重なるアンコールの声に2曲も余分に歌うハメになってしまいました…
+					ELSE
+						PRINTFORMW 宴会場を後にするまでの間、惚れっぽい夢魔たちに言い寄られるハメになってしまいました…
+						IF TALENT:恋慕
+							PRINTFORM %CALLNAME:TARGET%
+							SIF ASSI
+								PRINTFORM と%CALLNAME:ASSI%
+							PRINTFORMW は何も言いませんでしたが、嫉妬したのかちょっぴり面白くなさそうにしています…
+						ENDIF
+					ENDIF
+				ELSE
+					PRINTFORMW ……が、あまりの音痴っぷりにすぐさま罵声、湯飲み、徳利、茶碗、ヤジ、座布団、ありとあらゆる物が飛んできました…
+					PRINTFORMW %CALLNAME:MASTER%はブーイングを受けながらすごすごと舞台を降りました…
+				ENDIF
+			ELSE
+				PRINTFORMW ちょっぴりエッチなコメディソングを歌い始めました！
+				IF RAND:2 == 0
+					PRINTFORMW 夢魔の客たちにはとても受けがいいようで、笑いとヤジが飛んでいます…！
+					PRINTFORMW %CALLNAME:MASTER%はすっかり宴会場の主役になり、もう一曲下品な歌を披露するハメになりました…
+				ELSE
+					PRINTFORMW ……が、まったく受けませんでした…どうやら曲の選定を間違ったようです…
+					PRINTFORMW %CALLNAME:MASTER%はブーイングを受けながらすごすごと舞台を降りました…
+				ENDIF
+			ENDIF
+		ENDIF
+		IF RAND:2 == 0
+			PRINTFORM 出し物を終えた%CALLNAME:MASTER%が元の場所に戻ろうとすると…
+			IF RAND:2 == 0
+				PRINTFORMW その隣の%CALLNAME:TARGET%に%TEXTR("ほろ酔い気味の青年", "完全に出来上がった中年","いけ好かない感じの若い男")%が言い寄っていました！
+				PRINTFORMW %CALLNAME:TARGET%はまるで相手にしていないのですが、男は勘違いしたまま「今晩自分の所に来るように」とまで言っています…
+				PRINTFORMW しかし、%CALLNAME:TARGET%が「%TEXTR("2リットル出すまで離さない", "3日間ずっとヤれるの？", "貧相だったらもぎ取るけど？")%」と言い放つと、男は顔を真っ青にして立ち去りました！
+				PRINTFORML 面倒ごとにならず済み、やれやれと%CALLNAME:MASTER%が腰を下ろすと……
+				PRINTFORMW %CALLNAME:TARGET%は小悪魔のように笑みを浮かべ、%CALLNAME:MASTER%の股間をすりすりとさすりました…
+			ELSE
+				IF RAND:2 == 0
+					PRINTFORMW その隣の%CALLNAME:TARGET%の膝の上で、見慣れない女の子が寝息を立てていました！
+					PRINTFORMW どうやら宴会場のどこかの家族の子のようですが、間違って%CALLNAME:TARGET%の所に来てしまったようです…
+					PRINTFORMW %CALLNAME:TARGET%が女の子の面倒を見ている間に、%CALLNAME:MASTER%は両親を探して連れてきました…
+				ELSE
+					PRINTFORMW その隣の%CALLNAME:TARGET%と、長い黒髪の女性が飲み交わしていました。
+					PRINTFORMW 黒髪の女性は失恋旅行に来ているらしく、%CALLNAME:TARGET%に愚痴をこぼしています…
+					IF ABL:レズっ気 >= 3
+						PRINTFORMW やがて女性が酔い潰れると…%CALLNAME:TARGET%は女性の%TEXTR("胸元", "太もも", "お尻", "うなじ")%をそっと撫で始めました！
+						IF RAND:2 == 0
+							PRINTFORMW それを見た%CALLNAME:MASTER%は%CALLNAME:TARGET%に「ちゃんと部屋まで送り届けてくるように」と言って、面倒事になることだけは回避しました…
+						ELSE
+							PRINTFORMW それを見た%CALLNAME:MASTER%は急いで仲居さんを呼び、女性の介抱をお願いする事で%CALLNAME:TARGET%のイタズラを阻止しました…
+						ENDIF
+					ELSE
+						IF RAND:2 == 0
+							PRINTFORMW やがて女性が酔い潰れると、%CALLNAME:TARGET%は女性に肩を貸し、部屋まで送り届けに行きました…
+						ELSE
+							PRINTFORMW やがて女性が酔い潰れると、%CALLNAME:TARGET%は仲居さんを呼び、女性の介抱をお願いしました…
+						ENDIF
+					ENDIF
+				ENDIF
+			ENDIF
+		ENDIF
+		PRINTFORMW 
+	CASE "秘湯の温泉宿"
+		PRINTFORM お腹を空かせた%CALLNAME:TARGET%
+			SIF ASSI
+				PRINTFORM 達
+		PRINTFORMW がそわそわし始めました。
+		PRINTFORMW 板前さんが季節の食材を駆使して作る料理は宿のウリの一つであり、それを楽しみにしているようです。
+		PRINTFORMW どんな料理なのか想像してわいわいと騒いでいると、仲居さんの%OKAMI%が離れまでお膳を運んできてくれました。
+		PRINTFORM 夕食の時間になり、
+		;メインディッシュ
+		SELECTCASE TEXTS("季節")
+		CASE "春"
+			PRINTFORMW 近くの山から採れた山菜を贅沢に使った、煮物に天ぷら、炊き込みご飯…
+			PRINTFORM 食べ慣れない、けれどどこか懐かしい味に、%CALLNAME:TARGET%
+			SIF ASSI
+				PRINTFORM 達
+			PRINTFORMW の顔も綻んでいます…
+		CASE "夏"
+			PRINTFORMW 目の前に並べられた物珍しい食材に早速舌鼓を打っていると、仲居さんが部屋の囲炉裏に立てた串刺しの川魚からいい匂いが漂ってきました…
+			PRINTFORMW 遠火で炙るように焼かれた川魚は塩味と、ほんのり薫る燻製のような香りも相まって、大変美味でした…
+		CASE "秋"
+			PRINTFORMW 栗ときのこがたっぷり入った混ぜご飯や、鶏のささみや銀杏を使った茶碗蒸しなど、山の実りをふんだんに使った料理の数々…
+			PRINTFORM %CALLNAME:TARGET%
+			SIF ASSI
+				PRINTFORM と%CALLNAME:ASSI%
+			PRINTFORMW も目を輝かせて料理を頬張っています…
+		CASE "冬"
+			PRINTFORM 囲炉裏を
+			IF ASSI
+				PRINTFORM 皆で
+			ELSE
+				PRINTFORM %CALLNAME:TARGET%と二人で
+			ENDIF
+			PRINTFORMW 囲み、吊されたお鍋を箸でつつきます…
+			;鶏鍋
+			IF RAND:3 == 0
+				PRINTFORMW たっぷりの野菜と新鮮な鶏肉が鍋の中でくらくらと火にかけられており、その香りだけでもおかずにできそうです…
+				PRINTFORM %CALLNAME:TARGET%
+				SIF ASSI
+					PRINTFORM 達
+				PRINTFORMW も顔をほころばせながら、熱々の鍋にはふはふと舌鼓を打っている。
+			;豆乳鍋
+			ELSEIF RAND:2 == 0
+				PRINTFORMW 豆乳のまろやかさの中に味噌の味がしっかりと利いていて、一口味わうだけで身体の芯から暖まっていくようです…
+				PRINTFORM %CALLNAME:TARGET%
+				SIF ASSI
+					PRINTFORM 達
+				PRINTFORMW も顔をほころばせながら、熱々の鍋にはふはふと舌鼓を打っています。
+			;カニすき
+			ELSE
+				PRINTFORMW 鍋の中では白菜や白ネギなどたっぷりの野菜が、それに大きなカニが真っ赤になって茹だっています。
+				IF ASSI
+					PRINTFORM 三人
+				ELSE
+					PRINTFORM %CALLNAME:MASTER%と%CALLNAME:TARGET%
+				ENDIF
+				PRINTFORMW は殻から身を取り出しているうちにだんだんと無口になり、黙々と手と口を動かし続けています…
+			ENDIF
+		ENDSELECT
+		;（更新）口上呼び出し
+		CALL SELF_KOJO, "秘湯食事"
+		;お酒
+		PRINTFORMW 料理に添えて出されたお酒も、フリーベリ辺りで売られているライスワインと思いきや…
+		SELECTCASE TEXTS("季節")
+		CASE "春"
+			PRINTFORMW グラスの中に大きな果実がぷかりと浮かんだ、ジューシーで甘酸っぱい梅酒でした。
+			PRINTFORMW さっぱりとした味ながら飲みやすく、春の味覚を肴につい飲み過ぎてしまいそうです…
+			PRINTFORM %CALLNAME:TARGET%
+			SIF ASSI
+				PRINTFORM と%CALLNAME:ASSI%
+			PRINTFORMW は、案の定、ジュース感覚で飲んでいるようです……あんなに飲んで大丈夫だろうか？
+		CASE "夏"
+			PRINTFORMW フルーティーで華やかな香りと芳醇で深みのある味、同じライスワインでも大吟醸という逸品のようです。
+			PRINTFORMW よく冷やされた液体が喉を通り過ぎていくと、暑さに火照った身体にきゅーと沁みるようでとてもいい心地です…
+			PRINTFORM %CALLNAME:TARGET%
+			SIF ASSI
+				PRINTFORM と%CALLNAME:ASSI%
+			PRINTFORMW は、ワインを楽しむような感覚で香りを楽しみ、上品に味わっているようです…
+		CASE "秋"
+			PRINTFORMW 特徴的な香りにスッキリした口当たり、そして舌に感じるまろやかな甘み…聞けば、芋焼酎というもののようです。
+			PRINTFORMW お湯で割ってあるにもかかわらず、香ばしい芋の味は印象強いままで、秋の味覚が引き立ちます…
+			PRINTFORM %CALLNAME:TARGET%
+			SIF ASSI
+				PRINTFORM と%CALLNAME:ASSI%
+			PRINTFORMW は、この特徴のあるお酒を気に入ったのか、風味を楽しむようにじっくりと味わっています…
+		CASE "冬"
+			PRINTFORMW まろやかな風味とコクのある味わい、ライスワインの中でもお米を贅沢に使った純米酒というもののようです。
+			PRINTFORMW 程よく温められたそれを口に含むと、ふわりと優しい香りが広がり、ぽかぽかと身体が暖まってきます…
+			PRINTFORM %CALLNAME:TARGET%
+			SIF ASSI
+				PRINTFORM と%CALLNAME:ASSI%
+			PRINTFORMW は、おちょこを両手で支え、ちびちびと少しずつ飲んでいます……頬をほんのり赤く染め、ずいぶんといい気分のようです…
+		ENDSELECT
+		;デザート
+		PRINTFORMW お腹いっぱいに料理を堪能し、ほどよく酔いも回ってきた頃合いを見計らい、仲居さんが〆のデザートを運んできました。
+		PRINTFORM 通された小さなお皿に乗っているのは、
+		SELECTCASE TEXTS("季節")
+		CASE "春"
+			IF RAND:2 == 0
+				PRINTFORMW 桜の葉で餅を包んだ桜餅です。
+				PRINTFORMW ひとくち含むと桜の香りと餡の甘さが口に広がりました…なんだかほっとする味です…
+			ELSE
+				PRINTFORMW 小さく丸い、緑色のうぐいす粉が塗されたうぐいす餅です。
+				PRINTFORMW ちょうど一口サイズのお餅を口に放り込むと、うぐいす粉の繊細な甘さが広がります…
+			ENDIF
+		CASE "夏"
+			IF RAND:2 == 0
+				PRINTFORMW 透明でつるつるとしたところてんです。
+				PRINTFORMW 三杯酢をかけていただくところてんは夏の味覚にふさわしく、さっぱりとしていてとても涼しい味がします…
+			ELSE
+				PRINTFORMW 小さく丸い、透明なわらび餅です。
+				PRINTFORMW きなこを付けて口に入れると、ひんやりとした冷たさと程よい甘さがとても心地よく感じられます…
+			ENDIF
+		CASE "秋"
+			IF RAND:2 == 0
+				PRINTFORMW 黒い羊羹の中に黄金色の栗がまぶしい栗羊羹です。
+				PRINTFORMW 羊羹の強い甘みに栗の味がアクセントになっていて、贅沢な甘みが堪能できます…
+			ELSE
+				PRINTFORMW 香ばしい匂いの漂うみたらし団子です。
+				PRINTFORMW 甘辛いタレともちもちした団子の食感が絶妙のハーモニーを醸し出しています…
+			ENDIF
+		CASE "冬"
+			IF RAND:2 == 0
+				PRINTFORMW ぽかぽかと暖まりそうなお汁粉です。
+				PRINTFORMW 甘さのわりにさらりとしていて、どれだけでも食べられそうな上品な味がします…
+			ELSE
+				PRINTFORMW 蒸されて湯気の出ているおまんじゅうでした。
+				PRINTFORMW 何の変哲もないおまんじゅうかと思って一口食べてみると、どうやら餡に栗が入ってるようで、深みのある甘さが舌の上に広がってきます…
+			ENDIF
+		ENDSELECT
+		PRINTFORM %CALLNAME:TARGET%
+		SIF ASSI
+			PRINTFORM と%CALLNAME:ASSI%
+		IF RAND:2 == 0
+			PRINTFORM は、美味しいデザートに
+			IF (TALENT:幼稚 || TALENT:陽気 || COND("成長済み") == 0) && RAND:2 == 0
+				PRINTFORMW ほっぺが落ちて行方不明になったと大騒ぎしています…
+			ELSE
+				PRINTFORMW ほっぺが落ちそうだと喜んでいます…
+			ENDIF
+		ELSE
+			PRINTFORM は、お腹いっぱいに料理を食べていたはずが、いつの間にかデザートをぺろりと平らげ
+			IF RAND:2 == 0
+				PRINTFORMW てしまっています！
+				PRINTFORMW 食べたそばから仲居さんにデザートのおかわりをねだる様子に、%CALLNAME:MASTER%は呆れてしまいました…
+			ELSE
+				PRINTFORMW 、%CALLNAME:MASTER%のデザートまでも虎視眈々と狙っています！
+				PRINTFORMW %CALLNAME:MASTER%は手癖の悪い猛獣にデザートを奪われてしまいました！
+			ENDIF
+		ENDIF
+	ENDSELECT
+;ENDSELECT
+
+SELECTCASE LOCALS
+CASE "小さな民宿"
+	CALL TRAVEL_TIME("夜", "小さな民宿", "混浴風呂")
+CASE "温泉街の旅館"
+	CALL TRAVEL_TIME("夜", "温泉街の旅館", "混浴大浴場")
+CASE "秘湯の温泉宿"
+	CALL TRAVEL_TIME("夜", "秘湯の温泉宿", "露天風呂")
+ENDSELECT
+
+;温泉の描写
+PRINTFORM 食事を終え、しばらくのんびりと過ごした頃、%CALLNAME:MASTER%
+IF ASSI
+	PRINTFORM 達
+ELSE
+	PRINTFORM と%CALLNAME:TARGET%
+ENDIF
+PRINTFORM は
+
+;温泉の描写（入る前や、温泉それ自体の描写から、入っている最中の描写まで）
+SELECTCASE LOCALS
+;スーパー銭湯風（H未満のイベント限定）
+CASE "小さな民宿"
+	PRINTFORMW お風呂に向かいます。
+	PRINTFORM どうやら混浴らしく、脱衣所の入り口は一つしか無いようです……
+	IF TALENT:淫乱
+		PRINTFORMW 
+		PRINTFORM どうしたものかと脱衣所の前で尻込みしていると、%CALLNAME:MASTER%は%CALLNAME:TARGET%
+		SIF ASSI && TALENT:ASSI:淫乱
+			PRINTFORM と%CALLNAME:ASSI%
+		PRINTFORMW に背中を押され、脱衣所に放り込まれてしまいました！
+		PRINTFORMW セクハラまがいの手つきであっという間に浴衣を剥ぎ取られてしまった%CALLNAME:MASTER%でしたが、どうにかお風呂場に逃げ出すことに成功しました…！
+		PRINTFORM 後ろから%CALLNAME:TARGET%
+		SIF ASSI && TALENT:ASSI:淫乱
+			PRINTFORM と%CALLNAME:ASSI%
+		PRINTFORMW の悔しそうな舌打ちが聞こえてきます…
+	ELSE
+		PRINTFORMW しかし、入らずにいるわけにもいかず、%CALLNAME:MASTER%は混浴でもいいかと腹をくくると、脱いだ浴衣を急いで籠の中に畳み、お風呂場へ向かいました。
+	ENDIF
+	PRINTFORMW 湯気の立ちこめるお風呂場は宿の規模からすれば十分に広く、様々なお風呂があるようです…
+	;露天風呂
+	;人気
+	IF RAND:5 == 0 && TALENT:人気
+		PRINTFORMW %CALLNAME:MASTER%達が露天風呂に向かうと……そこには一人の男性がいました。
+		PRINTFORMW 男性は新顔の%CALLNAME:MASTER%達に挨拶すると、%CALLNAME:TARGET%に興味深そうに話し掛けてきました。
+		PRINTFORMW %CALLNAME:TARGET%も悪い気はしないようで、男性の話に適当に応えてあげています。
+		PRINTFORMW しかしなかなか会話に混ざれない%CALLNAME:MASTER%にとっては、あまり面白いことではありません。
+		PRINTFORM そこで%CALLNAME:MASTER%はつい、水面下で%CALLNAME:TARGET%の
+		IF TALENT:相思相愛
+			PRINTFORMW 手をぎゅっと握りました！
+			PRINTFORMW %CALLNAME:MASTER%の行動に気付き、%CALLNAME:TARGET%も手をそっと握り返してきます…
+		ELSE
+			PRINTFORMW アソコを静かに弄ってしまいました！
+			PRINTFORMW %CALLNAME:MASTER%の行動に気付き、%CALLNAME:TARGET%はくすくす笑いながら目配せしてきます…
+		ENDIF
+		PRINTFORMW やがて男性が露天風呂から出て行くと、%CALLNAME:TARGET%はやきもちを妬いた%CALLNAME:MASTER%をからかいながら、その頬にキスをしました…
+	ELSEIF RAND:4 == 0
+		PRINTFORMW %CALLNAME:MASTER%達が露天風呂に向かうと……そこには男性客の姿は一切なく、それどころか夢魔でいっぱいでした！
+		PRINTFORMW 夢魔達は新顔の%CALLNAME:MASTER%達を歓迎しようと、すぐに近寄ってきて親しげに話しかけてきました。
+		PRINTFORM しばらくは普通の会話が続いていましが、やがて夢魔達は%CALLNAME:MASTER%の
+		IF TALENT:MASTER:オトコ || (PENIS(MASTER) && RAND:2 == 0)
+			PRINTFORM ペニス
+		ELSE
+			PRINTFORM %TEXTR("綺麗なお尻", "可愛らしい胸", "美味しそうな唇")%
+		ENDIF
+		PRINTFORMW について語り出し、%TEXTR("そこを見ながらきゃあきゃあ言っています", "そこを物欲しそうに見ています")%。
+		IF TALENT:恋慕
+			PRINTFORM 「こんな恋人が欲しい」と羨む夢魔達の声を聞き、
+			IF ASSI
+				PRINTFORM %CALLNAME:TARGET%と%CALLNAME:ASSI%
+			ELSE
+				PRINTFORM %CALLNAME:TARGET%
+			ENDIF
+			PRINTFORMW はちょっぴり照れています…
+		ELSE
+			PRINTFORM %CALLNAME:MASTER%が注目の的になって、%CALLNAME:TARGET%
+			SIF ASSI
+				PRINTFORM と%CALLNAME:ASSI%
+			PRINTFORMW は鼻高々となっています…
+		ENDIF
+	;闇夜の露天
+	ELSEIF RAND:3 == 0
+		PRINTFORMW %CALLNAME:MASTER%達は露天風呂に体を沈めましたが、空には雲間から覗く僅かな星明かりがあるだけで、周囲は暗闇に閉ざされています。
+		PRINTFORMW さらにお風呂の湯気も相まって湯船のどこに人がいるかも分かりません。
+		;リードされちゃう
+		IF ABL:サドっ気 >= 3 || TALENT:淫乱
+			PRINTFORMW %CALLNAME:TARGET%はこれ幸いと、%CALLNAME:MASTER%にそっと忍び寄り……
+			IF TALENT:MASTER:オトコ || (PENIS(MASTER) && RAND:2 == 0)
+				IF TALENT:処女 == 0 && TALENT:オトコ == 0
+					PRINTFORMW リラックスしていた%CALLNAME:MASTER%の膝の上に乗ってきます！
+					PRINTFORMW 突然の行動に驚いてる%CALLNAME:MASTER%に%CALLNAME:TARGET%は身体を預け、押し倒すようにしながらそのまま唇を塞いでしまいます。
+					PRINTFORMW そして%CALLNAME:MASTER%が声を出せなくなった所で、%CALLNAME:TARGET%は胸と股間を押し付け、%CALLNAME:MASTER%の欲情を巧みに煽ってきます…
+					PRINTFORMW ばれてしまうかもしれないというスリルと積極的な%CALLNAME:TARGET%の愛撫に、%CALLNAME:MASTER%のペニスにははしたなくもすっかり大きくなってしまいました…
+					PRINTFORMW %CALLNAME:TARGET%は準備ができた%CALLNAME:MASTER%の上へ改めて馬乗りになると、大きく張り詰めたペニスをゆっくりと咥え込んでいきます…
+					PRINTFORMW %CALLNAME:TARGET%は腰を密着させたまま、膣壁をぐにゅぐにゅと動かし、音も立てず、深く繋がったまま%CALLNAME:MASTER%の射精を促します。
+					PRINTFORMW %CALLNAME:MASTER%は%CALLNAME:TARGET%に誘われるまま、膣内へ漏らすように精液を解き放ってしまいました…
+					CALL EXP_CALC_TRAVEL, "対面座位：中出し", TARGET, ABL:欲望 + 3 + RAND:3
+					IF ABL:露出癖 >= 3
+						PRINTFORMW %CALLNAME:TARGET%は更に%CALLNAME:MASTER%から精を搾り取ろうとしましたが、俄に雲が晴れ、月が周囲を照らし始めます…
+						PRINTFORMW つい先程までは周りに誰もいませんでしたが……なんと、%CALLNAME:MASTER%達はいつのまにか夢魔の群れに囲まれていました！
+						PRINTFORMW %TEXTR("「早く続きを♪」と促す", "クスクスと笑う", "興味深そうな眼差しを向ける")%夢魔達の前で、%CALLNAME:MASTER%は公開セックスをさせられてしまいました…
+					ELSE
+						PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:MASTER%が完全に恍惚としているのを確認すると、周囲の人々にバレないように、%CALLNAME:MASTER%を連れて続きをするために湯船の奥へと向かいました…
+					ENDIF
+					CALL EXP_CALC_TRAVEL, "対面座位：中出し", TARGET, ABL:欲望 + 3 + RAND:3
+				;手コキ
+				ELSE
+					PRINTFORMW 気持ち良くお湯を堪能していた%CALLNAME:MASTER%の股間に手を伸ばしてきました！
+					PRINTFORMW %CALLNAME:TARGET%は波を立てないよう静かに手首だけを動かし、%CALLNAME:MASTER%のペニスのカリ首を的確に刺激してきます…
+					IF ABL:サドっ気 >=  3
+						PRINTFORMW 弄られるがまま達してしまいそうになった%CALLNAME:MASTER%がすぐに手淫を止めるよう言うと、%CALLNAME:TARGET%はあっさりと手を離します。
+						PRINTFORMW 聞き分けの良い%CALLNAME:TARGET%にホッとした%CALLNAME:MASTER%でしたが、完全に勃起させられたペニスはすっかり%CALLNAME:TARGET%の指の感触を覚えてしまい、じわじわと物足りなさが襲ってきます…
+						PRINTFORMW そのことを知ってか知らずか、%CALLNAME:TARGET%は我慢をしている%CALLNAME:MASTER%に、手淫の仕草を見せつけてきます…
+						PRINTFORMW …%CALLNAME:MASTER%はしばらくは物足りなさに耐えていましたが、ついに我慢もできなくなり、%CALLNAME:TARGET%に“さっきの続き”をお願いしてしまいました。
+						PRINTFORMW %CALLNAME:TARGET%はそれを聞きにっこり微笑むと…バシャバシャと音を立てて乱暴な手コキを始めました！
+						PRINTFORMW 焦らしに焦らされた%CALLNAME:MASTER%のペニスはお湯の中へ普段よりもたっぷり射精し、周りに白濁を散らしてしまいました…
+					ELSE
+						PRINTFORMW 弄られるがまま達してしまいそうになった%CALLNAME:MASTER%はすぐに手淫を止めるよう言いましたが、%CALLNAME:TARGET%は笑顔で断りました。
+						PRINTFORMW %CALLNAME:MASTER%は気持ちよさから漏れる声を必死に噛み殺しながら、湯船の中でどぷどぷと精液を放ってしまいました…
+					ENDIF
+					CALL EXP_CALC_TRAVEL, "手淫", TARGET, 1
+					CALL EXP_CALC_TRAVEL, "絶頂", MASTER, 1
+					IF ABL:露出癖 >= 3
+						PRINTFORMW %CALLNAME:TARGET%は更に%CALLNAME:MASTER%から精を搾り取ろうとしましたが、俄に雲が晴れ、月が周囲を照らし始めます…
+						PRINTFORMW つい先程までは周りに誰もいませんでしたが……なんと、%CALLNAME:MASTER%達はいつのまにか夢魔の群れに囲まれていました！
+						PRINTFORMW %TEXTR("「早く続きを♪」と促す", "クスクスと笑う", "興味深そうな眼差しを向ける")%夢魔達の前で、%CALLNAME:MASTER%は%CALLNAME:TARGET%に何度も湯船に射精させられ、搾り取られる情けないイキ顔を見られてしまいました…
+					ELSE
+						PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:MASTER%が射精感に恍惚としているのを確認すると、周囲の人々にバレないように、%CALLNAME:MASTER%を連れて続きをするために湯船の奥へと向かいました…
+					ENDIF
+					CALL EXP_CALC_TRAVEL, "手淫", TARGET, ABL:欲望 + 3 + RAND:3
+					CALL EXP_CALC_TRAVEL, "絶頂", MASTER, ABL:欲望 + 3 + RAND:3
+				ENDIF
+			;夢魔についてる
+			ELSEIF PENIS(TARGET) && TALENT:MASTER:処女 == 0 && TALENT:MASTER:オトコ == 0
+				PRINTFORMW 完全にリラックスしていた%CALLNAME:MASTER%を後ろから抱え上げると、そのまま腰の上に落とすようにして一気に挿入してきました！
+				PRINTFORMW いきなり背面座位の格好で貫かれた衝撃に、%CALLNAME:MASTER%はただ口をぱくぱくさせるだけで声を出すことも出来ません。
+				PRINTFORMW そんな%CALLNAME:MASTER%の様子を見ながら、%CALLNAME:TARGET%は%CALLNAME:MASTER%の膣内を苛めるようにグリグリと蹂躙してきます…
+				PRINTFORMW 主導権を握られてしまった%CALLNAME:MASTER%は、%CALLNAME:TARGET%のされるがままに乱れてしまい、喘ぎ声を漏らさないようにするのがやっとです。
+				PRINTFORMW 執拗な責めに身体を痙攣させる%CALLNAME:MASTER%に%CALLNAME:TARGET%は一言「射精る」と囁くと、その膣内に勢いよく精液を解き放ちました！
+				PRINTFORMW %CALLNAME:MASTER%はもはや喘ぎ声を押さえることも忘れ、子宮に注がれる%CALLNAME:TARGET%の熱い精液を感じながら絶頂へと追いやられてしまいました…
+				CALL EXP_CALC_TRAVEL, "逆レイプ：中出し", TARGET, 1
+				CALL EXP_CALC_TRAVEL, "絶頂", MASTER, 1
+				IF ABL:露出癖 >= 3
+					PRINTFORMW %CALLNAME:TARGET%は更に%CALLNAME:MASTER%を可愛がろうとしましたが、雲間から月が顔を出し、周囲を月明かりで照らし始めました…
+					PRINTFORMW つい先程までは周りに誰もいませんでしたが……なんと、%CALLNAME:MASTER%達はいつのまにか夢魔の群れに囲まれていました！
+					PRINTFORMW しかし%CALLNAME:TARGET%は動じることなく逆に%CALLNAME:MASTER%を組み伏せ、%TEXTR("「早く続きを♪」と促す", "クスクスと笑う", "興味深そうな眼差しを向ける")%夢魔達の前で%TEXTR("公開調教", "公開セックス", "露出調教")%を始めてしまいます…！
+					PRINTFORMW %CALLNAME:TARGET%は先ほど膣内射精した精液が逆流するほど激しく突き上げ、%CALLNAME:MASTER%の胎内に溢れた分までたっぷりと種付けし、誰の所有物かを夢魔達にはっきりと誇示しています…
+				ELSE
+					PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:MASTER%が完全に恍惚としているのを確認すると、周囲の人々にバレないように、%CALLNAME:MASTER%を連れて続きをするために湯船の奥へと向かいました…
+				ENDIF
+				CALL EXP_CALC_TRAVEL, "逆レイプ：中出し", TARGET, ABL:欲望 + 3 + RAND:3
+				CALL EXP_CALC_TRAVEL, "絶頂", MASTER, ABL:欲望 + 3 + RAND:3
+			;夢魔についてない
+			ELSE
+				PRINTFORMW 完全にリラックスしていた%CALLNAME:MASTER%のアソコに指を差し込んできました！
+				PRINTFORMW 突然の事態に悲鳴を上げる%CALLNAME:MASTER%を、%CALLNAME:TARGET%は指で膣壁をぐりぐりと弄び、黙らせてしまいます。
+				PRINTFORMW %CALLNAME:MASTER%は周囲にばれないようにと喘ぎ声だけは漏らすまいと必死に歯を食い縛りますが、一本、また一本と増えていく%CALLNAME:TARGET%の指に腰を奥から蕩かされてしまいます…
+				PRINTFORMW そして%CALLNAME:TARGET%は「潮を吹いてもバレやしない」と耳元に囁くと、%CALLNAME:MASTER%のＧスポットをごりっと擦り上げてきました！
+				PRINTFORMW %CALLNAME:MASTER%は声を出すことも許されないままビクビクと痙攣し、湯船の中に小水を漏らしながら達してしまいます…
+				CALL EXP_CALC_TRAVEL, "愛撫", MASTER, 1
+				CALL EXP_CALC_TRAVEL, "絶頂", TARGET, 1
+				IF ABL:露出癖 >= 3
+					PRINTFORMW %CALLNAME:TARGET%は更に%CALLNAME:MASTER%を可愛がろうとしましたが、雲間から月が顔を出し、周囲を月明かりで照らし始めました…
+					PRINTFORMW つい先程までは周りに誰もいませんでしたが……なんと、%CALLNAME:MASTER%達はいつのまにか夢魔の群れに囲まれていました！
+					PRINTFORMW しかし%CALLNAME:TARGET%は動じることなく逆に%CALLNAME:MASTER%を組み伏せ、%TEXTR("「早く続きを♪」と促す", "クスクスと笑う", "興味深そうな眼差しを向ける")%夢魔達の前で%TEXTR("公開調教", "露出調教")%を始めてしまいます…！
+					PRINTFORMW %CALLNAME:TARGET%はイったばかりで敏感になっている%CALLNAME:MASTER%の身体を巧みに弄び、周りを囲む夢魔達にその痴態を見せびらかせています…
+				ELSE
+					PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:MASTER%が完全に恍惚としているのを確認すると、周囲の人々にバレないように、%CALLNAME:MASTER%を連れて続きをするために湯船の奥へと向かいました…
+				ENDIF
+				CALL EXP_CALC_TRAVEL, "絶頂", MASTER, ABL:欲望 + 3 + RAND:3
+			ENDIF
+		ELSE
+			;リードしちゃう
+			PRINTFORMW %CALLNAME:MASTER%はこれ幸いと、%CALLNAME:TARGET%にそっと忍び寄り……
+			IF PENIS(MASTER)
+				;マスターについてるとこっちもあり
+				PRINTFORMW 完全にリラックスしていた%CALLNAME:TARGET%を後ろから抱え上げ、背面座位の格好で一気に挿入してやります！
+				PRINTFORMW %CALLNAME:TARGET%はいきなり貫かれた衝撃に、ただ口をぱくぱくさせるだけで声を出すことも出来ないようです…
+				PRINTFORMW そんな彼女の様子を見ながら、%CALLNAME:MASTER%はお湯よりも熱い蕩けている%CALLNAME:TARGET%の膣内を、グリグリと蹂躙してやります
+				PRINTFORMW …ここはあくまで露天風呂。夜の帳が視界を遮っても、声だけは周囲に響く。%CALLNAME:TARGET%は喘ぎ声だけは漏らすまいと必死に歯を食い縛るが―
+				PRINTFORMW %CALLNAME:MASTER%は「湯船にこぼさないように」と%CALLNAME:TARGET%の耳元に囁き、彼女のナカに勢いよく射精した！
+				PRINTFORMW 声を出すことも許されないまま、%CALLNAME:TARGET%はアソコで%CALLNAME:MASTER%の精液をたっぷりと受け止めた…
+				CALL EXP_CALC_TRAVEL, "背面座位：中出し", TARGET, ABL:欲望 + 3 + RAND:3
+			ELSE
+				IF PENIS(TARGET)
+					;夢魔についてる
+					PRINTFORMW 完全にリラックスしていた%CALLNAME:TARGET%のペニスを掴み、上下に扱き上げてやります。
+					PRINTFORMW %CALLNAME:TARGET%は予想していなかった事態に驚き、困惑した表情を浮かべています。
+					PRINTFORMW %CALLNAME:MASTER%がちゃぷちゃぷと僅かにお湯を波立たせてペニスを扱いてやると、%CALLNAME:TARGET%は控えめながらも甘い声を漏らし始めます…
+					PRINTFORMW %CALLNAME:TARGET%はふと誰かに見られているかもしれないという不安を覚えますが、それはむしろ興奮を煽り、%CALLNAME:TARGET%はペニスをより大きく勃起させてしまいます…
+					PRINTFORMW ペニスがはち切れそうになったのを見た%CALLNAME:MASTER%は、%CALLNAME:TARGET%のペニスをぎゅっと握り激しく上下させました！
+					PRINTFORMW %CALLNAME:TARGET%はだらしないイキ顔を見せながら、お湯の中に白濁を吐き出しました…
+					CALL EXP_CALC_TRAVEL, "手淫", TARGET, 1
+				ELSE
+					;マスターについてないとこっちのみ
+					PRINTFORMW 完全にリラックスしていた%CALLNAME:TARGET%のアソコを指でなぞってやりました…
+					PRINTFORMW %CALLNAME:TARGET%は突然の愛撫に悲鳴を上げかけますが、%CALLNAME:MASTER%はそのまま膣内へと指をもぐりこませ、ぐりぐりと弄ってそれを甘い呻きに変えてしまいます。
+					PRINTFORMW 喘ぎ声は膣壁を擦り上げる指が増えていく度に高く大きくなり、%CALLNAME:TARGET%は腰が砕けてしまったかのように身体を預けてきます…
+					PRINTFORMW %CALLNAME:MASTER%はそんな%CALLNAME:TARGET%の耳元で「あまり大きな声を上げると…」と囁き羞恥を煽ると、彼女のＧスポットをごりっと擦り上げてやります！
+					PRINTFORMW 漏れそうになる喘ぎ声をどうにか堪えながらも、%CALLNAME:TARGET%は湯船の中でビクビクと絶頂してしまいます…
+					CALL EXP_CALC_TRAVEL, "愛撫", TARGET, 1
+				ENDIF
+			ENDIF
+			IF RAND:2 == 0
+				PRINTFORMW %CALLNAME:MASTER%は更に%CALLNAME:TARGET%を可愛がろうとしましたが、雲間から月が顔を出し、周囲を月明かりで照らし始めました…
+				PRINTFORMW つい先程までは周りに誰もいなかったが……なんと、%CALLNAME:MASTER%達は夢魔の群れに囲まれていました！
+				PRINTFORMW %TEXTR("「早く続きを♪」と促す", "クスクスと笑う", "興味深そうな眼差しを向ける")%夢魔達の前で、%CALLNAME:MASTER%は%TEXTR("公開調教", "露出調教")%を行う事になってしまいました…
+				CALL EXP_CALC_TRAVEL, "愛撫", TARGET, ABL:欲望 + 1 + RAND:3
+			ENDIF
+		ENDIF
+	ELSEIF RAND:2 == 0
+		;露出癖高い
+		IF ABL:露出癖 >= 5
+			PRINTFORMW ちらほらと男性客の姿も見受けられますが、露天風呂には視界を遮る岩も多くある上に湯気も立ちこめて、あまり視界がいいとは言えません。
+			PRINTFORMW 「これなら混浴でも大丈夫だろう」と%CALLNAME:MASTER%が胸を撫で下ろした矢先に…
+			PRINTFORM なんと、まったくの無防備にハダカを晒していた%CALLNAME:TARGET%
+			SIF ASSI && ABL:ASSI:露出癖 >= 5
+				PRINTFORM と%CALLNAME:ASSI%
+			PRINTFORMW が現れました！
+			PRINTFORM 何一つ隠そうとしない彼女
+			SIF ASSI && ABL:ASSI:露出癖 >= 5
+				PRINTFORM 達
+			PRINTFORMW の姿に、ある男性客はあっけにとられ、ある男性客は鼻を押さえ、ある男性客は前を押さえています…
+			PRINTFORM 完全に注目の的となった
+			IF ASSI && ABL:ASSI:露出癖 >= 5
+				PRINTFORM 二人
+			ELSE
+				PRINTFORM %CALLNAME:TARGET%
+			ENDIF
+			PRINTFORMW を、%CALLNAME:MASTER%は急いで露天風呂の奥、なるべく目立たない場所へと連れて行きました…
+		ELSE
+			PRINTFORM %CALLNAME:MASTER%
+			IF ASSI
+				PRINTFORM 達
+			ELSE
+				PRINTFORM と%CALLNAME:TARGET%
+			ENDIF
+			PRINTFORMW は一通りそれを楽しむと、最後に星空の綺麗な露天風呂に浸かりました。
+			;お湯の温度が高い
+			IF RAND:2 == 0
+				PRINTFORMW お湯の温度はやや熱めですが、満天の星空を見ているとさほど気になりません。
+				PRINTFORMW しばらくすると熱めの温泉でのぼせ気味になったのか、%CALLNAME:TARGET%は湯船の縁に腰を下ろして涼み始めました。
+				PRINTFORMW のぼせたのかとからかうと%CALLNAME:TARGET%はむっとした顔で%CALLNAME:MASTER%に向かって股を開き、アソコをいやらしい手つきで弄る様を見せ付けてきました！
+				PRINTFORMW 火照った身体でエッチな姿を見せてきた%CALLNAME:TARGET%に%TEXTR("しばし", "ドキドキして")%見入ってしまったのが運の尽きか、%CALLNAME:MASTER%は逆にのぼせて溺れてしまいました！
+				PRINTFORM 気づいた時に目に入ってきたのは脱衣所の天井と、心配そうに顔をのぞき込んでいる%CALLNAME:TARGET%
+				SIF ASSI
+					PRINTFORM と%CALLNAME:ASSI%
+				PRINTFORMW の顔でした…
+				PRINTFORMW %CALLNAME:TARGET%は目を覚ました%CALLNAME:MASTER%を見てホッとしたように胸をなで下ろしています。
+			ELSE
+				PRINTFORM お湯の温度もちょうど良く、満天の星空下で
+				IF ASSI
+					PRINTFORM 三人
+				ELSE
+					PRINTFORM 二人
+				ENDIF
+				PRINTFORMW で入る温泉はまた格別です…
+				PRINTFORM %CALLNAME:MASTER%は%CALLNAME:TARGET%
+				SIF ASSI
+					PRINTFORM 達
+				PRINTFORMW と一緒に、のんびりとお風呂を楽しみました…
+			ENDIF
+		ENDIF
+	;サウナで対決
+	ELSE
+		PRINTFORM %CALLNAME:MASTER%は一通りそれを楽しむと、%CALLNAME:TARGET%
+		SIF ASSI
+			PRINTFORM と%CALLNAME:ASSI%
+		PRINTFORMW に誘われ、サウナでどちらが長く入っていられるか勝負をすることになりました！
+		PRINTFORMW サウナに入ると熱い熱気が身体に纏わり付き、さっそく汗が噴き出してきます。
+		PRINTFORMW %CALLNAME:TARGET%はそんな熱さの中で涼しい顔で笑みを浮かべ、%CALLNAME:MASTER%を挑発的な目で見てきます。
+		;あなたの勝ち
+		IF RAND:2 == 0
+			PRINTFORMW ……が、しかし、先に音を上げたのは%CALLNAME:TARGET%の方でした！
+			PRINTFORMW ふらふらとした足取りでサウナを出ると、水風呂に入って気持ちよさそうにしています…
+		;TARGETの勝ち
+		ELSE
+			PRINTFORMW ……%CALLNAME:TARGET%はなかなか我慢強く、%CALLNAME:MASTER%は一足先に白旗を揚げ、水風呂へと向かいます…
+			PRINTFORMW 火照った身体に冷たい水が染み入るようで、日頃の疲れが汗と一緒に消えていくようです。
+		ENDIF
+	ENDIF
+	;温泉後のさっぱりくつろぎタイム
+	PRINTFORM 温泉からあがり、%CALLNAME:MASTER%より一足先に着替えを終えた%CALLNAME:TARGET%は、脱衣所の端の方で
+	IF RAND:4 == 0
+		PRINTFORMW 「魔導式マッサージチェア」を見つけたようです…
+		PRINTFORMW %CALLNAME:TARGET%は館にはないマッサージチェアに興味津々といった様子で、そっと腰掛けてボタンを押した！
+		PRINTFORMW スイッチの入ったマッサージチェアはウィンウィンと音を出し、%CALLNAME:TARGET%の体を揉み解し始めました。
+		;淫乱
+		IF TALENT:淫乱 && RAND:4 == 0
+			PRINTFORMW しばらくは黙って静かにしていた%CALLNAME:TARGET%でしたが、徐々に色っぽい声を漏らし始めました…！
+			PRINTFORMW 周囲の男性客はその声に堪らず前屈みになってしまい、そそくさとトイレやお風呂場へと駆け込んでいきました…
+		;巨乳
+		ELSEIF TALENT:巨乳 && RAND:3 == 0
+			PRINTFORMW マッサージチェアが%CALLNAME:TARGET%の身体を揉みほぐすたび、豊かな胸がたぷたぷと柔らかそうに揺れています…！
+			PRINTFORMW 周囲の男性客はその様子にゴクリと唾を飲み込み、%CALLNAME:TARGET%の揺れる胸に釘付けになっています…
+		ELSEIF RAND:2 == 0
+			PRINTFORMW %CALLNAME:TARGET%はその気持ち良さにふにゃりと表情を蕩けさせ、至福の一時を過ごしています…
+			PRINTFORMW ……ひとつ買って館に置こうかな？
+		ELSE
+			PRINTFORMW 最初は独特の感触に違和感を感じていた%CALLNAME:TARGET%でしたが、しばらくすると徐々に力を抜いてリラックスし始めました…
+			PRINTFORMW 着替え終わった%CALLNAME:MASTER%が声をかけたときには、%CALLNAME:TARGET%はもう眠りこけていました…
+		ENDIF
+	ELSEIF RAND:3 == 0
+		PRINTFORMW 牛乳の自動販売機を見つけたようです…
+		PRINTFORMW %CALLNAME:TARGET%は腰に手を当て、豪快に%TEXTR("ミルク", "イチゴ牛乳", "コーヒー牛乳", "フルーツ牛乳", "レモン牛乳")%を飲み干しました！
+		IF TALENT:貧乳
+			PRINTFORMW 一息で飲み干した%CALLNAME:TARGET%は、自分の薄い胸をじっと見つめたかと思うと、おかわりに手を伸ばしました！
+			PRINTFORMW 温泉に来ても胸を大きくする努力をしている%CALLNAME:TARGET%に、%CALLNAME:MASTER%は涙を禁じ得ませんでした…
+		ENDIF
+	ELSEIF RAND:2 == 0
+		PRINTFORMW 古びた体重計を見つけたようです…
+		;飛ぶために軽い/そもそも身体が小さい
+		IF TALENT:翼 || TALENT:妖精
+			PRINTFORMW %CALLNAME:TARGET%はとりあえず乗ってみることにしました…
+			PRINTFORMW しかし、%CALLNAME:TARGET%は釈然としない顔をしながらすぐに降りてしまいました
+			PRINTFORMW どうやら針がうまく振れないようです…
+		ELSE
+			IF TALENT:恋慕
+				PRINTFORMW %CALLNAME:TARGET%はこちらをちらりと見たあとしばらく考え込んだ挙句、意を決してその上に乗ってみました！
+			ELSE
+				PRINTFORMW %CALLNAME:TARGET%はとりあえず乗ってみることにしました…
+			ENDIF
+			SELECTCASE CONDS("体型")
+			CASE "つるぺた", "ぺたんこ", "子供体型", "発展途上"
+				PRINTFORMW ――%CALLNAME:TARGET%は悔しそうな表情で体重計から降りました。
+				PRINTFORMW どうやらあまり成長が見られないようです…
+			CASE "トランジスタグラマー", "ロリ巨乳", "スリム巨乳", "スリム爆乳"
+				PRINTFORMW ――%CALLNAME:TARGET%は満足げな表情で体重計から降りました。
+				PRINTFORMW どうやら自己研鑽は報われたようです…
+			CASE "グラマー", "巨乳", "爆乳"
+				PRINTFORMW ――%CALLNAME:TARGET%はほっとした表情で体重計から降りました。
+				PRINTFORMW どうやら本人の中ではセーフだったようです…
+			CASE "むちむち", "油断", "豊満"
+				PRINTFORMW ――%CALLNAME:TARGET%は溜息をつきながら体重計から降りました。
+				PRINTFORMW どうやら油断しすぎたようです…
+			;対象は"ちっちゃい", "お尻大きめ", "スレンダー", "貧乳", "普通"
+			;でも一応新しい体型用に
+			CASEELSE
+				PRINTFORMW ――%CALLNAME:TARGET%は数値を確認するとすぐに体重計から降りました。
+				PRINTFORMW どうやらいつもと同じ結果だったようです…
+			ENDSELECT
+			;簡単な身体差はあまり体重に影響を与えないとした
+			SIF TALENT:ラミア || TALENT:マーメイド || TALENT:旧支配者の名残 || TALENT:動物足
+				PRINTFORMW しかし、体重計が示す数値と%CALLNAME:TARGET%の反応がいまいち一致せず、%CALLNAME:MASTER%は首をかしげました…
+		ENDIF
+;	ELSEIF 
+;		PRINTFORMW 雀卓を見つけたようです…
+;		PRINTFORM なぜあるのかはわからないがやってみようと、%CALLNAME:TARGET%は%CALLNAME:MASTER%
+;		SIF ASSI
+;			PRINTFORM と%CALLNAME:ASSI%
+;		PRINTFORMW を誘っています…
+;		PRINTFORM 仲居の%OKAMI%を混ぜて
+;		IF ASSI
+;			PRINTFORM 四麻
+;		ELSE
+;			PRINTFORM 三麻
+;		ENDIF
+;		PRINTFORM をした結果、%CALLNAME:MASTER%は
+;		IF RAND:4 == 0
+;			PRINTFORMW 大きくプラスとなり、みんなから巻きあげました
+;			PRINTFORMW %CALLNAME:TARGET%はすっかり拗ねてしまい、当分口をきいてくれそうにありません…
+;		ELSEIF RAND:3 == 0
+;			PRINTFORMW ややプラスで終了し、%CALLNAME:TARGET%は負けて悔しそうです…
+;		ELSEIF RAND:2 == 0
+;			PRINTFORMW ややマイナスとなり、%CALLNAME:TARGET%は嬉しそうです…
+;		ELSE
+;			PRINTFORMW 大きくマイナスとなり、懐が軽くなってしまいました
+;			PRINTFORMW %CALLNAME:MASTER%は部屋に戻ってふて寝することにしました…
+;		ENDIF
+	ELSE
+		PRINTFORMW 卓球台を見つけたようです…
+		PRINTFORM 温泉に来たからにはこれをやらねばと、%CALLNAME:TARGET%は%TEXTR("腕まくりをして", "ラケット代わりのスリッパを握りしめ", "ピンポン球を弾ませて")%%CALLNAME:MASTER%
+		SIF ASSI
+			PRINTFORM と%CALLNAME:ASSI%
+		PRINTFORMW を誘っています…
+		PRINTFORM 思っていたより白熱した勝負となり、汗をかいた
+		IF ASSI
+			PRINTFORM 三人
+		ELSE
+			PRINTFORM 二人
+		ENDIF
+		PRINTFORMW は、もう一度温泉に入り直す羽目になりました…
+	ENDIF
+;多人数での乱交
+CASE "温泉街の旅館"
+	PRINTFORMW 旅館の大浴場へと向かった。
+	PRINTFORMW 宿には他の宿泊客も少なくなく、脱衣所では同じ宿に泊まっている夢魔達が%CALLNAME:MASTER%達に声をかけてきました。
+	IF RAND:2 == 0
+		PRINTFORM 彼女達はあからさまに%CALLNAME:MASTER%を誘惑してきましたが、%CALLNAME:TARGET%
+		SIF ASSI
+			PRINTFORM と%CALLNAME:ASSI%
+		PRINTFORM は、%CALLNAME:MASTER%は自分
+		SIF ASSI
+			PRINTFORM 達
+		PRINTFORMW のものだと掴んで離しませんでした…！
+		PRINTFORM 諦めきれない彼女たちが「それなら一緒にお風呂で楽しみましょう」と提案を変えてくると、
+		IF RAND:3 == 0
+			PRINTFORMW %CALLNAME:TARGET%は夢魔達からのその挑戦を受け、%TEXTR("望むところだと啖呵を切って", "面白そうだと舌なめずりをして")%相手を挑発しています…！
+		ELSEIF RAND:2 == 0
+			PRINTFORMW 今度は%CALLNAME:TARGET%はそれはいい考えだと提案を受け、哀れな獲物である%CALLNAME:MASTER%の顔を笑ってのぞき込んできました…！
+		ELSE
+			PRINTFORMW 今度は%CALLNAME:TARGET%は顔を真っ赤にして申し訳なさそうに%CALLNAME:MASTER%の顔を見てから、夢魔達に小さく頷いてしまいました…！
+			PRINTFORMW どうやら独占欲よりも欲望が少し勝ったようです…
+			SIF TALENT:強気
+				PRINTFORMW %CALLNAME:MASTER%は%CALLNAME:TARGET%の珍しい反応に「女らしい所もあるんだな」と感心しながら、夢魔達に引っ張られて行きました
+		ENDIF
+	ELSE
+		PRINTFORM すぐに意気投合した彼女達がお風呂での乱交を提案してくると、
+		IF RAND:3 == 0
+			PRINTFORMW %CALLNAME:TARGET%はにんまりと笑い、それは面白そうだと舌なめずりをしています…！
+		ELSEIF RAND:2 == 0
+			PRINTFORMW %CALLNAME:TARGET%はそれはいい考えだと提案を受け、哀れな獲物である%CALLNAME:MASTER%の顔を笑ってのぞき込んできました…！
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%は顔を真っ赤にして申し訳なさそうに%CALLNAME:MASTER%の顔を見たかと思うと…%CALLNAME:MASTER%を裏切り、夢魔達の提案に頷いてしまいました…！
+			SIF TALENT:強気
+				PRINTFORMW %CALLNAME:MASTER%は%CALLNAME:TARGET%の珍しい反応に「女らしい所もあるんだな」と感心しながら、夢魔達に引っ張られて行きました
+		ENDIF
+	ENDIF
+	;あなた無双（あなたの技巧+ストック)*精力>(TARGETの技巧*精力*(RAND:5+1)）
+	IF (ABL:MASTER:技巧 + BASE:MASTER:ストック) * BASE:MASTER:精力 > ABL:技巧 * BASE:精力 * (RAND:5 +1) && RAND:2 == 0
+		IF RAND:3 == 0
+			PRINTFORMW どうやらこの場には%CALLNAME:MASTER%の味方は一人もいないようです…
+		ELSEIF RAND:2 == 0
+			PRINTFORMW 浴場を盛大に汚して旅館から怒られるのではないかという懸念が、%CALLNAME:MASTER%の頭をよぎります…
+		ELSE
+			PRINTFORMW その場にいる夢魔達が%CALLNAME:MASTER%の周りに集まり、すぐにも始まってしまいそうな空気が漂っています…
+		ENDIF
+		IF RAND:2 == 0
+			PRINTFORMW %CALLNAME:MASTER%は夢魔達が視姦し囃し立てる中、逆に挑発するかのように浴衣を脱ぐと、夢魔達を誘うようにして大浴場へと入っていきました…
+		ELSE
+			PRINTFORMW もうなるようになれと腹をくくった%CALLNAME:MASTER%は、自ら浴衣を脱ぎ、夢魔達に追い立てられるように大浴場へと入っていきました…
+		ENDIF
+		;フェラ輪姦
+		IF PENIS(MASTER) && ABL:MASTER:マゾっ気 && RAND:3 == 0
+			PRINTFORMW 夢魔達は%CALLNAME:MASTER%を椅子に座らせ、体を抑え込みタオルで目隠しをしてきました！
+			PRINTFORMW 視覚を封じられた影響で風呂場の熱気と夢魔達の声が鋭敏に感じ取れます……
+			PRINTFORMW すると突然、%CALLNAME:MASTER%のペニスが温かい何かで包み込まれました
+			PRINTFORMW 気持ち良さに呻く%CALLNAME:MASTER%の耳元で、誰かが「フェラチオされてるのよ」と嬉しそうに囁きます……
+			PRINTFORMW 更に無数の手が%CALLNAME:MASTER%の体に伸びてきて、余す所なく愛撫し始めます
+			PRINTFORMW ……何も見えず、抵抗も出来ないまま、%CALLNAME:MASTER%は結託した%CALLNAME:TARGET%達の前で絶頂を繰り返しました……
+			CALL EXP_CALC_TRAVEL, "フェラチオ：射精", TARGET, 1 + RAND:(1 + (ABL:奉仕精神 + 1)/2)
+			CALL EXP_CALC_TRAVEL, "フェラチオ：射精", MOB, 3 + RAND:10
+		ELSEIF PENIS(MASTER) && RAND:2 == 0
+			PRINTFORMW %CALLNAME:TARGET%達は浴場へと誘い出した%CALLNAME:MASTER%をぐるりと取り囲むと、そのまま%CALLNAME:MASTER%を押し倒してきました！
+			IF ASSI
+				PRINTFORMW そしてまず一番手として%CALLNAME:ASSI%が、押し倒した%CALLNAME:MASTER%の腰の上に跨り、そのまま腰を下ろしてきます…
+				PRINTFORMW %CALLNAME:ASSI%は巧みに腰を使いながら、周りを囲む夢魔たちに%CALLNAME:MASTER%の弱点をレクチャーしています…
+				PRINTFORMW 夢魔たちが熱心に%CALLNAME:ASSI%の騎乗位を見つめている中、巧みに弱いところばかりを攻められた%CALLNAME:MASTER%は、夢魔達の視線に晒されながら、屈辱的な膣内射精を強いられてしまいます…
+				PRINTFORMW %CALLNAME:ASSI%が腰の上から退くと、どろどろになった結合部から射精したばかりの精子がどろりと零れ落ち、夢魔達の興奮を煽ります。
+				CALL EXP_CALC_TRAVEL, "騎乗位：中出し", ASSI, 1
+			ENDIF
+			PRINTFORMW 夢魔達は我先にと%CALLNAME:MASTER%の上を争いますが、真っ先に腰の上に跨がってきたのは%ESA%でした！
+			PRINTFORMW %ESA%は舌なめずりをしながら、余裕たっぷりの笑みを浮かべてゆっくりと腰を下ろしてきます…！
+			PRINTFORMW しかし、%CALLNAME:MASTER%の上で１０回くらい跳ねた頃に、ビクビクッと震えながら絶頂を迎えてしまいました…
+			PRINTFORMW %ESA%は%CALLNAME:MASTER%より先にイッてしまったことを悔しがりますが、順番を待っていた%ESB%に急かされ、渋々引き下がります。
+			CALL EXP_CALC_TRAVEL, "騎乗位", MOB, 1
+
+			PRINTFORMW 次いで%CALLNAME:MASTER%の上に跨がり腰を下ろしてきた%ESB%はその小さな身体から想像されるとおり、%CALLNAME:MASTER%のペニスを痛いほどに締め付けてきます…！
+			PRINTFORMW %ESB%は%CALLNAME:MASTER%のお腹に手を突いてゆっくりと腰を動かしますが、すぐに腰砕けになり、%CALLNAME:MASTER%の上で動けなくなってしました…
+			PRINTFORMW %CALLNAME:MASTER%がひくひくと身体を震わせる%ESB%の腰を掴み、下から強く突き上げてやると、%ESB%もまた、%CALLNAME:MASTER%より先に絶頂を迎えてしまいます…
+			CALL EXP_CALC_TRAVEL, "騎乗位", MOB, 1
+
+			PRINTFORMW そして残る%ESC%も%CALLNAME:MASTER%の上に腰を下ろしてきますが、いとも簡単に%CALLNAME:MASTER%に主導権を奪われ、先に絶頂を迎えてします…
+			CALL EXP_CALC_TRAVEL, "騎乗位", MOB, 1
+
+			PRINTFORMW 一方のここまでの痴態を見ながら自慰に耽っていた%CALLNAME:TARGET%は、ようやく自分の番がきたと%ESC%を脇に追いやると、嬉しそうに%CALLNAME:MASTER%の上に腰を下ろしてきます…
+			PRINTFORMW よく蕩けた%CALLNAME:TARGET%の膣内は熱を持ったように蠢き、先ほどの三人とは比べ物にならない快感を、%CALLNAME:MASTER%のペニスに与えてきます
+			PRINTFORMW %CALLNAME:TARGET%達は浴場へと誘い出した%CALLNAME:MASTER%をぐるりと取り囲むと、そのまま%CALLNAME:MASTER%を押し倒してきました！
+			SIF ASSI
+				PRINTFORM %CALLNAME:ASSI%にイカされた後
+			PRINTFORMW 三連戦を経た%CALLNAME:MASTER%も絶頂に導かれ、%CALLNAME:MASTER%は%CALLNAME:TARGET%の膣内に射精してしました…！
+			PRINTFORMW %CALLNAME:TARGET%は膣内射精された喜びに浸り、下腹部をゆっくりと手でさすっていましたが、「まだ満足していない」とそのまま腰を動かし始め、勝手に二戦目を開始してしまいます…！
+			PRINTFORMW 夢魔達はその後も十数回と%CALLNAME:MASTER%から精を搾り取っていく%CALLNAME:TARGET%に、尊敬と畏怖の視線を向けています…
+			CALL EXP_CALC_TRAVEL, "騎乗位：中出し", TARGET, 11 + RAND:6
+		ELSE
+			PRINTFORM しかし、彼女たちも
+			;陥落人数5人以上
+			IF FLAG:30 >= 5
+				PRINTFORM 既に何人もの夢魔達を陥落させてきた
+			ELSE
+				PRINTFORM %CALLNAME:TARGET%
+				SIF ASSI
+					PRINTFORM 達
+				PRINTFORM に鍛えられた
+			ENDIF
+			PRINTFORMW %CALLNAME:MASTER%の敵ではありませんでした…！
+			IF PENIS(MASTER)
+				PRINTFORMW %CALLNAME:MASTER%は湯船の縁で%ESA%を後ろから組み敷いて、お風呂場に肉と肉がぶつかる乾いた音を響かせています…
+				PRINTFORMW %ESA%は%CALLNAME:MASTER%に腰を押し込まれるたび、官能に心を焦がされ、牝の鳴き声を上げています…
+				CALL EXP_CALC_TRAVEL, "後背位", MOB, 1
+			ELSE
+				PRINTFORMW %CALLNAME:MASTER%はお風呂場で%ESA%を抱きしめ、キスをしながら身体中に指を滑らせています…
+				PRINTFORMW %ESA%は%CALLNAME:MASTER%の指に敏感な部分を撫でられるたびに身体を跳ねさせ、牝の鳴き声を上げています…
+				CALL EXP_CALC_TRAVEL, "対面座位", MOB, 1
+			ENDIF
+			PRINTFORM その隣では既に%CALLNAME:MASTER%にイカされぐったりとなっていた%ESB%
+			SIF ASSI
+				PRINTFORM と%ESC%
+			PRINTFORM が、%CALLNAME:TARGET%
+			SIF ASSI
+				PRINTFORM と%CALLNAME:ASSI%
+			PRINTFORMW に弄ばれています…
+			PRINTFORM 「%TEXTR("許して", "もうダメ")%」と音を上げる%ESA%達に、%CALLNAME:MASTER%
+			IF ASSI
+				PRINTFORM 達三人
+			ELSE
+				PRINTFORM と%CALLNAME:TARGET%
+			ENDIF
+			PRINTFORMW は%TEXTR("「まだまだこれからだ」と囁く", "ニヤリと悪そうな顔で微笑む")%と、彼女達を%TEXTR("足腰が立たなくなるまで", "悲鳴も上げられなくなるまで")%可愛がってあげました…
+			CALL EXP_CALC_TRAVEL, "乱交：勝利", TARGET, ABL:欲望 + ABL:MASTER:欲望 + ABL:MOB:欲望 + RAND:5
+			CALL EXP_CALC_TRAVEL, "乱交：勝利", ASSI, ABL:欲望 + ABL:MASTER:欲望 + ABL:MOB:欲望 + RAND:5
+			CALL EXP_CALC_TRAVEL, "乱交：勝利", MASTER, ABL:欲望 + ABL:MASTER:欲望 + ABL:MOB:欲望 + RAND:5
+		ENDIF
+	;夢魔達の玩具（あなたのマゾっ気がLv5以上）
+	ELSEIF ABL:MASTER:マゾっ気 >= 5 && (TALENT:MASTER:オトコ || TALENT:MASTER:処女 == 0) && RAND:2 == 0
+		IF PENIS(MASTER) && RANDIF(1, TALENT:MASTER:ふたなり)
+			;あなたの反応
+			PRINTFORM 一体どれだけ%TEXTR("苛め抜かれる", "搾り取られる", "犯される", "輪姦される")%事になるのか…%CALLNAME:MASTER%%TEXTR("のそんな期待からか", "はそんな妄想に唾を飲み込むと", "の頭にそんな考えが浮かんだ瞬間")%、%CALLNAME:MASTER%の%TEXTR("股間", "ペニス")%は
+			;馬並専用
+			IF SIZE("ペニス", MASTER) >= 3 && RAND:2 == 0
+				PRINTFORMW 浴衣からはみ出る程に大きくなってしまいました！
+			;巨根以上
+			ELSEIF SIZE("ペニス", MASTER) >= 2 && RAND:2 == 0
+				PRINTFORMW 浴衣の上から分かる程に大きくなってしまいました！
+			;並以上
+			ELSEIF SIZE("ペニス", MASTER) >= 1 && RAND:2 == 0
+				PRINTFORMW はち切れんばかりに大きくなってしまいました！
+			ELSE
+				IF RAND:2 == 0
+					PRINTFORMW むくむくと大きくなってしまいました！
+				ELSE
+					PRINTFORMW 瞬く間に勃起してしまいました！
+				ENDIF
+			ENDIF
+			;夢魔達の反応
+			;馬並
+			IF SIZE("ペニス", MASTER) >= 3
+				PRINTFORMW 逞しく勃起した%CALLNAME:MASTER%の%TEXTR("ペニス", "ソレ", "それ")%を見て、夢魔達は%TEXTR("期待以上だと", "楽しめそうだと", "搾り応えがありそうだと")%%TEXTR("ごくりと唾を飲み込んで", "ぺろりと舌なめずりをして", "不敵な笑みを浮かべて")%います…
+			;巨根・並
+			ELSEIF SIZE("ペニス", MASTER) >= 1
+				PRINTFORMW %TEXTR("隠すことの出来なくなった", "浴衣の下からくっきりと浮き出ている")%%CALLNAME:MASTER%のソレ%TEXTR("に、夢魔達の視線が一気に注がれて", "を、夢魔達がにやにやしながら見つめて", "を見て、夢魔達はごくりと唾を飲んで", "を見て、夢魔達はにやにや笑いを浮かべて")%います…
+			;短小
+			ELSE
+				PRINTFORMW しかし、%TEXTR("勃起した", "大きくなった")%にもかかわらず浴衣の前を僅かに持ち上げる%TEXTR("だけの大きさしかない", "ことしかできない")%%TEXTR("ペニス", "ソレ", "それ")%を見ると、夢魔達は%CALLNAME:MASTER%%TEXTR("の方を見て", "を蔑むように", "馬鹿にするように")%クスクスと笑い出しました…
+			ENDIF
+			PRINTFORMW 夢魔達はたじろいだ%CALLNAME:MASTER%を協力して押さえつけると、全身に手や舌を這わせてきました…！
+			PRINTFORM %CALLNAME:MASTER%は%CALLNAME:TARGET%
+			SIF ASSI
+				PRINTFORM と%CALLNAME:ASSI%
+			PRINTFORM に助けを求めますが、
+			IF ASSI
+				PRINTFORM 二人は
+			ELSE
+				PRINTFORM %CALLNAME:TARGET%は
+			ENDIF
+			IF RAND:3 == 0
+				PRINTFORMW 夢魔達の輪に加わり、一緒になって%CALLNAME:MASTER%を責め立ててきました！
+			ELSEIF RAND:2 == 0
+				PRINTFORMW 笑みを浮かべると、%CALLNAME:MASTER%の唇を奪い、夢魔達に加勢し始めました！
+			ELSE
+				PRINTFORMW ここだけは渡さないとばかりに%CALLNAME:MASTER%の股間へ手を伸ばしてきました！
+			ENDIF
+			PRINTFORMW 夢魔達に一斉に身体中を弄ばれた%CALLNAME:MASTER%は、ろくな抵抗もできず精を放ってしまいました…
+			PRINTFORMW %CALLNAME:MASTER%は絶頂に恍惚としている間に夢魔達に裸に向かれてしまい、そのままお風呂場へと連れ去られてしまいました…
+			CALL EXP_CALC_TRAVEL, "絶頂", MASTER, 1
+		ELSE
+			PRINTFORMW 一体どれだけ%TEXTR("苛め抜かれる", "搾り取られる", "犯される", "輪姦される")%事になるのか…%CALLNAME:MASTER%はそんな%TEXTR("期待", "妄想", "考え")%に、%TEXTR("腰の奥が熱くなっていく", "股の奥がじゅんと湿り気を帯びた", "身体が火照っていく")%のを感じます…
+			PRINTFORMW そんな%CALLNAME:MASTER%の様子に気付いた夢魔達は、美味しそうな%TEXTR("獲物", "果実")%を見て%TEXTR("舌なめずりすると", "嗜虐的な視線を向け")%、一斉に襲いかかってきました！
+			PRINTFORMW 夢魔達は皆で%CALLNAME:MASTER%の身体へと群がると、浴衣の間から素肌へと手を這わせてきます…！
+			PRINTFORM 浴衣の間から入り込んできた手に、%CALLNAME:MASTER%は
+			;爆乳
+			IF TALENT:巨乳 >= 2
+				PRINTFORM 手のひらから余るほど豊かな胸を指を埋めるようにして弄ばれ、
+			;巨乳
+			ELSEIF TALENT:巨乳 == 1
+				PRINTFORM たわわに実った胸をたぷたぷと玩具にされ、
+			;貧乳
+			ELSEIF TALENT:貧乳
+				PRINTFORM 薄い胸の頂きを指先できゅぅと摘まれ、
+			ELSE
+				PRINTFORM 形のいい胸をこね回すように愛撫され、
+			ENDIF
+			PRINTFORMW 甘い悲鳴で鳴かされてしまいます…
+			PRINTFORMW 腰を跳ねさせ悶える%CALLNAME:MASTER%に、夢魔達は畳みかけるかのように%TEXTR("アソコ", "あそこ", "秘所")%にまで指を伸ばしてきます！
+			PRINTFORMW %CALLNAME:MASTER%は耳元で痴態を囁かれながら無数の指と舌に撫で回され、瞬く間に絶頂させられてしまいます…
+			PRINTFORMW %CALLNAME:MASTER%は絶頂に恍惚としている間に夢魔達に裸に剥かれてしまい、そのままお風呂場へと連れ去られてしまいました…
+			CALL EXP_CALC_TRAVEL, "絶頂", MASTER, 1
+		ENDIF
+		;IF TALENT:MASTER:ふたなり
+		;ふたなりの場合はとりあえず保留
+		;ELSEIF TALENT:MASTER:オトコ
+		IF TALENT:MASTER:オトコ
+			PRINTFORMW 夢魔達はお風呂場へと連れ去った%CALLNAME:MASTER%に、その興奮をいっそう高めるように、自分たちの身体を見せつけてきます…
+			PRINTFORMW 妖艶に微笑みながらその%TEXTR("豊かな胸", "抜群のプロポーション", "魅惑的なボディライン", "男好きのする身体")%を%CALLNAME:MASTER%へ見せつけてくる%ESA%…
+			PRINTFORMW %TEXTR("未発達な", "未成熟な", "ふくらみかけの", "どこか子供っぽさの残る")%身体を武器として、%CALLNAME:MASTER%の劣情を煽ってくる%ESB%…
+			PRINTFORM そして嗜虐的な笑みを浮かべる%ESC%はどうやらふたなりのようで、その股間にそそり立つ、%CALLNAME:MASTER%
+			;短小は専用分岐
+			IF SIZE("ペニス", MASTER) == 0
+				PRINTFORM とは比べものにならないくらいに立派な、
+			;馬並
+			ELSEIF SIZE("ペニス", MASTER) >= 3
+				PRINTFORM と同じくらい巨大で
+			;それ以外
+			ELSE
+				PRINTFORM より大きく
+			ENDIF
+			PRINTFORMW 逞しいペニスを扱いて見せつけてきます…！
+			;TARGETが淫乱（恋慕も持っている場合は2/3の確率）
+			IF TALENT:淫乱 && (TALENT:恋慕 == 0 || RAND:3)
+				;短小は専用分岐
+				IF SIZE("ペニス", MASTER) == 0
+					;あなた肛虐
+					PRINTFORM %CALLNAME:MASTER%は抵抗する暇も無く%ESC%に
+					IF TALENT:MASTER:小柄体型
+						PRINTFORM 小柄な身体を抱きかかえられて
+					ELSE
+						PRINTFORM 後ろから組み敷かれて
+					ENDIF
+					PRINTFORMW しまいました！
+					PRINTFORML %ESC%は耳元で
+					PRINTL 
+					;MASTERがA処女
+					IF TALENT:MASTER:Ａ処女
+						IF ESC == "ルシフェル"
+							PRINTFORML 「さぁ、ボクの槍で女の子みたいによがらせてあげるよ…」
+						ELSE
+							PRINTFORML 「さぁ、わたしのコレで女の子みたいによがらせてあげる…」
+						ENDIF
+						PRINTL 
+						PRINTFORMW と%CALLNAME:MASTER%に囁くと、そのまま後ろの穴へペニスを押し込んできました…！
+						PRINTFORMW 異物を受け入れたことのない場所を焼けた鉄のように熱い塊に無理矢理こじ開けられ、%CALLNAME:MASTER%は食いしばった歯の隙間から苦悶の声を漏らしています…
+						PRINTFORMW にもかかわらず、被虐心に火が付いている%CALLNAME:MASTER%の小さなペニスは、お腹につきそうな程にまで反り返り……
+						PRINTFORMW それどころか、%ESC%の巨大なペニスを根元までねじ込まれてしまった瞬間、起立したその可愛らしいペニスの先端から精液を迸らせてしまいました！
+						PRINTL 
+						IF ESC == "ルシフェル"
+							PRINTFORMW 「くく…恥ずかしくないのかい？　お尻掘られてイっちゃうなんてさ♪」
+						ELSE
+							PRINTFORMW 「あら、自分のより大きなおちんちんで後ろの処女を奪われて…その上射精？　くすくす…無様ねぇ♪」
+						ENDIF
+						PRINTL 
+						PRINTFORMW 強すぎる悦楽と苦痛で頭の中が焼き切れそうになっている%CALLNAME:MASTER%の羞恥心を、%ESC%はことさらに煽ってきます…
+						PRINTL 
+						IF ESC == "ルシフェル"
+							PRINTFORMW 「でもまだまだこれからだよ…♪　ふふ…キミのその穴がボクの槍の形になるまでたっぷりと使い込んであげるよ…♪」
+						ELSE
+							PRINTFORMW 「でももっと恥ずかしくしてあげる…ふふ、あなたのおしりのあな…私ので拡げてあげるね…♪」
+						ENDIF
+						PRINTL 
+						PRINTFORMW %ESC%に奥まで貫いたままこね回すように腰を使われ、%CALLNAME:MASTER%はがくがくと腰を痙攣させながら甘い声を漏らしてします…
+						PRINTFORMW %ESC%はそんな%CALLNAME:MASTER%の頬を撫で、腰使いはそのままに、もう一度、耳たぶを食みながら囁いてきました…
+						PRINTL 
+						IF ESC == "ルシフェル"
+							PRINTFORMW 「ほら、ごらんよ…キミの%CALLNAME:TARGET%、キミが犯されるところをあんなに愉しそうに見てる…♪」
+						ELSE
+							PRINTFORMW 「ほぅら、見て…%CALLNAME:TARGET%ちゃんもあなたのこと、見てるわよ…♪」
+						ENDIF
+						PRINTL 
+						PRINTFORMW %CALLNAME:TARGET%の視線を意識した瞬間、%CALLNAME:MASTER%は羞恥心から軽く達してしまい、とろりと勢いなく精液を漏らしてしまう…
+						PRINTL 
+						PRINTFORMW 「くすくす…短小の早漏、その上お尻を掘られながら見られただけで…ふふ、そんな役立たずの子種は…」
+						PRINTL 
+						PRINTFORMW %ESC%は%CALLNAME:MASTER%の腰をしっかりと捕まえると、大きなストロークで突き込んできました！
+						PRINTL 
+						IF ESC == "ルシフェル"
+							PRINTFORMW 「ボクがお尻を掘って搾り尽くしてあげるよ…！」
+						ELSE
+							PRINTFORMW 「私がお尻をほじほじして搾り尽くしてあげる…♪」
+						ENDIF
+						PRINTL 
+						PRINTFORMW 大浴場には%ESC%が%CALLNAME:MASTER%に勢いよく腰を打ち付ける乾いた音と、%CALLNAME:TARGET%達に見られながらお尻を穿たれ射精を繰り返す%CALLNAME:MASTER%の、少女のような嬌声が響き渡っています…
+					ELSE
+						IF ESC == "ルシフェル"
+							IF RAND:2 == 0
+								PRINTFORML 「ほら、ボクの槍で串刺しにしてあげる…♪」
+							ELSE
+								PRINTFORML 「ほら、いい声で鳴いておくれよ…♪」
+							ENDIF
+						ELSE
+							IF RAND:2 == 0
+								PRINTFORML 「さぁ、お待ちかねのおちんちんよ…♪」
+							ELSE
+								PRINTFORML 「ふふ、いい声で鳴いてね…♪」
+							ENDIF
+						ENDIF
+						PRINTL 
+						PRINTFORMW と囁くと、その大きなペニスを%CALLNAME:MASTER%のアナルへ押し込んできました！
+						PRINTL 
+						;あなたのA性交経験25以上
+						IF EXP:MASTER:Ａ性交経験 >= 25
+							IF ESC == "ルシフェル"
+								PRINTFORMW 「ふふ、ずいぶん可愛がられてるみたいだね…キミのお尻の穴、ボクの槍に吸い付いてくるよ♪」
+								PRINTFORM 「仕込んだのは%CALLNAME:TARGET%かな？
+								SIF ASSI
+									PRINTFORM 　それとも%CALLNAME:ASSI%？
+								PRINTFORMW 　まぁ、誰でもいいけどね…おかげで楽しめるんだから…っ♪」
+							ELSE
+								PRINTFORMW 「あはっ、美味しそうに私のおちんちん食べちゃって…♪　スケベなおしりの穴ねぇ…♪」
+								PRINTFORMW 「こんな淫乱な穴には少し…ふふ、オシオキ、してあげなきゃね…っ♪」
+							ENDIF
+							PRINTL 
+							PRINTFORMW %ESC%は喘ぐ%CALLNAME:MASTER%を嗤いながら、勢いよく長大なペニスをねじ込んできました！
+							PRINTFORMW 凄まじい衝撃に%CALLNAME:MASTER%は絶叫し、身体をびくんと跳ねさせながら、小さなペニスから精液を迸らせてしまいます…
+							PRINTL 
+							IF ESC == "ルシフェル"
+								PRINTFORMW 「どうだい、こうされると堪らないだろう？　ふふ、気に入ったよキミのこと…枯れ果てるまで搾り尽くしてやるよ…♪」
+							ELSE
+								PRINTFORMW 「くすくす…虐められるのが本当に好きみたいね…♪　あなたのこと気に入ったわ…おかしくなるまで犯してあげる…♪」
+							ENDIF
+							PRINTL 
+							PRINTFORMW 肛虐によがるその様を見た%ESC%は、舌なめずりをしながら%CALLNAME:MASTER%の腰をしっかりと捕まえ、リズミカルに腰を使い始めました…！
+							PRINTFORMW %ESC%の凶悪なペニスでアナルを犯されトコロテン射精を繰り返しながら、%CALLNAME:MASTER%は大浴場に恥ずかしい音を響かせています…
+						ELSE
+							IF ESC == "ルシフェル"
+								PRINTFORMW 「ほら、力を抜きなよ…どうせ鳴いても叫んでも逃げられないんだからさ♪　ふふ、それに…」
+							ELSE
+								PRINTFORMW 「あはっ、ほーら、おしりが広がって……まだまだよ♪　凄いのはこれからなんだから…♪」
+							ENDIF
+							PRINTL 
+							PRINTFORMW %ESC%は歯を食いしばって苦痛に耐える%CALLNAME:MASTER%を嗤いながら、ゆっくりゆっくりと、肛虐の味を覚え込ませるかのようにペニスを押し込んできます…
+							PRINTFORMW 呻き声しか上げられない%CALLNAME:MASTER%のアナルを%ESC%の巨大なペニスは容赦なく押し広げ、そしてとうとう奥まで征服してしまいます…
+							PRINTL 
+							IF ESC == "ルシフェル"
+								PRINTFORMW 「どうだい、苦しいけれど…腰が砕けちゃうくらい気持ちいいだろう…？　ふふ、肛悦の味…病みつきになるまで教えてやるよっ♪」
+							ELSE
+								PRINTFORMW 「どう？　あなたのおしりの穴、私のおちんちんの形になっちゃってるの、わかるかしら…？　じゃあ今度は…ふふ、おしり弄られないとイケない身体にしてあげる…っ♪」
+							ENDIF
+							PRINTL 
+							PRINTFORMW サディスティックな笑みを浮かべた%ESC%は、%CALLNAME:MASTER%の腰を押さえつけるとアナルを激しく犯し始めました…！
+							PRINTFORMW %ESC%のされるがままにお尻を犯されている%CALLNAME:MASTER%の口からは、徐々に呻き声ではなく、甘い悲鳴が漏れ始めています…
+						ENDIF
+					ENDIF
+					PRINTFORML 
+					PRINTFORMW %CALLNAME:MASTER%は%ESC%に、ペニスから何も出なくなるまで、たっぷりとお尻を可愛がられてしまいました…
+					CALL EXP_CALC_TRAVEL, "逆アナル：中出し", MOB, 5 + RAND:5
+					CALL EXP_CALC_TRAVEL, "絶頂", MASTER, 5 + RAND:5
+				;馬並
+				ELSEIF SIZE("ペニス", MASTER) >= 3 && RAND:2 == 0
+					PRINTFORMW %CALLNAME:MASTER%は%ESA%に%ESC%、そして対抗心を燃やした%CALLNAME:TARGET%にその場で押し倒されてしまいます。
+					PRINTFORM 三人は%CALLNAME:MASTER%の反応を楽しむように、その馬並みのペニス
+					;トリプルパイズリ(TARGETが巨乳以上）
+					IF TALENT:巨乳
+						PRINTFORMW を三つの大きな胸で包み込んでしまいます…
+						CALL EXP_CALC_TRAVEL, "パイズリ", TARGET, 1
+						PRINTFORM ペニスを包む柔らかな
+					;トリプルフェラ
+					ELSE
+						PRINTFORMW へと舌を這わせてきます…
+						CALL EXP_CALC_TRAVEL, "フェラチオ", TARGET, 1
+						PRINTFORM 先端を、竿を、袋を…それぞれバラバラにペニスを弄んでくる舌の
+					ENDIF
+					PRINTFORM 感触に%CALLNAME:MASTER%が堪らず呻き声を漏らすと、
+					;ASSIがいる場合は+両乳首責め（ASSI&ESB）
+					IF ASSI
+						PRINTFORMW %CALLNAME:ASSI%と%ESB%が追い打ちをかけるように%CALLNAME:MASTER%の全身へと舌を這わせてきました！
+						PRINTFORMW ふたりの舌は脇腹やお臍、うなじや鎖骨と身体中を這い回り、最後には%CALLNAME:MASTER%の乳首へとちゅうと吸い付いてきました！
+					;+キス責め(ESB担当）
+					ELSE
+						PRINTFORMW 小悪魔のように笑う%ESB%が、声を漏らした口をキスで塞いできました…！
+						PRINTFORMW 空気を求めて逃げる%CALLNAME:MASTER%の口を%ESB%は執拗に追いかけ、陸の上で%CALLNAME:MASTER%を溺れさせてきます…！
+					ENDIF
+					PRINTFORMW 五人の夢魔達に一斉に責め立てられた%CALLNAME:MASTER%は呆気なく達してしまい、精液を噴水のように吹き上げてしまいました…
+					CALL EXP_CALC_TRAVEL, "絶頂", MASTER, 1
+				;それ以外
+				ELSE
+					;あなた公開自慰
+					IF RAND:3 == 0
+						PRINTFORMW 夢魔達は%CALLNAME:MASTER%を湯船の縁に座らせると、自慰をするように強制してきました…
+						PRINTFORMW すでに被虐心に火の付いている%CALLNAME:MASTER%は、夢魔達の言葉に操られるかのように勃起へと手を伸ばしてしまいます…
+						PRINTFORMW %CALLNAME:MASTER%は夢魔達の嘲笑の嗤い声、罵倒、中傷に倒錯的な興奮を覚えつつ、徐々に自慰へと没頭していき…虚空に精を放ってしまいます…
+						PRINTFORMW 腰を突き出し無様に射精するその姿に夢魔達はクスクスと笑い、
+						PRINTL 
+						PRINTFORML 「手を休めず続けなさい」
+						PRINTFORML 「誰が休んでいいって言った？」
+						PRINTFORML 「ほら、もっと情けないところを見せて」
+						PRINTFORML 「見られて悦んでるくせに…ほら、続きは？」
+						PRINTL 
+						PRINTFORMW と、口々に%CALLNAME:MASTER%に自慰を続けるよう強要してきました
+						PRINTFORMW 蔑むかのような視線にぞくぞくと背筋を震えさせながら%CALLNAME:MASTER%が再びペニスへと指を滑らせると、出したばかりの精液がぬめり、浴場にぬちゃぬちゃと卑猥な音が響きます…
+						PRINTFORMW 夢魔達はそんな%CALLNAME:MASTER%の痴態を愉しそうに眺めながら、お互いの身体を慰め始めました…
+						PRINTFORMW %CALLNAME:MASTER%は結局最後まで夢魔達に触れることを許されず、夢魔達が楽しむ前で情けなくペニスを扱き上げさせられ続けました…
+						CALL EXP_CALC_TRAVEL, "公開自慰", MASTER, 10
+						CALL EXP_CALC_TRAVEL, "絶頂", MASTER, 5 + RAND:5
+					;集団足コキ
+					ELSEIF RAND:2 == 0
+						PRINTFORMW 夢魔達は%CALLNAME:MASTER%を浴場の床に押し倒すと、周りを取り囲み、一度精を放出して僅かに萎えたペニスを一斉に足蹴にしてきました！
+						PRINTFORMW %CALLNAME:MASTER%は激痛に悲鳴を上げますが、夢魔達の足はそれに構うことなく巧みにペニスを弄んできます…
+						PRINTFORMW %CALLNAME:MASTER%のペニスは夢魔達に虐げられる度に硬度を増してゆき、その巧みな足使いに翻弄された%CALLNAME:MASTER%は呆気なく、踏まれながら精を放ってしまいます…
+						PRINTFORMW 腰を突き出し無様に射精するその姿に夢魔達はクスクスと笑い、
+						PRINTL 
+						PRINTFORML 「踏まれてイクなんて…くすくす、変態さんねぇ♪」
+						PRINTFORML 「こんなのがいいなんて、サイテーね♪」
+						PRINTFORML 「ふふっ、ひっどい顔して…そんなにこれが良かった？」
+						PRINTFORML 「ほぅら、もっと踏んで欲しいんでしょ？　ドマゾの変態さん♪」
+						PRINTL 
+						PRINTFORMW と、口々に%CALLNAME:MASTER%を蔑んできます…
+						PRINTFORMW %CALLNAME:MASTER%は羞恥と屈辱、それとマゾヒスティックな快感に身体を震わせ、イったばかりだというのにその言葉だけで三度ペニスを硬くさせてしまいます…
+						PRINTFORMW 夢魔達はそんな%CALLNAME:MASTER%の姿を嘲り嗤いながら、ご褒美とばかりに%CALLNAME:MASTER%のペニスを、やはり足で虐めてきます…
+						PRINTFORMW 夢魔達の苛烈な足責めは、%CALLNAME:MASTER%が被虐快楽に染まり、自ら屈服とおねだりの言葉を口にするようになるまで続きました…
+						CALL EXP_CALC_TRAVEL, "絶頂", MASTER, 5 + RAND:5
+					;逆輪姦
+					ELSE
+						PRINTFORMW 夢魔たちの色香にあてられた%CALLNAME:MASTER%は、ふらふらと%ESA%を押し倒し、そのままペニスを突き入れてしまいます。
+						PRINTFORMW ペニスを受け入れた%ESA%の膣内は優しくペニスを歓迎し、融けてしまうような快楽で%CALLNAME:MASTER%を包み込んできます…
+						PRINTFORMW それに溺れた%CALLNAME:MASTER%は%ESA%の身体に夢中になってしまい、背後から迫る悪意に気づけませんでした…
+						PRINTFORMW 懸命に腰を振り射精に到ろうとしたまさにそのとき、%ESC%の巨根が%CALLNAME:MASTER%のアナルを貫いてきました！
+						PRINTFORMW 突然の衝撃に%CALLNAME:MASTER%は声にならない悲鳴を上げ、前立腺を抉られながら%ESA%の膣内に大量に射精してしまいます…！
+						PRINTL 
+						IF ESC == "ルシフェル"
+							PRINTFORMW 「あはっ、いいザマだね…♪　覚悟しなよ…お尻掘られてイクってこと、ボクので身体に刻み込んでやるからさ♪」
+						ELSE
+							PRINTFORMW 「くす、まずは一発…♪　このまま何度も、お尻抉ってイかせてあげるからね…♪」
+						ENDIF
+						PRINTL 
+						PRINTFORM %ESC%は%CALLNAME:MASTER%の腰を掴んで%ESA%からペニスを引き出させると、今度は%ESC%が下になり、そして
+						IF ASSI && RAND:3 == 0
+							PRINTFORM %CALLNAME:ASSI%
+							CALL EXP_CALC_TRAVEL, "騎乗位", ASSI, 1
+						ELSEIF RAND:2 == 0
+							PRINTFORM %CALLNAME:TARGET%
+							CALL EXP_CALC_TRAVEL, "騎乗位", TARGET, 1
+						ELSE
+							PRINTFORM %ESB%
+							CALL EXP_CALC_TRAVEL, "騎乗位", MOB, 1
+						ENDIF
+						PRINTFORMW を%CALLNAME:MASTER%の腰の上へと跨がらせます…
+						PRINTFORMW %CALLNAME:MASTER%は順番待ちをする夢魔達に見られながら、たっぷりとトコロテン射精の感覚を教え込まれてしまいました…
+						CALL EXP_CALC_TRAVEL, "後背位", MOB, 1
+						CALL EXP_CALC_TRAVEL, "騎乗位", MOB, 5 + RAND:5
+						CALL EXP_CALC_TRAVEL, "逆アナル：中出し", MOB, 5 + RAND:5
+						CALL EXP_CALC_TRAVEL, "絶頂", MASTER, 10 + RAND:5
+					ENDIF
+				ENDIF
+			;TARGETが恋慕だとESCによるNTR展開（あなたとASSIはESAとESBに責められる）
+			ELSE
+				PRINTFORMW %ESC%は%CALLNAME:MASTER%と%CALLNAME:TARGET%が恋仲であることを察すると、%ESA%と%ESB%に合図を送り、%CALLNAME:MASTER%の身体を押さえつけさせてしまいました…
+				PRINTFORML 困惑する%CALLNAME:MASTER%に%ESC%は
+				PRINTL 
+				IF ESC == "ルシフェル"
+					PRINTFORML 「いいからそこで見てなよ、面白いもの見せてやるからさ♪」
+				ELSE
+					PRINTFORML 「いいからそこで見ていなさい、面白いもの見せてあげるから…♪」
+				ENDIF
+				PRINTL 
+				PRINTFORMW と舌なめずりを返しながら、%CALLNAME:TARGET%へと近づいていきます…
+				;淫乱かつサドだとその状況を楽しんでノリノリでNTRされる
+				IF TALENT:淫乱 && TALENT:サド && RAND:2 == 0
+					PRINTFORMW %ESC%が何を考えているのか気付いた%CALLNAME:TARGET%は、%ESC%から逃げるどころか、逆に誘うように自らを、%ESC%に押し倒させてしまいました…！
+					PRINTL 
+					IF ESC == "ルシフェル"
+						PRINTFORMW 「ふふ、可愛い顔してえげつないね…自分が寝取られる様を見せつけてあげたいなんて♪」
+					ELSE
+						PRINTFORMW 「あはっ、浮気しちゃうんだ…それも好きな人の目の前で♪」
+					ENDIF
+					PRINTL 
+					PRINTFORMW その言葉にようやく事態を飲み込んだ%CALLNAME:MASTER%はやめるよう叫びますが、%ESC%はそれに構うことなく、%CALLNAME:TARGET%のアソコへと押し込んでいきます！
+					PRINTFORMW %CALLNAME:TARGET%はペニスから張り出した瘤に膣肉を抉られるたびに喉を仰け反らせて喘ぎ、%CALLNAME:MASTER%のペニスでは味わえない、暴力的な快楽に溺れていきます…
+					PRINTL 
+					IF ESC == "ルシフェル"
+						PRINTFORMW 「ほぅら、どっちのがいいか聞かせてあげなよ…そらっ、そらぁっ♪」
+					ELSE
+						PRINTFORMW 「くす…すっごい乱れようね♪　ねぇ、あの人のとどっちがいいの？」
+					ENDIF
+					PRINTL 
+					PRINTFORMW %CALLNAME:TARGET%はその問いに、一瞬だけ%CALLNAME:MASTER%の方を見ますが、それは逡巡する様子ではなく、嗜虐的な笑みを浮かべると……
+					PRINTL 
+					SETCOLOR DEF_COLOR("イエロー")
+					;嫁がサキュバス
+					IF COND("Ｃサキュバス")
+						PRINTFORML 『決まってるじゃなぁい、%CALLNAME:MASTER%のより、%ESC%の方がずっとずっといいわぁ』
+					;嫁がクズノハ
+					ELSEIF COND("Ｃクズノハ")
+						PRINTFORML 『決まっておろう、%CALLNAME:MASTER%のより、%ESC%の方がずっとよいぞ。もっと、もっと突いてたもれ』
+					ELSE
+						PRINTFORML 『%CALLNAME:MASTER%のより、%ESC%の方がいい』
+					ENDIF
+					RESETCOLOR
+					PRINTFORML 
+					PRINTFORMW と口にしてしまいました！
+					PRINTL 
+					PRINTFORMW その答えに%CALLNAME:MASTER%はいても立ってもいられなくなって目を反らせてしまいますが、%CALLNAME:TARGET%はというと、そんな%CALLNAME:MASTER%を見て余計に情欲に火が付いてしまったのか、口々に%CALLNAME:MASTER%を罵りながら、%ESC%との浮気セックスに没頭していきます…！
+					PRINTL 
+					IF ESC == "ルシフェル"
+						PRINTFORMW 「っ、く…搾り取られそうだよ…♪　ね、どこに欲しいんだい？　ほら、言いなよっ♪」
+					ELSE
+						PRINTFORMW 「んっ、あぁっ♪　なぁに、もう欲しいの？　せっかちねぇ…ほら、どこに欲しいの？」
+					ENDIF
+					PRINTL 
+					PRINTFORML 情欲に取り憑かれた%CALLNAME:TARGET%は腰を振りながら、
+					PRINTL 
+					IF COND("Ｃサキュバス")
+						PRINTFORML 『ああん、かけてぇ、%ESC%のザーメンでどろどろにしてぇ！』
+					;嫁がクズノハ
+					ELSEIF COND("Ｃクズノハ")
+						PRINTFORML 『顔に、わらわの顔にかけてたもれ。真っ白にしてたもれ』
+					ELSE
+						PRINTFORML 『かけて、精液でどろどろにして！』
+					ENDIF
+					PRINTL 
+					PRINTFORMW と%ESC%に懇願してしまいます…！
+					PRINTL 
+					IF ESC == "ルシフェル"
+						PRINTFORMW 「いいよ、その顔…ボクのザーメンでお化粧してあげるよっ♪」
+					ELSE
+						PRINTFORMW 「やーらし♪　ほらっ、ザーメンで染めてあげるから顔上げなさいっ♪」
+					ENDIF
+					PRINTL 
+					PRINTFORMW それを聞いた%ESC%は膣内からペニスを抜き去ると%CALLNAME:TARGET%の鼻先に先端を押しつけ、やや黄濁した濃厚な精液を顔に浴びせていきます…
+					PRINTFORMW %CALLNAME:MASTER%はその光景を見ていられず、目を逸らしたまま唇を噛んで屈辱に耐えるしかありませんでした…
+					PRINTL 
+					IF ESC == "ルシフェル"
+						PRINTFORMW 「あっはっは♪　綺麗なお顔が真っ白になっちゃったね♪」
+						PRINTFORMW 「さて、次はどこにマーキングして欲しいんだい？」
+					ELSE
+						PRINTFORMW 「見て見て♪　恋人のお顔が私ので真っ白よぉ♪」
+						PRINTFORMW 「ほらほら、次はどこにマーキングしてあげよっか？」
+					ENDIF
+					PRINTL 
+					PRINTFORMW 目を逸らしている%CALLNAME:MASTER%に聞こえるように、%ESC%がわざとらしく問いかけます。
+					PRINTFORMW そして%CALLNAME:TARGET%もまた、%CALLNAME:MASTER%にによく聞こえるようにはっきりと答えました。
+					PRINTL 
+					IF COND("Ｃサキュバス")
+						PRINTFORML 『中に！　中にもちょうだい！　%ESC%のザーメンでいっぱいにしてぇ！』
+					;嫁がクズノハ
+					ELSEIF COND("Ｃクズノハ")
+						PRINTFORML 『子袋に、わらわの子袋に出しておくれ。%ESC%の子種で、わらわを孕ませてたもれ！』
+					ELSE
+						PRINTFORML 『ナカに、ナカに出してえ！　%ESC%のザーメン、いっぱい出してえ！！』
+					ENDIF
+					PRINTL 
+					PRINTFORMW 押さえつけられたままの%CALLNAME:MASTER%は耳をふさぐこともできず、愛する%CALLNAME:TARGET%が犯される声を…
+					PRINTFORMW いえ、愛する%CALLNAME:TARGET%が自分以外の相手を自ら受け入れ、悦がり狂う声を聞かされ続けました。
+					PRINTFORMW そしてそれは、%CALLNAME:TARGET%の願いどおり、%ESC%が彼女の膣内奥深くに突き入れたまま、子宮めがけて大量に射精するまで続きました…
+					CALL EXP_CALC_TRAVEL, "ＮＴＲセックス", TARGET, 3 + RAND:5
+				;濃厚NTRセックス
+				ELSE
+					PRINTFORMW %ESC%が何を考えているのか気付いた%CALLNAME:MASTER%の目の前で、%CALLNAME:TARGET%は%ESC%に押し倒されてしまいます！
+					PRINTL 
+					IF ESC == "ルシフェル"
+						PRINTFORMW 「ふふ、大切な人の前で犯してあげるよ…♪」
+					ELSE
+						PRINTFORMW 「ふふっ、あの子の前で犯してあげる…♪」
+					ENDIF
+					PRINTL 
+					PRINTFORMW %ESC%は逃げようとする%CALLNAME:TARGET%の腰を捕まえ、ごつごつと節くれ立ったペニスをアソコへと押し込んでいきます！
+					PRINTFORMW %CALLNAME:TARGET%は苦痛に喉を仰け反らせ、%CALLNAME:MASTER%に助けを求めますが、%CALLNAME:MASTER%の方も%ESA%と%ESB%に押し倒されてしまいます…
+					PRINTL 
+					IF ESC == "ルシフェル"
+						PRINTFORMW 「あははっ、あっちも始めちゃったね……ほら、あっちはいいからこっちに集中しなよっ♪」
+					ELSE
+						PRINTFORMW 「あらあら、あっちも始めちゃったわね…ふふ、ほら、向こうに負けないように苛めてあげる…っ♪」
+					ENDIF
+					PRINTL 
+					PRINTFORMW %ESC%は自慢のペニスをグラインドさせながら、大きなストロークで%CALLNAME:TARGET%の奥へと突き込んできます…！
+					PRINTFORMW %CALLNAME:TARGET%は感じまいとして歯を食いしばりますが、女を泣かせるためだけに醜く改造されたその肉の凶器を前には為す術がなく、次第に甘い呻き声を漏らしてしまいます…
+					PRINTL 
+					IF ESC == "ルシフェル"
+						PRINTFORMW 「我慢なんてできないだろう？　早く素直になりなよ…ほら、ボクの槍の形におまんこ拡げてあげるからさっ♪」
+					ELSE
+						PRINTFORMW 「くす、わかる？　おまんこが私のおちんちんの形になってるの…♪　この形…しっかり教え込んであげるからね…っ♪」
+					ENDIF
+					PRINTL 
+					PRINTFORMW %ESC%の凶悪なペニスにずぶりと子宮を押し潰され、%CALLNAME:TARGET%は堪らず喘ぎ声を漏らしてしまいます…！
+					PRINTFORMW 一度屈させられてしまえばもう堪えることは敵わず、%CALLNAME:TARGET%は%ESC%の腰使いに官能を引き出され、されるがままに鳴かされてしまいます
+					PRINTL 
+					IF ESC == "ルシフェル"
+						PRINTFORMW 「くすくす…素直になれとは言ったけどさ、こんなにおまんこぐちょぐちょにして…恥ずかしくないのかい、この淫売♪」
+						PRINTFORMW 「ほら、あいつに聞かせてやりなよ♪　『あなたの粗チンよりこっちのほうがずっといい』ってね♪」
+					ELSE
+						PRINTFORMW 「ふふふっ、おまんこが吸い付いてくる…♪　私のおちんちん気に入ってくれたかしら♪」
+						PRINTFORMW 「ねぇ、ほら、どうなの？　あの子に聞かせてあげなさいよ、『あなたの粗チンよりこっちのほうがずっといい』って…♪」
+					ENDIF
+					PRINTL 
+					PRINTFORMW %CALLNAME:TARGET%は一瞬%CALLNAME:MASTER%のことを想って躊躇しますが、%ESA%と%ESB%に跨がられて犯されている%CALLNAME:MASTER%の姿を目にして、僅かに残っていた理性の箍が完全に外れてしまいます…
+					PRINTFORMW そして身体を貫く強烈な快楽に促されるがまま、%CALLNAME:TARGET%は%ESC%のペニスへの屈服の言葉を口にしてしまい…それどころか、自分から膣内射精を懇願してしまいました！
+					PRINTL 
+					;嫁がヴィレッジャ
+					IF COND("Ｃヴィレッジャ")
+						PRINTFORML 『い、いいですっ、こっちのおちんぽの方が、%CALLNAME:MASTER%のより気持ちいいですっ！』
+						PRINTFORMW 『中に、中に出してくださいっ！ お、おねがいしますぅっ！』
+					ELSE
+						PRINTFORML 『い、いいのおっ！ こっちのおチンポの方が、%CALLNAME:MASTER%のよりぜんぜんいいのおっ！』
+						PRINTFORMW 『このまま、このままイかせてっ！ ナカに出してえええっ！』
+					ENDIF
+					PRINTL 
+					IF ESC == "ルシフェル"
+						PRINTFORMW 「あははっ、最低の売女だね♪　想い人の目の前でボクの子種をせがむなんてさ♪　でも……ふふ、気に入ったよ♪」
+					ELSE
+						PRINTFORMW 「ふふっ、ザーメン注いで欲しいだなんてイケナイ子ね♪　あの子が可愛いそうよ？　だ・か・ら…♪」
+					ENDIF
+					PRINTL 
+					PRINTFORMW %ESC%は%ESA%と%ESB%に%CALLNAME:MASTER%を%CALLNAME:TARGET%の目の前まで連れてこさせると……
+					PRINTL 
+					IF ESC == "ルシフェル"
+						PRINTFORMW 「そぅら、ボクに種付けされてイくところ、しっかり見せつけてやりなよ…っ♪　ほら、射精すよ…っ♪」
+					ELSE
+						PRINTFORMW 「子宮たぷたぷにされてイクあなたの顔、特等席で見せてあげなさい♪　ほら、射精すわよ…っ♪」
+					ENDIF
+					PRINTL 
+					PRINTFORMW 腰を押し込むようにして子宮口に先端をめり込ませ、叩き付けるかのような勢いで精液を流し込んできました！
+					PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:MASTER%の見ている前で絶叫し、膣内射精の快楽に顔を歪ませてしまいます…
+					PRINTFORMW その答えに%CALLNAME:MASTER%はいても立ってもいられなくなって目を反らせてしまいますが、%CALLNAME:TARGET%はというと、そんな%CALLNAME:MASTER%を見て余計に情欲に火が付いてしまったのか、口々に%CALLNAME:MASTER%を罵りながら、%ESC%との浮気セックスに没頭していきます…！
+					PRINTFORMW %CALLNAME:MASTER%には%ESC%たちが満足するまでの間、歯を食いしばって堪えることしかできませんでした…
+					CALL EXP_CALC_TRAVEL, "ＮＴＲセックス", TARGET, 3 + RAND:5
+				ENDIF
+			ENDIF
+		;♀あなた
+		ELSE
+			;ふたなり夢魔に玩具にされる
+			PRINTFORMW 夢魔達はお風呂場へと連れ去った%CALLNAME:MASTER%に、その興奮をいっそう高めるように、自分たちの身体を見せつけてきます…
+			PRINTFORMW その股間には本来女性にはあり得ざるべきものが存在しています…どうやら彼女たちはふたなり夢魔の一団のようです！
+			PRINTFORMW 妖艶に微笑みながらその%TEXTR("豊かな胸", "抜群のプロポーション", "魅惑的なボディライン")%と、何人もの女性を泣かせてきたのであろう淫水焼けしたペニスを見せつけてくる%ESA%…
+			PRINTFORMW %TEXTR("未発達な", "未成熟な", "ふくらみかけの", "どこか子供っぽさの残る")%身体と、そこからは想像できない巨根を併せ持った%ESB%
+			PRINTFORMW そして%ESC%はその嗜虐的な笑みの通り女性を泣かせるのが好きなのか、いくつもの真珠を埋め込んだ、グロテスクなペニスをぶら下げています…
+			PRINTFORMW ３人は%CALLNAME:MASTER%を取り囲むと、身体を隠すタオルを奪い、身動きが取れないように両手を取り押さえてしまいました！
+			PRINTFORM 貞操の危機に%CALLNAME:MASTER%は%CALLNAME:TARGET%
+			SIF ASSI
+				PRINTFORM と%CALLNAME:ASSI%
+			PRINTFORM に助けを求めますが、
+			IF ASSI
+				PRINTFORM 二人は
+			ELSE
+				PRINTFORM %CALLNAME:TARGET%は
+			ENDIF
+			PRINTFORMW 夢魔達の狼藉を黙認しているのか、知らんぷりを決め込んでいます…！
+			PRINTFORMW しかし%CALLNAME:MASTER%も勃起した男根を鼻先に突きつけられると、これからそれに犯されてしまうという予感に、つい唾を飲み込んでしまいます…
+			PRINTFORMW まんざらでもない%CALLNAME:MASTER%の様子に夢魔たちは舌なめずりをすると、%CALLNAME:MASTER%にのし掛かってきました…！
+			PRINTFORM まず最初に%CALLNAME:MASTER%のアソコに侵入してきたのは、
+			;ESAメイン
+			IF RAND:3 == 0
+				PRINTFORMW 黒く磨き抜かれた%ESA%のペニスでした！
+				PRINTFORMW %ESA%は挿入しただけで%CALLNAME:MASTER%の弱いところを察したのか、ニヤリと笑うと大胆かつ繊細に腰を使ってきました！
+				PRINTFORMW 強姦紛いの行為に%CALLNAME:MASTER%は感じまいとしますが、最初は抑えていた声も%ESA%が腰を突き入れるだけでいとも簡単に引き出されてしまい、あっという間に%CALLNAME:MASTER%は自分から%ESA%にしがみつく有様にされてしまいました…
+				PRINTFORMW 肉欲の虜になったその様子を見た%ESB%と%ESC%は、%CALLNAME:MASTER%の頬にペニスの先端をぐりぐりと押しつけてきますが、%CALLNAME:MASTER%はそれを嫌がるどころか、逆に両手で握り、交互に舌で奉仕を始めてしまいます…
+				PRINTFORMW 熱心に２本のペニスをしゃぶる%CALLNAME:MASTER%に%ESA%も興奮の度合いを強め、下から勢いよく突き上げ、何度も何度も、%CALLNAME:MASTER%に屈服とおねだりの声を上げさせます…
+				PRINTFORMW 腰が抜けるまで%ESA%に弄ばれてしまった%CALLNAME:MASTER%は全身精液塗れにされ、膣内も%ESA%のザーメンをたっぷりと膣内射精されてしまいました…
+				CALL EXP_CALC_TRAVEL, "逆レイプ：中出し", MOB, 3 + RAND:5
+				CALL EXP_CALC_TRAVEL, "絶頂", MASTER, 1 + RAND:5
+			;ESBメイン
+			ELSEIF RAND:2 == 0
+				PRINTFORMW 凶悪な長さを誇る%ESB%のペニスでした！
+				PRINTFORMW %ESB%の稚拙で乱暴な腰使いに最初は苦痛しか感じなかった%CALLNAME:MASTER%も、長大なペニスで執拗に子宮口を狙い撃ちにされては長く堪えることができず、次第に声に甘いものが入り交じるようになっていきます…
+				PRINTFORMW 懸命に我慢している%CALLNAME:MASTER%を面白く思ったのか、%ESA%と%ESC%は顔を見合わせると%ESB%に加勢し、%CALLNAME:MASTER%の口に、喉に、鎖骨に、脇に、お腹に、クリトリスに、脚にと愛撫とキスの雨を降らせてきました…！
+				PRINTFORMW 子宮を鋭く貫いてくる悦楽と、全身を緩やかに包んでくる快楽に%CALLNAME:MASTER%の理性はとろとろに融かされてしまい、%ESB%にされるがままになってしまいます…
+				PRINTFORMW 頃合いだと考えたのか、%ESB%はすっかり快楽に素直になった%CALLNAME:MASTER%の子宮口をその凶悪なペニスの先端でぐりぐりとこじあけながら、「何が欲しいか言ってごらんよ」と囁いてきます…
+				PRINTFORM %CALLNAME:MASTER%は
+				IF TALENT:相思相愛
+					PRINTFORM %CALLNAME:TARGET%を裏切る罪悪感
+				ELSE
+					PRINTFORM 羞恥心
+				ENDIF
+				PRINTFORMW からか一瞬だけ躊躇を見せますが、完全に火を付けられた子宮からの欲望には抗えず、%ESB%に媚びを売りながら「%TEXTR("種付けして下さい", "孕ませて下さい", "精液を子宮いっぱいに下さい")%」とおねだりしてしまいます！
+				PRINTFORMW %ESB%はその言葉も終わらないうちにペニスを奥へと押し込むように突き込むと、子宮口に先端をぴったりと密着させ、巨根にふさわしい量の精液を%CALLNAME:MASTER%の子宮へと吐き出していきます…！
+				PRINTFORMW %CALLNAME:MASTER%は胎内を焼くような牝の悦びに溺れながら、下腹部が膨れてしまうほど%ESB%に精液を注がれてしまいました…
+				CALL EXP_CALC_TRAVEL, "逆レイプ：中出し", MOB, 5 + RAND:5
+				CALL EXP_CALC_TRAVEL, "絶頂", MASTER, 2 + RAND:5
+			;ESCメイン
+			ELSE
+				PRINTFORMW ゴツゴツとした%ESC%のペニスでした！
+				PRINTFORMW 女を泣かせるためだけに醜く改造されたその肉の凶器は%CALLNAME:MASTER%にも容赦なく牙を剥き、%CALLNAME:MASTER%は%ESC%がペニスを動かすたびに獣じみた声を上げさせられてしまいます…
+				PRINTFORMW ペニスから張り出したイボは膣壁を引っ掻くように蹂躙し、特に%TEXTR("根元に埋められた真珠はクリトリスの裏側", "雁首に埋められた真珠はＧスポット")%を磨り潰すかのように抉ってきます…！
+				PRINTFORMW 半狂乱になった%CALLNAME:MASTER%は堪らず許しを請いますが、%ESC%はまだまだこれからだとサディスティックに笑うと、%ESA%と%ESB%に眼で合図を送ります…
+				PRINTFORMW %ESC%が腰砕けになった%CALLNAME:MASTER%の尻肉をぐいと割り開くと、そこに%ESA%がのし掛かり、アナルへとペニスを押し込んできました…！
+				PRINTFORMW %CALLNAME:MASTER%は背を仰け反らせて悲鳴を上げますが、さらにその開いた口へ、今度は%ESB%がペニスをねじ込んできました！
+				PRINTFORMW %CALLNAME:MASTER%は、喉、アソコ、アナルの三カ所を同時に蹂躙され、悲鳴すら上げることもできず、夢魔達の性処理道具として蹂躙され続けることになってしまいました…
+				CALL EXP_CALC_TRAVEL, "逆レイプ：中出し", MOB, 3 + RAND:5
+				CALL EXP_CALC_TRAVEL, "逆アナル：中出し", MOB, 3 + RAND:5
+				CALL EXP_CALC_TRAVEL, "フェラする：射精", MOB, 3 + RAND:5
+				CALL EXP_CALC_TRAVEL, "絶頂", MASTER, 3 + RAND:5
+			ENDIF
+			;サドっ気Lv5以上のTARGETによるオシオキ
+			IF ABL:サドっ気 >= 5
+				PRINTFORMW その後しばらくして、%CALLNAME:MASTER%は静観していたはずの%CALLNAME:TARGET%に助け出されますが、助けた%CALLNAME:TARGET%はとても不機嫌そうです…
+				PRINTFORM そう見えたのは%CALLNAME:MASTER%の錯覚ではなく、%CALLNAME:TARGET%は
+				IF PENIS(TARGET)
+					IF TALENT:恋慕
+						PRINTFORM 嫉妬心を露わにすると「誰の女か思い出させてあげる」
+					ELSE
+						PRINTFORM 嗜虐的に微笑むと「これでよがらせてあげる」
+					ENDIF
+					PRINTFORMW と、%CALLNAME:MASTER%にのし掛かってペニスを突き入れてきました…！
+					;屈曲位
+					IF RAND:2 == 0
+						PRINTFORMW 仰向けにひっくり返した%CALLNAME:MASTER%の両脚を掴んで窮屈な姿勢を取らせると、%CALLNAME:TARGET%は体重をかけて腰を沈めてきます…
+						PRINTFORMW ひと突きごとに結合部から恥ずかしい音を立てて空気が漏れ、それと一緒にたっぷりと注ぎ込まれた精液があふれ出してきます
+						PRINTFORMW %CALLNAME:TARGET%は羞恥に顔を赤くする%CALLNAME:MASTER%を責め続け、注がれた精液をすっかり書き出してしまうと、子宮を押し潰すかのようにペニスを押し込んできました！
+						PRINTFORMW 奥を貫く杭に堪らず絶頂を迎えてしまった%CALLNAME:MASTER%の膣内に、%CALLNAME:TARGET%は思い切り、\@ TALENT:恋慕 ? 愛 # 征服 \@の印を注ぎ込んできました…！
+						PRINTFORMW %CALLNAME:MASTER%は胎内を熱い精液で満たされ歓喜の絶頂に溺れる姿を皆に晒しながら、%CALLNAME:TARGET%に何度も何度も種付けされてしまいました…
+					;後背位
+					ELSE
+						PRINTFORMW %CALLNAME:TARGET%は後ろから%CALLNAME:MASTER%の腰を掴むと、浴場に肉と肉のぶつかる乾いた音が響くほど、腰の動きを激しくしてきます
+						PRINTFORMW %CALLNAME:MASTER%はその力強い腰砕けになってしまいますが、床に崩れようとするのを%CALLNAME:TARGET%はそれを許しませんでした。
+						PRINTFORMW %CALLNAME:TARGET%は腕を掴むと%CALLNAME:MASTER%の身体を反らせ、夢魔達に顔がよく見えるようにしてさらに責め立ててきました…！
+						PRINTFORMW %CALLNAME:MASTER%はもう%CALLNAME:TARGET%のなすがまま、犯されるがままになってしまい、たっぷりと精液を注がれて絶頂してしまうところまで、皆にしっかりと見られてしまいました…
+					ENDIF
+					CALL EXP_CALC_TRAVEL, "逆レイプ：中出し", TARGET, 3 + RAND:5
+					CALL EXP_CALC_TRAVEL, "絶頂", MASTER, 3 + RAND:5
+				ELSE
+					PRINTFORM %CALLNAME:MASTER%を突き倒してまんぐり返しの体勢を取らせると
+					IF TALENT:恋慕
+						PRINTFORM 嫉妬心を露わにし、%CALLNAME:MASTER%のことを「誰にでも股を開くだらし無い女」
+					ELSE
+						PRINTFORM 軽蔑の眼差しで見下し、%CALLNAME:MASTER%のことを「チ○ポ狂いの売女」
+					ENDIF
+					PRINTFORMW と罵りながら膣にバイブをねじ込んできました…！
+					PRINTFORMW バイブに押し出され無様に精液を逆流させる%CALLNAME:MASTER%の様子を鼻で笑った%CALLNAME:TARGET%は、「そんな女にはこれで十分でしょう？」とさらにそのバイブを足で押さえつけてきました！
+					PRINTFORMW %CALLNAME:TARGET%に女性器に玩具をねじ込まれた挙げ句、足蹴にされているにもかかわらず、%CALLNAME:MASTER%はこの屈辱的な状況に酷く興奮を覚えてしまいます…
+					PRINTFORMW %CALLNAME:MASTER%の瞳に情欲の炎が宿ったのを見た%CALLNAME:TARGET%は、%CALLNAME:MASTER%におねだりを要求してきます…
+					PRINTFORMW 夢魔達に輪姦されていた時には感じなかった倒錯的な劣情に心を焦がしながら、%CALLNAME:MASTER%は「踏んでください」とおねだりをしますが、%CALLNAME:TARGET%はバイブに軽く足を乗せるだけで、決して動かそうとはしてくれません…
+					PRINTFORMW 焦れた%CALLNAME:MASTER%がもう一度おねだりをしようと口を開きかけると、%CALLNAME:TARGET%は「何を勘違いしているの？　『ご主人様の御御足を使わせて下さい』でしょう？」と嗤って訂正を迫ってきました…
+					PRINTFORMW %CALLNAME:MASTER%はその蔑んだ視線に言いしれぬ興奮を感じ、オウム返しに言われたとおりのおねだりを口にすると、自分からへこへこと腰を突き上げるように、%CALLNAME:TARGET%の脚でバイブを踏んでもらっているかのように動かし始めました…
+					PRINTFORMW そして%CALLNAME:TARGET%の嘲笑を耳にしながらも、%CALLNAME:MASTER%の腰の動きはどんどん激しくなり、とうとう、泣きながら潮を吹いて達してしまいました…
+					PRINTFORMW %CALLNAME:MASTER%がイったのを見ると、%CALLNAME:TARGET%は「ご褒美をあげる」とサディスティックな笑みを浮かべ、先程まで押し付けるだけだったバイブを、一気に体重を乗せて踏みつけてきました！
+					PRINTFORMW %CALLNAME:MASTER%は膣を襲う、%CALLNAME:TARGET%から与えられる圧倒的な苦痛と快楽に何度も強制的に絶頂させられ、そして気を失うまでの間、幾度となく%CALLNAME:TARGET%への屈服と服従の宣誓をさせられてしまいました…
+					CALL EXP_CALC_TRAVEL, "逆バイブ", TARGET, 3 + RAND:5
+					CALL EXP_CALC_TRAVEL, "絶頂", MASTER, 3 + RAND:5
+				ENDIF
+				PRINTFORMW %CALLNAME:MASTER%を襲った夢魔達は、自分たちの陵辱すら%CALLNAME:MASTER%を躾けるための道具にしてしまった%CALLNAME:TARGET%の手管に%TEXTR("すっかり感心している", "流石にちょっと引いている")%ようでした…
+			ENDIF
+		ENDIF
+	;普通に乱交
+	ELSE
+		IF RAND:3 == 0
+			PRINTFORMW どうやらこの場には%CALLNAME:MASTER%の味方は一人もいないようです…
+		ELSEIF RAND:2 == 0
+			PRINTFORMW 浴場を盛大に汚して旅館から怒られるのではないかという懸念が、%CALLNAME:MASTER%の頭をよぎります…
+		ELSE
+			PRINTFORMW その場にいる夢魔達が%CALLNAME:MASTER%の周りに集まり、すぐにも始まってしまいそうな空気が漂っています…
+		ENDIF
+		IF RAND:3 == 0
+			PRINTFORMW %CALLNAME:MASTER%はもうどうにでもなれと開き直り、せめてこの状況を楽しんでやろうと夢魔達と一緒に大浴場へと向かいました……
+		ELSEIF RAND:2 == 0
+			PRINTFORMW %CALLNAME:MASTER%は夢魔達が視姦し囃し立てる中、まるでストリップでもさせられているかのような気分を味わいながら浴衣を脱ぎ、背中を押されるようにして大浴場へと入っていきました…
+		ELSE
+			PRINTFORMW 今さら逃げることもできないと%CALLNAME:MASTER%は観念し、浴衣を脱ぐと夢魔達と一緒に大浴場へと入っていきました…
+		ENDIF
+		;ESAとESBで両手に花、TARGET・ASSIの相手はESC
+		PRINTFORM %CALLNAME:MASTER%は先手必勝とばかりに相手グループ
+		IF RAND:3 == 0
+			PRINTFORM のリーダー格っぽい%ESA%
+		ELSEIF RAND:2 == 0
+			PRINTFORM で一番弱そうな%ESB%
+		ELSE
+			PRINTFORM の中で一番厄介そうな%ESC%
+		ENDIF
+		IF RAND:3 == 0
+			PRINTFORM を持てる技術を総動員して絶頂させようとしましたが、
+		ELSEIF RAND:2 == 0
+			PRINTFORM をムードたっぷりに相手しはじめましたが、
+		ELSE
+			PRINTFORM を激しく犯しはじめましたが、
+		ENDIF
+		IF RAND:3 == 0
+			PRINTFORM 相手は相当に場慣れしているらしく
+		ELSEIF RAND:2 == 0
+			PRINTFORM 想像以上に経験豊富らしく
+		ELSE
+			PRINTFORM 相手も結構な猛者らしく
+		ENDIF
+		IF PENIS(MASTER)
+			IF RAND:2 == 0
+				PRINTFORMW 気付いた時には逆に押し倒され、騎乗位の体勢に追い込まれていました！
+				PRINTFORMW ……
+				PRINTFORMW …
+				PRINTFORMW 何とか射精する前にイかせた%CALLNAME:MASTER%でしたが、その後はそのままの体勢でかわるがわるペニスが乾く暇が無いほどに女性上位で犯され続けるはめになりました
+				PRINTFORMW 朦朧とした頭で腰を突き上げながらふと%CALLNAME:TARGET%の姿を探してみると、%CALLNAME:MASTER%を犯すための列に並んでいます…
+			ELSE
+				IF RAND:2
+					PRINTFORMW 余裕の笑みを浮かべて突き込みを受け入れています
+				ELSE
+					PRINTFORMW 蜜壷を駆使して逆に搾り取ってきました！
+				ENDIF
+				PRINTFORMW そして、おねだりされるままに為す術なく子宮目掛けて大量に射精してしまった%CALLNAME:MASTER%から主導権を奪うと、さらなる奉仕を求めてきました
+				PRINTFORMW これは……切り抜けるのには想像以上に時間がかかりそうです…！
+			ENDIF
+		ELSE
+			IF RAND:2 == 0
+				PRINTFORMW 気付いた時には逆に押し倒され、シックスナインの体勢に持ち込まれてしまいました！
+				PRINTFORMW ……
+				PRINTFORMW …
+				PRINTFORMW 何とか自分が絶頂する前にイかせた%CALLNAME:MASTER%でしたが、その後はそのままの体勢でかわるがわるアソコが乾く暇が無いほどに相手をさせられ続けるはめになりました
+				PRINTFORMW 朦朧とした頭で夢魔のアソコに奉仕を続けながらふと%CALLNAME:TARGET%の姿を探してみると、%CALLNAME:MASTER%を犯すための列に並んでいます…
+			ELSE
+				IF RAND:2
+					PRINTFORM 余裕の笑みを浮かべて愛撫を受け流し、
+				ELSE
+					PRINTFORM %CALLNAME:MASTER%を押さえつけ、
+				ENDIF
+				PRINTFORMW 逆にアソコへと手を伸ばしてきました！
+				PRINTFORMW そして、反撃されるがままに為す術なく絶頂させられてしまった%CALLNAME:MASTER%から主導権を奪うと、さらなる奉仕を求めてきました
+				PRINTFORMW これは……切り抜けるのには想像以上に時間がかかりそうです…！
+			ENDIF
+		ENDIF
+		PRINTFORMW ………
+		PRINTFORMW ……
+		PRINTFORMW …
+		;撤退成功
+		IF RAND:4 == 0
+			PRINTFORMW 代わる代わる夢魔達に犯されまくった%CALLNAME:MASTER%は、やがてその場に倒れ込んでしまいました
+			PRINTFORMW たっぷり楽しんだ夢魔達は、%CALLNAME:MASTER%に感謝の言葉と全身へのキスを贈っています…
+		ELSEIF RAND:3 == 0
+			PRINTFORMW %CALLNAME:MASTER%は調教師としての意地を見せ、何とか集まった夢魔全員をイかせました…！
+			PRINTFORMW しかし流石の%CALLNAME:MASTER%も体力が限界を迎え、満足した夢魔達の横でしばらく休みました…
+		ELSEIF RAND:2 == 0
+			PRINTFORMW %CALLNAME:MASTER%はこのままではのぼせてしまうと、夢魔達を何とか引き剥がし、這々の体で逃げ出しました…！
+		ELSE
+			PRINTFORMW %CALLNAME:MASTER%は夢魔達に身体を弄ばれたまま、のぼせてぐったりとなってしまいました…！
+			PRINTFORMW %CALLNAME:MASTER%は慌てた%CALLNAME:TARGET%に脱衣所へ連れ出され、膝枕をしてもらいながら、起き上がれるようになるまで団扇で扇いでもらいました…
+		ENDIF
+		CALL EXP_CALC_TRAVEL, "乱交：互角", TARGET, 3
+		CALL EXP_CALC_TRAVEL, "乱交：互角", ASSI, 3
+		CALL EXP_CALC_TRAVEL, "乱交：互角", MASTER, 3
+		CALL EXP_CALC_TRAVEL, "絶頂", MASTER, 3 + RAND:3
+	ENDIF
+CASE "秘湯の温泉宿"
+;秘湯の場合は部屋のすぐ脇に露天風呂があるという設定で、お風呂に入りながら始めてしまう。
+	PRINTFORMW 部屋に備え付けられている露天風呂を頂くことにしました。
+	;（更新）口上の呼び出し
+	CALL SELF_KOJO, "秘湯お風呂"
+	PRINTFORM 部屋で浴衣を脱ぎ捨て向かったお風呂は、
+;お風呂の描写（フェーズ１）→あなたにTARGETがちょっかいを出すorペッティング・奉仕（フェーズ２）→性行為（フェーズ３）
+;フェーズ１：お風呂の様子、季節の描写、あなたやTARGETはどんな感じでお風呂を楽しんでいるのか？
+	;どんなお風呂？
+	SELECTCASE TEXTS("季節")
+	;桜
+	CASE "春"
+		PRINTFORMW 満開の桜が手の届くような所にあり、なんとも言えない風情を醸し出しています…
+	;月見
+	CASE "夏"
+		PRINTFORMW 湯面には見事な満月が映り込んでおり、雅致を凝らした露天風呂のようです…
+	;紅葉
+	CASE "秋"
+		PRINTFORMW 見事に紅葉した楓が部屋から漏れた明かりに照らされ、大変に風雅な装いとなっています…
+	;雪
+	CASE "冬"
+		PRINTFORMW 降り積もった雪の中に湯気が立ち、雅趣に富んだ露天風呂のように見えます…
+	ENDSELECT
+	;TARGETが楽しんでいる様子とMASTERの反応
+	PRINTFORM 一足先にお風呂に入った%CALLNAME:TARGET%は
+	SELECTCASE TEXTS("季節")
+	;桜
+	CASE "春"
+		PRINTFORMW 湯船の縁に腰掛け、散った桜の花びらを手の中で弄びながら、%CALLNAME:MASTER%にはやくこちらへ来るよう手招きをしています…
+		PRINTFORMW 手招きに応じて%CALLNAME:MASTER%が湯船に入ると、%CALLNAME:TARGET%がそっと肩を寄せてきました
+		PRINTFORMW 寄り添って湯船に浸かってみる夜桜はまた格別です…
+	;月見
+	CASE "夏"
+		PRINTFORMW 手ぬぐいを頭の上にのせ、さっそくこの景色のいい露天風呂を楽しんでいるようです…
+		PRINTFORMW くつろいだ様子の%CALLNAME:TARGET%に苦笑しながら、%CALLNAME:MASTER%はその隣に入り、同じように手ぬぐいを頭にのせ、肩を寄せ合います…
+		PRINTFORMW 湯温もちょうど良く、満月を眺めながらお湯に浸かっていると、まるで極楽にいるかのような心地よさに身体が包まれていき、日頃の疲れが嘘のように消えていきます…
+	;紅葉
+	CASE "秋"
+		PRINTFORMW 物憂げに紅葉を眺めていましたが、%CALLNAME:MASTER%に気付くと表情を変え、早く湯船に来るよう手招きをします…
+		PRINTFORMW 手招きに応じて%CALLNAME:MASTER%が湯船に入ると、%CALLNAME:TARGET%がそっと肩を寄せてきました
+		PRINTFORMW 寄り添って湯船に浸かってみる紅葉はまた格別です…
+	;雪
+	CASE "冬"
+		PRINTFORMW 、どこから持ち込んだのか湯船のなかでライスワインを楽しんでいます…！
+		PRINTFORMW 呆れた%CALLNAME:MASTER%でしたが、寒さから逃れようと湯船に入ったところで「まずは一献」と%CALLNAME:TARGET%にお猪口を勧められてしまいました…
+		PRINTFORMW 湯殿の中で頂くライスワインはまた格別の味で、身体の中と外から温まっていく心地よさに、つい杯を重ねてしまいます
+	ENDSELECT
+	;（更新）口上の呼び出し
+	CALL SELF_KOJO, "秘湯お風呂フェーズ１"
+;フェーズ２：TARGETのおねだり、性的な悪戯、泡踊り、キス、フェラ、手コキ、パイズリなど性行為未満、非処女の場合はここであなたに破瓜のおねだりをする
+	;破瓜のおねだり
+	IF TALENT:処女 && PENIS(MASTER)
+		PRINTFORMW 風情ある素晴らしい露天風呂を満喫した二人でしたが、しばらくすると、%CALLNAME:MASTER%へと%CALLNAME:TARGET%が肩を寄せてきました。
+		;（更新）口上の呼び出し
+		CALL SELF_KOJO, "秘湯お風呂フェーズ２：処女"
+		PRINTFORMW ほんのり頬を上気させ瞳を潤ませた%CALLNAME:TARGET%は、%CALLNAME:MASTER%に初めてを奪って欲しいとねだってきました…！
+		PRINTFORMW ここで受けねば男が廃ると、%CALLNAME:MASTER%は%CALLNAME:TARGET%を抱くと、湯殿の縁に座らせ、男を受け入れたことのないそこへ、そっと指を這わせます…
+		PRINTFORMW %CALLNAME:TARGET%のそこはお湯ではない液体で湿っており、%CALLNAME:MASTER%を迎え入れる準備は整っているようです…
+	ELSE
+		PRINTFORMW %CALLNAME:MASTER%が湯船を出て身体を洗おうと椅子に腰掛けると、%CALLNAME:TARGET%が「背中を流してあげる」と言って後ろから胸を押しつけてきました。
+		;（更新）口上の呼び出し
+		CALL SELF_KOJO, "秘湯お風呂フェーズ２開始：洗い"
+		;顔面騎乗+足コキ
+		IF TALENT:サド && PENIS(MASTER) && RAND:4 == 0
+			PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:MASTER%を仰向けに寝かせると、なんと、顔の上に腰を下ろしてきました！
+			PRINTFORMW もがく%CALLNAME:MASTER%を押さえつけ、%CALLNAME:TARGET%はサディスティックな笑みを浮かべると、脚をペニスの方へとそろりと伸ばしてきました
+			PRINTFORMW %CALLNAME:TARGET%は石けんで泡立つ両脚で%CALLNAME:MASTER%のペニスを挟み込み、ゆっくりと扱き上げてきます！
+			PRINTFORMW %CALLNAME:MASTER%は%CALLNAME:TARGET%のアソコに溺れそうになりながらペニスを責められ、為す術もなく果てさせられてしまいました…！
+			CALL EXP_CALC_TRAVEL, "顔面騎乗", TARGET, 1
+			CALL EXP_CALC_TRAVEL, "泡踊り", TARGET, 1
+			CALL EXP_CALC_TRAVEL, "足コキ", TARGET, 1
+			CALL EXP_CALC_TRAVEL, "絶頂", MASTER, 1
+		;胸を使う
+		ELSEIF PENIS(MASTER) && RAND:3 == 0
+			;巨乳以上
+			IF TALENT:巨乳 >= 1
+				PRINTFORMW %CALLNAME:TARGET%の豊満な胸は背中ばかりでなく腕や脚も包み込んで石けんの泡を擦りつけてきます
+				PRINTFORM 零れるような%CALLNAME:TARGET%の柔肉で焦らすように弄ばれた%CALLNAME:MASTER%は思わず欲情し、
+			;貧乳
+			ELSEIF TALENT:貧乳
+				PRINTFORMW %CALLNAME:TARGET%は起伏の緩やかな胸をそっと擦りつけるようにしながら背中に押しつけ、熱心に%CALLNAME:MASTER%の身体を洗っていきます…
+				PRINTFORM %CALLNAME:MASTER%は%CALLNAME:TARGET%の献身を嬉しく感じましたが、同時に背中に当たる%CALLNAME:TARGET%の胸の二つの頂きを感じ、
+			ELSE
+				PRINTFORMW %CALLNAME:TARGET%は柔らかな双丘をゆっくりと%CALLNAME:MASTER%の身体に這わせ、泡化粧を施していきます…
+				PRINTFORM %CALLNAME:MASTER%は%CALLNAME:TARGET%の献身を嬉しく感じましたが、同時に背中に当たる%CALLNAME:TARGET%の胸の二つの頂きを感じ、
+			ENDIF
+			PRINTFORMW 図らずもペニスを勃起させてしまいます…！
+			PRINTFORM それを見つけた%CALLNAME:TARGET%は%CALLNAME:MASTER%の前に回り込んで跪くと、
+			;巨乳以上
+			IF TALENT:巨乳 >= 1
+				PRINTFORMW 両側からペニスを胸で挟み込み、包み隠してしまいます。
+				PRINTFORMW %CALLNAME:TARGET%の乳房のまるで絡みついてくるかのような柔らかさに、%CALLNAME:MASTER%は搾られるような感覚を覚え、腰を震えさせてしまいます…
+				PRINTFORMW 胸の中で震えるペニスを感じ取った%CALLNAME:TARGET%はぺろりと舌なめずりをすると、さらに胸奉仕に熱を入れてきました…！
+				PRINTFORMW 急に強くなった刺激に%CALLNAME:MASTER%は堪えることも出来ず、そのまま、%CALLNAME:TARGET%の胸の中に精を放ってしまいました…
+			;貧乳
+			ELSEIF TALENT:貧乳
+				PRINTFORMW 硬く尖った胸の先端とペニスの先端をキスでもするかのように擦りつけてきます。
+				PRINTFORMW 上目遣いで%CALLNAME:MASTER%を挑発する%CALLNAME:TARGET%は、%CALLNAME:MASTER%がゴクリと息を呑んだのを見ると、薄い胸と%CALLNAME:MASTER%のお腹を使ってペニスを押し潰すようにして扱き上げてきました…！
+				PRINTFORMW 急に強くなった刺激に%CALLNAME:MASTER%は堪えることも出来ず、そのまま、%CALLNAME:TARGET%の顔めがけて精を噴き上げてしまいました…
+			ELSE
+				PRINTFORMW 石けんを泡立てた胸の谷間でペニスを挟み込んできます。
+				PRINTFORMW 柔らかく形を変える%CALLNAME:TARGET%の乳房でペニスを愛された%CALLNAME:MASTER%は、腰の奥からむずむずと射精感が登ってきたのを感じます…
+				PRINTFORMW 胸の間でいっそう熱く、大きくペニスが膨らんだのを感じた%CALLNAME:TARGET%はぺろりと舌なめずりをすると、さらに胸奉仕に熱を入れてきました…！
+				PRINTFORMW 急に強くなった刺激に%CALLNAME:MASTER%は堪えることも出来ず、そのまま、%CALLNAME:TARGET%の胸の谷間に精を放ってしまいました…
+			ENDIF
+			CALL EXP_CALC_TRAVEL, "泡踊り", TARGET, 1
+			CALL EXP_CALC_TRAVEL, "パイズリ", TARGET, 1
+			CALL EXP_CALC_TRAVEL, "絶頂", MASTER, 1
+		;フェラ・クンニ
+		ELSEIF RAND:2 == 0
+			PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:MASTER%を仰向けに寝かせると、逆さまに、６９の体勢で身体の上に跨がってきました。
+			IF PENIS(MASTER)
+				PRINTFORMW そうして%CALLNAME:MASTER%の天を衝くペニスに手を添え、舌をぬらりと這わせてきました。
+				IF GETBIT(TALENT:MASTER:ペニス, 12)
+					PRINTFORMW そして%CALLNAME:TARGET%は被ったままの皮とペニスの隙間に舌をねじ込み、刺激に不慣れなそこを強く抉ってきました…！
+				ELSEIF GETBIT(TALENT:MASTER:ペニス, 11)
+					PRINTFORMW そして%CALLNAME:TARGET%はペニスに被ったままの皮をそっと唇で啄むと、そのままゆっくりと皮を剥いてきました…！
+				ELSE
+					PRINTFORMW そして%CALLNAME:TARGET%は先端から根元まで清めるように舐め回し、%CALLNAME:MASTER%のペニスをてらてらと光る唾液の塔に仕立ててしまいます…
+				ENDIF
+				PRINTFORMW 存分に舌でペニスを弄んだ%CALLNAME:TARGET%は、%CALLNAME:MASTER%の反応をうかがいながら、貪るようにしゃぶりついてきました！
+				PRINTFORM 舌を絡めながらじゅぼじゅぼと淫らな音を立てペニスを貪る%CALLNAME:TARGET%に、呻くような声を上げさせられてしまいますが、
+				CALL EXP_CALC_TRAVEL, "フェラチオ", TARGET, 1
+			ELSE
+				PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:MASTER%のアソコへと舌をぬらりと這わせ、さらに包皮を被ったクリトリスをも苛めてきました…。
+				PRINTFORMW %CALLNAME:MASTER%は敏感なところを執拗に責めてくる%CALLNAME:TARGET%の舌に翻弄され、甘い声を漏らしてしまいますが、
+				CALL EXP_CALC_TRAVEL, "クンニさせる", TARGET, 1
+			ENDIF
+			PRINTFORM %CALLNAME:MASTER%も負けじと、
+			IF PENIS(TARGET)
+				PRINTFORMW 目の前にぶら下がる%CALLNAME:TARGET%のペニスにむしゃぶりついてやりました！
+				CALL EXP_CALC_TRAVEL, "フェラする", TARGET, 1
+			ELSE
+				PRINTFORMW 目の前で興奮に蜜を滴らせる%CALLNAME:TARGET%のアソコにむしゃぶりついてやりました！
+				CALL EXP_CALC_TRAVEL, "クンニ", TARGET, 1
+			ENDIF
+			PRINTFORMW 不意を突かれた%CALLNAME:TARGET%は悲鳴にも似た嬌声を上げますが、怯むどころか%CALLNAME:MASTER%を責める手を強めてきます…！
+			PRINTFORMW %CALLNAME:MASTER%と%CALLNAME:TARGET%は互いの腰を抱きながらお互いを舌で慰め合い、二人同時に絶頂に達してしまいました…！
+			CALL EXP_CALC_TRAVEL, "絶頂", TARGET, 1
+			CALL EXP_CALC_TRAVEL, "絶頂", MASTER, 1
+		;手コキ
+		ELSE
+			PRINTFORM %CALLNAME:TARGET%は胸を押しつけたまま、石けんを泡立てた手を%CALLNAME:MASTER%の
+			IF PENIS(MASTER)
+				PRINTFORMW ペニスへと伸ばしてきます…！
+				PRINTFORMW %CALLNAME:MASTER%はペニスを滑る指を押しとどめようとしますが、%CALLNAME:TARGET%はまったく意に介しません…
+				PRINTFORMW それどころか%CALLNAME:TARGET%の指の動きはエスカレートしていき、さらには攻め手に跳ねるペニスの反応を%CALLNAME:MASTER%の耳元で囁いてきます
+				PRINTFORMW そして%CALLNAME:TARGET%に耳たぶを噛まれた瞬間、%CALLNAME:MASTER%は堪えきれず、%CALLNAME:TARGET%の手の中に精液を吐き出してしまいました…
+			ELSE
+				PRINTFORMW アソコへと伸ばしてきます…！
+				PRINTFORMW %CALLNAME:MASTER%はアソコを撫で回してくる指押しとどめようとしますが、%CALLNAME:TARGET%はまったく意に介しません…
+				PRINTFORMW それどころか%CALLNAME:TARGET%の指の動きはエスカレートしていき、さらには指を迎え入れる%CALLNAME:MASTER%の膣内の様子を耳元で囁いてきます
+				PRINTFORMW そして%CALLNAME:TARGET%に耳たぶを噛まれた瞬間、%CALLNAME:MASTER%は堪えきれず、%CALLNAME:TARGET%の指でイカされてしまいました…
+			ENDIF
+			CALL EXP_CALC_TRAVEL, "手淫", TARGET, 1
+			CALL EXP_CALC_TRAVEL, "絶頂", MASTER, 1
+		ENDIF
+	ENDIF
+	PRINTFORML 
+	;（更新）口上の呼び出し
+	CALL SELF_KOJO, "秘湯お風呂フェーズ２"
+;フェーズ３：性行為
+	IF PENIS(MASTER)
+		IF TALENT:処女
+			PRINTFORMW %CALLNAME:TARGET%の願いを受け入れた%CALLNAME:MASTER%は、%CALLNAME:TARGET%を股の間に、そっと腰を押し入れていきます…
+			PRINTFORMW %CALLNAME:TARGET%の処女だというのに膣肉はとろとろに蕩けており、侵入してくる%CALLNAME:MASTER%のペニスに絡みついてきます…
+			PRINTFORMW そして、ぷつりという何かが切れた感覚とともに、%CALLNAME:TARGET%のアソコは%CALLNAME:MASTER%のペニスを奥まで受け入れてしまいます…
+			PRINTFORMW %CALLNAME:TARGET%は一言、「嬉しい」と囁き、破瓜の証と共に涙を零しています…
+			TALENT:処女 = 0
+			EXP:MASTER:処女簒奪経験 += 1
+			IF TALENT:MASTER:童貞
+				TALENT:MASTER:童貞 = 0
+				EXP:童貞狩り経験 += 1
+				EXP:経験値 += 1000
+				SETBIT TALENT:初めての人, 0
+				SETCOLOR DEF_COLOR("イエロー")
+				PRINTFORML %CALLNAME:TARGET%は%CALLNAME:MASTER%の%TALENTNAME:94%となった
+				PRINTFORML 経験値＋1000
+				RESETCOLOR
+			ENDIF
+
+			PRINTFORMW %CALLNAME:MASTER%は%CALLNAME:TARGET%が痛みに慣れるようゆっくりと腰を動かすと、そこは夢魔の性ゆえか、早くも甘い声を上げ、精を搾り取ろうとペニスを締め付けてきました…
+			PRINTFORMW %CALLNAME:TARGET%のいじらしい態度と、それに相反するような魔性の肉体に、%CALLNAME:MASTER%は理性を手放し、繋がり合う快楽溺れてしまいます…
+			PRINTFORM そして
+		ELSE
+			PRINTFORMW 興奮に火が付いた%CALLNAME:MASTER%は%CALLNAME:TARGET%をその場に押し倒し、誘うように揺れる腰を捕まえると、なお硬度を失わないペニスを後ろから突き入れました！
+			PRINTFORMW %CALLNAME:TARGET%の膣肉はとろとろに蕩けており、乱暴に突き入れられた%CALLNAME:MASTER%のペニスに絡みついてきます…
+			PRINTFORM %CALLNAME:MASTER%は「もっと」「激しく」とねだる%CALLNAME:TARGET%に応え、
+			IF RAND:3 == 0
+				PRINTFORMW %CALLNAME:TARGET%の両腕を掴むと、腰を引き寄せるようにして激しく突き込んでやりました…！
+			ELSEIF RAND:2 == 0
+				PRINTFORMW 尻を掴んで深く腰を押し込み、%CALLNAME:TARGET%の子宮をコツンと突き上げました…！
+			ELSE
+				PRINTFORMW 上体を屈めて強く腰を押し込み、%CALLNAME:TARGET%の膣内の天井を抉るように突き入れました…！
+			ENDIF
+			PRINTFORMW %CALLNAME:TARGET%は牝芯を貫く快楽に溺れ、%CALLNAME:MASTER%にペニスを打ち込まれるたびにはしたない声を上げています…
+		ENDIF
+		PRINTFORMW %CALLNAME:MASTER%は精を欲しがる%CALLNAME:TARGET%のアソコに搾られるがまま、子宮口に先端がめり込むほど深く強くペニスを打ち込むと、もの凄い量の精液を流し込みました…！
+		PRINTFORMW %CALLNAME:TARGET%は激しい絶頂にひくひくと身体を震わせながら、胎内を熱く満たしていく%CALLNAME:MASTER%の愛に目を閉じてうっとりと浸っています…
+		CALL EXP_CALC_TRAVEL, "正常位：中出し", TARGET, ABL:欲望 + 1 + RAND:5
+		CALL EXP_CALC_TRAVEL, "挿入子宮口責め", TARGET, 1
+	ELSE
+		IF PENIS(TARGET)
+			PRINTFORMW 興奮に火が付いた%CALLNAME:MASTER%は%CALLNAME:TARGET%をその場に押し倒すと、起立しているペニスへ狙いを定め、ゆっくりと腰を落としていきます…
+			PRINTFORMW %CALLNAME:TARGET%のペニスを飲み込んで行くにつれ、%CALLNAME:MASTER%の秘所からはペニスに押し出された蜜が、涎のように溢れ出していきます…
+			PRINTFORM %CALLNAME:TARGET%は自分のペニスを美味しそうにくわえ込む%CALLNAME:MASTER%を愛しく思い、%CALLNAME:MASTER%の腰を掴むと、
+			IF RAND:3 == 0
+				PRINTFORMW 腰を引き寄せるようにして激しく突き込んでやりました…！
+			ELSEIF RAND:2 == 0
+				PRINTFORMW 下から押し上げるように%CALLNAME:MASTER%の子宮をコツンと突き上げました…！
+			ELSE
+				PRINTFORMW 強く腰を押し込み、%CALLNAME:MASTER%の膣内の天井を抉るように突き入れました…！
+			ENDIF
+			PRINTFORMW %CALLNAME:MASTER%は%CALLNAME:TARGET%にペニスを打ち込まれるたびにはしたない声を上げさせられ、%CALLNAME:TARGET%に言わされるがままに、膣内射精のおねだりをさせられてしまいます…！
+			PRINTFORMW %CALLNAME:TARGET%は乱れる%CALLNAME:MASTER%の腰を引き寄せると、精を欲しがるアソコに搾られるがまま、子宮口に先端がめり込むほど深く強くペニスを打ち込み、もの凄い量の精液を流し込んできました…！
+			PRINTFORMW %CALLNAME:MASTER%は激しい絶頂にひくひくと身体を震わせながら、胎内を熱く満たしていく%CALLNAME:TARGET%の愛に目を閉じてうっとりと浸っています…
+			CALL EXP_CALC_TRAVEL, "騎乗位で犯す：中出し", TARGET, ABL:欲望 + 1 + RAND:5
+		ELSE
+			PRINTFORMW 興奮に火が付いた%CALLNAME:MASTER%は%CALLNAME:TARGET%をその場に押し倒すと股の間に脚を滑り込ませ、唇を重ねながら腰を押しつけます。
+			PRINTFORMW %CALLNAME:TARGET%と%CALLNAME:MASTER%の秘所が触れ合うとくちゅくちゅといやらしい音が響き、二人の理性は音を立てて崩れていきます…
+			PRINTFORMW 二人は行為をエスカレートさせ、露天風呂に嬌声を重ね、互いをより深く求め合い、愛を囁き合いながら乱れていきます…
+			CALL EXP_CALC_TRAVEL, "キス", TARGET, ABL:欲望 + 1 + RAND:5
+			CALL EXP_CALC_TRAVEL, "エースオブスペード", TARGET, ABL:欲望 + 1 + RAND:5
+		ENDIF
+	ENDIF
+	;（更新）口上の呼び出し
+	CALL SELF_KOJO, "秘湯お風呂フェーズ３"
+ENDSELECT
+
+
+SELECTCASE LOCALS
+CASE "小さな民宿"
+	CALL TRAVEL_TIME("夜", "小さな民宿", "宿泊部屋")
+CASE "温泉街の旅館"
+	CALL TRAVEL_TIME("夜", "温泉街の旅館", "宿泊部屋")
+CASE "秘湯の温泉宿"
+	CALL TRAVEL_TIME("夜", "秘湯の温泉宿", "離れの部屋")
+ENDSELECT
+;乱交描写
+SELECTCASE LOCALS
+;CASE "小さな民宿"
+;TARGETの破瓜おねだり・恋慕・淫乱の3分岐
+;適度にASSIも含めて乱交させる。
+
+;CASE "温泉街の旅館"
+;温泉での騒ぎを耳にした女将or仲居が参加して乱交
+;あなたが優勢パターンと劣勢パターンのみ
+;優勢パターンではとっかえひっかえ？
+;劣勢パターンでは浴衣の帯で腕を縛られる。レイプor逆レイプ展開。基本的にTARGETやASSIはあなたの味方はしない。
+;フェーズは2段階くらいがいい？　優劣は最初に決定し、フェーズの間で逆転することはない。
+
+CASE "秘湯の温泉宿"
+;温泉からそのまま続行
+;流れとしてはおおむね以下の通り
+;温泉から継続して性行為（フェーズ１）→小休止（お掃除フェラ等）（フェーズ２）→再び性行為（フェーズ３）
+;フェーズ１：性行為。お風呂から継続した形を意識する（ex:脱衣所で性行為（後背位か立ちバック？駅弁？）→そのまま繋がったまま部屋へと移動）
+PRINTFORMW 続きは部屋でとお風呂を切り上げた%CALLNAME:MASTER%と%CALLNAME:TARGET%でしたが、
+IF PENIS(MASTER)
+	;淫乱だとTARGETから誘うかも
+	IF TALENT:淫乱 && RAND:2 == 0
+		PRINTFORMW 逞しく勃起を続けたままの%CALLNAME:MASTER%のペニスを見た%CALLNAME:TARGET%は部屋に行くことすら我慢できなくなり、「ここで続きを」とペニスへ手を這わせながら身体を擦りつけてきました…！
+		;（更新）口上の呼び出し
+		CALL SELF_KOJO, "秘湯フェーズ１開始：誘い"
+		PRINTFORM 淫靡な誘惑に%CALLNAME:MASTER%はキスで答えると、%CALLNAME:TARGET%に壁に手を付かせ、後ろから
+	ELSE
+		PRINTFORMW 情欲に疼くのをどうにか堪えながら濡れた肌を拭っていく%CALLNAME:TARGET%の仕草に%CALLNAME:MASTER%は我慢できなくなり、結局その場で押し倒してしまいました！
+		;（更新）口上の呼び出し
+		CALL SELF_KOJO, "秘湯フェーズ１開始：襲い"
+		PRINTFORM %CALLNAME:MASTER%は四つん這いにさせた%CALLNAME:TARGET%の
+	ENDIF
+	PRINTFORMW 腰を抱えると、熱く蕩けたアソコへとペニスを押し込んでいきます…
+	PRINTFORMW 再び身体の芯を駆け上がってくる悦楽に%CALLNAME:TARGET%はもう声を抑えようとはせず、脱衣所に嬌声を響かせながら、%CALLNAME:MASTER%に合わせるように腰を揺らしています…
+	PRINTFORMW 先ほど以上に蕩けた媚肉はペニスから精液を貪欲に貪ろうと締め付けてきますが、%CALLNAME:MASTER%は湧き上がる射精感を歯を食いしばって堪え、力任せに%CALLNAME:TARGET%を突き、脱衣所から少しずつ、部屋の方へと移動していきます…
+	PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:MASTER%のペニスに押されるようによたよたと四つん這いで歩かされ、通り道には揺さぶられる身体から飛んだ雫や汗、真一文字に結んだ口から零れた涎、アソコから垂れる愛液と逆流してきた精液が点々と跡を描いていきます…
+	PRINTFORMW ようやくどうにかして布団にたどり着いた頃には二人とも限界で、%CALLNAME:MASTER%は%CALLNAME:TARGET%を布団に押しつけるように腰を押し出すと、一番深いところに精液を撃ち込んでいきます…！
+	PRINTFORMW %CALLNAME:TARGET%は言葉を忘れて絶頂に溺れ、%CALLNAME:MASTER%に愛されている悦びを噛みしめています…
+	CALL EXP_CALC_TRAVEL, "後背位：中出し", TARGET, 1
+ELSE
+	IF PENIS(TARGET)
+		PRINTFORMW 逞しく勃起を続けたままのペニスを持て余した%CALLNAME:TARGET%は、濡れた肌を拭う%CALLNAME:MASTER%の仕草に我慢なら無くなり、後ろから腰を掴むと、そのまま%CALLNAME:MASTER%のアソコへとペニスを押し込んできました…
+		;（更新）口上の呼び出し
+		CALL SELF_KOJO, "秘湯フェーズ１開始：襲われ"
+		PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:MASTER%の手を掴んで自由を奪うと、後ろから腰で小突いて、%CALLNAME:MASTER%をベッドルームへと歩かせていきます…
+		PRINTFORMW ひと突きされる毎に半歩進んでいく二人の結合部からは淫蜜と注がれた精液がペニスに押し出されて零れ、床に点々と跡を落としていきます…
+		PRINTFORMW ようやくどうにかして布団にたどり着いた頃には二人とも限界で、%CALLNAME:MASTER%は%CALLNAME:TARGET%に布団に押しつけられ、全体重を乗せるようにして腰を打ち込まれると、そのまま、一番深いところで精液を流し込まれてしまいます…！
+		PRINTFORMW %CALLNAME:MASTER%は言葉を忘れて膣内射精される快楽に溺れ、%CALLNAME:TARGET%と愛し合う悦びを噛みしめています…
+		CALL EXP_CALC_TRAVEL, "逆レイプ：中出し", TARGET, 1
+	ELSE
+		PRINTFORMW 互いに火の付いてしまった身体を押さえきれるはずもなく、湯で濡れた身体のままどちらからともなく抱き合い、脱衣所でお風呂場の続きを始めてしまいます…
+		;（更新）口上の呼び出し
+		CALL SELF_KOJO, "秘湯フェーズ１開始：レズ"
+		PRINTFORMW 二人はキスをしながら互いの身体をまさぐり合い、%CALLNAME:MASTER%も%CALLNAME:TARGET%も、お互いの手で自慰でもするかの如く慰め合います…
+		PRINTFORMW 酸欠に頭がくらくらとしますが、二人の行為は止まらず、アソコからははしたなく蜜が溢れ、部屋中にぐちゅぐちゅと卑猥な音が響き渡ってしまっています…
+		PRINTFORMW %CALLNAME:MASTER%と%CALLNAME:TARGET%の二人はほとんど同時に限界を迎え、その瞬間までキスを重ねたまま、絶頂を迎えてしまいます…
+		PRINTFORMW 頭が真っ白になってしまいそうな絶頂感に溺れながら、%CALLNAME:MASTER%と%CALLNAME:TARGET%は、愛し合っているという悦びを噛みしめています…
+		CALL EXP_CALC_TRAVEL, "キス", TARGET, 1
+		CALL EXP_CALC_TRAVEL, "エースオブスペード", TARGET, 1
+	ENDIF
+ENDIF
+;（更新）口上の呼び出し
+CALL SELF_KOJO, "秘湯フェーズ１終了"
+PRINTFORML 
+;フェーズ２：キス、フェラ、手コキ、パイズリなど性行為未満（ここでもサド系禁止）TARGETの欲情や好感度が振り切れてる感じを意識する。フェーズ２から場所は布団の上。
+IF PENIS(MASTER)
+	PRINTFORMW 最後の一滴まで出し切った%CALLNAME:MASTER%が%CALLNAME:TARGET%からペニスを引き抜くと、ぽっかりと開いたアソコから注ぎ込んだ精液が逆流してきます…
+	PRINTFORM 流石に軽く疲労感を覚えた%CALLNAME:MASTER%は%CALLNAME:TARGET%の隣に寝転がりますが、%CALLNAME:TARGET%の方はまだ足りないとでも言うかのように%CALLNAME:MASTER%の上になり、
+	;パイズリは巨乳以上限定
+	IF TALENT:巨乳 && RAND:4 == 0
+		PRINTFORMW どろどろに汚れたペニスを豊満な胸で包み込んできました…！
+		;（更新）口上の呼び出し
+		CALL SELF_KOJO, "秘湯フェーズ２開始：パイズリ"
+		PRINTFORMW %CALLNAME:TARGET%はペニスを拭うようにしながら、まるでペニスを窒息させるかのように胸で扱き上げてきます…
+		PRINTFORMW その心地よさに%CALLNAME:MASTER%が思わず上擦った声を漏らしてしまったことに%CALLNAME:TARGET%は気をよくし、奉仕に一層熱を込めてきました。
+		PRINTFORMW %CALLNAME:TARGET%の優しく、しかし追い詰めるように丁寧で執拗な奉仕に、%CALLNAME:MASTER%は果てたばかりのはずのペニスから、%CALLNAME:TARGET%の胸へと精を放ってしまいました…！
+		PRINTFORMW 腰を震えさせて射精の快楽に溺れる%CALLNAME:MASTER%の顔を見つめながら、%CALLNAME:TARGET%は胸を白く染めていく精液を愛しそうに受け止めています…
+		CALL EXP_CALC_TRAVEL, "パイズリ", TARGET, 1
+	;素股
+	ELSEIF RAND:3 == 0
+		PRINTFORMW どろどろに汚れたふとももで包み込んできました…！
+		;（更新）口上の呼び出し
+		CALL SELF_KOJO, "秘湯フェーズ２開始：素股"
+		PRINTFORMW %CALLNAME:TARGET%はペニスを濡らす粘液を利用し、強く、圧迫するように扱き上げてきます…
+		PRINTFORMW その心地よさに%CALLNAME:MASTER%が思わず上擦った声を漏らしてしまったことに%CALLNAME:TARGET%は気をよくし、奉仕に一層熱を込めてきました。
+		PRINTFORMW %CALLNAME:TARGET%の優しく、しかし追い詰めるように丁寧で執拗な奉仕に、%CALLNAME:MASTER%は果てたばかりのはずのペニスから、%CALLNAME:TARGET%の股の間へと精を放ってしまいました…！
+		PRINTFORMW 腰を震えさせて射精の快楽に溺れる%CALLNAME:MASTER%の顔を見つめながら、%CALLNAME:TARGET%は肌を濡らしていく精液を愛しそうに受け止めています…
+		CALL EXP_CALC_TRAVEL, "素股", TARGET, 1
+	;キス＋手コキ
+	ELSEIF RAND:2 == 0
+		PRINTFORMW 唇を深く重ねてきました…！
+		;（更新）口上の呼び出し
+		CALL SELF_KOJO, "秘湯フェーズ２開始：キス"
+		PRINTFORMW %CALLNAME:TARGET%の唇は%CALLNAME:MASTER%の唇を、舌を啄み、唾液を流し込み、くちゅちゅぷと卑猥な音を部屋に響かせます…
+		PRINTFORMW その一方で、%CALLNAME:TARGET%の指はつぅと%CALLNAME:MASTER%の肌を滑ると、下腹部を伝い、そして起立したままのペニスをついと摘んできました…！
+		PRINTFORMW %CALLNAME:TARGET%の指はまるで催促でもするかのように%CALLNAME:MASTER%のペニスを弄び、射精を促してきます…
+		PRINTFORMW そして%CALLNAME:MASTER%はそのまま%CALLNAME:TARGET%の指の誘惑に誘われるままに腰を震えさせ、精を放ってしまいました…！
+		PRINTFORMW %CALLNAME:TARGET%はペニスから吐き出されていく精液を残らず扱き搾りながら、愛しそうにキスを続けています…
+		CALL EXP_CALC_TRAVEL, "キス", TARGET, 1
+		CALL EXP_CALC_TRAVEL, "手淫", TARGET, 1
+	;お掃除フェラ
+	ELSE
+		PRINTFORMW 萎えかけたペニスへと唇を近づけてきました…！
+		;（更新）口上の呼び出し
+		CALL SELF_KOJO, "秘湯フェーズ２開始：お掃除される"
+		PRINTFORMW %CALLNAME:TARGET%はどろどろになっているペニスを舐めあげ、くわえ込んでちゅぷちゅぷと隅々までぬぐい始めます……
+		PRINTFORMW 亀頭をぺちょぺちょと舐め、裏を舌先でつうっとなぞり、中にまだ残った精液を優しく吸い上げる…
+		PRINTFORMW %CALLNAME:TARGET%の優しく丁寧な奉仕にすっかり萎えていたはずのペニスがもうぱんぱんに張り詰め、そして%CALLNAME:MASTER%はそのまま、大きく開けて待ち構えている%CALLNAME:TARGET%の口へと精を放ってしまいました…！
+		PRINTFORMW 腰を震えさせて吐き出されていく精液を、%CALLNAME:TARGET%は愛しそうに口で受け止めています…
+		CALL EXP_CALC_TRAVEL, "フェラチオ", TARGET, 1
+	ENDIF
+ELSE
+	;お掃除フェラ
+	IF PENIS(TARGET)
+		PRINTFORMW 最後の一滴まで出し切った%CALLNAME:TARGET%が%CALLNAME:MASTER%のアソコからペニスを引き抜くと、ぽっかりと開いたそこから、たっぷりと注ぎ込まれた精液がこぼれ落ちてきます…
+		PRINTFORMW %CALLNAME:TARGET%は激しい絶頂の余韻に浸る%CALLNAME:MASTER%の口元に、%CALLNAME:MASTER%の愛液と%CALLNAME:TARGET%の精液で濡れたペニスを突きつけてきました…
+		;（更新）口上の呼び出し
+		CALL SELF_KOJO, "秘湯フェーズ２開始：お掃除する"
+		PRINTFORMW %CALLNAME:MASTER%は少しだけためらいがちにお願いしてくる%CALLNAME:TARGET%にほほえみ返すと、ペニスの先端へそっとキスをし、くわえ込んでちゅぷちゅぷと隅々までぬぐってあげます。
+		PRINTFORMW 亀頭をぺちょぺちょと舐め、裏を舌先でつうっとなぞり、中にまだ残った精液を優しく吸い上げる……%CALLNAME:MASTER%のそんな優しく丁寧な奉仕に、%CALLNAME:TARGET%のペニスは再び力を取り戻していきます…
+		PRINTFORMW すっかり萎えていたはずの%CALLNAME:TARGET%のペニスはぱんぱんに張り詰め、今にも暴発しそうになっています…
+		PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:MASTER%の奉仕を少しでも長く味わおうとどうにか射精を堪えようとしていますが、%CALLNAME:MASTER%の熱のこもった口での愛撫に、堪らず精を解き放ってしまいました…！
+		PRINTFORMW %CALLNAME:TARGET%は喉の奥までペニスを受け入れ、こくこくと喉を鳴らして精液を受け入れていく%CALLNAME:MASTER%の頭を、愛しそうに髪を撫でています…
+		EXP:MASTER:お掃除フェラ経験 += 1
+		CALL EXP_CALC_TRAVEL, "フェラする：射精", TARGET, ABL:欲望 + 1 + RAND:3
+	ELSE
+		PRINTFORMW %CALLNAME:MASTER%と%CALLNAME:TARGET%は絶頂の熱を燻らせたまま互いの互いの身体を、まだ足りないとばかりに求め合います…
+		;（更新）口上の呼び出し
+		CALL SELF_KOJO, "秘湯フェーズ２開始：レズ"
+		PRINTFORMW %CALLNAME:MASTER%はしっとりと汗で濡れた%CALLNAME:TARGET%の肌へと舌を這わせ、唾液の跡を付けていきます…
+		PRINTFORMW %CALLNAME:TARGET%はその優しい愛撫に身を任せ、細い喉を仰け反らせて甘い声を響かせ…ひくりと身体を震わせて軽い絶頂を迎えてしまいます。
+		PRINTFORMW %CALLNAME:MASTER%は絶頂に震える%CALLNAME:TARGET%の身体を抱き、もう一度愛し合おうと囁き、頷いた%CALLNAME:TARGET%にそっと唇を重ねます…
+		CALL EXP_CALC_TRAVEL, "愛撫", TARGET, ABL:欲望 + 1 + RAND:3
+		CALL EXP_CALC_TRAVEL, "キス", TARGET, ABL:欲望 + 1 + RAND:3
+	ENDIF
+ENDIF
+CALL EXP_CALC_TRAVEL, "絶頂", MASTER, 1
+;（更新）口上の呼び出し
+CALL SELF_KOJO, "秘湯フェーズ２終了"
+PRINTFORML 
+;フェーズ３：性行為（我慢できなくなったTARGETに押し倒されるor押し倒させられる）（騎乗位or脚をがっちり腰に絡めての正常位or濃厚なキスをしながらの対面座位、背面座位→後背位or腰を打ち込むような正常位）など
+IF PENIS(MASTER)
+	;正常位
+	IF RAND:2 == 0
+		PRINTFORMW %CALLNAME:TARGET%の手で射精へと導かれてしまった%CALLNAME:MASTER%でしたが、興奮は冷めるどころかますます高まり、%CALLNAME:MASTER%は欲望のままに%CALLNAME:TARGET%を押し倒してしまいます…！
+		;（更新）口上の呼び出し
+		CALL SELF_KOJO, "秘湯フェーズ３開始：正常位"
+		PRINTFORMW 押し倒された%CALLNAME:TARGET%も興奮冷めやらぬのは同じようで、硬く勃起したままの%CALLNAME:MASTER%のペニスにほぐれたアソコを擦りつけ、それが欲しいと催促をしてきます…
+		PRINTFORMW %CALLNAME:MASTER%は%CALLNAME:TARGET%の腰へと手を伸ばし、口では愛を囁きながら、情欲に忠実に腰を押し込んでいきます…
+		PRINTFORMW 粘膜をかき分けていく感触を先端に感じながら、%CALLNAME:MASTER%のペニスは%CALLNAME:TARGET%の胎内へと呑み込まれ…こつん、と行き止まりに突き当たります…
+		PRINTFORMW 優しく、けれども貪欲に吸い付いてくる%CALLNAME:TARGET%の膣肉は得も言われぬ快楽をもたらし、%CALLNAME:MASTER%は呆気なく達してしまいそうになったのを歯を食いしばって堪えます。
+		PRINTFORMW 一方の%CALLNAME:TARGET%も雌芯を貫く快楽に背を反らし悶え、シーツに指を絡ませ踊り狂っています。
+		PRINTFORMW ほんの僅かに気を落ち着けることのできた%CALLNAME:MASTER%は、うねるように動く%CALLNAME:TARGET%の腰を引き寄せ、奥を狙ってこつこつと%CALLNAME:TARGET%を肉槍で刺し貫いてやりました。
+		PRINTFORMW %CALLNAME:TARGET%は嬌声混じりの悲鳴を上げ、%CALLNAME:MASTER%の背中に手を回し……手ばかりでなく、腰にも脚を絡めてきました…！
+		PRINTFORMW %CALLNAME:MASTER%が腰を引けば%CALLNAME:TARGET%が%CALLNAME:MASTER%を手と脚を使って引き戻し、逆に%CALLNAME:MASTER%が腰を押し込めば、逃げる%CALLNAME:TARGET%の腰を%CALLNAME:MASTER%が引き寄せる…
+		PRINTFORMW 深いところで繋がり合ったまま、二人は共に、絶頂へと駆け上がり……最後には唇を重ねながら達してしまいます…！
+		PRINTFORMW %CALLNAME:TARGET%の膣肉は絶頂に痙攣しながら精を搾り取ろうと収縮し、%CALLNAME:MASTER%はそれに応えて、ペニスの先端から欲の丈を吐き出します…
+		PRINTFORMW １回、２回、３回……ペニスが脈動する度に%CALLNAME:TARGET%はキスで塞がれた口の隙間から吐息を漏らし、愛する相手のもので胎内を満たされる悦びを噛みしめています…
+		PRINTFORMW 信じられないほど長く続いた射精がようやく収まり、二人は唇を離し、見つめ合いますが…
+		PRINTFORMW %CALLNAME:TARGET%の膣内に包まれたままの%CALLNAME:MASTER%のペニスはなおも萎えず猛り狂い、
+		PRINTFORMW %CALLNAME:MASTER%のペニスを咥え込んだままの%CALLNAME:TARGET%の子宮はなおも渇きを感じて疼いて止まらず…
+		PRINTFORMW どちらが始めたのか、そのまま抜かずの連戦を始めてしまいました…！
+		CALL EXP_CALC_TRAVEL, "正常位：中出し", TARGET, ABL:欲望 + 3 + RAND:3
+		CALL EXP_CALC_TRAVEL, "挿入子宮口責め", TARGET, 1 + RAND:3
+	;騎乗位
+	ELSE
+		PRINTFORMW %CALLNAME:MASTER%を巧みにその気にさせた%CALLNAME:TARGET%は、もう我慢できないといったふうに%CALLNAME:MASTER%を押し倒してきました…！
+		;（更新）口上の呼び出し
+		CALL SELF_KOJO, "秘湯フェーズ３開始：騎乗"
+		PRINTFORMW 腰の上に跨がる%CALLNAME:TARGET%は、粘液で濡れた%CALLNAME:MASTER%のペニスを手で弄びながら、その先端を自らの膣口へと導きます…
+		PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:MASTER%を見つめ、声を出さずに唇だけで『愛してる』と囁くと、ゆっくり、ゆっくり、ずぶずぶと腰を落としてきました…
+		PRINTFORMW 熱く蕩けた%CALLNAME:TARGET%の膣肉が、%CALLNAME:MASTER%のペニスの形を確かめるように絡みつき、纏わり付き、吸い付き…奥を叩かれば、きゅんと搾り取ろうとしてきます。
+		;巨根以上
+		IF SIZE("ペニス", MASTER) >= 2
+			PRINTFORM %CALLNAME:TARGET%の奥を叩いてなお余る%CALLNAME:MASTER%の肉竿を伝い、%CALLNAME:TARGET%の秘洞からあふれ出した蜜が
+			CALL EXP_CALC_TRAVEL, "挿入子宮口責め", TARGET, 1
+		ELSE
+			PRINTFORM %CALLNAME:MASTER%の肉竿を根元まで呑み込んだ%CALLNAME:TARGET%の秘洞は、繋がっている隙間からとろりと蜜を溢れさせ、
+		ENDIF
+		PRINTFORMW %CALLNAME:MASTER%の腰を温かく濡らしていきます…
+		PRINTFORMW %CALLNAME:MASTER%は雌芯を貫く快楽に悶える%CALLNAME:TARGET%から主導権を取り戻そうとしますが、%CALLNAME:TARGET%は起き上がろうとしたその胸をとんと押し、やおら腰を動かし始めます…
+		PRINTFORMW 腰砕けにならないよう歯を食いしばりながら、ゆっくりと腰を浮かせ……浮かせれば%CALLNAME:TARGET%の肉は%CALLNAME:MASTER%のペニスを恋しく思うのか放すまいと貪欲に吸い付き…
+		PRINTFORMW そうしてまた、そろそろと腰を下ろし……今度は%CALLNAME:TARGET%のアソコは%CALLNAME:MASTER%のペニスを抱擁するかのように優しく包み込んで…
+		PRINTFORMW 徐々にその速度を増し、声も高く甘くなってゆき……いつの間にか、%CALLNAME:MASTER%も%CALLNAME:TARGET%の腰の動きに合わせ、下から突き上げるようにして快楽を貪っていました…
+		PRINTFORMW 手と吐息を重ね合い、二人は共に、絶頂へと駆け上がり……まったく同時に達してしまいます…！
+		PRINTFORMW 腰と太腿を絶頂にひくつかせる%CALLNAME:TARGET%の奥へと、%CALLNAME:MASTER%は注ぎ込むように精を放ちます…
+		PRINTFORMW 先端に吸い付いてくる子宮口を、その奥を目掛け、あるいは欲張りな%CALLNAME:TARGET%に搾り取られるように、何度もペニスを脈動させ、粘塊を噴き上げる…
+		PRINTFORMW 信じられないほど長く続いた射精がようやく収まり、二人は余韻に頭を痺れさせながら肩を上下させながら、見つめ合います…
+		PRINTFORMW しかし、互いにこれだけでは収まりが付かず…そのまま抜かずの連戦を始めてしまいました…！
+		CALL EXP_CALC_TRAVEL, "騎乗位：中出し", TARGET, ABL:欲望 + 3 + RAND:3
+		CALL EXP_CALC_TRAVEL, "挿入子宮口責め", TARGET, 1
+	ENDIF
+ELSE
+	IF PENIS(TARGET)
+		PRINTFORMW %CALLNAME:MASTER%の口に青臭い精液をぶちまけた%CALLNAME:TARGET%でしたが、猛りは一向に収まらず、%CALLNAME:MASTER%に後ろを向かせると、そのままのし掛かってきました！
+		PRINTFORMW そして溢れる精液で滑る%CALLNAME:MASTER%のアソコへと、青筋が浮かぶほどいきり勃たせたペニスを腰を押し込むようにして突き入れてきます…！
+		;（更新）口上の呼び出し
+		CALL SELF_KOJO, "秘湯フェーズ３開始：襲われ"
+		PRINTFORMW %CALLNAME:MASTER%はほぐれた肉を陰茎で押し広げられ、大きく張ったエラに襞のひとつひとつを磨り潰されていく感覚に、鼻にかかった声を上げさせられてしまいます…
+		PRINTFORMW %CALLNAME:MASTER%が乱れるのを見た%CALLNAME:TARGET%は腰を抱え込むようにして、力強く腰を前後させ、部屋に肉がぶつかり合う音を響かせます。
+		PRINTFORMW 胎内に注がれた精液と情欲に濡れた%CALLNAME:MASTER%の蜜が、%CALLNAME:TARGET%がペニスを突き込む度に溢れだし、シーツに落ちて染みを作ります…
+		PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:MASTER%を抱きながら、上擦った声でどこに欲しいと聞いてきます…
+		PRINTFORMW %CALLNAME:MASTER%はペニスが磨り潰す身体の奥…子宮の欲求のままに、中に出してと嬌声混じりに懇願します…
+		PRINTFORMW %CALLNAME:TARGET%は返事をする代わりに、しゃくり上げるように腰を打ち込むと、子宮口に密着させたペニスの先端から熱い粘塊を解き放ちました…！
+		PRINTFORMW びぐびぐとペニスが脈動する度に吐き出される灼熱が胎内に溜まっていく感覚に、%CALLNAME:MASTER%は声を甘く踊らせて、絶頂に溺れます…
+		PRINTFORMW %CALLNAME:TARGET%が小さく呻きながら%CALLNAME:MASTER%の胎内に最後の一滴まで出し切り、ずるりとペニスを引き出すと、
+		PRINTFORMW だらしなく手足を投げ出し、腰だけを高く上げた%CALLNAME:MASTER%のアソコから、新しく注がれた精液がぼたぼたと、驚くほどたくさん溢れ出てきます…
+		PRINTFORMW その光景に再び劣情を催したのか、%CALLNAME:TARGET%の萎えかけたペニスは力を取り戻し、余韻に浸る%CALLNAME:MASTER%の鼻面にそれを押しつけ、続きをしようと誘ってきました…
+		PRINTFORMW %CALLNAME:MASTER%は思わず唾を飲み込み、こくりと頷いてしまいました…
+		CALL EXP_CALC_TRAVEL, "逆レイプ：中出し", TARGET, ABL:欲望 + 3 + RAND:3
+		CALL EXP_CALC_TRAVEL, "挿入子宮口責め", MASTER, 1
+	ELSE
+		PRINTFORMW %CALLNAME:MASTER%は重ねた唇を滑らせ、乳房をかき寄せるとその谷間に口づけをし、%CALLNAME:TARGET%のしっとりとした肌の感触に酔い痴れます…
+		;（更新）口上の呼び出し
+		CALL SELF_KOJO, "秘湯フェーズ３開始：レズ"
+		PRINTFORMW %CALLNAME:MASTER%に胸を自由にさせる間に、%CALLNAME:TARGET%は手を腰に回し、潤んだスリットへそっと指を這わせてきます。
+		PRINTFORMW 互いに小さな喘ぎと吐息を漏らし、お互いの身体に溺れ、けれどもすぐにそれだけでは物足りなってしまい、脚を太腿の間に割り込ませて、二人は自然と貝合わせの姿勢になり、腰を押し付け合います…
+		PRINTFORMW 下の口でキスをし合う度、粘液が淫らな音を立てますが、それらも興奮のスパイスとして行為を激しくしていきます。
+		PRINTFORMW 混ざり合った蜜に塗れたクリトリスを互いに擦りつけ合い、相手が細い喉を見せて仰け反れば、そこへキスをし、汗と快楽の味を愉しみます。
+		PRINTFORMW %CALLNAME:MASTER%と%CALLNAME:TARGET%はほとんど同時に絶頂を迎え、腰や太腿をひくつかせながら幸福感と心地よい疲労感に浸ります…
+		PRINTFORMW そうして絶頂の波が過ぎ去ると、ふたりはまた、男と違って限界というもののない行為にただただ溺れていきます…
+		CALL EXP_CALC_TRAVEL, "キス", TARGET, ABL:欲望 + 3 + RAND:3
+		CALL EXP_CALC_TRAVEL, "胸愛撫", TARGET, ABL:欲望 + 3 + RAND:3
+		CALL EXP_CALC_TRAVEL, "エースオブスペード", TARGET, ABL:欲望 + 3 + RAND:3
+	ENDIF
+	CALL EXP_CALC_TRAVEL, "絶頂", MASTER, ABL:欲望 + 3 + RAND:3
+ENDIF
+;（更新）口上の呼び出し
+CALL SELF_KOJO, "秘湯フェーズ３終了"
+PRINTFORMW 愛を囁き合い、欲を貪り合い、二人だけの、二人きりのキアズマの夜はとっぷりと更けていきます…
+;後で↓を移動させること！
+PRINTL 
+PRINTL ………………
+PRINTL …………
+PRINTW ……
+PRINTL 
+
+ENDSELECT
+
+;事後描写（今はとりあえず暫定描写）
+SELECTCASE LOCALS
+CASE "小さな民宿"
+	PRINTFORMW たっぷり温泉を楽しんだ%CALLNAME:MASTER%達は、部屋に戻ると今度は違った意味で温泉宿を楽しむことにしました…
+	PRINTFORMW 浴衣を脱ぎ捨て、布団の中で睦み合い、異国の夜はとっぷりと更けていきます…
+	CALL EXP_CALC_TRAVEL, "乱交：仲間", TARGET, ABL:欲望 + ABL:MASTER:欲望 + RAND:3
+CASE "温泉街の旅館"
+	IF RAND:3 == 0
+		PRINTFORMW 温泉で散々な目に遭った%CALLNAME:MASTER%は部屋に戻るなり用意されていた布団に突っ伏し、泥のような深い眠りに落ちてしまいます…
+		PRINTFORM まだまだ物足りない様子の%CALLNAME:TARGET%
+		SIF ASSI
+			PRINTFORM と%CALLNAME:ASSI%
+		PRINTFORMW は%CALLNAME:MASTER%を起こそうとしますが、文字通り精根尽き果てた%CALLNAME:MASTER%が起きる様子はまったくありません…
+		IF RAND:2 == 0
+			PRINTFORM 火照る身体を持て余した%CALLNAME:TARGET%
+			SIF ASSI
+				PRINTFORM と%CALLNAME:ASSI%
+			PRINTFORM は、なんと
+			IF RAND:2 == 0
+				PRINTFORMW %OKAMI%の部屋へ夜這いをかけたようです！
+			ELSE
+				PRINTFORMW お風呂で相手をした三人組の所へ遊びに行ったようです！
+			ENDIF
+			CALL EXP_CALC_TRAVEL, "乱交：互角", TARGET, ABL:欲望
+			SIF ASSI
+				CALL EXP_CALC_TRAVEL, "乱交：互角", ASSI, ABL:ASSI:欲望
+		ELSE
+			PRINTFORM 諦めた%CALLNAME:TARGET%
+			SIF ASSI
+				PRINTFORM と%CALLNAME:ASSI%
+			PRINTFORMW は%CALLNAME:MASTER%の布団に潜り込み、眠ったままの%CALLNAME:MASTER%を玩具にすることにしたようです…！
+			CALL EXP_CALC_TRAVEL, "乱交：仲間", TARGET, ABL:欲望 + RAND:3
+		ENDIF
+		PRINTFORM 翌朝になって目を覚ました%CALLNAME:MASTER%が見たのは、妙に艶々とした顔で高いびきを掻いている%CALLNAME:TARGET%
+		SIF ASSI
+			PRINTFORM と%CALLNAME:ASSI%
+		PRINTFORMW の寝顔でした…
+	ELSEIF RAND:2 == 0
+		PRINTFORMW 温泉で散々夢魔とまぐわった%CALLNAME:MASTER%でしたが、部屋に戻ってもその興奮は治まりきりません。
+		PRINTFORM そこで%CALLNAME:MASTER%は部屋へ戻るや否や%CALLNAME:TARGET%
+		SIF ASSI
+			PRINTFORM と%CALLNAME:ASSI%
+		PRINTFORM を押し倒し、
+		IF ASSI
+			PRINTFORM 二人
+		ELSE
+			PRINTFORM 彼女
+		ENDIF
+		PRINTFORMW の浴衣の下へ手を伸ばしました。
+		PRINTFORM 乱交の疲れの抜けきらない
+		IF ASSI
+			PRINTFORM 二人
+		ELSE
+			PRINTFORM %CALLNAME:TARGET%
+		ENDIF
+		PRINTFORMW はろくに抵抗も出来ず、%CALLNAME:MASTER%の愛撫にただ身を任せています…
+		PRINTFORM 部屋の中には夜遅くまで、%CALLNAME:TARGET%
+		SIF ASSI
+			PRINTFORM と%CALLNAME:ASSI%
+		PRINTFORMW の甘い声が響き渡りました…
+	ELSE
+		PRINTFORMW 温泉で散々な目に遭った%CALLNAME:MASTER%は部屋に戻るなり用意されていた布団に倒れ込み、そのまま寝ようとしました…
+		PRINTFORM しかし%CALLNAME:TARGET%
+		SIF ASSI
+			PRINTFORM と%CALLNAME:ASSI%
+		PRINTFORM はまだ満足していなかったらしく、横たわる%CALLNAME:MASTER%に圧し掛かりました！
+		PRINTFORM %CALLNAME:MASTER%がせめて一休みさせて欲しいと言っても
+		IF ASSI
+			PRINTFORM 二人
+		ELSE
+			PRINTFORM %CALLNAME:TARGET%
+		ENDIF
+		PRINTFORMW は聞く耳など持たず、%CALLNAME:MASTER%からするすると浴衣を剥ぎ取っていきます…
+		PRINTFORM しばらくは
+		IF ASSI
+			PRINTFORM 二人
+		ELSE
+			PRINTFORM %CALLNAME:TARGET%
+		ENDIF
+		PRINTFORMW に弄ばれ続けた%CALLNAME:MASTER%でしたが、最後には先程よりも激しくまぐわって、旅の思い出を増やしました…
+	ENDIF
+CASE "秘湯の温泉宿"
+	;（更新）口上の呼び出し
+	CALL SELF_KOJO, "秘湯翌朝開始"
+	PRINTFORMW そのまま朝まで互いを求め合った%CALLNAME:MASTER%と%CALLNAME:TARGET%…仲居さんが朝食を運んでくるまで交わり続けていました…
+	PRINTFORMW 恥ずかしいところを見られてしまった二人でしたが、%OKAMI%が部屋を出て行くとまたすぐに、行為の続きを始めてしまいます…
+	;（更新）口上の呼び出し
+	CALL SELF_KOJO, "秘湯翌朝終了"
+	PRINTFORMW 二人はそのまま、太陽が高く昇るまで愛を確かめ合っていました…
+	CALL EXP_CALC_TRAVEL, "乱交：仲間", TARGET, ABL:欲望 + ABL:MASTER:欲望 + RAND:3
+	
+ENDSELECT
+
+PRINTL 
+PRINTL ………………
+PRINTL …………
+PRINTW ……
+
+;得た経験の表示
+CALL SIMULATE_TRAIN_CALC
+CALL SIMULATE_TRAIN_SHOW
+
+
+SELECTCASE LOCALS
+CASE "小さな民宿"
+	CALL TRAVEL_TIME("翌日", "小さな民宿", "帰り支度")
+CASE "温泉街の旅館"
+	CALL TRAVEL_TIME("翌日", "温泉街の旅館", "帰り支度")
+CASE "秘湯の温泉宿"
+	CALL TRAVEL_TIME("翌日", "秘湯の温泉宿", "帰り支度")
+ENDSELECT
+PRINTFORMW そろそろ温泉をあとにする時間だ…
+PRINTL 
+
+$OMIYAGELOOP
+
+OMIYAGE = 
+
+PRINTFORML 旅の思い出にお土産を買っていきます。(所持金：%MONEY_C(MONEY)%)
+PRINTFORML 何を買いますか？
+;お土産は買うと確実に損をする（観光地価格）
+;ムーンドロップス×5個
+PRINTFORML   [0] 温泉ムーンドロップス　　　 $5,000
+PRINTFORML   [1] 特製入浴剤セット　　　　　 $2,000
+;インセンスセット
+PRINTFORML   [2] 厳選アロマセット　　　　　$10,000
+;ハズレアイテムからランダム（TARGETの好感度上昇）
+PRINTFORML   [3] %CALLNAME:TARGET%にお任せ %BL(16 - STRLENS(CALLNAME:TARGET) )% $??,???
+PRINTFORML [100] 買うのをやめる
+
+CALL INPUT_SELECT, 4, 100
+
+SELECTCASE RESULT
+CASE 100
+	PRINTFORMW お土産は旅の思い出だけに留めておくことにしました…
+CASE 0
+	IF ITEM:ムーンドロップス == 99
+		PRINTFORMW これ以上持てません！
+		GOTO OMIYAGELOOP
+	ELSEIF MONEY < 5000
+		PRINTFORMW お金が足りません！
+		GOTO OMIYAGELOOP
+	ENDIF
+	PRINTFORMW %CALLNAME:MASTER%は温泉ムーンドロップスの詰め合わせを買っていくことにしました…
+	PRINTFORMW これならばあとで皆で分けられるだろう…しかし普通のものとどこか違うのだろうか？
+	IF ITEM:ムーンドロップス >= 95
+		ITEM:ムーンドロップス += 99 - ITEM:ムーンドロップス
+	ELSE
+		ITEM:ムーンドロップス += 5
+	ENDIF
+	MONEY -= 5000
+	OMIYAGE = ムーンドロップス
+CASE 1
+	IF ITEM:入浴剤 == 99
+		PRINTFORMW これ以上持てません！
+		GOTO OMIYAGELOOP
+	ELSEIF MONEY < 2000
+		PRINTFORMW お金が足りません！
+		GOTO OMIYAGELOOP
+	ENDIF
+	PRINTFORMW %CALLNAME:MASTER%は温泉気分を味わえるという入浴剤セットを買っていくことにしました…
+	PRINTFORMW 館へ戻っても温泉気分を味わえることだろう…
+
+	ITEM:入浴剤 = MIN(ITEM:入浴剤 + 10, 99)
+	MONEY -= 2000
+	OMIYAGE = 入浴剤
+CASE 2
+	;どれかひとつでも持てるようなら続行する
+	IF ITEM:ジャスミン == 99 && ITEM:ラヴェンダー == 99 && ITEM:ムスク == 99 && ITEM:フランキンセンス == 99
+		PRINTFORMW これ以上持てません！
+		GOTO OMIYAGELOOP
+	ELSEIF MONEY < 10000
+		PRINTFORMW お金が足りません！
+		GOTO OMIYAGELOOP
+	ENDIF
+	PRINTFORMW %CALLNAME:MASTER%は特製アロマセットを買っていくことにしました…
+	PRINTFORMW 調教の時に使えばさぞかしムードが上がることだろう…
+
+	ITEM:ジャスミン = MIN(ITEM:ジャスミン + 5, 99)
+	ITEM:ラヴェンダー = MIN(ITEM:ラヴェンダー + 4, 99)
+	ITEM:ムスク = MIN(ITEM:ムスク + 3, 99)
+	ITEM:フランキンセンス = MIN(ITEM:フランキンセンス + 1, 99)
+
+	MONEY -= 10000
+	OMIYAGE = アロマセット
+CASE 3
+	PRINTFORMW %CALLNAME:MASTER%は%CALLNAME:TARGET%にお土産選びを任せることにしました…
+	;お土産の値段
+	;高額パターン
+	IF RAND:2 == 0
+		LOCAL = 3000 + RAND:3000
+	ELSE
+		LOCAL = 100 * (1 + RAND:3)
+	ENDIF
+
+	IF RAND:2 == 0
+		;露骨にハズレっぽいもの
+		IF RAND:2 == 0
+			OMIYAGE = %TEXTR("木彫りの熊", "アレな形のコケシ", "エクスカリバー(木刀)", "スケスケ浴衣（濡れると透けるよ！）", "旅館のミニチュア貯金箱", "春画トランプ", "砂時計セット（10種類入り）")%
+		;女の子が選びそうなもの
+		ELSE
+			OMIYAGE = %TEXTR("藍染めの着物", "アヤメの髪飾り", "美肌泥パックセット", "ぽっくり下駄", "キアズマ風ティーセット")%
+		ENDIF
+		PRINTFORMW %CALLNAME:TARGET%は『%OMIYAGE%』を見つめています…
+		PRINTFORML 値札には%MONEY_C(LOCAL)%と書いてあるようです。
+		IF LOCAL >= 3000
+			PRINTFORM 少々値が張る逸品ですが
+		ELSE
+			PRINTFORM 安すぎて逆に不安になる値段ですが
+		ENDIF
+	;ぼったくり？
+	ELSE
+		OMIYAGE = %TEXTR("竹とんぼ", "一本歯の高下駄", "ガラス細工の風鈴", "かざぐるま", "竹馬", "ほっぺの落ちる温泉饅頭セット", "できたて特製温泉卵")%
+		PRINTFORMW %CALLNAME:TARGET%は『%OMIYAGE%』を見つめています…
+		PRINTFORML 値札には%MONEY_C(LOCAL)%と書いてあるようです。
+		IF LOCAL >= 3000
+			PRINTFORM ぼったくりかと思うような価格ですが
+		ELSE
+			PRINTFORM 相応の値段のように思えますが
+		ENDIF
+	ENDIF
+	PRINTFORMW ……これを買ってあげますか？
+	PRINTL [0] はい
+	PRINTL [1] いいえ
+	CALL INPUT_SELECT, 2
+	IF RESULT == 0
+		IF MONEY < LOCAL
+			PRINTFORMW お金が足りません！
+			GOTO OMIYAGELOOP
+		ELSE
+			PRINTFORM なんだか%CALLNAME:TARGET%との絆が
+			IF LOCAL >= 30000
+				PRINTFORM とても
+			ELSE
+				PRINTFORM ほんの少しだけ
+			ENDIF
+			PRINTFORMW 強くなったような気がします…
+			;TARGETの好感度上昇
+			CFLAG:2 += LOCAL / 100
+			MONEY -= LOCAL
+		ENDIF
+	ELSEIF RESULT == 1
+		PRINTFORMW %CALLNAME:MASTER%は「別のものを」と%CALLNAME:TARGET%を諭し、お土産を選び直すことにしました…
+		GOTO OMIYAGELOOP
+	ENDIF
+ENDSELECT
+
+;買ったお土産の記録など
+IF OMIYAGE != ""
+	;所持土産の追加
+	OMIYAGE:1 = 土産：%OMIYAGE%
+	CALL SET_CEVENT, OMIYAGE:1
+
+	;最新土産の更新
+	CALL DEL_CEVENT_GROUP, "最新土産"
+	OMIYAGE:2 = 最新土産：%OMIYAGE%
+	CALL SET_CEVENT, OMIYAGE:2
+
+	CALL SELF_KOJO, "お土産"
+ENDIF
+PRINTL 
+PRINTL 
+
+;帰りの描写
+PRINTFORMW 帰り支度を済ませ、いよいよ宿を後にします。
+PRINTFORMW チェックアウトを済ませた%CALLNAME:MASTER%達は宿を後にし、女将の%OKAMI%の粋な計らいで使わせてもらえることになった転送魔法の魔方陣へと向かいます。
+PRINTFORM %CALLNAME:TARGET%
+SIF ASSI
+	PRINTFORM 達
+PRINTFORMW も今回の旅には満足したようで、見送りの%OKAMI%達に手を振っています。
+PRINTFORM %CALLNAME:MASTER%
+IF ASSI
+	PRINTFORM 達
+ELSE
+	PRINTFORM と%CALLNAME:TARGET%
+ENDIF
+PRINTFORMW はまだまだ名残惜しい気持ちでいっぱいでしたが、日常と戻るべく、魔方陣の中へと足を踏み入れました…
+;（更新）口上の呼び出し
+CALL SELF_KOJO, "帰宅"
+PRINTL 
+PRINTL ………………
+PRINTL …………
+PRINTW ……
+
+;欲求不満解消
+CALL CALC, "欲求不満解消", TARGET, 30
+IF ASSI
+	CALL CALC, "欲求不満解消", ASSI, 30
+	;かなり仲良くなる
+	CALL CHANGE_RELATION, 10, TARGET, ASSI
+ENDIF
+
+DELCHARA MOB
+
+;-------------------------------------------------
+;旅行中でのみ使う関数とか
+;-------------------------------------------------
+@TRAVEL_TIME(ARGS, ARGS:1, ARGS:2)
+;ARGSは時間、ARGS:1は大まかな場所、ARG:2は場所詳細ややってること
+;TRAVEL_TIME(夕方, 温泉旅館, 大浴場)で↓こんな感じに表示
+;--------------------------------------------------------
+;夕方：温泉旅館・大浴場
+;--------------------------------------------------------
+PRINTL 
+DRAWLINE
+PRINTFORML %ARGS%：%ARGS:1%・%ARGS:2%
+DRAWLINE
+PRINTL 
+
+;--------------------------------------------------------
+;温泉におけるエロイベントでの経験増加関数
+;ARGSはシチュエーションでARGはそのコマンドにおけるTARGETでARG:1は回数
+;--------------------------------------------------------
+@EXP_CALC_TRAVEL, ARGS, ARG, ARG:1
+#DIM LCOUNT
+
+SIF ARG <= 0
+	RETURN 0
+
+;どのコマンドに対応しているかを見る
+SELECTCOM = -1
+
+SELECTCASE ARGS
+CASE "顔面騎乗"
+	SELECTCOM = 1
+CASE "フェラする：射精"
+	EXP:ARG:射精経験 += ARG:1
+	EXP:PLAYER:精液経験 += ARG:1 * 3
+	CALL SETFLAG, "精飲経験", ARG:1, PLAYER, ARG
+	SELECTCOM = 4
+CASE "フェラチオ：射精"
+	EXP:PLAYER:射精経験 += ARG:1
+	EXP:ARG:精液経験 += ARG:1 * 3
+	CALL SETFLAG, "精飲経験", ARG:1, ARG, PLAYER
+	SELECTCOM = 91
+CASE "正常位：中出し"
+	EXP:PLAYER:射精経験 += ARG:1
+	EXP:ARG:精液経験 += ARG:1 * 2
+	CALL SETFLAG, "膣内精液経験", ARG:1, ARG
+	SELECTCOM = 60
+CASE "後背位：中出し"
+	EXP:PLAYER:射精経験 += ARG:1
+	EXP:ARG:精液経験 += ARG:1 * 2
+	CALL SETFLAG, "膣内精液経験", ARG:1, ARG
+	SELECTCOM = 61
+CASE "対面座位：中出し"
+	EXP:PLAYER:射精経験 += ARG:1
+	EXP:ARG:精液経験 += ARG:1 * 2
+	CALL SETFLAG, "膣内精液経験", ARG:1, ARG
+	SELECTCOM = 63
+CASE "背面座位：中出し"
+	EXP:PLAYER:射精経験 += ARG:1
+	EXP:ARG:精液経験 += ARG:1 * 2
+	CALL SETFLAG, "膣内精液経験", ARG:1, ARG
+	SELECTCOM = 64
+CASE "騎乗位：中出し"
+	EXP:PLAYER:射精経験 += ARG:1
+	EXP:ARG:精液経験 += ARG:1 * 2
+	CALL SETFLAG, "膣内精液経験", ARG:1, ARG
+	SELECTCOM = 65
+CASE "逆レイプ：中出し"
+	EXP:ARG:射精経験 += ARG:1
+	EXP:PLAYER:精液経験 += ARG:1 * 2
+	CALL SETFLAG, "膣内精液経験", ARG:1, PLAYER, ARG
+	SELECTCOM = 120
+CASE "騎乗位で犯す：中出し"
+	EXP:ARG:射精経験 += ARG:1
+	EXP:PLAYER:精液経験 += ARG:1 * 2
+	CALL SETFLAG, "膣内精液経験", ARG:1, PLAYER, ARG
+	SELECTCOM = 122
+CASE "逆アナル：中出し"
+	EXP:ARG:射精経験 += ARG:1
+	EXP:PLAYER:精液経験 += ARG:1 * 2
+	CALL SETFLAG, "肛内精液経験", ARG:1, PLAYER, ARG
+	SELECTCOM = 126
+CASEELSE
+	FOR LCOUNT, 0, 300
+		SELECTCASE TRAINNAME:LCOUNT
+		CASE "ARGS"
+			SELECTCOM = LCOUNT
+			BREAK
+		ENDSELECT
+	NEXT
+ENDSELECT
+
+VARSET LOCAL
+
+SELECTCASE ARGS
+CASE "絶頂"
+	SIF PENIS(ARG)
+		EXP:ARG:射精経験 += ARG:1
+	SIF TALENT:ARG:オトコ == 0
+		EXP:ARG:絶頂経験 += ARG:1
+CASE "公開自慰"
+	EXP:ARG:自慰経験 += ARG:1
+	EXP:ARG:露出経験 += ARG:1 * 2
+CASE "ＮＴＲセックス"
+	EXP:ARG:Ｖ経験 += ARG:1
+	EXP:ARG:Ｖ性交経験 += ARG:1
+	EXP:ARG:腰使い経験 += ARG:1
+	EXP:ARG:精液経験 += ARG:1
+	CALL SETFLAG, "膣内精液経験", ARG:1/2, ARG
+CASE "乱交：仲間"
+	FOR LCOUNT, 0, 1 + (TARGET:1 > 0)
+		SWAP TARGET, TARGET:LCOUNT
+
+		CALL SIMULATE_TRAIN_COM, 1, ARG:1/(2 + RAND:4)
+		CALL COM_ABLE65
+		SIF RESULT && TALENT:処女 + TALENT:妊娠 + TALENT:MASTER:童貞 == 0
+			CALL SIMULATE_TRAIN_COM, 65, ARG:1/(2 + RAND:2)
+		CALL COM_ABLE75
+		SIF RESULT && TALENT:Ａ処女 + TALENT:MASTER:童貞 == 0 && ABL:Ａ感覚 >= MAX(3, ABL:Ｖ感覚 - 1)
+			CALL SIMULATE_TRAIN_COM, 75, ARG:1/(2 + RAND:4)
+		CALL COM_ABLE80
+		SIF RESULT
+			CALL SIMULATE_TRAIN_COM, 80, ARG:1/(2 + RAND:4)
+		CALL SIMULATE_TRAIN_COM, 91, ARG:1/(2 + RAND:3)
+
+		SWAP TARGET, TARGET:LCOUNT
+	NEXT
+;今の所差はなし
+CASE "乱交：勝利", "乱交：互角"
+	SIF PENIS(ARG)
+		EXP:ARG:射精経験 += ARG:1
+	SIF TALENT:ARG:オトコ == 0
+		EXP:ARG:絶頂経験 += ARG:1
+	IF TALENT:ARG:処女 == 0 && ABL:ARG:Ｖ感覚 >= 3 && EXP:ARG:Ｖ性交経験 >= MAX(20, EXP:ARG:Ａ性交経験/4)
+		LOCAL = RAND:(1 + ARG:1) + ARG:1
+		;MASTERがペニス持ちなら経験多め
+		SIF PENIS(MASTER) == 0 || EXP:MASTER:Ｖ挿入経験 < MAX(20, EXP:MASTER:Ａ挿入経験/4)
+			LOCAL /= 3
+		EXP:ARG:Ｖ経験 += LOCAL
+		EXP:ARG:Ｖ性交経験 += LOCAL
+		EXP:ARG:腰使い経験 += LOCAL
+
+		SELECTCASE ARG
+		CASE TARGET
+			IF PENIS(PLAYER)
+				EXP:ARG:精液経験 += LOCAL
+				CALL SETFLAG, "膣内精液経験", LOCAL/2, ARG
+			ENDIF
+		CASE PLAYER
+			IF PENIS(TARGET)
+				EXP:ARG:精液経験 += LOCAL
+				CALL SETFLAG, "膣内精液経験", LOCAL/2, ARG, TARGET
+			ENDIF
+		ENDSELECT
+
+		IF PENIS(MASTER) && EXP:MASTER:Ｖ挿入経験 >= MAX(20, EXP:MASTER:Ａ挿入経験/4)
+			EXP:MASTER:Ｖ挿入経験 += LOCAL/2
+			EXP:MASTER:腰使い経験 += LOCAL/2
+			EXP:MASTER:射精経験 += LOCAL/3
+		ENDIF
+	ENDIF
+	IF TALENT:ARG:Ａ処女 == 0 && ABL:ARG:Ａ感覚 >= 3 && EXP:ARG:Ａ性交経験 >= MAX(20, EXP:ARG:Ｖ性交経験/4)
+		LOCAL = RAND:(1 + ARG:1) + ARG:1
+		;MASTERがペニス持ちなら経験多め
+		SIF PENIS(MASTER) == 0 || EXP:MASTER:Ａ挿入経験 < MAX(20, EXP:MASTER:Ｖ挿入経験/4)
+			LOCAL /= 3
+		EXP:ARG:Ａ経験 += LOCAL
+		EXP:ARG:Ａ性交経験 += LOCAL
+		EXP:ARG:腰使い経験 += LOCAL
+
+		SELECTCASE ARG
+		CASE TARGET
+			IF PENIS(PLAYER)
+				EXP:ARG:精液経験 += LOCAL
+				CALL SETFLAG, "肛内精液経験", LOCAL/2, ARG
+			ENDIF
+		CASE PLAYER
+			IF PENIS(TARGET)
+				EXP:ARG:精液経験 += LOCAL
+				CALL SETFLAG, "肛内精液経験", LOCAL/2, ARG, TARGET
+			ENDIF
+		ENDSELECT
+
+		IF PENIS(MASTER) && EXP:MASTER:Ａ挿入経験 >= MAX(20, EXP:MASTER:Ｖ挿入経験/4)
+			EXP:MASTER:Ａ挿入経験 += LOCAL/2
+			EXP:MASTER:腰使い経験 += LOCAL/2
+			EXP:MASTER:射精経験 += LOCAL/3
+		ENDIF
+	ENDIF
+	IF PENIS(ARG) && EXP:ARG:Ｖ挿入経験 >= MAX(20, EXP:ARG:Ａ挿入経験/4)
+		LOCAL = RAND:(1 + ARG:1) + ARG:1
+		EXP:ARG:Ｖ挿入経験 += LOCAL
+		EXP:ARG:腰使い経験 += LOCAL
+		EXP:ARG:射精経験 += LOCAL/3
+	ENDIF
+	IF PENIS(ARG) && EXP:ARG:Ａ挿入経験 >= MAX(20, EXP:ARG:Ｖ挿入経験/4)
+		LOCAL = RAND:(1 + ARG:1) + ARG:1
+		EXP:ARG:Ａ挿入経験 += LOCAL
+		EXP:ARG:腰使い経験 += LOCAL
+		EXP:ARG:射精経験 += LOCAL/3
+	ENDIF
+	SIF ABL:ARG:ＢＬっ気 >= 3 || TALENT:ARG:オトコ == 0
+		EXP:ARG:フェラ経験 += RAND:(1 + ARG:1)
+	SIF ABL:ARG:レズっ気 || TALENT:ARG:オトコ
+		EXP:ARG:クンニ経験 += RAND:(1 + ARG:1)
+	SIF COND("指の使用", ARG)
+		EXP:ARG:手淫経験 += RAND:(1 + ARG:1)
+	SIF COND("脚の使用", ARG) && ABL:ARG:足使い
+		EXP:ARG:足コキ経験 += RAND:(1 + ARG:1)
+	SIF TALENT:ARG:オトコ == 0 && TALENT:ARG:貧乳 == 0 && ABL:ARG:魔乳
+		EXP:ARG:パイズリ経験 += RAND:(1 + ARG:1)
+	SIF ABL:ARG:サドっ気 && EXP:ARG:Ａ責め経験 >= 20
+		EXP:ARG:Ａ責め経験 += RAND:(1 + ARG:1)
+ENDSELECT
+
+SIF SELECTCOM < 0
+	RETURN 0
+
+SIF ARG != PLAYER
+	SWAP TARGET, ARG
+
+CALL CALC, "経験取得", SELECTCOM, ARG:1
+
+SIF ARG != PLAYER
+	SWAP TARGET, ARG

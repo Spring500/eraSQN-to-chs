@@ -1,0 +1,624 @@
+﻿;能力アップ可否判定追加版
+@SHOW_JUEL
+#DIM MEMO_FLAG99
+;調教中フラグ記憶
+MEMO_FLAG99 = FLAG:99
+
+PRINTL 
+;調教中フラグON
+SETBIT FLAG:99, 10
+
+CALL NEW_PRINT_STATE, TARGET, "ＬＶＵＰ"
+
+;調教中フラグ戻す
+FLAG:99 = MEMO_FLAG99
+
+@SHOW_ABLUP_SELECT
+CALL PRINT_SHOW_ABLUP_SELECT
+
+
+;ARGSに"予定"と入っているとレベルアップ可能かどうかなどだけ表示される（宝珠取得予定数で用いる）
+@PRINT_SHOW_ABLUP_SELECT, ARGS
+#DIM LCOUNT
+#DIM ABL_NUM
+
+;ABL_NUMを用いて、表示順番とＡＢＬの番号を調整して表示する
+FOR LCOUNT, 0, 18
+	SELECTCASE LCOUNT
+	CASE 4
+		ABL_NUM = LCOUNT
+		SIF TALENT:オトコ
+			CONTINUE
+	CASE 6
+		ABL_NUM = 14
+	CASE 7
+		ABL_NUM = 16
+	CASE 8
+		ABL_NUM = 6
+	CASE 9
+		ABL_NUM = 7
+	CASE 10
+		ABL_NUM = 8
+	CASE 11
+		ABL_NUM = 15
+	CASE 12
+		SIF TALENT:オトコ
+			CONTINUE
+		ABL_NUM = 9
+	CASE 13
+		ABL_NUM = 10
+	CASE 14
+		ABL_NUM = 11
+	CASE 15
+		SIF TALENT:オトコ == 0
+			CONTINUE
+		ABL_NUM = 13
+	CASE 16
+		SIF TALENT:オトコ
+			CONTINUE
+		;上限を上回っている場合には戻す
+		ABL:Ｖ拡張 = MIN(CALCF("Ｖ拡張の上限", TARGET), ABL:Ｖ拡張)
+		;ＶＡ拡張度を手動であげない場合は、自動的に最大レベルになる
+		IF CONFIG("ＶＡ詳細表示：手動ＬＶＵＰ") == 0
+			ABL:Ｖ拡張 = CALCF("Ｖ拡張の上限", TARGET)
+			CONTINUE
+		ELSE
+			ABL_NUM = 23
+		ENDIF
+	CASE 17
+		;上限を上回っている場合には戻す
+		ABL:Ａ拡張 = MIN(CALCF("Ａ拡張の上限", TARGET), ABL:Ａ拡張)
+		;ＶＡ拡張度を手動であげない場合は、自動的に最大レベルになる
+		IF CONFIG("ＶＡ詳細表示：手動ＬＶＵＰ") == 0
+			ABL:Ａ拡張 = CALCF("Ａ拡張の上限", TARGET)
+			CONTINUE
+		ELSE
+			ABL_NUM = 26
+		ENDIF
+	CASEELSE
+		ABL_NUM = LCOUNT
+	ENDSELECT
+
+	VARSET LOCALS
+
+	LOCALS = %ABLNAME:ABL_NUM%
+	CALL ISABLUP, LOCALS
+	SIF RESULT && ABL:ABL_NUM < NUM("最大レベル", ABL_NUM)
+		LOCALS:1 = ☆レベルアップ可能☆%BL(1)%
+
+	;特殊な習得
+	SELECTCASE ABL_NUM
+	CASE 0
+		SIF CONFIG("恋慕と淫乱の任意獲得") && COND("恋慕取得可能")
+			LOCALS:1 = %LOCALS:1%☆恋慕☆
+	CASE 1
+		SIF CONFIG("恋慕と淫乱の任意獲得") && COND("淫乱取得可能")
+			LOCALS:1 = %LOCALS:1%☆淫乱☆
+	CASE 2
+		SIF COND("アルカナ習得可能")
+			LOCALS:1 = %LOCALS:1%☆アルカナ習得可能☆
+	CASE 3
+		SIF COND("淫核取得不可能") == 0
+			LOCALS:1 = %LOCALS:1%☆淫核☆
+		SIF COND("尿道狂い取得不可能") == 0
+			LOCALS:1 = %LOCALS:1%☆尿道狂い☆
+	CASE 4
+		SIF COND("淫壷取得不可能") == 0
+			LOCALS:1 = %LOCALS:1%☆淫壷☆
+	CASE 5
+		SIF COND("尻穴狂い取得不可能") == 0
+			LOCALS:1 = %LOCALS:1%☆尻穴狂い☆
+	CASE 7
+		SIF COND("倒錯的取得不可能") == 0
+			LOCALS:1 = %LOCALS:1%☆倒錯的☆
+	CASE 8
+		SIF COND("マゾ取得不可能") == 0
+			LOCALS:1 = %LOCALS:1%☆マゾ☆
+	CASE 14
+		SIF COND("淫乳取得不可能") == 0
+			LOCALS:1 = %LOCALS:1%☆淫乳☆
+	CASE 15
+		SIF COND("サド取得不可能") == 0
+			LOCALS:1 = %LOCALS:1%☆サド☆
+	CASE 16
+		SIF COND("蕩唇取得不可能") == 0
+			LOCALS:1 = %LOCALS:1%☆蕩唇☆
+	ENDSELECT
+
+	SELECTCASE ARGS
+	CASE "予定"
+		IF LOCALS:1 != ""
+			PRINTFORM %TEXT_RJ(LOCALS, 8)%
+			SETCOLOR DEF_COLOR("イエロー")
+			PRINTFORML  %LOCALS:1%
+			RESETCOLOR
+		ENDIF
+	CASEELSE
+		PRINTFORM  [{LCOUNT,2}] %TEXT_RJ(LOCALS, 8)%-{ABL:ABL_NUM, 2}LV 
+		CALL PRINT_BAR, "黄色ゲージ", ABL:ABL_NUM, NUM("最大レベル", ABL_NUM), 5
+		IF LOCALS:1 != ""
+			SETCOLOR DEF_COLOR("イエロー")
+			PRINTFORM  %LOCALS:1%
+			RESETCOLOR
+		ENDIF
+		PRINTL 
+	ENDSELECT
+NEXT
+
+SELECTCASE ARGS
+CASE "予定"
+	VARSET LOCALS
+	CALL ISABLUP, "ＬＶ"
+	SIF RESULT
+		LOCALS = ☆レベルアップ可能☆%BL(1)%
+	SIF COND("素質獲得可能")
+		LOCALS = %LOCALS%☆素質獲得可能☆%BL(1)%
+	SIF COND("成長可能")
+		LOCALS = %LOCALS%☆成長可能☆
+	IF LOCALS != ""
+		PRINTFORM %TEXT_RJ("レベル", 8)%
+		SETCOLOR DEF_COLOR("イエロー")
+		PRINTFORML  %LOCALS%
+		RESETCOLOR
+	ENDIF
+
+	VARSET LOCALS
+	CALL ISABLUP, "屈服刻印"
+	SIF RESULT
+		LOCALS = ☆レベルアップ可能☆
+	IF LOCALS != ""
+		PRINTFORM %TEXT_RJ("屈服刻印", 8)%
+		SETCOLOR DEF_COLOR("イエロー")
+		PRINTFORML  %LOCALS%
+		RESETCOLOR
+	ENDIF
+
+	VARSET LOCALS
+	CALL ISABLUP, "反発刻印"
+	SIF RESULT
+		LOCALS = ☆レベルダウン可能☆
+	IF LOCALS != ""
+		PRINTFORM %TEXT_RJ("反発刻印", 8)%
+		SETCOLOR DEF_COLOR("イエロー")
+		PRINTFORML  %LOCALS%
+		RESETCOLOR
+	ENDIF
+CASEELSE
+	PRINTFORM  [90]   レベル-{ABL:ＬＶ, 2}LV 
+	CALL PRINT_BAR, "黄色ゲージ", ABL:ＬＶ, NUM("最大レベル", 90), 5
+	SETCOLOR DEF_COLOR("イエロー")
+	CALL ISABLUP, "ＬＶ"
+	SIF RESULT
+		PRINT  ☆レベルアップ可能☆
+	SIF COND("素質獲得可能")
+		PRINT  ☆素質獲得可能☆
+	SIF COND("成長可能")
+		PRINT  ☆成長可能☆
+	RESETCOLOR
+	PRINTL  
+
+	PRINTFORM  [98] 屈服刻印-{MARK:屈服刻印, 2}LV 
+	CALL PRINT_BAR, "黄色ゲージ", MARK:屈服刻印, 3, 3
+	SETCOLOR DEF_COLOR("イエロー")
+	CALL ISABLUP, "屈服刻印"
+	SIF RESULT
+		PRINT    ☆レベルアップ可能☆
+	RESETCOLOR
+	PRINTL  
+
+	IF MARK:反発刻印
+		PRINTFORM  [99] 反発刻印-{MARK:反発刻印, 2}LV 
+		CALL PRINT_BAR, "黄色ゲージ", MARK:反発刻印, 3, 3
+		SETCOLOR DEF_COLOR("イエロー")
+		CALL ISABLUP, "反発刻印"
+		SIF RESULT
+			PRINT    ☆レベルダウン可能☆
+		RESETCOLOR
+		PRINTL  
+	ENDIF
+
+	PRINTL [200] 不要な宝珠を経験値に変換する
+	PRINTL [999] 能力値アップの終了
+ENDSELECT
+
+@USERABLUP
+SELECTCASE RESULT
+CASE 999
+	;TARGETの素質変動など
+	SIF TARGET
+		CALL EVENTCHECK_T
+	;ASSIの素質変動など
+	CALL EVENTCHECK_A
+	;MASTERの素質変動など
+	CALL EVENTCHECK_M
+	SELECTCASE FLAG:22
+	CASE 1
+		FLAG:22 = 2
+		FLAG:21 = TARGET
+		TARGET = ASSI
+		BEGIN AFTERTRAIN
+	CASE 2
+		FLAG:22 = 0
+		ASSI = TARGET
+		TARGET = FLAG:21
+	ENDSELECT
+	BEGIN TURNEND
+	RETURN 1
+CASE 200
+	CALL JUEL_TO_EXP, 10000
+ENDSELECT
+
+RETURN 0
+
+;ARGは１度に交換する単位。初期は１万
+@JUEL_TO_EXP, ARG
+#DIM LCOUNT
+#DIM MEMO_EXP
+#DIM MEMO_JUEL, 16
+
+;まずは経験値と各種珠の量を記録
+MEMO_EXP = EXP:経験値
+FOR LCOUNT, 0, 16
+	MEMO_JUEL:LCOUNT = JUEL:LCOUNT
+NEXT
+
+CALL JUEL_TO_EXP_CALC, ARG, JUEL:0, JUEL:1, JUEL:2, JUEL:3, JUEL:4, JUEL:5, JUEL:6, JUEL:7, JUEL:8, JUEL:9, JUEL:10, JUEL:11, JUEL:12, JUEL:13, JUEL:14, JUEL:15
+
+;やり直す？
+IF RESULT == 99
+	EXP:経験値 = MEMO_EXP
+	FOR LCOUNT, 0, 16
+		JUEL:LCOUNT = MEMO_JUEL:LCOUNT
+	NEXT
+	RESTART
+ENDIF
+
+;交換単位は最小１万。ARG < 0ならば全部交換
+@JUEL_TO_EXP_CALC, ARG, ARG:1, ARG:2, ARG:3, ARG:4, ARG:5, ARG:6, ARG:7, ARG:8, ARG:9, ARG:10, ARG:11, ARG:12, ARG:13, ARG:14, ARG:15, ARG:16
+#DIM LCOUNT
+#DIM MEMO_LINECOUNT
+
+MEMO_LINECOUNT = LINECOUNT
+REDRAW 0
+
+PRINTFORML 
+PRINTFORML ここでは各種宝珠１万個を経験値10Ｐに交換する事ができます
+PRINTFORML 割の良い交換レートではないですが、宝珠が余って仕方ない場合にどうぞ
+PRINTFORML 
+PRINTFORM 現在の経験値は{EXP:経験値}Ｐで、
+IF ARG < 0
+	PRINTFORML 選択された宝珠をすべて交換します。
+	PRINTFORML どれを交換していきますか？
+ELSE
+	PRINTFORML 交換単位は{ARG/10000}万です。どれを交換していきますか？
+	PRINTFORML （交換単位未満のものは１万刻みで可能なだけ交換をします）
+ENDIF
+
+FOR LCOUNT, 0, 16
+	SELECTCASE LCOUNT
+	CASE 0 TO 2, 4 TO 10, 14, 15
+		SELECTCASE ARG:(LCOUNT+1)
+		CASE IS >= 10000
+			PRINTFORM  [{LCOUNT, 2}] 
+		CASEELSE
+			SETCOLOR DEF_COLOR("灰色")
+			PRINTFORM  [×] 
+		ENDSELECT
+
+		PRINTFORM %PALAMNAME:LCOUNT%の珠:{ARG:(LCOUNT+1), 8}
+		SIF JUEL:LCOUNT != ARG:(LCOUNT+1)
+			PRINTFORM  → {JUEL:LCOUNT, 8} {(ARG:(LCOUNT+1) - JUEL:LCOUNT)/1000, 5}Ｐ get
+		PRINTL 
+		RESETCOLOR
+	ENDSELECT
+NEXT
+
+SELECTCASE ARG
+CASE 10000 TO 1000000
+	PRINTFORML  [90] 交換単位を{ARG/1000}万に増やす
+CASE 10000000
+	PRINTFORML  [90] すべての宝珠を経験値に変換するようにする
+CASEELSE
+	PRINTFORML  [90] 交換単位を１万に戻す
+ENDSELECT
+
+PRINTFORML  [99] 交換状況をリセットする
+PRINTFORML [100] 終了
+
+CALL INPUT_SELECT, 16, 90, 99, 100
+
+SELECTCASE RESULT
+CASE 100
+	REDRAW 1
+	RETURN 1
+CASE 99
+	CLEARLINE LINECOUNT - MEMO_LINECOUNT
+	REDRAW 1
+	RETURN 99
+CASE 90
+	SELECTCASE ARG
+	CASE 10000 TO 1000000
+		ARG *= 10
+	CASE 10000000
+		ARG = -1
+	CASEELSE
+		ARG = 10000
+	ENDSELECT
+CASEELSE
+	SELECTCASE RESULT
+	CASE 0 TO 2, 4 TO 10, 14, 15
+		IF JUEL:RESULT < 10000
+
+		ELSEIF ARG > 0 && JUEL:RESULT >= ARG
+			JUEL:RESULT -= ARG
+			EXP:経験値 += 10 * ARG / 10000
+		ELSE
+			LOCAL = JUEL:RESULT / 10000
+
+			JUEL:RESULT -= 10000 * LOCAL
+			EXP:経験値 += 10 * LOCAL
+		ENDIF
+	ENDSELECT
+ENDSELECT
+
+CLEARLINE LINECOUNT - MEMO_LINECOUNT
+RESTART
+
+
+
+@CHECK_ABLUP_OK
+#DIM LCOUNT
+
+;各種珠や経験などのチェック
+FOR LCOUNT, 0, 10
+	;(A:X, B:X)～(E:X, F:X)が(必要な珠の数, 珠の種類)
+	SIF A:LCOUNT == 0
+		SETBIT Z:LCOUNT, 9
+	SIF JUEL:(B:LCOUNT) < A:LCOUNT || JUEL:(D:LCOUNT) < C:LCOUNT || JUEL:(F:LCOUNT) < E:LCOUNT
+		SETBIT Z:LCOUNT, 0
+
+	;(G:X, H:X)～(K:X, L:X)が(必要な経験, 経験の種類)
+	SIF EXP:(H:LCOUNT) < G:LCOUNT || EXP:(J:LCOUNT) < I:LCOUNT || EXP:(L:LCOUNT) < K:LCOUNT
+		SETBIT Z:LCOUNT, 1
+
+	;(M, N)が全体を通して必要な経験
+	SIF EXP:N < M
+		SETBIT Z:LCOUNT, 1
+
+	;(O, P)、(Q, R)が全体を通して必要な能力
+	SIF ABL:P < O || ABL:R < Q
+		SETBIT Z:LCOUNT, 2
+
+	;(S, T)が全体を通して必要な刻印
+	SIF MARK:T < S
+		SETBIT Z:LCOUNT, 6
+
+	;(U, V)が全体を通して必要な絶頂
+	SIF EX:V < U
+		SETBIT Z:LCOUNT, 5
+NEXT
+
+FOR LCOUNT, 0, 10
+	;Z:Xが上を踏まえて可能かどうかの判定。ただし、可能な場合が０である
+	SIF Z:LCOUNT == 0
+		RETURN 1
+NEXT
+
+@PRINT_ABLUP_OK(ARG)
+#FUNCTIONS
+VARSET LOCALS
+IF ARG == 0
+	LOCALS = ＯＫ
+ELSE
+	SIF GETBIT(ARG, 0)
+		LOCALS = %LOCALS%珠不足%BL(1)%
+	SIF GETBIT(ARG, 1)
+		LOCALS = %LOCALS%経験不足%BL(1)%
+	SIF GETBIT(ARG, 2)
+		LOCALS = %LOCALS%能力不足%BL(1)%
+	SIF GETBIT(ARG, 3)
+		LOCALS = %LOCALS%素質不足%BL(1)%
+	SIF GETBIT(ARG, 4)
+		LOCALS = %LOCALS%レベル不足%BL(1)%
+	SIF GETBIT(ARG, 5)
+		LOCALS = %LOCALS%絶頂不足%BL(1)%
+	SIF GETBIT(ARG, 6)
+		LOCALS = %LOCALS%刻印不足%BL(1)%
+	;GETBIT(ARG, 9)はとにかく無理な場合に使用
+ENDIF
+RETURNF LOCALS
+
+@ABLUP0
+IF CONFIG("恋慕と淫乱の任意獲得") && COND("恋慕取得可能")
+	CALL ABL_UP, "従順", "恋慕"
+ELSE
+	CALL ABL_UP, "従順"
+ENDIF
+
+@ABLUP1
+IF CONFIG("恋慕と淫乱の任意獲得") && COND("淫乱取得可能")
+	CALL ABL_UP, "欲望", "淫乱"
+ELSE
+	CALL ABL_UP, "欲望"
+ENDIF
+
+@ABLUP2
+IF COND("アルカナ習得可能")
+	CALL ABL_UP, "技巧", "アルカナ"
+ELSE
+	CALL ABL_UP, "技巧"
+ENDIF
+
+@ABLUP3
+VARSET LOCALS
+SIF TALENT:淫核 == 0 && ABL:Ｃ感覚 >= 4
+	LOCALS = 淫核
+SIF TALENT:尿道狂い == 0 && TALENT:尿道性感
+	LOCALS:1 = 尿道狂い
+
+CALL ABL_UP, "Ｃ感覚", LOCALS, LOCALS:1
+
+;IF TALENT:淫核 == 0 && ABL:Ｃ感覚 >= 4
+;	CALL ABL_UP, "Ｃ感覚", "淫核"
+;ELSE
+;	CALL ABL_UP, "Ｃ感覚"
+;ENDIF
+
+@ABLUP4
+IF TALENT:淫壷 == 0 && ABL:Ｖ感覚 >= 4
+	CALL ABL_UP, "Ｖ感覚", "淫壷"
+ELSE
+	CALL ABL_UP, "Ｖ感覚"
+ENDIF
+
+@ABLUP5
+IF TALENT:尻穴狂い == 0 && ABL:Ａ感覚 >= 4
+	CALL ABL_UP, "Ａ感覚", "尻穴狂い"
+ELSE
+	CALL ABL_UP, "Ａ感覚"
+ENDIF
+
+@ABLUP6
+IF TALENT:淫乳 == 0 && ABL:Ｂ感覚 >= 4
+	CALL ABL_UP, "Ｂ感覚", "淫乳"
+ELSE
+	CALL ABL_UP, "Ｂ感覚"
+ENDIF
+
+@ABLUP7
+IF TALENT:蕩唇 == 0 && ABL:Ｍ感覚 >= 4
+	CALL ABL_UP, "Ｍ感覚", "蕩唇"
+ELSE
+	CALL ABL_UP, "Ｍ感覚"
+ENDIF
+
+@ABLUP8
+CALL ABL_UP, "奉仕精神"
+
+@ABLUP9
+IF TALENT:倒錯的 == 0 && ABL:露出癖 + ABL:マゾっ気 + ABL:サドっ気 >= 7
+	CALL ABL_UP, "露出癖", "倒錯的"
+ELSE
+	CALL ABL_UP, "露出癖"
+ENDIF
+
+@ABLUP10
+IF TALENT:マゾ == 0 && ABL:マゾっ気 >= 4
+	CALL ABL_UP, "マゾっ気", "マゾ"
+ELSE
+	CALL ABL_UP, "マゾっ気"
+ENDIF
+
+@ABLUP11
+IF TALENT:サド == 0 && ABL:サドっ気 >= 4
+	CALL ABL_UP, "サドっ気", "サド"
+ELSE
+	CALL ABL_UP, "サドっ気"
+ENDIF
+
+@ABLUP12
+CALL ABL_UP, "レズっ気"
+
+@ABLUP13
+CALL ABL_UP, "自慰中毒"
+
+@ABLUP14
+CALL ABL_UP, "精液中毒"
+
+@ABLUP15
+CALL ABL_UP, "ＢＬっ気"
+
+@ABLUP16
+CALL ABL_UP, "Ｖ拡張"
+
+@ABLUP17
+CALL ABL_UP, "Ａ拡張"
+
+@ABLUP90
+CALL ABL_UP, "ＬＶ", "ＬＶ以外"
+
+@ABLUP98
+CALL ABL_UP, "屈服刻印"
+
+@ABLUP99
+CALL ABL_UP, "反発刻印"
+
+
+;TARGETの素質変動など
+@EVENTCHECK_T
+;-------------------------------------------------------------------------------------------------
+;技能の成長
+;-------------------------------------------------------------------------------------------------
+CALL EX_ABLUP, TARGET
+;-------------------------------------------------------------------------------------------------
+;ネガティブな素質の克服
+;-------------------------------------------------------------------------------------------------
+;反抗的ではなくなるイベント（ある程度の好感度と、今までに反発刻印を1LVまでしかつけたことが無い、というのが条件）
+;もしくは、従順4LV+反発刻印0LV
+IF TALENT:反抗的
+	LOCAL = 0
+	IF CFLAG:2 >= 100 + MARK:反発刻印の取得履歴*400 && MARK:反発刻印の取得履歴 <= 1
+		LOCAL = 1
+	ELSEIF ABL:従順 >= 4 && MARK:反発刻印 == 0
+		LOCAL = 2
+	ENDIF
+	IF LOCAL
+		IF LOCAL == 1
+			PRINTFORM 優しく接したおかげか、%CALLNAME:TARGET%は
+			PRINTFORMW \@EXP:調教回数 > 1 ? 最近%CALLNAME:MASTER%に打ち解けてきたようだ… # 肩の力を抜いたようだ… \@
+		ENDIF
+		PRINTFORMW %CALLNAME:TARGET%は【反抗的】ではなくなりました
+		TALENT:反抗的 = 0
+	ENDIF
+ENDIF
+
+IF MARK:反発刻印 == 0
+	;好感度が4000以上で恋慕か淫乱を持っていると、売却可能に
+	IF CFLAG:2 >= 4000 && COND("売却可能フラグ") == 0 && (TALENT:淫乱 || TALENT:恋慕)
+		PRINTFORMW %CALLNAME:TARGET%のこちらを見る目がおかしい…
+		PRINTFORML %CALLNAME:TARGET%は身も心も%CALLNAME:MASTER%に依存しきっているようだ…
+		IF ABL:従順 < 5
+			ABL:従順 = 5
+			PRINTL 従順がLV5になった
+		ENDIF
+		PRINTFORMW %CALLNAME:TARGET%が売却可能になりました
+		SETBIT CFLAG:1, 0
+	;好感度が2500以上、従順が3以上かつ奉仕快楽経験500以上で恋慕
+	ELSEIF CONFIG("恋慕と淫乱の任意獲得") == 0 && COND("恋慕取得可能")
+		CALL SETFLAG, "恋慕"
+	;欲望が4以上、絶頂経験や精液経験などの合計が800以上、自慰中毒と精液中毒の合計3以上、今回の絶頂数が20以上で淫乱
+	ELSEIF CONFIG("恋慕と淫乱の任意獲得") == 0 && COND("淫乱取得可能")
+		CALL SETFLAG, "淫乱"
+	ENDIF
+ENDIF
+
+;胸の大きさＵＰ
+CALL CALC, "バストアップ"
+
+;売却や助手化が可能になったか
+SIF ABL:従順 + ABL:欲望 < 5
+	RETURN 0
+SIF MAX(ABL:Ｃ感覚, ABL:Ｖ感覚, ABL:Ａ感覚, ABL:Ｂ感覚, ABL:Ｍ感覚) < 3
+	RETURN 0
+SIF ABL:従順 < 4 && (TALENT:反抗的 || TALENT:気丈 || TALENT:抵抗)
+	RETURN 0
+SIF ABL:欲望 < 4 && (TALENT:冷静 || TALENT:抑圧 || TALENT:抵抗)
+	RETURN 0
+
+IF COND("売却可能フラグ") == 0
+	IF ABL:従順 >= 5 || ABL:欲望 >= 5 || (ABL:技巧 >= 3 && ABL:奉仕精神 >= 3) || (ABL:露出癖 >= 3 && ABL:自慰中毒 >= 2) || ABL:マゾっ気 >= 3 || ABL:Ｃ感覚+ABL:Ｖ感覚+ABL:Ａ感覚+ABL:Ｂ感覚+ABL:Ｍ感覚 >= 13
+		PRINTFORMW %CALLNAME:TARGET%が売却可能になりました
+		SETBIT CFLAG:1, 0
+	ENDIF
+ENDIF
+
+SIF MARK:反発刻印
+	RETURN 0
+
+IF COND("助手可能フラグ") == 0
+	IF ABL:従順 >= 3 && (ABL:技巧 >= 4 || (ABL:欲望 >= 3 && ABL:技巧 >= 3) || ABL:従順 >= 5 || ABL:レズっ気 >= 3)
+		PRINTFORMW %CALLNAME:TARGET%が%TEXTS("助手の名称")%になれるようになりました
+		SETBIT CFLAG:1, 1
+	ENDIF
+ENDIF
+

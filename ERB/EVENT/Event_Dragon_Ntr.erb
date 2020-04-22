@@ -1,0 +1,573 @@
+﻿;--------------------------------------------------------
+;ドラ姦から発生する寝取られイベントは全てここで管理する
+;CFLAG:471	調教毎の進行度(-30〜30)。正の値なら終了時に寝取られイベントが進行し、負の値なら寝取り返しが進行する
+;CFLAG:472	寝取られポイントの総計。この値が高いほどドラゴンに心奪われている
+;MARK:竜姦刻印	寝取られの具体的な進行度を示す。一度これを取得した後にドラゴンから寝取り返すとMARK:竜姦克服刻印を取得する
+;--------------------------------------------------------
+@EVENT_DRAGON_NTR, ARGS
+#DIM MEMO_LINECOUNT
+
+SIF COND("ドラ姦寝取られ") == 0
+	RETURN 0
+
+SELECTCASE ARGS
+CASE "言葉での寝取り返し"
+	SIF COND("甘い言葉：成功")
+		CFLAG:471 = LIMIT(CFLAG:471 - 8, -30, 30)
+	SIF COND("褒める：成功")
+		CFLAG:471 = LIMIT(CFLAG:471 - 5, -30, 30)
+
+;寝取られ進行度の最終補正
+CASE "寝取られ判定"
+	;寝取られ方向
+	IF CFLAG:471 > 0
+		SELECTCASE MARK:竜姦刻印
+		CASE 1
+			CFLAG:471 += 3 + RAND:2
+		CASE 2
+			CFLAG:471 += 8 + RAND:5
+		ENDSELECT
+
+		;惚れっぽい
+		SIF TALENT:惚れっぽい
+			CFLAG:471 += RAND:10
+		;妊娠中の子供の父親がドラゴン
+		SIF COND("精液の優勢") == -3
+			CFLAG:471 += 10 + RAND:10
+		;寝取られた（寝取り返した）経験があると…
+		SIF MARK:竜姦克服刻印
+			CFLAG:471 += 10 + RAND:10
+	;寝取られ返し方向
+	ELSE
+		SIF CFLAG:471 < 0
+			CFLAG:471 -= 5
+		;惚れっぽい
+		SIF TALENT:惚れっぽい
+			CFLAG:471 -= RAND:10
+		;妊娠中の子供の父親がMASTER
+		SIF COND("精液の優勢") == MASTER
+			CFLAG:471 -= 10 + RAND:10
+		;寝取られた（寝取り返した）経験があると…
+		SIF MARK:竜姦克服刻印
+			CFLAG:471 -= 10 + RAND:10
+	ENDIF
+
+	;寝取られ判定値の変動
+	;ドラ姦寝取られ進行度は0〜299までしか取らない
+	CFLAG:472 = LIMIT(CFLAG:472 + CFLAG:471, 0, 299)
+	;調教毎の寝取られ進行度は用済みなのでリセット
+	CFLAG:471 = 0
+
+	;この条件だと何もおきない
+	SIF MARK:竜姦刻印 == 0 && CFLAG:472 < 70
+		RETURN 0
+
+	DRAWLINE
+	SETCOLOR DEF_COLOR("イエロー")
+
+	MEMO_LINECOUNT = LINECOUNT
+
+	;刻印の変化（CFLAG:472の変化と現在の竜姦刻印に依存）
+	SELECTCASE CFLAG:472
+	CASE IS >= 200
+		;寝取られが第二段階に進行
+		IF MARK:竜姦刻印 == 1
+			IF MARK:竜姦克服刻印
+				IF RAND:2 == 0
+					PRINTFORMW %CALLNAME:TARGET%の心はドラゴンとの交わりがもたらす圧倒的な快楽に屈し、%CALLNAME:MASTER%への愛を見失ってしまった…！
+				ELSE
+					PRINTFORMW %CALLNAME:TARGET%はドラゴンへの想いを思い出し、%CALLNAME:MASTER%への愛を見失ってしまった…！
+				ENDIF
+			ELSE
+				PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:MASTER%への愛を見失い、身も心もドラゴンの虜になっている…！
+			ENDIF
+
+			TALENT:恋慕 = 0
+			TALENT:相思相愛 = 0
+			MARK:反発刻印 = 3
+			ABL:従順 = 0
+			TALENT:反抗的 = 1
+			TALENT:抵抗 = 1
+			;TARGET以外に相思相愛の相手がいない
+			SIF FIND_COND("相思相愛") == 0
+				TALENT:MASTER:相思相愛 = 0
+
+			LOCALS:1 = %CALLNAME:TARGET%は『恋慕』、『相思相愛』を失った…！
+			LOCALS:2 = さらに反発刻印がLV3に、従順がLV0になり、『反抗的』と『抵抗』を得た…！
+
+			JUEL:反感 += JUEL:恭順 + JUEL:屈服 + RAND:10000 + RAND:5000
+
+			MARK:竜姦刻印 = 2
+		ENDIF
+	CASE IS >= 100
+		;寝取られが第一段階に進行
+		IF MARK:竜姦刻印 == 0
+			IF MARK:竜姦克服刻印
+				PRINTFORM %CALLNAME:TARGET%の身体は再びドラゴンの巨根
+				IF RAND:3 == 0
+					PRINTFORMW に餌付けされてしまった！
+				ELSEIF RAND:2 == 0
+					PRINTFORMW の虜になってしまった！
+				ELSE
+					PRINTFORMW に逆らえなくなってしまった！
+				ENDIF
+			ELSE
+				PRINTFORMW %CALLNAME:TARGET%の身体はドラゴンの巨根にメロメロになっている…！
+			ENDIF
+
+			IF RAND:2 == 0
+				PRINTFORMW %CALLNAME:TARGET%の身体はドラゴンの巨大なペニスにすっかり順応してしまった！
+			ELSE
+				PRINTFORMW %CALLNAME:TARGET%の身体はドラゴンの巨大なペニスに快楽の味を覚え込まされてしまった！
+			ENDIF
+
+			SIF TALENT:淫乱 == 0
+				PRINTFORMW %CALLNAME:TARGET%は[淫乱]を得た！
+
+			TALENT:淫乱 = 1
+			MARK:竜姦刻印 = 1
+		ENDIF
+	CASE 0
+		;寝取り返し達成
+		IF MARK:竜姦刻印
+			PRINTFORMW %CALLNAME:TARGET%が%CALLNAME:MASTER%への愛を取り戻しました！
+			PRINTFORMW %CALLNAME:TARGET%は『恋慕』、『相思相愛』に目覚めました…！
+			PRINTFORMW さらに反発刻印がLV0に、従順がLV3になり、『反抗的』と『抵抗』を失った！
+
+			TALENT:恋慕 = 1
+			TALENT:相思相愛 = 1
+			MARK:反発刻印 = 0
+			ABL:従順 = 3
+			JUEL:反感 = 0
+			TALENT:反抗的 = 0
+			TALENT:抵抗 = 0
+			TALENT:MASTER:相思相愛 = 1
+
+			MARK:竜姦刻印 = 0
+			MARK:竜姦克服刻印 = 1
+		ENDIF
+	ENDSELECT
+
+	IF LINECOUNT > MEMO_LINECOUNT
+		RESETCOLOR
+		DRAWLINE
+		RETURN 1
+	ENDIF
+
+	;寝取られ進行描写
+	SELECTCASE MARK:竜姦刻印
+	CASE 2
+		SELECTCASE CFLAG:472
+		;寝取られ進行度カンスト
+		CASE IS >= 299
+			PRINTFORM %CALLNAME:TARGET%は調教が終わってもドラゴンの傍から離れようとせず、
+			IF RAND:5 == 0
+				PRINTFORMW 愛を語らっている…
+			ELSEIF RAND:4 == 0
+				PRINTFORMW 大きな口と濃厚なキスを交わしている…
+			ELSEIF RAND:3 == 0
+				PRINTFORMW 愛しげに巨大なペニスを撫でている…
+			ELSEIF RAND:2 == 0
+				PRINTFORMW 長大な肉竿の先端から溢れる先走りを喉を鳴らして堪能している…
+			ELSE
+				PRINTFORMW %LOCALS%美味しそうに大きなペニスをしゃぶっている…
+			ENDIF
+		;寝取られ中
+		CASE IS >= 200
+			IF RAND:3 == 0
+				PRINTFORMW %CALLNAME:TARGET%の目にはドラゴンとその長大なペニスしか映っていない…
+			ELSEIF RAND:2 == 0
+				PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:MASTER%がすぐ傍にいるというのにドラゴンのペニスに媚を売っている…
+			ELSE
+				PRINTFORMW %CALLNAME:TARGET%は目の前にいる%CALLNAME:MASTER%を無視して、ドラゴンへの奉仕を続けている…
+			ENDIF
+		;寝取られ返し中
+		CASE IS >= 100
+			IF RAND:2 == 0
+				PRINTFORMW %CALLNAME:TARGET%はドラゴンとまだ一緒に居たいような様子だが、%CALLNAME:MASTER%が強く命じるとそっとその場を離れた…
+			ELSE
+				PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:MASTER%のことを鬱陶しく感じながらも、一応の主人としては認めているようだ…
+			ENDIF
+		;寝取られ返し寸前
+		CASEELSE
+			IF RAND:2 == 0
+				PRINTFORMW %CALLNAME:TARGET%の瞳はドラゴンと%CALLNAME:MASTER%の間で揺れている…！
+			ELSE
+				PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:MASTER%の目が気になるのか、ドラゴンに寄り添うことを躊躇している…
+			ENDIF
+		ENDSELECT
+	CASE 1
+		SELECTCASE CFLAG:472
+		;第二段階へ進行直前
+		CASE IS >= 170
+			IF RAND:2 == 0
+				PRINTFORMW %CALLNAME:TARGET%はドラゴンのペニスへと頬ずりをしながら、濃厚な牡のニオイにうっとりと目を細めている…
+			ELSEIF RAND:2 == 0
+				PRINTFORMW %CALLNAME:TARGET%はドラゴンの巨根を撫でながら、情熱的な視線を向けている…
+			ELSE
+				PRINTFORMW %CALLNAME:TARGET%は主人である%CALLNAME:MASTER%そっちのけでドラゴンの巨大なペニスを舐め清めている…
+			ENDIF
+		;寝取られ中
+		CASE IS >= 100
+			IF RAND:3 == 0
+				PRINTFORMW %CALLNAME:TARGET%はドラゴンの巨根をうっとりと眺めながら、無意識に自慰を始めてしまった…
+			ELSEIF RAND:2 == 0
+				PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:MASTER%の目を盗み、ドラゴンのペニスへそっと口付けた…
+			ELSE
+				PRINTFORMW %CALLNAME:TARGET%は物欲しそうにドラゴンのペニスを見つめている…
+			ENDIF
+		;寝取られ返し中
+		CASE IS >= 50
+			PRINTFORMW %CALLNAME:TARGET%はドラゴンのペニスがまだ気になるようだが、%CALLNAME:MASTER%の身体を清めることを優先した…
+		;寝取られ返し寸前
+		CASEELSE
+			PRINTFORMW %CALLNAME:TARGET%は再び%CALLNAME:MASTER%の虜になりつつあるのか、頬を赤らめながら時折%CALLNAME:MASTER%の方を盗み見ている…
+		ENDSELECT
+	CASE 0
+		;寝取られ返し経験済み（非寝取られ状態）
+		IF MARK:竜姦克服刻印
+			;寝取られ寸前
+			SIF CFLAG:472 >= 70
+				PRINTFORMW %CALLNAME:TARGET%はドラゴンの長大なペニスの魅力に再び屈しそうになっている…
+		;寝取られ返し未経験（非寝取られ状態）
+		ELSE
+			;寝取られ寸前
+			SIF CFLAG:472 >= 70
+				PRINTFORMW %CALLNAME:TARGET%はドラゴンの長大なペニスの虜になりつつあるのか、物欲しそうにそれを見つめている…
+		ENDIF
+	ENDSELECT
+
+	RESETCOLOR
+	DRAWLINE
+
+CASE "射精"
+	SIF SHOOT("Ｖ中出し") == 0 && SHOOT("ドラゴン") == 0
+		RETURN 0
+
+	SELECTCASE SELECTCOM
+	CASE 304, 305
+		SIF TEQUIP:押し倒し
+			RETURN 0
+	CASEELSE
+		SIF PLAYER != MASTER
+			RETURN 0
+	ENDSELECT
+
+	LOCAL = 0
+	;素質で修正
+	LOCAL += TALENT:淫乱*5 + TALENT:快感に素直*3 + TALENT:マゾ*5
+	;媚薬や排卵誘発剤
+	LOCAL += TEQUIP:媚薬/100 + TEQUIP:排卵誘発剤
+	SIF COND("発情期")
+		LOCAL += 3
+	;感度
+	IF SELECTCOM == 304
+		LOCAL += RAND:(ABL:Ｖ感覚 + 1) + COND("絶頂：ドラゴン")*5
+	ELSEIF SELECTCOM == 305
+		LOCAL += RAND:(ABL:Ａ感覚 + 1) + COND("絶頂：ドラゴン")*5
+	ELSE
+		LOCAL -= LOCAL + COND("絶頂", MASTER)
+	ENDIF
+
+	;値は-30〜30
+	CFLAG:471 = LIMIT(CFLAG:471 + LOCAL, -30, 30)
+
+	;アナルドラ姦
+	IF SELECTCOM == 305
+		SELECTCASE MARK:竜姦刻印
+		;第二段階
+		CASE 2
+			IF RAND:3 == 0
+				PRINTFORM お腹が膨らむほど精液を流し込まれた%CALLNAME:TARGET%は、
+			ELSEIF RAND:2 == 0
+				PRINTFORM 何リットルもの精を腸内に吐き出されてしまった%CALLNAME:TARGET%は、
+			ELSE
+				PRINTFORM 後の穴で妊娠しそうなほど子種を注ぎこまれた%CALLNAME:TARGET%は、
+			ENDIF
+			PRINTFORMW 征服される悦びに酔いしれている…
+		;第一段階
+		CASE 1
+			IF RAND:3 == 0
+				PRINTFORM %CALLNAME:TARGET%は腸内を焼く精液の熱さを感じ、
+			ELSEIF RAND:2 == 0
+				PRINTFORM %CALLNAME:TARGET%は馬鹿げた量の精液でお腹が重たくなっていくのを感じ、
+			ELSE
+				PRINTFORM %CALLNAME:TARGET%は腸内を征服していく精液の勢いを感じ、
+			ENDIF
+			IF RAND:2 == 0
+				PRINTFORM 肛悦の虜になり腰をくねらせて悦んでいる…
+			ELSE
+				PRINTFORM 目を細め絶頂を味わっている…
+			ENDIF
+		;寝取られ状態でない
+		CASE 0
+			PRINTFORMW 腸内を大量の体液で満された%CALLNAME:TARGET%は、圧迫感をどうにか堪えている…
+		ENDSELECT
+	;ドラ姦
+	ELSEIF SELECTCOM == 304
+		SELECTCASE MARK:竜姦刻印
+		;第二段階
+		CASE 2
+			IF RAND:2 == 0
+				PRINTFORM %CALLNAME:TARGET%は悪意すら感じられるような笑みを浮かべながら、
+			ELSE
+				PRINTFORM %CALLNAME:TARGET%は%CALLNAME:MASTER%とのそれでは見せたこともない淫蕩な貌で蕩けながら、
+			ENDIF
+			IF RAND:2 == 0
+				PRINTFORMW %CALLNAME:MASTER%に愛の営みを見せつけている…！
+			ELSE
+				PRINTFORMW %CALLNAME:MASTER%の目の前で種付けを懇願している…！
+			ENDIF
+		;第一段階
+		CASE 1
+			IF RAND:2 == 0
+				PRINTFORM %CALLNAME:TARGET%は子宮いっぱいに精液を詰め込まれ、
+			ELSE
+				PRINTFORM %CALLNAME:TARGET%は子宮の底を叩く精液の流れを感じ、
+			ENDIF
+			IF RAND:2 == 0
+				PRINTFORMW 征服され尽くされる歓喜に打ち震えている…
+			ELSE
+				PRINTFORMW 牝の悦びに蕩けてしまっている…
+			ENDIF
+		;寝取られ状態でない
+		CASE 0
+			PRINTFORMW %CALLNAME:TARGET%は子宮をいっぱいにされ、苦しそうに眉根にしわを寄せている…
+		ENDSELECT
+	ELSE
+		SELECTCASE MARK:竜姦刻印
+		;第二段階
+		CASE 2
+			PRINTFORM %CALLNAME:TARGET%は%CALLNAME:MASTER%に精を注がれるのが余程嫌なのか、
+			IF RAND:3 == 0
+				PRINTFORMW じたばたと暴れて抵抗している…
+			ELSEIF RAND:2 == 0
+				PRINTFORMW %CALLNAME:MASTER%に罵詈雑言を浴びせている…
+			ELSE
+				PRINTFORMW 声をあげて泣き出してしまった…
+			ENDIF
+		;第一段階
+		CASE 1
+			PRINTFORM %CALLNAME:TARGET%は膣内射精に確かに快楽を感じつつも、
+			IF RAND:3 == 0
+				PRINTFORMW 子宮の渇きを癒すにはまだまだ足りないようだ…
+			ELSEIF RAND:2 == 0
+				PRINTFORMW どこか物足りなさを感じているようだ…
+			ELSE
+				PRINTFORMW %CALLNAME:MASTER%のペニスの大きさには満足していないようだ…
+			ENDIF
+		;寝取られ状態でない
+		CASE 0
+			IF RAND:3 == 0 && COND("妊娠可能")
+				PRINTFORMW %CALLNAME:MASTER%の子種を残さず子宮で受け止めた%CALLNAME:TARGET%は、何度も愛の言葉を囁きさらなる子作りをねだっている…
+			ELSEIF RAND:2 == 0
+				PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:MASTER%に愛を注がれ、目を閉じうっとりとその喜びに浸っている…
+			ELSE
+				PRINTFORMW %CALLNAME:MASTER%にたっぷりと精を注がれた%CALLNAME:TARGET%は、腰を擦りつけておかわりを要求している…
+			ENDIF
+		ENDSELECT
+	ENDIF
+
+CASE "日常"
+	;寝取られていないならイベントは起きない
+	SIF MARK:竜姦刻印 == 0
+		RETURN 0
+
+	;ドラ姦寝取られ度進行
+	CFLAG:472 += 5
+
+	;セリフは以下の４つのタイミング
+	;"ドラ姦寝取られ：日常挨拶"
+	;"ドラ姦寝取られ：日常お楽しみ中"
+	;"ドラ姦寝取られ：日常おねだり"
+	;"ドラ姦寝取られ：日常夢中"
+
+	CALL SELF_KOJO, "ドラ姦寝取られ：日常挨拶"
+
+	;ドラ姦寝取られ：第二段階（寝取り返し中でない）
+	;愛情系（寝取られ度が高いほどこちらになる）
+	IF MARK:竜姦刻印 == 2 && CFLAG:472 >= 250
+		IF COND("夜") && ABL:露出癖 >= 3
+			PRINTFORMW %CALLNAME:TARGET%は夜中にこっそりと部屋を抜け出し、ドラゴンと%TEXTR("一夜を共に過ごしてきたようだ", "夜の街へと消えていった", "外での逢瀬を楽しんできたようだ")%…
+		ELSE
+			IF RAND:2 == 0
+				PRINTFORM %CALLNAME:TARGET%は%CALLNAME:MASTER%の目を盗み、
+			ELSE
+				PRINTFORM %CALLNAME:TARGET%は募る想いを抑えきれず、
+			ENDIF
+			PRINTFORMW ドラゴンと%TEXTR("一緒に過ごして", "逢引して", "密会して")%いたようだ…
+		ENDIF
+	;淫乱系
+	ELSEIF MARK:竜姦刻印 == 2 && CFLAG:472 >= 200
+		PRINTFORM %CALLNAME:TARGET%は%TEXTR("自慰だけでは満足できず", "子宮の疼きに耐えかねて", "火照る身体を持て余し")%、
+		IF COND("夜") && ABL:露出癖 >= 3
+			PRINTFORMW ドラゴンと%TEXTR("一夜を共にした", "外で身体を重ねていた", "連れ添って夜の街へと繰り出していた")%ようだ…
+		ELSE
+			PRINTFORMW ドラゴン%TEXTR("と愛し合って", "と身体を重ねて", "の元を訪れて")%いたようだ…
+		ENDIF
+	;ドラ姦寝取られ：第一段階（寝取り返し中でない）
+	ELSEIF MARK:竜姦刻印 == 1 && CFLAG:472 >= 100
+		PRINTFORM %CALLNAME:TARGET%は%TEXTR("自慰だけでは満足できず", "子宮の疼きに耐えかねて", "火照る身体を持て余し")%、
+		IF COND("夜") && ABL:露出癖 >= 3
+			PRINTFORMW ドラゴンと%TEXTR("外で身体を重ねていた", "野外で刺激的な一夜を過ごしてきた")%ようだ…
+		ELSE
+			PRINTFORMW ドラゴン%TEXTR("の元を訪れて", "と身体を重ねて")%いたようだ…
+		ENDIF
+	;寝取り返し進行中
+	ELSEIF MARK:竜姦刻印
+		IF RAND:3 == 0
+			PRINTFORM %CALLNAME:TARGET%は%CALLNAME:MASTER%の部屋のドアをノックしようかしばらく逡巡していたものの、
+		ELSEIF RAND:2 == 0
+			PRINTFORM %CALLNAME:TARGET%はこんなことはもうやめようと自分に言い聞かせていたものの、
+		ELSE
+			PRINTFORM %CALLNAME:TARGET%は心の奥にズキズキと罪悪感を感じつつも、
+		ENDIF
+		PRINTFORM %TEXTR("結局", "身体に刻み込まれた情欲には抗えず", "巨竜の肉槍の味が忘れられず")%、
+		IF COND("夜") && ABL:露出癖 >= 3
+			PRINTFORMW ドラゴンと%TEXTR("夜の散歩へ出かけて", "静まりかえった館の庭で身体を重ねて")%しまったようだ…
+		ELSE
+			PRINTFORMW ドラゴン%TEXTR("の元を訪れていた", "と身体を重ねてしまった")%ようだ…
+		ENDIF
+	ENDIF
+
+	PRINTFORML 
+
+	;両穴ルート
+	IF EXP:Ｖ竜姦経験 && EXP:Ａ竜姦経験 && RAND:3
+		;ドラ姦寝取られ度がさらに進行
+		CFLAG:472 += 5
+
+		IF MARK:竜姦刻印 == 2 && CFLAG:472 >= 200
+			PRINTFORMW %CALLNAME:TARGET%は%TEXTR("ドラゴンのペニスに完全に服従し", "ドラゴンの凶悪なペニスにメロメロになり", "巨大なドラゴンのペニスを受け入れ")%、前後の穴%TEXTR("を貫かれる度ケダモノのような声をあげている", "をたっぷりと可愛がられているようだ", "に溢れて零れるまで竜の精を注がれている")%…
+			CALL SELF_KOJO, "ドラ姦寝取られ：日常ＶＡお楽しみ中"
+
+			PRINTFORMW ドラゴンが低い唸り声を上げて野太いペニスを押し込むたび、%CALLNAME:TARGET%の両の穴へ注がれた汚濁が勢いよく逆流している…！
+			PRINTFORMW %CALLNAME:TARGET%はドラゴンにまるで性処理道具のように使われながらも、身も心も焼き尽くす快楽に堕ちきっている…
+			PRINTFORML 
+			CALL SELF_KOJO, "ドラ姦寝取られ：日常ＶＡおねだり"
+
+			;小柄体型
+			IF TALENT:小柄体型 && RAND:2 == 0
+				PRINTFORMW %CALLNAME:TARGET%はまるで妊婦のように精液で膨れ上がったお腹を擦りながら、ドロドロに汚れたペニスへと熱心に奉仕を続けている…
+			ELSE
+				PRINTFORMW %CALLNAME:TARGET%は精液が溢れる両の穴を弄りながら、ドロドロに汚れたペニスへと熱心に奉仕を続けている…
+			ENDIF
+		ELSEIF MARK:竜姦刻印 == 1 && CFLAG:472 >= 100
+			CALL SELF_KOJO, "ドラ姦寝取られ：日常ＶＡお楽しみ中"
+			PRINTFORMW %CALLNAME:TARGET%は%TEXTR("ドラゴンのペニスの虜になり", "ドラゴンの凶悪なペニスにメロメロになり", "巨大なドラゴンのペニスを受け入れ")%、前後の穴%TEXTR("を貫かれる度ケダモノのような声をあげて", "に溢れて零れるまで竜の精を注がれて")%いる…
+		ELSEIF CFLAG:472 >= 30
+			PRINTFORMW %CALLNAME:TARGET%は心変わりを敏感に察知したドラゴンに、いったい誰の牝であるのか教えてやるとばかりに、巨大なペニスをねじ込まれてしまいました！
+			CALL SELF_KOJO, "ドラ姦寝取られ：日常ＶＡお楽しみ中"
+
+			PRINTFORMW 最初こそ悲鳴を上げていた%CALLNAME:TARGET%でしたが、両穴を巨大なペニスで蹂躙され、声を甘く蕩けさせてしまいます…
+			CALL SELF_KOJO, "ドラ姦寝取られ：日常ＶＡおねだり"
+
+			PRINTFORMW %CALLNAME:TARGET%はすっかり%TEXTR("ドラゴンのペニスの虜になり", "ドラゴンの凶悪なペニスにメロメロになり", "巨大なドラゴンのペニスを受け入れ")%、前後の穴%TEXTR("を貫かれる度ケダモノのような声をあげて", "に溢れて零れるまで竜の精を注がれて")%います…
+		ELSE
+			PRINTFORMW いったい誰の牝であるのか教えてやるとばかりに、巨大なペニスをねじ込まれてしまいました！
+			CALL SELF_KOJO, "ドラ姦寝取られ：日常ＶＡお楽しみ中"
+
+			PRINTFORMW 最初こそ悲鳴を上げ、%CALLNAME:MASTER%に助けを求めていた%CALLNAME:TARGET%でしたが、両穴を巨大なペニスで念入りに調教されると、その味を思い出させられ、快楽に顔をだらしなく歪めてしまいます…
+			CALL SELF_KOJO, "ドラ姦寝取られ：日常ＶＡおねだり"
+
+			PRINTFORMW %CALLNAME:TARGET%はすっかり%TEXTR("ドラゴンのペニスの虜になり", "ドラゴンの凶悪なペニスにメロメロになり", "巨大なドラゴンのペニスを受け入れ")%、前後の穴%TEXTR("を貫かれる度ケダモノのような声をあげて", "に溢れて零れるまで竜の精を注がれて")%います…
+		ENDIF
+	;前穴ルート
+	ELSEIF EXP:Ｖ竜姦経験 && RANDIF(1, EXP:Ａ竜姦経験)
+		IF MARK:竜姦刻印 == 2 && CFLAG:472 >= 200
+			IF COND("夜") && ABL:露出癖 >= 3
+				PRINTFORMW %CALLNAME:TARGET%は人気のなくなった街の広場でドラゴンの巨大なペニスに熱心に舌を這わせ、%TEXTR("全身を白濁で染め上げられ恍惚として", "牝の貌で種付けをねだって")%いる…
+				CALL SELF_KOJO, "ドラ姦寝取られ：日常Ｖお楽しみ中"
+
+				PRINTFORMW その淫欲に溺れた姿にドラゴンは強く興奮し、後から覆い被さるように%CALLNAME:TARGET%へと襲いかかっていく…！
+				CALL SELF_KOJO, "ドラ姦寝取られ：日常Ｖおねだり"
+
+				MEMO_LINECOUNT = LINECOUNT
+
+				CALL SELF_KOJO, "ドラ姦寝取られ：日常Ｖ夢中"
+
+				SIF LINECOUNT > MEMO_LINECOUNT
+					RETURN 1
+
+				;小柄体型
+				IF TALENT:小柄体型 && RAND:2 == 0
+					PRINTFORMW %CALLNAME:TARGET%は狭い胎内を一突きに凶悪なペニスで征服されつくされ、だらしない顔で歓喜の声を上げている…
+					PRINTFORMW ドラゴンは%CALLNAME:TARGET%の穴を自らの凶器でみっちりと埋め尽くしたのを感じ取ると、そのまま凄まじい勢いで射精を始めた…！
+					PRINTFORMW 出口に栓をされた状態で勢いよく白濁を注ぎ込まれ、%CALLNAME:TARGET%のさながら妊婦のような姿を晒している…！
+				ELSE
+					PRINTFORMW %CALLNAME:TARGET%は巨体の下で叩き潰されるかのような激しい注挿を受けているにも関わらず、歓喜の声を上げている…
+					PRINTFORMW それどころか、もはや一匹の淫乱な牝竜に堕ちてしまった%CALLNAME:TARGET%は、より深く、貪欲に快楽を貪ろうとして自分から腰を動かしている…
+					PRINTFORMW ドラゴンはその様子に満足そうに唸ると、これは自らの所有物だと主張するように%CALLNAME:TARGET%の奥深くへと白濁液を注ぎこんだ…！
+				ENDIF
+			ELSE
+				PRINTFORMW %CALLNAME:TARGET%は腕ほどもある巨大なペニスで可愛がられ%TEXTR("、子宮が溢れかえるまで種付けされてしまった", "ながら、ドラゴンと愛を語らっているようだ")%…
+				CALL SELF_KOJO, "ドラ姦寝取られ：日常Ｖお楽しみ中"
+
+				;小柄体型
+				IF TALENT:小柄体型 && RAND:3 == 0
+					PRINTFORMW 膣内をドラゴンの巨大なペニスの形に成形される悦楽には逆らうことができず、%CALLNAME:TARGET%は正体を無くして肉欲に溺れている…
+				ELSEIF RAND:2 == 0
+					PRINTFORMW %CALLNAME:TARGET%はうっとりと陶酔した表情で自らの愛液とドラゴンの精液で濡れたペニスへと舌を這わせ、早くも次の子作りをおねだりしている…
+				ELSE
+					PRINTFORMW %CALLNAME:TARGET%はぽっかりと開いた膣口からとめどなく精液溢れさせながら、ドラゴンと濃厚なキスを交わしている…
+				ENDIF
+			ENDIF
+		ELSEIF MARK:竜姦刻印 == 1 && CFLAG:472 >= 100
+			CALL SELF_KOJO, "ドラ姦寝取られ：日常Ｖお楽しみ中"
+			PRINTFORMW %CALLNAME:TARGET%は腕ほどもある巨大なペニスで可愛がられ、たっぷりと膣内に種付けされてしまった…
+		ELSEIF CFLAG:472 >= 30
+			PRINTFORMW %CALLNAME:TARGET%は心変わりを敏感に察知したドラゴンに、いったい誰の牝であるのか教えてやるとばかりに、巨大なペニスをねじ込まれてしまいました！
+			CALL SELF_KOJO, "ドラ姦寝取られ：日常Ｖお楽しみ中"
+
+			PRINTFORMW 最初こそ悲鳴を上げていた%CALLNAME:TARGET%でしたが、巨大なペニスを打ち付けられる度に声が甘く蕩けてしまいます…
+			CALL SELF_KOJO, "ドラ姦寝取られ：日常Ｖおねだり"
+
+			PRINTFORMW そして子宮を灼熱の竜精でみっしりと満たされてしまった頃には、元の従順な竜嫁に成り下がっていました…
+		ELSE
+			PRINTFORMW いったい誰の牝であるのか教えてやるとばかりに、巨大なペニスをねじ込まれてしまいました！
+			CALL SELF_KOJO, "ドラ姦寝取られ：日常Ｖお楽しみ中"
+
+			PRINTFORMW 最初こそ悲鳴を上げ、%CALLNAME:MASTER%に助けを求めていた%CALLNAME:TARGET%でしたが、何度となく刻み込まれた快楽の味を思い出してしまい、%CALLNAME:MASTER%に謝りながらドラゴンのペニスを受け入れてしまいます…
+			CALL SELF_KOJO, "ドラ姦寝取られ：日常Ｖおねだり"
+
+			PRINTFORMW そして子宮を灼熱の竜精でみっしりと満たされてしまった頃には、元の従順な竜嫁に成り下がっていました…
+		ENDIF
+	;アナル
+	ELSE
+		IF MARK:竜姦刻印 == 2 && CFLAG:472 >= 200
+			SIF COND("夜") && ABL:露出癖 >= 3
+				PRINTFORM 人家にほど近い茂みの中、
+			PRINTFORMW %CALLNAME:TARGET%は腕ほどもあるドラゴンの巨大なペニスで%TEXTR("、たっぷりと後ろの穴を可愛がられてしまった", "後の穴を貫かれながら、愛を語らっているようだ")%…
+
+			CALL SELF_KOJO, "ドラ姦寝取られ：日常Ａお楽しみ中"
+
+			;小柄体型
+			IF TALENT:小柄体型 && RAND:3 == 0
+				PRINTFORMW %CALLNAME:TARGET%は文字通りお腹いっぱいになるまで子種を下の口から飲まされて、さながら妊婦のような姿を晒している…
+			ELSEIF RAND:2 == 0
+				PRINTFORMW %CALLNAME:TARGET%はうっとりと陶酔した表情で、自らの腸液と精液で濡れたペニスへと舌を這わせ、綺麗に舐め清めている…
+			ELSE
+				PRINTFORMW %CALLNAME:TARGET%はぽっかりと開いた尻穴からとめどなく精液溢れさせながら、ドラゴンと濃厚なキスを交わしている…
+			ENDIF
+		ELSEIF MARK:竜姦刻印 == 1 && CFLAG:472 >= 100
+			CALL SELF_KOJO, "ドラ姦寝取られ：日常Ａお楽しみ中"
+			PRINTFORMW %CALLNAME:TARGET%は腕ほどもある巨大なペニスでたっぷりと後ろの穴を可愛がられてしまった…
+		ELSEIF CFLAG:472 >= 30
+			PRINTFORMW %CALLNAME:TARGET%は心変わりを敏感に察知したドラゴンに、腕ほどもある巨大なペニスを後ろの穴にねじ込まれてしまいました！
+			CALL SELF_KOJO, "ドラ姦寝取られ：日常Ａお楽しみ中"
+
+			PRINTFORMW 最初こそ悲鳴を上げていた%CALLNAME:TARGET%でしたが、不浄の穴がもう閉じなくなってしまうかと思うくらいに激しく犯されると、その声はすぐに甘く蕩けてしまいます…
+			CALL SELF_KOJO, "ドラ姦寝取られ：日常Ａおねだり"
+
+			PRINTFORMW そして最後には、拡張されきった尻穴に、ドラゴンのペニスの味を再び刻み込まれてしまいました…
+		ELSE
+			PRINTFORMW 腕ほどもある巨大なペニスを後ろの穴にねじ込まれてしまいました！
+			CALL SELF_KOJO, "ドラ姦寝取られ：日常Ａお楽しみ中"
+
+			PRINTFORMW 最初こそ悲鳴を上げ、%CALLNAME:MASTER%に助けを求めていた%CALLNAME:TARGET%でしたが、凶悪なペニスでごりごりと執拗に腸壁を削られると、%CALLNAME:MASTER%に詫びながら、圧倒的な尻穴快楽に屈してしまいます…
+			CALL SELF_KOJO, "ドラ姦寝取られ：日常Ａおねだり"
+
+			PRINTFORMW そして最後には、拡張されきった尻穴に、ドラゴンのペニスの味を再び刻み込まれてしまいました…
+		ENDIF
+	ENDIF
+ENDSELECT

@@ -1,0 +1,435 @@
+﻿;-------------------------------------------------
+;ゴブリン日常口上_2011_03_25（キャラクターの名前を入れる、下にコンセプトなど一言あれば入れる）
+;製作者　eraSQ製作スレッド11>>51
+;
+;既存の作者様のゴブリンとはまったくキャラが違うので下手をすれば違和感でまくりかも。まぁ本来はこちらの方が違和感ありまくりなんだろうけど･･･
+;
+;以前もそうだけど、既存のファイルを改変しただけなので構文間違いなどあるかも。一応起動確認済みですが･･･。
+;もう頭の中がお花畑なので･･･ミスあったら誰かお願いします
+;-------------------------------------------------
+@DAILY_LIFE_MESSAGE_31_2
+#DIM LCOUNT
+#DIM GUEST, 20
+;#DIM GUEST2, 20
+#DIM DEVENT, 100
+#DIM EVENT_NUM
+#DIM NUM_RAND
+
+;会話イベント用
+VARSET DEVENT
+VARSET GUEST
+;VARSET GUEST2
+
+;各イベントが発生する条件をチェックし、ＯＫならDEVENT:(イベント番号)に１を代入
+;登場させるキャラが居る場合には、一人目から順にGUEST, GUEST2にそのキャラの番号を代入する
+
+;同じようなゴブリンが二人いた場合
+IF FIND_COND("Ｃゴブリン", "恋慕")
+	DEVENT:1 = 1
+	GUEST:1 = FIND_COND("Ｃゴブリン", "恋慕")
+ENDIF
+
+;起きうるイベントから、等確率でのランダム選択開始
+NUM_RAND = 1
+FOR LCOUNT, 1, 100
+	SIF DEVENT:LCOUNT == 0
+		CONTINUE
+	;CEVENTを用いて、イベントが既に発生したかをチェックし、していないなら優先的に発生させる処理を行う
+	;数字が大きい（新しく用意された）ものほど優先
+	;起きるイベント番号はEVENT_NUMに保存。イベントが発生しないならEVENT_NUM = 0 となる
+	LOCALS:LCOUNT = 日常：%TOFULL(TOSTR(LCOUNT) )%
+	SIF RAND:NUM_RAND == 0 || CEVENT(LOCALS:LCOUNT) == 0
+		EVENT_NUM = LCOUNT
+
+	NUM_RAND += 1
+NEXT
+
+;ゲストキャラ
+GUEST = GUEST:EVENT_NUM
+;GUEST2 = GUEST2:EVENT_NUM
+
+;-------------------------------------------------
+;以下個別日常口上
+;-------------------------------------------------
+;反発刻印Lv3の時
+IF MARK:反発刻印 == 3 
+	IF TIME == 1 && RAND:3 == 0
+		PRINTFORMW %CALLNAME:PLAYER%は%CALLNAME:TARGET%の身体を思う存分楽しみ、ようやく落ち着いたところで窓を見る。
+		PRINTFORMW すっかり日は落ちており、%CALLNAME:PLAYER%はもう何時間もこのオモチャと繋がっていたことを自覚した。
+		PRINTFORMW しかし･･･時間も何も気にすることはない。
+		PRINTFORMW この体に溺れても･･･全てはあなたの自由だ。
+	ELSEIF RAND:3 == 0
+		PRINTFORMW ふと%CALLNAME:TARGET%の前を通りかかると、ベッドの上に投げ出された肢体が目に入った。
+		PRINTFORMW ろくに食事も取っていないにもかかわらずその体はなにも変わらない。
+		PRINTFORMW 艶やかな髪も、ふっくらとした丸みのある胸、形のよいヒップ。
+		PRINTFORMW 何の手入れもしていないのだが、最高の状態をキープしている。
+		PRINTFORMW そうだ。“あれ”をどう手荒に扱おうが、肉体的なダメージを与えることが出来ないという夢魔独特の特性のおかげでいつでもその体は新品同様なのだ。
+		PRINTFORMW どうせ他にすることもない。あなたは“それ”でどう遊ぼうかと考え、その部屋の戸をあけた。
+	ELSEIF RAND:2 == 0
+		PRINTFORMW 『びゅ！　びゅびゅっ！　びゅるるる！』
+		PRINTFORMW もう何回目の射精だろうか。
+		PRINTFORMW いつだったか、%CALLNAME:TARGET%の気が狂ったかのような笑いを聞いてから自分の何かが変わってしまった。
+		PRINTFORMW 暇を見つけてはこの部屋を訪れ、%CALLNAME:TARGET%の秘部に自らのペニスをねじ込み、乱暴に腰をゆする。
+		PRINTFORMW 相手の都合など考えなくてもいい。そういう意味ではこれは自慰行為に等しい。
+		PRINTFORMW 『にちゃ　にちゃ　にちゃ』
+		PRINTFORMW 粘性を伴った水音が室内に響く。
+		PRINTFORMW 
+		PRINTFORMW それはあまりにも長く･･･永遠のようにも思える時間だった
+	ELSE
+		PRINTFORMW %CALLNAME:MASTER%の屋敷の同居人からある苦情が持ち上がった。
+		PRINTFORMW 『調教部屋の一室から異臭がする』
+		PRINTFORMW %CALLNAME:MASTER%は雑巾を持ち、その異臭の元である精液塗れの%CALLNAME:TARGET%を洗うことにした･･･
+	ENDIF
+;体力が低め（1000以下）の時は休ませる
+;部屋でゆっくりくつろぎタイム
+ELSEIF BASE:体力 <= 1000
+	PRINTFORMW 通りすがりにふと%CALLNAME:TARGET%の部屋を覗いてみた……
+	;恋慕の時
+	IF TALENT:恋慕 
+		IF RAND:3 == 0
+			PRINTFORMW %CALLNAME:TARGET%は「がおー」っと寝言だか寝息だかを立てて熟睡しているようだ
+			PRINTFORMW その口からはよだれが流れ、とてもではないが美しいとも女性らしいとも思えない。
+			PRINTFORMW 「ん…%CNAME("二人称")%…えへへぇ･･･だいすきぃ♪」
+			PRINTFORMW しかし、可愛いらしいのは確かだ。
+		ELSEIF RAND:2 == 0
+			PRINTFORMW ベッドに腰掛け、%CALLNAME:TARGET%はウトウトと舟をこいでいる。
+			PRINTFORMW ｢………んぁっ！？｣
+			PRINTFORMW こちらの視線に気付いたのだろうか。突然そんな声を上げて顔を上げた%CALLNAME:TARGET%と目が合う。
+			PRINTFORMW 「ん･･･遅かったね･･･？　じゃあ始めよっか」
+			PRINTFORMW %CALLNAME:PLAYER%は苦笑しながらも、調教のためにここを訪れたのではないと%CALLNAME:TARGET%に言う
+			PRINTFORMW 「そうなの･･･？　じゃ、おちんちんどこの穴に入れよう？」
+			PRINTFORMW %CALLNAME:PLAYER%は率直に眠いのならそのまま寝ていればいいと促してみる。
+			PRINTFORMW 「んふふ。　アリガト♪　じゃあ一緒にお昼寝しようか」
+			PRINTFORMW 断る理由も無いので%CALLNAME:TARGET%と仲良く抱き合いながらお昼寝をしました･･･
+		ELSE
+			PRINTFORMW 「あ♪　トモダチ！」
+			PRINTFORMW あっけなくこちらの存在に気付かれてしまった。
+			PRINTFORMW 「見て見て♪」
+			PRINTFORMW そう言いながら彼女は手にしていた画用紙を%CALLNAME:PLAYER%に見せてきた。
+			PRINTFORMW ････。
+			PRINTFORMW 絵だ。手足が胴体ほどもある人間･･･だろうか？とにかく奇妙な二体の生物が手をつないでいるようにも見える。
+			PRINTFORMW 「%CNAME("二人称")%とね、%CNAME("一人称")%が仲良く遊んでるところ♪　見ているだけで『ユウジョウ』が溢れてるでしょ♪」
+			PRINTFORMW 「さっきはいっぱい頑張ってくれたし、%CNAME("一人称")%眠かったけど何かお礼できないかなって･･･♪」
+			PRINTFORMW 激しい調教で疲れているだろうに、彼女は微塵ともそんな顔は見せなかった。
+			PRINTFORMW ･･･決して上手ではないし、説明されないと何を書いたのか分からないほど幼稚で拙い絵だが、
+			PRINTFORMW 描かれた二人がとても幸せそうな笑顔だったことだけは、褒めてやるべきだろう。
+		ENDIF
+	;屈服刻印Lv3以上
+	ELSEIF MARK:屈服刻印 >= 3 
+		IF RAND:3 == 0
+			PRINTFORMW ベッドの上で大の字になって%CALLNAME:TARGET%は眠っているようだ
+			PRINTFORMW ｢…んがー｣
+			PRINTFORMW そしてぼりぼりと腹を掻く･･･。
+			PRINTFORMW %CALLNAME:PLAYER%は%CALLNAME:TARGET%のおなかが冷えないよう、毛布をかけてあげることにした
+			PRINTFORMW 「んぅ･･♪　%CNAME("二人称")%大好きぃ･･･♪」
+			PRINTFORMW あまりにも可愛かったのでしばらくその寝顔を見て楽しむことにした･･･
+		ELSEIF RAND:2 == 0
+			PRINTFORMW 「あれ？　どうしたの？」
+			PRINTFORMW %CALLNAME:TARGET%はもう眠ろうとしていたところだが、%CALLNAME:PLAYER%の姿を見るなりこちらに駆け寄ってくる
+			PRINTFORMW 「あ、またおちんちんからぴゅっぴゅしたい？」
+			PRINTFORMW 「いいよ♪」
+			PRINTFORMW 「おまんこズコズコする？　それともぺろぺろしてあげよっか？」
+			PRINTFORMW %CALLNAME:PLAYER%はそんな気分ではないので%CALLNAME:TARGET%の頭を撫で、立ち去ろうとした･･･。
+			PRINTFORMW 「えへへ･･･♪　もし･･･もしヒマなら%CNAME("一人称")%と一緒に遊ばない？」
+			PRINTFORMW その後、二人でイチャイチャして過ごすことにしました･･･
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%はベッドにうつぶせでいびきを掻いて眠っている。
+			PRINTFORMW 「んごー」
+			PRINTFORMW と、%CALLNAME:TARGET%が何かを握り締めていることに気付いた。
+			PRINTFORMW ････手紙のようだ。
+			PRINTFORMW 好奇心に打ち負けた%CALLNAME:PLAYER%は少しその内容を呼んでみることにする。
+			PRINTFORMW 『てんごくにいるトモダチへ』
+			PRINTFORMW 『あたしはいまあたらしいトモダチと出あえてしあわせです。　きょうもこんなことがありました』
+			PRINTFORMW ･･･ここから先を読むのは彼女への冒涜だろう。
+		ENDIF
+	;屈服刻印Lv3以下
+	ELSEIF MARK:屈服刻印 <= 3 
+		IF RAND:3 == 0
+			PRINTFORMW 彼女は椅子に腰掛け、なにやら考え込んでいる。
+			PRINTFORMW 「むー」
+			PRINTFORMW どうしたのかと、%CALLNAME:PLAYER%は部屋に入ってたずねてみた。
+			PRINTFORMW 「うわっ！　いたの！？　でもちょうどイイや♪」
+			PRINTFORMW 「ねーねー、%CNAME("二人称")%、%CNAME("一人称")%不思議に思ってるコトがあるんだ」
+			PRINTFORMW 近頃%CALLNAME:TARGET%はしきりに色んなことを%CALLNAME:PLAYER%へ尋ねてくる。
+			PRINTFORMW その好奇心の強さから、次から次へと湧き出るように様々な疑問が湧くようだ。
+			PRINTFORMW まあ、外見だけで言うなら・・・だが、彼女のような年頃はなんでも不思議に感じるのだろう。
+			IF RAND:3 == 0
+				PRINTFORMW 「トカゲってタマゴ生むんだよね。　卵生だもんね」
+				PRINTFORMW 「でもリザードマンは赤ちゃんを産むのはどうして？　リザードなのに爬虫類じゃないの？」
+				PRINTFORMW 「ってか、そもそもリザードウーマンじゃないの？」
+				PRINTFORMW ときに子供は大人でも難しい質問をすることがある。
+			ELSEIF RAND:2 == 0
+				PRINTFORMW 「ｓ２反応はワンちゃんスタイルで、ｓ１反応は正常位なんだよね？」
+				PRINTFORMW 「なら･･･この化学反応式で言えば、ヒドロキシル基がカルボニル基にズコズコしちゃうはずなんだけど･･･」
+				PRINTFORMW 「そうならない･･･どうして？　キレートで考えれば良いの？」
+				PRINTFORMW %CALLNAME:PLAYER%が見たこともないような難しい本を見せ付けてくるが、そもそも彼女が何の話をしているのかすら分からない････
+				PRINTFORMW しかし、%CALLNAME:TARGET%が期待に満ちた目をしている･･･
+			ELSE
+				PRINTFORMW 「この世界から全ての生物が死んじゃうとするね？　そう･･･ある日ぱっと消えちゃうの」
+				PRINTFORMW 「それでも夕焼けは赤いのかな？」
+				PRINTFORMW %CALLNAME:PLAYER%は少し考え、『自然環境に大規模な影響を及ぼさない限りはそうなのだろう』と%CALLNAME:TARGET%に答えた。
+				PRINTFORMW 「どうして？　夕焼けを赤いって感じる生物はいないんだよ？　%CNAME("二人称")%はなぜそう言い切れるの？」
+				PRINTFORMW 「赤いものを青いと感じるだけの生物しかいない世界だったら夕焼けは何色？」
+				PRINTFORMW %CALLNAME:PLAYER%は居心地の悪さしか感じない。
+			ENDIF
+			PRINTFORMW さて。ここをどう切り抜けるかが、大人としての腕の見せ所だろう。
+		ELSEIF RAND:2 == 0
+			PRINTFORMW 「%CNAME("二人称", "～")%っ♪」
+			PRINTFORMW %CALLNAME:PLAYER%が廊下を歩いていると%CALLNAME:TARGET%に呼び止められた。
+			PRINTFORMW 「んふふ～♪　呼んでみただけ♪」
+			PRINTFORMW 一体なんなんだ･･･
+		ELSE
+			PRINTFORMW 「むふ♪」
+			PRINTFORMW %CALLNAME:TARGET%はなにやら満面の笑顔で本を読んでいた。
+			PRINTFORM ふとその本の内容が気になり、タイトルを見てみると、
+			IF RAND:6 == 0
+				PRINTFORM 『男を虜にする65536の方法』
+			ELSEIF RAND:5 == 0
+				PRINTFORM 『週刊ヤンデレ　～ウワキしたら○しちゃうぞ♪　【今月の特別付録はいつでもどこでもさっくりいっちゃえ☆　匠の業がいきる出刃包丁☆】～』
+			ELSEIF RAND:4 == 0
+				PRINTFORM 『有機合成科学Ⅱ』
+			ELSEIF RAND:3 == 0
+				PRINTFORM 『月刊団地妻　～夫より上司から好かれる女～』
+			ELSEIF RAND:2 == 0
+				PRINTFORM 『月刊夢魔　　～今回は受けロリ　自分の若さを利用して男を寝取りましょう～』
+			ELSE
+				PRINTFORM 『月刊農婦　～コンバインよりもよつんばいんが好きなの～』
+			ENDIF
+			PRINTFORMW とある。
+			PRINTFORMW どこからその本を手に入れたか聞き出したいが･･･%CALLNAME:PLAYER%はなにも見なかったことにした。
+		ENDIF
+	ENDIF
+;キャラ限定のイベント。まだ起きていないイベントならCEVENT(LOCALS:EVENT_NUM) == 0なので確実に起こしておく
+ELSEIF EVENT_NUM && (RAND:5 == 0 || CEVENT(LOCALS:EVENT_NUM) == 0)
+	SELECTCASE EVENT_NUM
+	;同じようなゴブリンが二人いた場合
+	;口上次第では違和感出るかも
+	;屈服３、恋慕状態のみ。
+	;動く･･･のか？
+	;↓元気いっぱいの恋慕
+	;先ずはドッペル二人の場合
+	;恋慕状態のゴブリンがもう一人居る
+	CASE 1
+		;昼の時
+		IF TIME == 0
+			IF RAND:4 == 0
+				PRINTFORMW いい天気だったので、%CALLNAME:PLAYER%はぶらぶらと屋敷内を散歩していた。
+				PRINTFORMW 「%CNAME("二人称")%！」
+				PRINTFORMW 「%CNAME("二人称")%！」
+				PRINTFORMW 二人の%CNAME("一人称")%に呼び止められた。
+				PRINTFORMW 二人ともなにやら顔を真っ赤にし、興奮状態だ。
+				PRINTFORMW 「こっちの%CNAME("一人称")%とトモダチなんだよね！？」
+				PRINTFORMW 「違う！　こっちの%CNAME("一人称")%がトモダチなの！」
+				PRINTFORMW 「なにをー！？　こっちの%CNAME("一人称")%の方がおちんちん喜ぶんだから！」
+				PRINTFORMW 「バカ言わないでよ！　こっちの%CNAME("一人称")%の方が数倍気持ちいいんだから！」
+				PRINTFORMW くだらないケンカだ。
+				PRINTFORMW 「「%CNAME("二人称")%！　どっちの%CNAME("一人称")%を取るの！？」」
+				PRINTFORMW %CALLNAME:PLAYER%はなにも言わず、%CALLNAME:TARGET%たち二人の手をとり、にこりと微笑みかける。
+				PRINTFORMW その後は３人でのんびり散歩を楽しみました。
+				PRINTFORMW 
+			ELSEIF RAND:3 == 0
+				PRINTFORMW 「塩入れすぎだってばー！」
+				PRINTFORMW 「そっちだってもう焦げちゃってるじゃないのー！」
+				PRINTFORMW 賑やかな声が聞こえ、ふと台所を見てみると･･･
+				PRINTFORMW 二人がかりで散らかされた台所はもう惨状という言葉が相応しいほどだ…
+				PRINTFORMW 「うわ！　火ッ！　火がぁぁぁ！」
+				PRINTFORMW 「わわ！　指切ったー！　ざっくりイった！　血がー！　赤チンどこぉー！？」
+				PRINTFORMW ･･･本当に食べることの出来るものが出てくるのか。･･本当に不安だ。
+				PRINTFORML 
+				PRINTFORMW そしてついにあなたの前に“それが”出されることになる。
+				PRINTFORMW 「食べて？」
+				PRINTFORMW 「美味しいよ♪」
+				PRINTFORM 二人でニコニコとしながら差し出された料理は
+				IF RAND:7 == 0
+					PRINTFORM 
+				ELSEIF RAND:6 == 0
+					PRINTFORM 消し炭としか思えない異様な物体Ⅹ
+				ELSEIF RAND:5 == 0
+					PRINTFORM 見るだけでも痛々しい、ペニスと同じ形状をした謎の生物の切り身
+				ELSEIF RAND:4 == 0
+					PRINTFORM 時折ビクンビクンと痙攣し、%CALLNAME:PLAYER%を虚ろな目で見上げる謎の生命体
+				ELSEIF RAND:3 == 0
+					PRINTFORM 皿の上で正座し、つぶらな瞳で%CALLNAME:PLAYER%を見上げるちっちゃなおっさん
+				ELSEIF RAND:2 == 0
+					PRINTFORM 庭で生えている雑草としか思えないそれを皿に乗せただけのサラダ
+				ELSE
+					PRINTFORM 化学兵器としか思えない激臭を放つ、虹色に光るゲル状のスープ
+				ENDIF
+				PRINTFORMW だった。
+				PRINTFORM …胃薬のストックがまだあったかどうかを思い出しながら、
+				PRINTFORMW 本能が全力で警鐘を打ち鳴らすこの危険物体を胃の中に収める苦行を開始した。
+				PRINTFORMW ･･･その数十分後、雄たけびのような悲鳴を上げて、%CALLNAME:PLAYER%がトイレに駆け出していったのはいうまでもない。
+			ELSEIF RAND:2 == 0
+				PRINTFORMW 「%CNAME("二人称")%♪」
+				PRINTFORMW 「%CNAME("一人称")%たちが肩を揉んであげるね♪」
+				PRINTFORMW 自分の部屋でくつろいでいた%CALLNAME:PLAYER%の前へ満面の%CALLNAME:TARGET%たちが現れた。
+				PRINTFORMW しかし、いつものように振り回されることはなさそうだ。%CALLNAME:PLAYER%は素直に首を縦に振る。
+				PRINTFORMW 「いつもお疲れだからね」
+				PRINTFORMW 「%CNAME("一人称")%たちが癒してあげるの♪」
+				PRINTFORMW 可愛いところもあるものだ。
+				PRINTFORMW すると、%CALLNAME:PLAYER%野方に小さな手が押し当てられ、程よい力加減が加えられた。
+				PRINTFORMW ほう。これは･････思ったよりも心地いい。
+				PRINTFORMW 
+				PRINTFORMW マッサージを終え、%CALLNAME:PLAYER%は彼女達に礼を述べた。
+				PRINTFORMW 「いや、イイよ♪　トモダチじゃん♪」
+				PRINTFORMW 「そうそう♪　トモダチなんだからこのぐらいはいつでもしてあげるよ♪」
+				PRINTFORMW 肩のコリが取れた%CALLNAME:PLAYER%よりも、むしろ彼女達の方が嬉しそうな顔をしているのは気のせいではないだろう。
+			ELSE
+				PRINTFORMW 『昼食の準備は %CNAME("一人称")%たちに任せて』
+				PRINTFORMW おなじ名前でややこしいがとにかく二人は%CALLNAME:PLAYER%にそう言い残し今やっと準備ができたと知らせを受けたところだ。
+				PRINTFORMW 彼女達が料理当番になるたび、これも自分の消化器官の鍛錬だと諦めてはいるが、それでも足取りは重い。
+				PRINTFORMW いい予感はしない。しかし意を決して彼女達が指定した食事部屋の戸をあけた。
+				PRINTFORMW 「あっ♪　%CNAME("二人称")%♪」
+				PRINTFORMW 「準備は出来てるよ♪　いっぱい食べてね♪」
+				PRINTFORMW そうは言っているが、全裸の二人が色々な調味料を体にふりかけ、テーブルの上に寝転んでいるだけだ。
+				PRINTFORMW やはりまともなものは出来なかったか･･･。
+				PRINTFORMW 「男のロマンでしょ？　女体盛り～♪」
+				PRINTFORMW 湯を沸かそう。
+				PRINTFORMW やはりトンコツか。いや、カップ麺は醤油こそ至高なのだ。
+			ENDIF
+		;夜の時
+		ELSEIF RAND:2 == 0
+			PRINTFORMW 今日の夕食当番は%CALLNAME:TARGET%だ
+			PRINTFORMW 「さて」
+			PRINTFORMW 「さて」
+			PRINTFORMW 同じ背格好の人影が%CALLNAME:PLAYER%の背後から忍び寄る･･･
+			PRINTFORMW 「どーん！」
+			PRINTFORMW 「どーん！」
+			PRINTFORMW まったく同じ掛け声で%CALLNAME:PLAYER%を背後から押し倒した。
+			PRINTFORMW その正体は････%CALLNAME:TARGET%だ！！
+			PRINTFORMW 「んふふ♪　%CNAME("一人称")%達はね、もともと意地悪な種族なんだよ」
+			PRINTFORMW 一人に両手を縛られ、もう一人に圧し掛かられる。
+			PRINTFORMW 「でも、トモダチだから痛いことはしないよ♪」
+			PRINTFORMW そう言って彼女達は%CALLNAME:PLAYER%のペニスへと手を伸ばす･･･。
+			PRINTFORMW 
+			PRINTFORMW 行為の後は３人で仲良く掃除を済ませ、少し遅めの夕食としゃれ込みました。
+		ELSE
+			PRINTFORMW 廊下のド真ん中で%CALLNAME:TARGET%二人がなにやら楽しそうに話をしている
+			PRINTFORMW 「･･･背中ながしあいっこしようか」
+			PRINTFORMW 「うん♪」
+			PRINTFORMW なんだかんだで彼女達は仲が良い。
+			PRINTFORMW 「あ！　%CNAME("二人称")%もお風呂一緒にはいろ～～♪」
+			PRINTFORMW 「うんうん、一緒にはいろ♪　愛くるしい二人の%CNAME("一人称")%がお背中お流ししま～す♪」
+			PRINTFORMW 
+			PRINTFORMW %CALLNAME:PLAYER%はこの後、背中がひりひりして眠れませんでした。
+		ENDIF
+	ENDSELECT
+	;ゲストと仲良くなる
+	CALL CHANGE_RELATION, 5, TARGET, GUEST
+	;今回起きたイベントを記録
+	CALL SET_CEVENT, LOCALS:EVENT_NUM
+;子供を生んでいるとき
+;昼
+ELSEIF TIME == 0 && RAND:3 == 0
+	;恋慕と出産
+	IF TALENT:恋慕 && TALENT:出産経験 && COND("胎児の父親") == MASTER && BASE:育児中
+		IF RAND:2 == 0
+			PRINTFORMW 「ぱぱぁ～♪」
+			PRINTFORMW 母親である%CALLNAME:TARGET%とあまり外見の変わらない子供が%CALLNAME:PLAYER%に抱きついてきます。
+			PRINTFORMW 「あはは♪　お母さんに似てこの子も%CNAME("二人称")%のコトが大好きみたいだね♪」
+			PRINTFORMW 「ね、%CNAME("二人称")%」
+			PRINTFORMW 「%CNAME("一人称")%いまとっても幸せ･･･」
+			PRINTFORMW 「大好きなトモダチも出来たし、その上子供も･･･」
+			PRINTFORMW 「夢魔に同じことが言えるかどうか知らないけれど、」
+			PRINTFORMW 「人生はみんな平等だよね？」
+			PRINTFORMW 「あんな辛いことがあったから････これからはずっと幸せなんだよね」
+			PRINTFORMW %CALLNAME:PLAYER%は力強い頷きで%CALLNAME:TARGET%の瞳を見つめる。
+			PRINTFORMW 「まま、なんで泣いてるの？　おなかいたいの･･･････？」
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%の子供はすくすくと成長中で、今日も元気に庭を走り回っている。
+			PRINTFORMW %CALLNAME:PLAYER%と%CALLNAME:TARGET%はより沿うように愛らしい子供の姿を見つめていた。
+			PRINTFORMW 「夢みたい･･･」
+			PRINTFORMW 「もう%CNAME("一人称")%はずっと一人だと思ってたの」
+			PRINTFORMW 「前のトモダチがいなくなって･･･」
+			PRINTFORMW 「どうしていいのか分からなかった」
+			PRINTFORMW 「でもね、」
+			PRINTFORMW 「今じゃトモダチも出来たし、可愛い子供も出来た･･･」
+			PRINTFORMW 「もうこれ以上の幸せ、分からない･･･これ以上の『ユウジョウ』は知らないんだ」
+			PRINTFORMW 「もう一人･･･子供･･･欲しいな♪」
+			PRINTFORMW す･･･と%CALLNAME:TARGET%の手が%CALLNAME:PLAYER%の股間に伸びていく･･･
+			PRINTFORMW 「ぱぱ、まま・・・何してるの？」
+			PRINTFORMW %CALLNAME:TARGET%は慌てて手を引っ込め、何の関係も無い天気の話をし始めました･･･
+		ENDIF
+	ELSE
+		RESTART
+	ENDIF
+;通常夜の時
+;元気な夜
+ELSEIF TIME == 1 && RAND:3 == 0
+	;恋慕
+	IF TALENT:恋慕
+		IF RAND:4
+			PRINTFORMW %CALLNAME:TARGET%がキッチンで何かをしている
+			PRINTFORMW %CALLNAME:MASTER%に気付くと%CALLNAME:TARGET%は嬉しそうに近づいてきた
+			IF RAND:2 == 0
+				PRINTFORMW 「えへへ…ちょっとお腹すいちゃって･･･♪」
+				PRINTFORMW どうやら夕食の残りをつまみ食いしたいたようだ
+				PRINTFORMW 「どうせなら　%CNAME("二人称")%も%CNAME("一人称")%と一緒にお夜食食べよ♪」
+				PRINTFORMW まあ今は特にやるべき用事もない。
+				PRINTFORMW %CALLNAME:PLAYER%は小さく頷くと晩酌の準備をすることにした
+				PRINTFORMW 
+			ELSE
+				PRINTFORMW 「どしたの？　…ん？　%CNAME("一人称")%は料理の練習中だよ？」
+				PRINTFORMW 彼女の料理の腕は壊滅的だ。
+				PRINTFORMW %CALLNAME:MASTER%は…ここに来たことを幸運に思う。
+				PRINTFORMW 「試作品だけど、味見してみる？」
+				PRINTFORMW やはり逃げよう。
+				PRINTFORMW 「今回は自信作♪　%CNAME("二人称")%のほっぺた落っこちて行方不明になるんだから♪」
+				PRINTFORMW ･･･いや、訂正。全力で逃げよう。
+			ENDIF
+		ELSEIF RAND:2 == 0
+			PRINTFORMW %CALLNAME:TARGET%の部屋を覗くと%CALLNAME:TARGET%と目が合った･･･
+			PRINTFORMW どうやら%CALLNAME:MASTER%が通りかかるまでドアの隙間をジッと見つめていたようだ。
+			PRINTFORMW …このまま通り過ぎれば後が怖い。
+			PRINTFORMW 「入りなよ♪」
+			PRINTFORMW %CALLNAME:MASTER%は意を決して部屋の中に足を踏み入れる。
+			PRINTFORMW 「眠れないんでしょ？」
+			PRINTFORMW 「えへ♪　実は%CNAME("一人称")%も♪　さすがトモダチ♪　気が合うね♪」
+			PRINTFORMW まだ何も言っていないのだが･･･。
+			PRINTFORMW 「ね？　あそぼ？　」
+			PRINTFORMW そう言って彼女は淫らな笑顔を浮かべる。
+			PRINTFORM そして%CALLNAME:PLAYER%に向かって
+			IF RAND:3 == 0
+				PRINTFORM その幼い性器を指で押し広げ
+			ELSEIF RAND:2 == 0
+				PRINTFORM 豊満だとは言いがたいバストを無理にぎゅっと寄せて
+			ELSE
+				PRINTFORM 『にちゃぁ･･･』といやらしい音をわざと立て、よだれ塗れの口を大きく開いて
+			ENDIF
+			PRINTFORMW %CALLNAME:PLAYER%を誘惑し始めた。
+		ELSE
+			PRINTFORMW 「%CNAME("二人称")%はホントだらしないなぁ♪」
+			PRINTFORMW 日が暮れた頃、%CALLNAME:TARGET%は突然%CALLNAME:PLAYER%の部屋を訪れ、そんなことを言い放つ。
+			PRINTFORMW 「%CNAME("一人称")%がお掃除してあげるね♪　ううん、トモダチだし、こんなの当たり前だよ♪」
+			PRINTFORMW 十分部屋は綺麗なはずなのだが････
+			PRINTFORMW しかし無理に止めることもないと思い、彼女の好きにさせることにした。
+			PRINTFORMW 
+			PRINTFORMW しかし、%CALLNAME:PLAYER%はまだ気付いていない。
+			PRINTFORML この後････逆に部屋を散らかされた挙句、
+			PRINTFORMW 『ユウジョウ』なる大義名分により珍しく強気に出た彼女を何回も抱く羽目になろうとは･･･
+		ENDIF
+	;それ以外
+	ELSE
+		IF RAND:3 == 0
+			PRINTFORMW %CALLNAME:TARGET%の部屋を覗くと鏡に向かってなにやら一生懸命作業をしている
+			PRINTFORMW 「んみゃ？　だれ？」
+			PRINTFORMW %CALLNAME:PLAYER%は思わず小さく悲鳴を上げてしまった。
+			PRINTFORMW …振り向いた%CALLNAME:TARGET%の顔はお化け屋敷でも十分活躍できそうなほどの威力だったのだ
+			PRINTFORMW どうやら化粧の真似事をしていたようだが･･･本人はそれで満足気だ･･･。
+		ELSEIF RAND:2 == 0
+			PRINTFORMW 「～～♪　～♪」
+			PRINTFORMW 楽しそうな鼻歌が気にかかり、%CALLNAME:PLAYER%は%CALLNAME:TARGET%の部屋をのぞいて見る。
+			PRINTFORMW 自分の身の丈ほどもある巨大なハンマーを楽しそうに手入れする%CALLNAME:TARGET%の姿が見えた。
+			PRINTFORMW ･･･見なかったことにしよう。
+		ELSE
+			PRINTFORMW 「ふぃ～」
+			PRINTFORMW お風呂上りの%CALLNAME:TARGET%はタオル一枚の姿で飲み物を飲んでいる。
+			PRINTFORMW 「緑茶もいいけど･･･やっぱり梅昆布茶が一番だね」
+			PRINTFORMW ･･･意外にジジ臭い趣味だな。
+			PRINTFORMW 「%CNAME("二人称")%も一度試してみれば分かるよ」
+			PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%をジト目で見つめる。どうやら顔に出ていたようだ･･･。
+		ENDIF
+	ENDIF
+ENDIF
+
+RETURN 1

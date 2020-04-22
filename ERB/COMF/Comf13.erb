@@ -1,0 +1,910 @@
+﻿@COM13
+;くぱぁさせる　Ａインサートの時には体勢的に可能ならば抜かずに行う
+CALL PRINT_TRAIN_NAME(SELECTCOM)
+
+;-------------------------------------------------
+;実行できるかの判定
+;-------------------------------------------------
+CALL SHOW_COM_ORDER_COM, 13
+
+;実行できない
+SIF TCVAR:28 == 0
+	RETURN 0
+;-------------------------------------------------
+;実行決定
+;-------------------------------------------------
+CALL TRAIN_MESSAGE_B
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+STR:0 = %STR:2%
+
+RETURN 1
+
+@FLAG_COM13, ARG
+;夢魔の指⇔夢魔のＶの汚れが移動
+CALL EQ_STAIN, TARGET, TARGET, 1, 3
+SIF PREVCOM == 14 && CHECK_COM("両穴くぱぁ")
+	CALL FLAG_COM14, 50
+
+@SOURCE_COM13, ARG
+SIF PREVCOM == 14 && CHECK_COM("両穴くぱぁ")
+	CALL SOURCE_COM14, 50
+	
+VARSET LOCAL
+
+LOCAL:20 += 20
+LOCAL:21 += 80
+
+LOCAL:12 = 5000
+LOCAL:13 = 500
+LOCAL:14 = 500
+
+;ABL:露出癖をみる
+SELECTCASE ABL:Ｂ感覚
+CASE 0
+	LOCAL:7 = 0
+	LOCAL:11 = 10
+CASE 1
+	LOCAL:7 = 100
+	LOCAL:11 = 50
+	TIMES LOCAL:14, 0.80
+CASE 2
+	LOCAL:7 = 300
+	LOCAL:11 = 100
+	TIMES LOCAL:14, 0.60
+CASE 3
+	LOCAL:7 = 700
+	LOCAL:11 = 500
+	TIMES LOCAL:14, 0.40
+CASE 4
+	LOCAL:7 = 1200
+	LOCAL:11 = 1000
+	TIMES LOCAL:14, 0.20
+CASEELSE
+	LOCAL:7 = 1500
+	LOCAL:11 = 2000
+	TIMES LOCAL:14, 0.00
+ENDSELECT
+
+;恥じらい・恥薄い
+SIF TALENT:恥じらい
+	TIMES LOCAL:14, 1.20
+SIF TALENT:恥薄い
+	TIMES LOCAL:14, 0.50
+
+;処女、貞操観念
+IF TALENT:処女 == 1
+	TIMES LOCAL:13, 2.00
+	LOCAL:12 += 2000
+	SIF TALENT:貞操観念
+		TIMES LOCAL:12, 2.00
+ENDIF
+
+;ビデオ撮影、館内露出、野外プレイは経験等にプラス
+IF TEQUIP:ビデオカメラ
+	TIMES LOCAL:12, 1.50
+	TIMES LOCAL:13, 1.50
+	TIMES LOCAL:14, 1.50
+ENDIF
+IF TEQUIP:館内露出プレイ || TEQUIP:野外プレイ
+	TIMES LOCAL:12, 1.50
+	TIMES LOCAL:13, 1.50
+	TIMES LOCAL:14, 1.50
+ENDIF
+;恥ずかしさアップなプレイ
+IF PREVEX("絶頂数合計") || PREVEX("Ｖ中出し")
+	TIMES LOCAL:11, 1.50
+	TIMES LOCAL:12, 1.50
+	TIMES LOCAL:14, 1.50
+ENDIF
+
+CALL CALC, "調教ソース", LOCAL:0, LOCAL:1, LOCAL:2, LOCAL:3, LOCAL:4, LOCAL:5, LOCAL:6, LOCAL:7, LOCAL:8, LOCAL:9, LOCAL:10, LOCAL:11, LOCAL:12, LOCAL:13, LOCAL:14, LOCAL:15, LOCAL:16, LOCAL:17, LOCAL:18, LOCAL:19, LOCAL:20, LOCAL:21, ARG
+
+
+@TRAIN_MESSAGE_COM13
+TFLAG:16 = 0
+
+IF PREVCOM == SELECTCOM
+	IF COND("両穴くぱぁ")
+		PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%に向けて股間の両方の穴を押し開いた体勢のままじっとしている…
+	ELSE
+		PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%に向けてアソコを開いた体勢のままじっとしている…
+	ENDIF
+	RETURN 0
+ENDIF
+
+VARSET LOCAL
+;両穴くぱぁ
+IF PREVCOM == 14 && CHECK_COM("両穴くぱぁ")
+	IF COND("両穴くぱぁ")
+		PRINTFORM %CALLNAME:TARGET%は既に両方の穴を惜しげもなく開帳していたが、要望に応えて改めて
+	ELSE
+		PRINTFORM %CALLNAME:TARGET%はお尻の穴を見せつけている体勢から更に腰を突き出すと、
+	ENDIF
+;前回Ａくぱぁ
+ELSEIF PREVCOM == 14
+	PRINTFORM %CALLNAME:TARGET%はアナルを見せつけている体勢のまま、今度は
+ELSE
+	;脚拘束
+	IF GETBIT(TEQUIP:拘束, 21)
+		PRINTFORM 脚を開かれた格好で拘束されている%CALLNAME:TARGET%は、
+	ELSE
+		PRINTFORM %CALLNAME:TARGET%は
+	ENDIF
+
+	;穴開きでないパンツをはいていて、ずらされていないなら、必ずずらす
+	SIF !CHECK_CLO("Ｖ露出")
+		CALL SETFLAG, "ボトムを露出：テキスト無し", TARGET
+
+	IF PREVCOM >= 60 && PREVCOM <= 62 && TCVAR:28 > 20 && COND("脚の使用") && RAND:2
+		PRINTFORM 犯されていた体勢のままで
+		LOCAL = 2
+	ELSEIF PREVCOM == 65 && ABL:サドっ気 >= 3 && TCVAR:28 > 20 && COND("脚の使用") && RAND:2
+		PRINTFORM 寝そべる%CALLNAME:PLAYER%の顔を跨いでから
+		LOCAL = 2
+	;表情、雰囲気描写
+	ELSEIF TCVAR:28 <= 20
+		;恥じらい
+		IF TALENT:恥じらい
+			IF RAND:5 == 0
+				PRINTFORM 固く瞳を閉じて
+			ELSEIF RAND:4 == 0
+				PRINTFORM 目を伏せて
+			ELSEIF RAND:3 == 0
+				PRINTFORM 恥ずかしそうに目を閉じて
+			ELSEIF RAND:2 == 0
+				PRINTFORM 羞恥で顔を真っ赤にして
+			ELSE
+				PRINTFORM 恥ずかしそうに頬を染めて
+			ENDIF
+			LOCAL = 1
+		;反抗的
+		ELSEIF TALENT:反抗的
+			PRINTFORM 嫌そうな顔をしながら
+			LOCAL = 1
+		ENDIF
+	ELSEIF TALENT:恋慕 == 0
+		;恥じらい
+		IF TALENT:恥じらい
+			IF RAND:4 == 0
+				PRINTFORM 羞恥に頬を染めて
+			ELSEIF RAND:3 == 0
+				PRINTFORM 顔を火照らせて
+			ELSEIF RAND:2 == 0
+				PRINTFORM 少し頬を染めて
+			ELSE
+				PRINTFORM うっすらと頬を染めて
+			ENDIF
+			LOCAL = 1
+		ENDIF
+	ELSEIF TALENT:恋慕
+		;恥じらい
+		IF TALENT:恥じらい && RAND:2 == 0
+			PRINTFORM 羞恥に頬を染めながら
+		ELSEIF TEQUIP:シックスナイン == 0 && RAND:3 == 0
+			PRINTFORM 上目遣いで様子を伺いながら
+		ELSEIF RAND:2 == 0
+			PRINTFORM うっすらと頬を染めながら
+		ELSE
+			PRINTFORM 顔を火照らせながら
+		ENDIF
+		LOCAL = 1
+	ENDIF
+	IF TEQUIP:シックスナイン
+		PRINTFORM %CALLNAME:PLAYER%の顔から腰を浮か
+		IF TCVAR:28 > 20 && COND("脚の使用") && RAND:2
+			PRINT して股をさらに開くと、
+		ELSE
+			PRINT すと、
+		ENDIF
+	ELSEIF PREVCOM == 1 || PREVCOM == 9
+		SIF LOCAL
+			PRINTFORM 、
+	;脚を拘束されていないなら開く描写
+	ELSEIF COND("脚の使用")
+		;腰つきだし
+		IF TCVAR:28 > 50 && RAND:3 == 0
+			IF PREVCOM == 65 && LOCAL == 2
+				PRINTFORM 腰を下ろすと、
+			ELSEIF !INSERT("インサート") && TALENT:淫乱 && RAND:3 == 0
+				PRINTFORM 両脚で%CALLNAME:PLAYER%の頭を引き寄せると、
+			ELSEIF RAND:2 == 0
+				PRINTFORM %NAMES("両腕")%で太腿をひきつけるようにして大きく股を開くと、
+			ELSEIF TEQUIP:ビデオカメラ
+				PRINTFORM よく見えるように腰を突き出すと、
+			ELSE
+				PRINTFORM %CALLNAME:PLAYER%によく見えるように腰を突き出すと、
+			ENDIF
+		;大開脚
+		ELSEIF TCVAR:28 > 20 && RAND:2 == 0
+			IF RAND:2 == 0 || INSERT("インサート") || (PREVCOM >= 60 && PREVCOM <= 69)
+				IF PREVCOM == 65 && LOCAL == 2
+					PRINTFORM 脚をがに股に広げ
+				ELSEIF (INSERT("背面座位") && TEQUIP:羞恥プレイ) || TEQUIP:ビデオカメラ
+					PRINTFORM 脚を大きく広げ
+				ELSE
+					PRINTFORM %CALLNAME:PLAYER%の方に向かって脚を広げ
+				ENDIF
+			ELSEIF TEQUIP:お風呂プレイ
+				PRINTFORM バスタブの縁に腰掛けて両脚を大きく広げ
+			ELSEIF TEQUIP:館内露出プレイ || TEQUIP:野外プレイ
+				PRINTFORM 腰を下ろして両脚を大きく広げ
+			ELSE
+				PRINTFORM ベッドの上で両脚を大きく広げ
+			ENDIF
+			IF ABL:露出癖 >= 3 && CHOSECOM(SELECTCOM) == 0 && RAND:2
+				IF RAND:2
+					PRINTFORM て視線を股間に誘導すると、
+				ELSE
+					PRINTFORM て視線が股間に突き刺さるのを愉しみながら、
+				ENDIF
+			ELSE
+				PRINTFORM ると、
+			ENDIF
+		;開脚
+		ELSE
+			IF PREVCOM == 65 && LOCAL == 2
+				PRINTFORM 脚を肩幅よりも広めに開くと、
+			ELSEIF TALENT:恥薄い && TCVAR:28 > 20 && RAND:2 == 0
+				PRINTFORM ためらいなく両脚を開くと、
+			ELSEIF (TALENT:臆病 || TALENT:素直 || TALENT:恥じらい) && RAND:2 == 0
+				PRINTFORM おずおずと脚を左右に広げると、
+			ELSEIF RAND:2 == 0
+				PRINTFORM 従順に脚を開くと、
+			ELSE
+				PRINTFORM 脚を控えめに広げると、
+			ENDIF
+		ENDIF
+	ELSEIF LOCAL
+		PRINTFORM 、
+	ENDIF
+ENDIF
+
+;アソコを開く描写
+;IF TCVAR:28 <= 20 && TALENT:内気 + TALENT:恥じらい
+;	PRINTFORM 緊張に震える
+;ELSEIF TCVAR:28 > 50 && RAND:2 == 0
+;	PRINTFORM 両手の
+;ELSEIF TCVAR:28 > 20 && RAND:2 == 0
+;	PRINTFORM Ｖ字に開いた
+;ELSEIF TALENT:小柄体型
+;	PRINTFORM 小さな
+;ENDIF
+;PRINTFORM 指先で、
+
+;膣口
+IF TCVAR:28 > 50 && COND("指の使用") && TALENT:処女 == 0 && (PREVCOM == 141 || PREVCOM == 143 || RAND:3 == 0)
+	IF PREVPLAY("膣内浴尿")
+		PRINTFORM おしっこ%TEXTR("で洗われた", "を流し込まれた")%ばかりの
+	ELSEIF PREVCOM == 141 || PREVCOM == 143
+		PRINTFORM フィストされたばかりの
+	ELSEIF PREVCOM == 31
+		PRINTFORM バイブを抜かれたばかりの
+	ELSEIF PREVCOM >= 60 && PREVCOM <= 69 && LOCAL != 2
+		PRINTFORM 先程まで犯されていた
+	ELSEIF PREVEX("Ｖ絶頂")
+		IF PREVCOM == 3 || PREVCOM == 65
+			PRINTFORM イったばかりの
+		ELSE
+			PRINTFORM イかされたばかりの
+		ENDIF
+	ELSEIF EX:Ｖ絶頂
+		PRINTFORM 快感にヒクつく
+	ELSEIF PALAM:Ｖ潤 >= 3000 && PALAM:欲情 >= 3000
+		PRINTFORM \@ EXP_GAIN(0) == 0 ? 既に # \@愛液を垂れ流している
+	ENDIF
+
+	IF EXP_GAIN(53) >= 3 || ABL:Ｖ拡張 >= 3 + RAND:3 || PREVCOM == 141 || PREVCOM == 143
+		PRINTFORM 緩んだ
+	ELSEIF RAND:2 == 0
+		PRINTFORM ピンク色の
+	ENDIF
+
+	;両穴くぱぁ且つ継続中ではない
+	IF PREVCOM == 14 && CHECK_COM("両穴くぱぁ") && COND("両穴くぱぁ") == 0
+		PRINTFORM 膣口にも指を潜り込ませて、
+	ELSE
+		PRINTFORM 膣口に指を潜り込ませて、
+	ENDIF
+	LOCAL:1 = 2
+;小陰唇
+ELSEIF TCVAR:28 > 20 && RAND:2 == 0
+	IF PALAM:Ｖ潤 >= 3000 && PALAM:欲情 >= 10000
+		IF AGE(TARGET) >= 3 && PALAM:欲情 >= 30000 && RAND:2
+			PRINTFORM 発情してすっかり咲き乱れた
+		ELSE
+			PRINTFORM 興奮で綻んだ
+		ENDIF
+	ELSEIF PALAM:Ｖ潤 >= 500 && PALAM:欲情 >= 3000
+		PRINTFORM 愛液で濡れている
+	ELSE
+		IF AGE(TARGET) == 1
+			PRINTFORM 小さな
+		ELSE
+			PRINTFORM まだ縮んだままの
+		ENDIF
+	ENDIF
+	SIF TALENT:淫壷 + TALENT:好色 + TALENT:淫乱 && PALAM:Ｖ潤 >= 3000 && PALAM:欲情 >= 3000 && RAND:2
+		PRINTFORM 淫乱な
+
+	IF AGE(TARGET) == 1 || RAND:2 == 0
+		PRINTFORM 小陰唇を
+	ELSE
+		PRINTFORM ビラビラを
+	ENDIF
+	LOCAL:1 = 1
+;大陰唇
+ELSE
+	IF PREVCOM >= 60 && PREVCOM <= 69 && LOCAL != 2
+		IF PENIS(PLAYER) && RAND:2
+			PRINTFORM ペニスを抜かれたばかりの
+		ELSE
+			PRINTFORM 先程まで犯されていた
+		ENDIF
+	ELSEIF TALENT:ラビアピアス && RAND:3 == 0
+		PRINTFORM %TEXTS("ラビアピアス")%で飾られた
+	;陰毛描写
+	ELSEIF COND("陰毛") && RAND:2
+		SELECTCASE COND("陰毛")
+		CASE 7
+			PRINTFORM 濃い陰毛に覆われた
+			SIF AGE(TARGET) >= 4
+				PRINTFORM オトナの
+		CASE 6
+			PRINTFORM 普段は陰毛で隠れている
+		CASE 5
+			IF AGE(TARGET) >= 3 && RAND:2
+				PRINTFORM 念入りにお手入れされている成熟した
+			ELSE
+				PRINTFORM 整えられた陰毛に縁取られている
+			ENDIF
+		CASE 4
+			;無精髭状態
+			IF CONDS("陰毛") == "無精髭"
+				PRINTFORM 陰毛がまばらに生えて無精髭状態の
+			;剃り跡
+			ELSEIF CONDS("陰毛") == "剃り跡"
+				PRINTFORM 剃り跡の目立つ
+			;生えかけ(小柄or幼稚)
+			ELSEIF TALENT:小柄体型 + TALENT:幼稚
+				IF RAND:2
+					PRINTFORM 産毛の生えた
+				ELSE
+					PRINTFORM 子供っぽさの残る
+				ENDIF
+			;生えかけ（大人）
+			ELSE
+				IF RAND:2 && BASE:陰毛%100 >= 5
+					PRINTFORM 毛が生え揃ってきた
+				ELSE
+					PRINTFORM 陰毛の薄い
+				ENDIF
+			ENDIF
+		CASE IS <= 3
+			IF COND("陰毛") == 3 && RAND:2
+				IF RAND:2
+					PRINTFORM 剃毛された
+				ELSE
+					PRINTFORM ツルツルに剃りあげられた
+				ENDIF
+				SIF AGE(TARGET) >= 4
+					PRINTFORM オトナの
+			ELSE
+				PRINTFORM ツルツルの
+			ENDIF
+			SIF AGE(TARGET) == 1
+				PRINTFORM 幼い
+		ENDSELECT
+	ELSEIF PALAM:Ｖ潤 >= 3000 || PALAM:欲情 >= 10000
+		PRINTFORM %TEXTR("トロトロの", "いやらしく匂い立つ")%
+	ELSEIF PALAM:Ｖ潤 >= 500 && PALAM:欲情 >= 3000
+		PRINTFORM %TEXTR("しっとりと湿った", "汗と愛液で蒸れた")%
+	ELSEIF PALAM:Ｖ潤 <= 500 || PALAM:欲情 <= 500
+		SIF AGE(TARGET) == 1
+			PRINTFORM ぴっちりと
+		PRINTFORM 閉じた
+	ELSEIF AGE(TARGET) == 1
+		PRINTFORM 幼い
+	ENDIF
+
+	IF TALENT:ラビアピアス == 0 && (RAND:2 || AGE(TARGET) == 1)
+		IF AGE(TARGET) == 1 && RAND:2
+			PRINTFORM 縦筋を
+		ELSE
+			PRINTFORM 割れ目を
+		ENDIF
+	ELSE
+		PRINTFORM アソコを
+	ENDIF
+ENDIF
+
+IF TCVAR:28 > 20 && RAND:2
+	PRINTFORM グッと
+ELSEIF RAND:2
+	PRINTFORM ゆっくりと
+ELSE
+	PRINTFORM そっと
+ENDIF
+
+;アソコの描写
+IF TCVAR:28 > 20 && LOCAL:1 != 2 && RAND:3 == 0
+	IF LOCAL:1 == 1 && COND("指の使用")
+		IF TALENT:ラビアピアス && RAND:3
+			PRINT ピアスを抓んで左右に引き伸ばし、
+		ELSE
+			PRINT 指先で引っ張り、
+		ENDIF
+	ELSE
+		PRINT 広げて、
+	ENDIF
+
+	IF RAND:2 && TALENT:肌の色
+		SELECTCASE CONDS("肌の色")
+		CASE "褐色肌"
+			PRINTFORM %TEXTR("褐色の", "浅黒い")%肌
+		CASE "色白"
+			PRINTFORM %TEXTR("抜ける様な", "真っ白な", "透き通るような")%肌
+		CASE "青肌"
+			PRINTFORM %TEXTR("青い", "そうそうお目にかかれない色の")%肌
+		ENDSELECT
+		PRINTFORM との対比が美しい
+		LOCAL:2 = 1
+	ENDIF
+
+	IF LOCAL:2 == 1 || TALENT:処女 || (TALENT:魅力 && RAND:3 == 0)
+		PRINTFORM %TEXTR("ピンク", "鮮やかな")%色の%TEXTR("艶かしい", "綺麗な", "柔らかそうな")%
+		PRINTFORM %TEXTR("粘膜", "膣口", "媚肉")%
+	ELSE
+		IF TCVAR:28 > 50 && ABL:Ｖ感覚 >= 3 && RAND:2
+			IF LOCAL:1 == 1 && EXP:Ｖ経験 >= 150 && AGE(TARGET) >= 4 && RAND:2
+				PRINT 熟したアソコを
+			ELSEIF EXP:Ｖ性交経験 >= 300 && RAND:2
+				IF EXP:膣内精液経験 >= 300 && RAND:2
+					PRINTFORM 幾度となく精液を飲み干してきた
+				ELSE
+					PRINTFORM %TEXTR("使い込まれた", "犯され慣れた")%
+				ENDIF
+				IF ABL:Ｖ名器度 < 20 && ABL:Ｖ拡張 >= 4 && RANDIF(2, TALENT:淫乱, TALENT:淫壷)
+					PRINT 緩めの穴
+				ELSEIF TALENT:淫壷 && RANDIF(2, TALENT:淫乱)
+					PRINT 貪欲な穴
+				ELSEIF TALENT:淫乱 && RAND:2
+					PRINT 淫らな穴
+				ELSEIF ABL:Ｖ感覚 >= 5 && RAND:2
+					PRINT 敏感な穴
+				ELSE
+					PRINT 歴戦の穴
+				ENDIF
+			ELSEIF PALAM:Ｖ潤 >= 3000 && PALAM:欲情 >= 3000 && RAND:2
+				PRINT 涎を垂らしている膣穴
+			ELSE
+				PRINT 淫らに充血した粘膜
+			ENDIF
+		ELSEIF RAND:3 == 0
+			PRINTFORM 大事な部分
+		ELSEIF RAND:2
+			PRINTFORM 艶かしい秘肉
+		ELSE
+			PRINTFORM 恥ずかしい部分
+		ENDIF
+	ENDIF
+	;両穴くぱぁ且つ継続中ではない
+	IF PREVCOM == 14 && CHECK_COM("両穴くぱぁ") && COND("両穴くぱぁ") == 0
+		PRINTFORM も
+	ELSE
+		PRINTFORM を
+	ENDIF
+	IF RAND:2
+		PRINTW 見せ付けてきた…
+	ELSE
+		PRINTW 露出させた…
+	ENDIF
+;動作の描写
+ELSE
+	IF RAND:3 == 0 && INSERT("背面座位") && TEQUIP:羞恥プレイ
+		PRINTFORMW 鏡に向けて開いた…
+	ELSEIF RAND:3 == 0
+		;両穴くぱぁ
+		IF PREVCOM == 14 && CHECK_COM("両穴くぱぁ")
+			PRINTFORMW 広げて中の具合も見せてきた…
+		ELSE
+			PRINTFORMW 広げて中の具合を見せてきた…
+		ENDIF
+	ELSEIF RAND:2 == 0
+		PRINTFORMW 押し広げた…
+	ELSE
+		PRINTFORMW 開いて見せてきた…
+	ENDIF
+ENDIF
+
+;初めて
+IF TALENT:好色 == 0 && TALENT:恥じらい && ABL:露出癖 < 3 && FIRSTCOM(SELECTCOM) == 0
+	PRINTFORMW 初めて行う他人に向けて陰部を開帳するという行為に、その顔は\@ RAND:2 ? どうしようもないほどの # 隠し切れない \@羞恥で染まっている…
+;前回セックス
+ELSEIF PREVCOM >= 60 && PREVCOM <= 69
+	IF ABL:Ｖ拡張 >= 3 && RAND:3 == 0
+		PRINTFORM 大きく広がった膣穴からは、散々撹拌されて泡だった愛液が
+		SIF PREVEX("Ｖ中出し")
+			PRINT 出されたばかりの精液と共に
+		PRINTFORMW ドロドロとこぼれだしている…
+	;前回中出し
+	ELSEIF PREVEX("Ｖ中出し")
+		IF TALENT:淫壷 && RAND:3 == 0
+			PRINTFORMW 妖しく蠕動する膣壁のうねりで、注がれたばかりの濃い精液がどろりと膣口から溢れ出してきた…
+		ELSEIF TCVAR:28 > 50 && RAND:2
+			PRINTFORMW %CALLNAME:TARGET%はお腹に力を込めると、先程の行為を確認させるかのように、精液をドロっと逆流させて見せてきた…
+		ELSEIF RAND:2 == 0
+			PRINTFORMW たっぷりと中に出されたソコは、快感に口を開いたまま精液で粘ついた粘膜を覗かせている…
+		ELSE
+			PRINTFORMW 息づくようにヒクついている膣口から、注がれたばかりの精液がトロリとこぼれだしてきた…
+		ENDIF
+	ELSEIF ABL:Ｖ拡張 >= 2 && RAND:2 == 0
+		PRINTFORMW 閉じ切らない肉の洞窟の奥では、次なる快感を求めて膣の粘膜が蠢いている…
+	ELSEIF RAND:3 == 0 && AGE(TARGET) == 1 && ABL:Ｖ拡張 < MIN(SIZE("ペニス", PLAYER), 2)
+		PRINTFORMW 幼さの残る身体には大きすぎるペニスを咥えていた膣口は、だらしなく口を開いたままだ…
+	ELSEIF RAND:2
+		PRINTFORMW 犯された直後のそこは掻き出された泡立つ愛液でどろどろになっており、凄い%TEXTS("匂い")%を漂わせている…
+	ELSE
+		PRINTFORMW ペニスの抜けた膣口は、快感に口を開いたまま内部の柔らかな粘膜を覗かせている…
+	ENDIF
+	TFLAG:16 = 1
+;膣内ルート
+ELSEIF LOCAL:1 == 2
+	TFLAG:16 = 2
+	;拡張度大
+	IF EXP_GAIN(53) >= 5 || ABL:Ｖ拡張 >= 3 + RAND:3
+		IF RAND:3 == 0
+			IF AGE(TARGET) == 1
+				PRINT 幼い体には不釣合いな
+				SIF ABL:Ｖ拡張 >= 4
+					PRINT ほど大きな
+			ELSEIF RAND:2 == 0
+				PRINT ぽっかりと開いたままの
+			ELSE
+				PRINT 複雑な粘膜に覆われた
+			ENDIF
+			SIF PREVPLAY("膣内浴尿")
+				PRINTFORM アンモニア臭い
+			PRINTFORM 股間の空洞は、奥の奥、
+			IF EXP_GAIN(69)
+				IF PREVPLAY("子宮内浴尿") && COND("子宮口弛緩度") >= 3
+					PRINTFORM 小便を注がれたばかりの子宮の内側
+				ELSE
+					PRINTFORM 内部をたっぷりと小便で満たされた子宮の入り口
+				ENDIF
+			ELSEIF PREVEX("Ｖ中出し")
+				;前回が子宮挿入
+				IF PREVCOM == 68
+					IF COND("子宮口弛緩度") >= 3
+						PRINT 精液を注がれたばかりの子宮の内壁
+					ELSE
+						PRINT 内部に直に注がれた精液を涎の様に垂らす緩んだ子宮口
+					ENDIF
+				ELSE
+					PRINT 精液を浴びせられたばかりの子宮口
+				ENDIF
+			ELSEIF GETBIT(TEQUIP:筋弛緩剤, 3) || EXP_GAIN(68)
+				PRINT 僅かに口を開いている大事な場所の入り口
+			ELSEIF TALENT:妊娠
+				PRINT 妊娠中の子宮口
+			ELSEIF TALENT:出産経験 && RANDIF(2, TALENT:小柄体型)
+				PRINT 出産を経たこともある子宮口
+			ELSEIF TALENT:小柄体型 && RAND:2
+				PRINT 可愛らしい子宮口
+			ELSE
+				PRINT 大事な子宮口
+			ENDIF
+			PRINTFORMW までも隠すことなく%CALLNAME:PLAYER%に晒している…
+			TFLAG:16 = 3
+		ELSEIF RAND:2 == 0
+			PRINTFORM ぽっかりと開いた\@ PREVPLAY("膣内浴尿") ? 小便臭い # \@膣穴は
+			IF INSERT("Ａインサート")
+				PRINTFORMW 肛門に侵入してくる\@ PENIS(PLAYER) ? ペニス # 張型 \@に合わせて蠢き、とろとろと涎を垂らしている…
+			ELSE
+				PRINTFORM 呼吸に合わせて蠢き、
+				IF RAND:2 && PREVPLAY("膣内浴尿") == 0
+					PRINTFORMW 収縮しながらいやらしい%TEXTS("匂い")%を吐き出している…
+				ELSE
+					PRINTFORMW %CALLNAME:PLAYER%を誘っているようにも見える…
+				ENDIF
+			ENDIF
+		ELSE
+			PRINTFORM 散々苛められた\@ TALENT:淫壷 ? 淫らな口 # ソコ \@は、
+			SIF EXP_GAIN(53) >= 3 || EXP_GAIN(12) >= 5 || PREVCOM == 141 || PREVCOM == 143
+				PRINTFORM 埋めていたものがなくなっても
+			PRINTFORM 大きく開いたまま
+			IF PREVPLAY("膣内浴尿")
+				PRINT おしっこ混じりの
+			ELSEIF PREVEX("Ｖ中出し") && CHECK_STAIN(STAIN:Ｖ, "精液")
+				PRINT 精液混じりの
+			ENDIF
+			PRINTFORMW 愛液をこぼしている…
+		ENDIF
+	ELSEIF EX:Ｖ絶頂 >= 5
+		PRINTFORM %CALLNAME:TARGET%のソコは
+		SIF INSERT("Ａインサート")
+			PRINTFORM 、アナルに奥まで捻じ込む度に
+		PRINTFORMW 物欲しそうに濁った愛液をこぼしている…
+	ELSEIF PALAM:Ｖ潤 >= 3000 && PALAM:欲情 >= 3000
+		PRINTFORM 肉の洞窟を形作る膣肉は、
+		IF INSERT("Ａインサート")
+			PRINTFORM 肛門への刺激に反応してか
+		ELSE
+			PRINTFORM 触れてもいないのに
+		ENDIF
+		PRINTFORMW ヒクヒクと痙攣している…
+	ENDIF
+;アソコルート
+ELSE
+	;前回中出しor膣内放尿
+	IF PREVEX("Ｖ中出し") || PREVPLAY("膣内浴尿")
+		IF TCVAR:28 > 50 && RAND:2
+			PRINTFORM %CALLNAME:TARGET%はお腹に力を込めると、先程の行為を確認させるかのように、
+			IF PREVPLAY("膣内浴尿")
+				PRINTFORMW 膣内に残ったおしっこを逆流させて見せてきた…
+			ELSE
+				SIF EXP_GAIN(17) >= 5 && RAND:2
+					PRINTFORM 撹拌されて泡立った大量の
+				PRINTFORMW 精液を\@ EXP_GAIN(17) >= 5 && RAND:2 ? ぶじゅぶじゅ # ドロっ \@と逆流させて見せてきた…
+			ENDIF
+		ELSE
+			PRINTFORM 息づくようにヒクついている膣口から
+			IF PREVPLAY("膣内浴尿")
+				PRINTFORMW は、注がれたばかりのツンとアンモニア臭い液体がちょろちょろとこぼれ出してきている…
+			ELSE
+				PRINTFORMW 、注がれたばかりの精液がトロリとこぼれだしてきた…
+			ENDIF
+		ENDIF
+	;前回オシッコor尿道内射精or尿道プジー
+	ELSEIF TEQUIP:尿道ブジー
+		PRINTFORM 尿道に突き刺さったプジーはびくんと体を震わせるたび、連動して先端を震わせている…
+	ELSEIF PREVEX("放尿") + PREVEX("絶頂お漏らし") + PREVEX("尿道内射精") && CHECK_STAIN(STAIN:Ｖ, "尿")
+		IF TALENT:好色+TALENT:淫乱 && ABL:露出癖 >= 3
+			PRINTFORM %CALLNAME:TARGET%は
+			IF PREVEX("尿道内射精")
+				PRINTFORM 中に出された精液混じりの雫を漏らす尿道口に突き刺さる%CALLNAME:PLAYER%の視線を、
+			ELSEIF TEQUIP:カテーテル
+				PRINTFORM 深々と突き刺さったカテーテルの先から尿滴を落としつつ、%CALLNAME:PLAYER%の視線を
+			ELSE
+				;絶頂お漏らし
+				IF PREVEX("絶頂お漏らし")
+					PRINTFORM お漏らし
+				ELSE
+					PRINTFORM 放尿
+				ENDIF
+				PRINTFORM 直後の%TEXTR("汚れた", "臭いの強い")%ソコに突き刺さる%CALLNAME:PLAYER%の視線を、
+			ENDIF
+			IF TALENT:高慢 && RAND:2
+				SIF TEQUIP:カテーテル == 0 && (TALENT:恥じらい || PALAM:欲情 >= 30000)
+					PRINTFORM 顔を赤らめながらも
+				PRINTFORMW 自信満々な様子で受け止めている…
+			ELSE
+				SIF TEQUIP:カテーテル == 0 && (TALENT:恥じらい || PALAM:欲情 >= 30000)
+					PRINTFORM 恥じらい混じりの
+				IF TALENT:強気 && RAND:2
+					PRINTFORMW 不敵な笑みを浮かべながら受け止めている…
+				ELSE
+					PRINTFORMW 妖艶な笑みを浮かべながら受け止めている…
+				ENDIF
+			ENDIF
+		ELSEIF PREVEX("尿道内射精")
+			PRINTFORMW ペニスで犯された事で馬鹿になってしまったのか、%CALLNAME:TARGET%の尿道口からは精液の混じった尿の雫が滲み出てきている…
+		ELSE
+			;絶頂お漏らし
+			IF PREVEX("絶頂お漏らし")
+				PRINTFORM お漏らしをしてしまった直後の
+			ELSEIF TEQUIP:カテーテル
+				PRINTFORM 強制的な排尿を強いられている
+			ELSE
+				PRINTFORM おしっこをして間もない
+			ENDIF
+			PRINTFORMW %CALLNAME:TARGET%のソコは、ツンと鼻に来る強い臭いを発している…
+		ENDIF
+	ELSEIF TALENT:好色+TALENT:淫乱 && ABL:Ｖ感覚 >= 3 && ABL:露出癖 >= 3 && ABL:Ｖ使い >= 5 && ABL:Ｖ拡張 >= 2 && PREVEX("Ｖ絶頂") == 0 && RAND:3 == 0
+		PRINTFORM %CALLNAME:TARGET%は
+		IF PALAM:欲情 >= 3000 && RAND:2
+			PRINTFORM 涎を垂らす膣口をパクパクと蠢かせて、\@ TEQUIP:カテーテル ? カテーテルからおしっこを垂れ流しながら # \@
+			IF TALENT:強気 && RAND:2
+				PRINT 不敵
+			ELSE
+				PRINT 妖艶
+			ENDIF
+			PRINTFORMW な笑みを浮かべている…
+		ELSE
+			PRINTFORMW 膣口をきゅっと締めたり、ぽかぁと開いたりさせて胎内の%TEXTS("匂い")%を振りまきながら%CALLNAME:PLAYER%を誘っている…
+		ENDIF
+	ELSEIF (EX:Ｃ絶頂 + EX:Ｖ絶頂 || (PALAM:Ｖ潤 >= 3000 && PALAM:欲情 >= 10000) ) && TALENT:処女 == 0
+		IF TALENT:恥じらい && RAND:2 == 0
+			SIF INSERT("Ａインサート")
+				PRINTFORM お尻の穴を犯されて
+			PRINTFORM 顔を赤くする%CALLNAME:TARGET%
+			IF TALENT:清楚 && RAND:3
+				PRINTFORM の清楚な雰囲気
+			ELSEIF TALENT:内気 && RAND:3
+				PRINTFORM の気弱そうな様子
+			ELSE
+				PRINTFORM の恥ずかしそうな様子
+			ENDIF
+			PRINTFORMW とは裏腹に、その秘裂からは\@ PREVEX("Ｃ絶頂") + PREVEX("Ｖ絶頂") ? とぷとぷ # じんわり \@と愛液が湧き出してきて%NAMES("指")%を汚している…
+		ELSEIF ABL:Ｖ拡張 >= 3 && RAND:3 == 0
+			SIF INSERT("Ａインサート")
+				PRINTFORM アナルセックスによる興奮のせいか
+			PRINTFORM %CALLNAME:TARGET%のソコは\@ EX:Ｃ絶頂 + EX:Ｖ絶頂 ? すっかり # 既に \@充血し、
+			IF RAND:2 && PENIS(PLAYER)
+				PRINTFORMW 股間に直撃する香りを放ちながら誘うように息づいている…
+			ELSE
+				PRINTFORMW ぱっくりと開ききったまま誘うように息づいている…
+			ENDIF
+		ELSEIF RAND:2
+			SIF INSERT("Ａインサート")
+				PRINTFORM お尻を犯されている%CALLNAME:TARGET%の
+			IF AGE(TARGET) >= 3
+				PRINTFORM 襞が重なる複雑なソコは
+				IF PREVEX("Ｃ絶頂") + PREVEX("Ｖ絶頂") 
+					PRINTFORMW 絶頂の余韻でわななき、膣口からは快感の証の濁った愛液がとろとろと溢れ出ている…
+				ELSE
+					PRINTFORMW 分泌液で濡れ輝き、膣口からはわずかに白く濁った愛液も混じり出ている…
+				ENDIF
+			ELSE
+				PRINTFORMW 幼さの残るソコは\@ PREVEX("Ｃ絶頂") + PREVEX("Ｖ絶頂") ? 与えられた快感 # 愛液 \@で艶かしさを増し、膣口からはとろりとした透明な愛液が漏れ出ている…
+			ENDIF
+		ELSE
+			SIF INSERT("Ａインサート")
+				PRINTFORM %CALLNAME:PLAYER%が直腸から子宮付近を擦りあげると、
+			PRINTFORM 目の前で、ヒクつく膣口から
+			IF TALENT:淫壷
+				PRINTFORM いやらしい分泌液がダラダラと止め処なく
+			ELSE
+				PRINTFORM 愛液がツーっと筋を作って
+			ENDIF
+			PRINTFORMW 溢れ出る…
+		ENDIF
+	ELSEIF (PALAM:Ｖ潤 >= 500 && PALAM:欲情 >= 3000) || TALENT:恋慕 || INSERT("Ａインサート")
+		IF ABL:Ｖ拡張 >= 3 && RAND:3 == 0
+			PRINTFORM %CALLNAME:TARGET%の膣口は
+			IF INSERT("Ａインサート")
+				PRINTFORMW 、肛門周辺の肉が引きずられるのに合わせて呼吸している口のような動きを見せている…
+			ELSEIF RAND:2 && ABL:Ｖ感覚 >= 3 && EXP:Ｖ性交経験 >= 50 && EXP_GAIN(12) == 0
+				PRINTFORMW 分泌された愛液で濡れ光り、物欲しそうな佇まいを醸し出している…
+			ELSEIF COND("指の使用") == 0 || RAND:2
+				PRINTFORMW 、何かを待ちわびるかのように僅かに口を開いている…
+			ELSE
+				PRINTFORMW 、指で拡げるまでもなく僅かに口を開いている…
+			ENDIF
+		ELSEIF TALENT:恋慕 && RAND:2 == 0
+			PRINTFORM %CALLNAME:TARGET%の秘所は
+			IF RAND:2
+				PRINTFORM 瞳と同じく少し潤み、
+			ELSE
+				PRINTFORM うっすらと汗をかいたかのように湿り、
+			ENDIF
+			IF TALENT:処女
+				IF PALAM:Ｖ潤 >= 3000
+					SIF INSERT("Ａインサート")
+						PRINTFORM 直腸の奥を突き上げられる度に、
+					PRINTFORMW 処女膜の隙間から愛液が筋を作ってあふれ出ている…
+				ELSE
+					PRINTFORMW その中心部は期待からか、軽くヒクついている…
+				ENDIF
+			ELSEIF RAND:3 == 0
+				PRINTFORM 何とも言えないクセになるような%TEXTS("匂い")%を漂わせている…
+			ELSEIF RAND:2
+				PRINTFORMW 分泌されつつある愛液で艶かしさを増してきている…
+			ELSE
+				PRINTFORMW その奥の赤い秘肉を覗かしている…
+			ENDIF
+		ELSEIF PALAM:欲情 >= 6000
+			SIF INSERT("Ａインサート")
+				PRINTFORM アナルを出入りする\@PENIS(PLAYER)?ペニス#張型\@で歪む
+			PRINTFORM %CALLNAME:TARGET%のソコは、
+			SIF ABL:欲望 >= 3 && ABL:奉仕精神 >= 3 && COND("前Ｔ調教者") == PLAYER && PREVCOM >= 90 && PREVCOM <= 119
+				PRINTFORM %CALLNAME:PLAYER%に奉仕していた事による
+			PRINTFORM 興奮からか
+
+			IF PALAM:欲情 >= 6000 && RAND:3 == 0
+				IF RAND:2
+					PRINTFORMW トロトロと愛液をこぼしながら、独特のクセになる%TEXTS("匂い")%を漂わせている…
+				ELSE
+					PRINTFORMW 涎のように粘度の高い愛液を溢している…
+				ENDIF
+			ELSEIF EXP:Ｖ経験 >= 150 && RAND:2
+				PRINTFORMW うっすらと濁った愛液をとろとろと吐き出している…
+			ELSEIF TALENT:淫壷
+				PRINTFORMW \@ PENIS(PLAYER) && RAND:2 ? 嗅ぐだけで勃起せずにはおれなくなる # 脳が痺れる \@様な淫らな%TEXTS("匂い")%を吐き出している…
+			ELSE
+				PRINTFORMW 独特の芳香を放ちはじめている…
+			ENDIF
+		ELSE
+			SIF INSERT("Ａインサート")
+				PRINTFORM 激しく犯されているアナルの上で
+			PRINTFORM そっと息づくようにヒクついている
+			IF TALENT:処女
+				PRINT 処女膜
+			ELSE
+				PRINT 秘肉
+			ENDIF
+			PRINTFORMW が、%CALLNAME:PLAYER%の視線を吸い寄せて離さない…
+		ENDIF
+	ENDIF
+	TFLAG:16 = 4
+ENDIF
+
+;両穴くぱぁフラグＯＮ
+SIF PREVCOM == 14 && CHECK_COM("両穴くぱぁ")
+	CALL SETFLAG, "両穴くぱぁ", TARGET
+
+@COM_ORDER_COM13, ARG
+VARSET LOCAL
+LOCALS = 
+
+;すべての命令に共通の要素を考慮
+;(従順が高いと命令に従いやすいなど)
+CALL COM_ORDER, ARG
+
+LOCAL = RESULT
+
+;ABL:露出癖
+IF ABL:露出癖
+	LOCAL += ABL:露出癖 * 5
+	LOCALS = %LOCALS% + %ABLNAME:7%LV{ABL:露出癖}({ABL:露出癖 * 5})
+ENDIF
+;ABL:マゾっ気
+IF ABL:マゾっ気
+	LOCAL += ABL:マゾっ気 * 3
+	LOCALS = %LOCALS% + %ABLNAME:8%LV{ABL:マゾっ気}({ABL:マゾっ気 * 3})
+ENDIF
+;自制心
+IF TALENT:冷静
+	LOCAL -= 5
+	LOCALS = %LOCALS% - %TALENTNAME:20%(5)
+ENDIF
+;恥じらい
+IF TALENT:恥じらい
+	LOCAL -= 15
+	LOCALS = %LOCALS% - %TALENTNAME:35%(15)
+ENDIF
+;恥薄い
+IF TALENT:恥薄い
+	LOCAL += 2
+	LOCALS = %LOCALS% + %TALENTNAME:36%(2)
+ENDIF
+;清楚
+IF TALENT:清楚
+	LOCAL -= 10
+	LOCALS = %LOCALS% - %TALENTNAME:39%(10)
+ENDIF
+;快感の否定
+IF TALENT:快感の否定
+	LOCAL -= 5
+	LOCALS = %LOCALS% - %TALENTNAME:71%(5)
+ENDIF
+;前回中出し
+IF PREVEX("Ｖ中出し")
+	LOCAL -= 10
+	LOCALS = %LOCALS% - 中出し直後(10)
+ENDIF
+;媚薬
+IF TEQUIP:媚薬
+	LOCAL += 2
+	LOCALS = %LOCALS% + %ITEMNAME:31%(2)
+ENDIF
+;ビデオ撮影
+IF TEQUIP:ビデオカメラ
+	LOCAL -= 30
+	LOCALS = %LOCALS% - 撮影中(30)
+ENDIF
+;野外or館内露出
+IF TEQUIP:野外プレイ
+	LOCAL -= 10
+	LOCALS = %LOCALS% - 野外プレイ(10)
+ELSEIF TEQUIP:館内露出プレイ
+	LOCAL -= 10
+	LOCALS = %LOCALS% - 館内露出(10)
+ENDIF
+
+;合計を表示(30以上で実行)
+CALL PRINT_COM_ORDER_COM, LOCALS, ARG, LOCAL, 30
+
+RETURN RESULT

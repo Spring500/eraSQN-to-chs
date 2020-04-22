@@ -1,0 +1,174 @@
+﻿;大人数対応キャラ召喚処理
+;あとフラグ1000番台を使うので注意
+;TFLAG:0～199は調教関係ない上、調教開始時にリセットされるので無問題
+
+;変更点
+;召喚したキャラが直接加入するように、召喚処理のあたりを変更
+;@CHARA_LISTを消して@CHARA_BUYと@CHARA_BUY_SHOWに吸収。
+;同じものを表している変数は同じにした。(予期せぬ所で変な数が入ることはないはず・逆にややこしいかも…)
+;買えるキャラが一人もいなくなった時にRETURN。
+;キャラのアイテム番号以外の数字を入力したときの処理をRETURNからGOTO INPUT_LOOPに。
+;@CHARA_BUY_AFTERでリセットされていなかったTFLAGを含めて、ITEMSALESとTFLAGのリセットをまとめた。
+;ここ変更したら@START_CHARA_SELECTの方にも目を通すの必須なんだ、すまない
+
+@CHARA_BUY
+#DIM MEMO_LINECOUNT
+
+REDRAW 0
+;キャラメイク中フラグON
+SETBIT FLAG:99, 13
+
+MEMO_LINECOUNT = LINECOUNT
+
+PRINTL 
+CALL CHARA_BUY_SHOW
+
+$INPUT_LOOP
+INPUT
+
+IF RESULT == 100
+	RETURN 0
+;数値はキャラのアイテム番号の最小値と最大値依存。
+ELSEIF RESULT < 0 || RESULT > 98
+	GOTO INPUT_LOOP
+;売値の設定がないなら再入力
+ELSEIF ITEMSALES:(RESULT + 100) == 0
+	GOTO INPUT_LOOP
+;５人以上攻略しないとストゥーナ・メローナを召喚できない([謎の魅力]が必要)
+ELSEIF (RESULT == 34 || RESULT == 35) && TALENT:MASTER:謎の魅力 == 0
+	PRINTL 調教可能条件を満たしていません
+	GOTO INPUT_LOOP
+;フラグ値＝売値が所持金より多いなら再入力
+ELSEIF MONEY < ITEMPRICE:(RESULT + 100)
+	PRINTL 所持金が足りません
+	GOTO INPUT_LOOP
+ENDIF
+
+;C = キャラ番号、E = 上位種チェック(@CHARA_MANUAL)
+C = RESULT
+;最初のページは基本種
+E = 0
+;キャラ解説を入れる
+CALL CHARA_MANUAL, C
+;いいえを選ぶと再入力
+IF RESULT == 0
+	;表示されていたキャラを白紙に戻す
+	DELCHARA CHARANUM-1
+
+	CLEARLINE LINECOUNT - MEMO_LINECOUNT
+	RESTART
+ENDIF
+
+;基本種を選んだならE=0
+SIF E < 2
+	E = 0
+
+;上記処理を抜けてきた＝召喚可能で所持金が売値以上
+MONEY -= ITEMPRICE:(100 + C)
+TARGET = CHARANUM - 1
+
+;ユニークキャラは召喚事故がおきない
+IF IS_SAMONTRBL()
+	SIF FLAG:8
+		PRINTL ★★★召喚事故が発生！！★★★
+	CALL CHAR_SAMON_T, C
+ENDIF
+
+PRINTFORMW ★%NAME:TARGET%を召喚しました★
+
+RETURN 0
+
+@IS_SAMONTRBL()
+#FUNCTION
+;[666]で召喚or召喚の天災
+SIF FLAG:666 || TALENT:MASTER:召喚の天災
+	RETURNF 1
+;召喚の天才＋事故あり
+SIF TALENT:MASTER:召喚の天才 && CONFIG("召喚事故")
+	RETURNF 1
+;ユニークキャラの時にはコンフィグで設定必須
+SIF COND("ユニーク") && CONFIG("召喚事故：ユニーク") == 0
+	RETURNF 0
+SIF CONFIG("召喚事故") && RAND:3 == 0
+	RETURNF 1
+RETURNF 0
+
+@CHARA_BUY_SHOW
+DRAWLINE
+PRINTFORM {DAY}日目
+IF TIME == 0
+	PRINTL  昼
+ELSE
+	PRINTL  夜
+ENDIF
+SIF TARGET
+	PRINTFORM %NAME:TARGET%調教中
+SIF ASSI
+	PRINTFORM （%TEXTS("助手の名称")%：%NAME:ASSI%）
+PRINTFORML (残り%MONEY_C(MONEY)%)
+CALL PRINT_STR, "ハートピンク_H_エンディングがあるキャラは色が変わります_ハートピンク_H_L_"
+DRAWLINE
+
+CALL SET_CHARA_BUY_SHOW, "ＥＮＤチェック"
+
+DRAWLINE
+PRINTFORML [100] 召喚しない
+PRINTFORML 　召喚したいキャラの番号を入力してください
+
+
+;-------------------------------------------------
+;売却キャラorMASTERとして選択するキャラの一覧表示
+;ARGSに"ＥＮＤチェック"って入れるとエンディングが書かれているキャラの色が変わる
+;-------------------------------------------------
+@SET_CHARA_BUY_SHOW, ARGS
+#DIM LCOUNT
+#DIM LCOUNT2
+#DIM NEXT_LINE
+
+VARSET ITEMSALES
+
+;バグ対策。表示されるキャラ数が一ページの表示限界数(この場合は30)より少ないとITEMSALES:0が登録されるので。
+ITEMSALES:0 = 0
+
+NEXT_LINE = 0
+;実際にキャラを表示(80番以上は非表示)
+FOR LCOUNT, 1, 80
+	;既にユニークキャラを購入済みなら買えなくする
+	SIF FLAG:(1000 + LCOUNT) > 0 && CONFIG("ユニークキャラの多重召喚") == 0
+		CONTINUE
+	;価格があるか判定。ITEMPRICEの有無で判断する。
+	SIF ITEMPRICE:(100 + LCOUNT) == 0
+		CONTINUE
+
+	ITEMSALES:(100 + LCOUNT) = 1
+
+	IF ARGS == "ＥＮＤチェック"
+		FOR LCOUNT2, 1, 10
+			RESULT = 0
+			TRYCALLFORM IS_SINGLE_ENDING_K{LCOUNT}_{LCOUNT2}
+			SIF RESULT
+				SETCOLOR DEF_COLOR("ハートピンク")
+		NEXT
+	ENDIF
+
+	PRINTFORMLC [{LCOUNT, 2}] %TEXT_LJ(ITEMNAME:(100 + LCOUNT), 16)% %TEXT_RJ(MONEY_C(ITEMPRICE:(100 + LCOUNT) ), 7)%　
+
+	RESETCOLOR
+
+	NEXT_LINE += 1
+	SIF NEXT_LINE%2 == 0
+		PRINTL 
+NEXT
+SIF NEXT_LINE%2
+	PRINTL 
+
+@SET_NEWNAME, ARG
+SIF ARG < 0
+	RETURN 0
+SIF ARG == 0 && TARGET
+	ARG = TARGET
+
+NAME:ARG = %NAMES("種族", NO:ARG, CFLAG:ARG:8)%
+SIF CFLAG:ARG:8
+	CALLNAME:ARG = %NAME:ARG%
+

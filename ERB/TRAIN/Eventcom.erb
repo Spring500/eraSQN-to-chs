@@ -1,0 +1,437 @@
+﻿@RESET_TFLAGS
+;NEXTCOMを使用している時には改行を入れる
+;なお、NEXTCOMの時には@COM_ABLEを通らないので、実行可能かどうかを判定してから設定すること。
+SIF NEXTCOM >= 0
+	PRINTL 
+;次の調教は空白とする
+NEXTCOM = -1
+;不要な文字列を初期化
+VARSET STR, "", 1, 10
+;助手の選んだコマンドリセット
+SELECTCOM:1 = -1
+SELECTCOM:2 = -1
+SELECTCOM:3 = -1
+
+;派生コマンドなどで変更される前のSELECTCOMを保存
+SELECTCOM:4 = SELECTCOM
+
+;TFLAG:0〜TFLAG:30、TFLAG:90はコマンドごとにリセット
+VARSET TFLAG, 0, 0, 31
+;カウンターしたかのフラグを初期化
+TFLAG:90 = 0
+
+;NOWEX、TCVAR:0〜TCVAR:29は毎ターン初期化＆ペニバンはＰ汚れなし
+CALL SETFLAG, "ターン開始", TARGET
+CALL SETFLAG, "ターン開始", MASTER
+SIF ASSI
+	CALL SETFLAG, "ターン開始", ASSI
+
+
+@EVENTCOM
+#PRI
+REDRAW 1
+CALL RESET_TFLAGS
+
+SIF FLAG:21 != TARGET
+	FLAG:22 = 1
+
+CALL SETFLAG, "助手相手の恋慕外し開始"
+
+;以下コマンドジャンプなど
+;酔っ払い
+IF (TEQUIP:押し倒し || (SELECTCOM >= 90 && SELECTCOM <= 119) ) && STATE("悪酔い", TARGET) && RAND:3 == 0
+	SELECTCOM = 507
+ELSEIF TEQUIP:ラブトラップ + TEQUIP:押し倒し == 0 && STATE("悪酔い", PLAYER) && RAND:3 == 0
+	SELECTCOM = 506
+;以下はSELECTCOM依存
+ELSE
+	SELECTCASE SELECTCOM
+	;胸愛撫
+	CASE 5
+		;ぱふぱふ
+		SIF TEQUIP:ラブトラップ || TEQUIP:押し倒し
+			SELECTCOM = 104
+	;セックス系
+	CASE 60 TO 79, 83 TO 88
+		;ひょっとしたら挿入れる前に暴発しちゃうかも
+		IF CHECK_COM("挿入前暴発")
+			CALL SETFLAG, "挿入前暴発フラグ", PLAYER
+			SELECTCOM = 511
+		ENDIF
+
+		;うっかり子宮挿入フラグ。挿入子宮口責めを連続実行＆Ｖインサート中で無いと発生しない
+		IF CHECK_COM("うっかり子宮挿入") && (RAND:5 == 0 || MARK:淫紋 >= 4 || EX:Ｖ絶頂 >= 5)
+			CALL SETFLAG, "うっかり子宮挿入フラグ", TARGET
+			SELECTCOM = 68
+		ENDIF
+
+		SELECTCASE SELECTCOM
+		CASE 68
+		CASEELSE
+			;騎乗位連続＆腰使い＆強気などでワイルドスウィング(連続ではしてこない)
+			CALL SETFLAG, "ワイルドスウィング", TARGET
+			;前のプレイがセックス系かつ調教者の技巧3以上の場合、挿入Ｇスポ責めまたは挿入子宮口責めへ派生
+			;Ｖ感覚が高く欲情しているほど子宮口へ行きやすい
+			SIF CHECK_COM("Ｖ二本挿入") == 0 && CHECK_COM("二穴挿入") == 0
+				SELECTCOM = CHECK_COM("挿入局所責め", SELECTCOM)
+		ENDSELECT
+	;スパンキング
+	CASE 130
+		;SIF TEQUIP:女王様プレイ
+		;	SELECTCOM = 509
+	CASE 141 TO 143
+		;二本フィストフラグ解除
+		SIF SELECTCOM != PREVCOM
+			CLEARBIT TEQUIP:PLAYER:特殊行動, 1
+	;逆剃毛
+	CASE 145
+		SIF TEQUIP:押し倒し
+			SELECTCOM = 504
+	;アルカナ使用
+	CASE 500
+		CALL USE_ARUKANA_TRAIN
+	;アイテム使用
+	CASE 501
+		CALL USE_ITEM_TRAIN
+	ENDSELECT
+ENDIF
+
+
+;助手参加(もがく、なすがままの時にはそれぞれのCOMF中で決定)
+IF TEQUIP:Ｗ押し倒し
+	IF SELECTCOM == 280 || SELECTCOM == 281
+		SELECTCOM:1 = PREVCOM:1
+	ELSE
+		CALL SET_SELECTCOM_MULTI, "Ｗ押し倒し"
+	ENDIF
+ELSE
+	;シックスナイン判定
+	CALL SET_PLAY69
+
+	;３Ｐによる協力コマンド管理
+	SIF TARGET:1 && STATE("撃沈", TARGET:1) == 0 && (PREVCOM:1 >= 0 || PREVCOM:2 >= 0)
+		CALL SET_SELECTCOM_MULTI, "３Ｐ"
+;意地悪い人は思ったとおりに動いてくれない、とかどうだろう
+;ELSEIF TEQUIP:押し倒し == 0 && TALENT:意地悪 && ABL:従順 + ABL:奉仕精神 - MARK:反発刻印 <= 5
+;	IF SELECTCOM == 91 && NO:TARGET == 12
+;		CALL COM_ABLE95
+;		IF RESULT == 1
+;			SELECTCOM = 95
+;			PRINTFORMW 「アタシに口でして欲しいですって？　ふんっ、あんたなんか足で十分でしょ」
+;		ENDIF
+;	ENDIF
+ENDIF
+
+;PLAYERが交代しているならば参加していない人のインサートなど解除
+IF SELECTCOM:2 == -1
+	CALL RESET_INSERT, PLAYER:1
+	;調教者のものを咥えているので無いなら解除
+	SIF TEQUIP:ディープスロート != PLAYER
+		TEQUIP:ディープスロート = 0
+ENDIF
+
+;キス継続…ここではフラグOFFのみ
+;フラグONはCHECK_EX_EQUIPで行う
+;インサート中はモード継続してみる
+IF INSERT("インサート") == 0
+	SELECTCASE SELECTCOM
+	;キス、挿入局所責めなどは値を変更させない。アイテムとアルカナも変更しないことに
+	CASE 6, 65 TO 68, 230 TO 279, 282, 301, 311
+	;同じ調教者で連続選択時のみキス継続
+	CASE 0, 2, 5, 7, 8, 10, 15, 16, 60 TO 79, 83 TO 88, 90, 93, 94, 97, 105, 120 TO 129, 130, 176 TO 177, 280, 281, 300, 301, 311
+		;調教者が変わるとダメ
+		SIF COND("前Ｔ調教者") != PLAYER
+			TEQUIP:キス = 0
+
+		;前のターンのコマンド次第でダメ
+		SELECTCASE PREVCOM
+		;キスならOK
+		CASE 6
+		;連続実行ならOK
+		CASE SELECTCOM
+		CASEELSE
+			SELECTCASE SELECTCOM
+			;インサート中はモード継続してみる
+			CASE 60 TO 79
+			CASEELSE
+				SIF PREVPLAY("インサート") == 0
+					TEQUIP:キス = 0
+			ENDSELECT
+		ENDSELECT
+	CASEELSE
+		TEQUIP:キス = 0
+	ENDSELECT
+ENDIF
+
+;占有不可な場合
+IF TEQUIP:Ｗ押し倒し || COND("３Ｐ")
+	TEQUIP:キス = 0
+	TEQUIP:ASSI:キス = 0
+ENDIF
+
+
+;自慰するのフラグ消滅判定
+;特定コマンドの次のターン、ないし特定の状況化じゃないとダメということにしておく
+SELECTCASE SELECTCOM
+;クンニ, 自慰, フェラする, キスする, アナル舐め, くぱぁさせる, Ａくぱぁさせる, アナル奉仕, ぱふぱふ
+CASE 1, 3, 4, 6, 9, 13, 14, 96, 104, 282
+
+CASEELSE
+	IF TEQUIP:顔面騎乗
+	ELSE
+		TEQUIP:PLAYER:自慰する = 0
+	ENDIF
+ENDSELECT
+
+;胸愛撫のフラグ消滅判定
+SIF SELECTCOM != 5
+	TEQUIP:胸愛撫 = 0
+;アソコ愛撫のフラグ消滅判定
+SIF SELECTCOM != 7
+	TEQUIP:アソコ愛撫 = 0
+;足コキのフラグ消滅判定
+SIF SELECTCOM != 95
+	TEQUIP:足コキ = 0
+
+;オモチャになっちゃえ判定
+CALL CALC, "オモチャになっちゃえ"
+
+;調教コマンド実行前のパラメータの記録
+CALL SAVE_PALAM_BEFORECOM
+
+;-------------------------------------------------
+;嗜虐or奉仕快楽経験発生フラグ
+;-------------------------------------------------
+CALL SETFLAG, "奉仕嗜虐判定", SELECTCOM
+
+
+@EVENTCOMEND
+#LATER
+#DIM LCOUNT
+
+;-------------------------------------------------
+;インセンス等の効果終了のお知らせなど、ターンの最後に出力するテキスト
+;-------------------------------------------------
+IF TEQUIP:甘い言葉 >= 9
+	TEQUIP:甘い言葉 = 0
+	PRINTL 
+	PRINTL 高めたムードが元に戻っていく…
+ENDIF
+IF TEQUIP:フラート
+	TEQUIP:フラート += 1
+	IF TEQUIP:フラート >= 3
+		TEQUIP:フラート = 0
+		PRINTL 
+		PRINTL 敏感になった肌が元に戻っていく…
+	ENDIF
+ENDIF
+IF TEQUIP:褒める == 1
+	TEQUIP:褒める = 0
+	PRINTL 
+	PRINTL 褒めて高めた機嫌が元に戻っていく…
+ENDIF
+SIF TEQUIP:演奏中
+	CALL EQUIP_COM302_END
+IF GETBIT(TEQUIP:MASTER:インセンス, 3)
+	TEQUIP:MASTER:インセンス = 0
+	PRINTL 
+	PRINTL インセンスの香りが消えた！
+ENDIF
+IF STATE("ふにゃふにゃ", TARGET) && RAND:4 == 0
+	PRINTL 
+	PRINTFORML %CALLNAME:TARGET%はふにゃふにゃ状態から立ち直った！
+	CALL REMOVE_STATE, TARGET, "ふにゃふにゃ"
+ENDIF
+;ビデオ撮影中
+SIF TEQUIP:ビデオカメラ
+	CALL EQUIP_COM53_2
+;女王様プレイ中
+;IF TEQUIP:女王様プレイ
+;	IF TEQUIP:女王様プレイ == 1 && EXP_GAIN(32) >= 30
+;		TEQUIP:女王様プレイ = 2
+;	ELSEIF TEQUIP:女王様プレイ == 2 && EXP_GAIN(32) >= 100
+;		TEQUIP:女王様プレイ = 3
+;	ENDIF
+;ENDIF
+
+;-------------------------------------------------
+;PLAYERのTEQUIPの管理
+;-------------------------------------------------
+IF SELECTCOM == 106
+	TEQUIP:PLAYER:バイブ = 0
+ELSEIF SELECTCOM == 107
+	TEQUIP:PLAYER:アナルバイブ = 0
+ENDIF
+
+;-------------------------------------------------
+;褒めたあとのご褒美　次のターンのコマンドが入力されたりもする
+;-------------------------------------------------
+IF SELECTCOM == 24 && TEQUIP:褒める
+	CALL KOJO_MESSAGE_COM24_GOHOUBI
+	SIF NEXTCOM >= 0
+		TEQUIP:褒めるコマンドからの派生フラグ = 1
+ENDIF
+
+CALL SETFLAG, "助手相手の恋慕外し終了"
+
+;-------------------------------------------------
+;異常経験獲得_5
+;-------------------------------------------------
+CALL EXP50_CHECK_ALLACTOR
+
+
+;射精（触手）
+SIF TEQUIP:触手 == 0
+	BASE:MASTER:触手 = 0
+
+;押し倒されると起きるイベント
+IF TEQUIP:押し倒し || TEQUIP:ラブトラップ
+	;羞恥プレイは解除（今後変わるかも？）
+	TEQUIP:羞恥プレイ = 0
+
+	;マスかき止め！ぱんつはそのまま
+	TEQUIP:PLAYER:自慰する = 0
+
+	IF TEQUIP:てかげん
+		PRINTL 
+		PRINTFORMW 主導権を%CALLNAME:TARGET%に奪われ、%CALLNAME:PLAYER%はこれ以上てかげんを続けることが出来ない…！
+	ENDIF
+	TEQUIP:てかげん = 0
+
+
+	;触手は解除
+	IF TEQUIP:触手
+		PRINTL 
+		IF CONFIG("触手は主人")
+			PRINTFORMW %CALLNAME:PLAYER%は%CALLNAME:TARGET%に押し倒された拍子に集中が解けて、もとの姿に戻ってしまった…
+		ELSE
+			PRINTFORMW 異形の触手は%CALLNAME:TARGET%のアイコンタクトを受けて、うねうね動きながら部屋の隅に下がった…
+		ENDIF
+		TEQUIP:触手 = 0
+		TEQUIP:バイブ = 0
+		TEQUIP:アナルバイブ = 0
+		TEQUIP:クリキャップ = 0
+		TEQUIP:ニプルキャップ = 0
+		TEQUIP:搾乳機 = 0
+		TEQUIP:オナホール = 0
+		TEQUIP:拘束 = 0
+		TEQUIP:浣腸 = 0
+		TEQUIP:触手口辱 = 0
+	ENDIF
+	;３ＰはＷ押し倒しに移行
+	SIF TEQUIP:押し倒し && SELECTCOM:1 >= 90 && SELECTCOM:1 <= 97
+		CALL SETFLAG, "Ｗ押し倒し"
+ELSE
+	;押し倒しの解除→二人で押し倒しも解除
+	SIF TARGET:1 && TEQUIP:(TARGET:1):Ｗ押し倒し
+		CALL SETFLAG, "Ｗ押し倒し解除"
+ENDIF
+
+;シックスナインにおける道具コマンド等の処理
+CALL SET_PLAY69_TURNEND
+
+CALL TARGET_DOWN
+
+;衣装の汚れなど
+CALL STAIN_CALC_COSPLAY
+
+;PLAYERが恍惚状態
+IF STATE("恍惚", PLAYER)
+	SIF TEQUIP:押し倒し == 0
+		TEQUIP:押し倒し = 1
+
+	;恍惚状態で夢魔の好きにさせるなら
+	IF BASE:気力 > 0 && FLAG:223
+		NEXTCOM = 281
+	ELSEIF BASE:気力 <= 0
+		PRINTL 
+		PRINTFORM %CALLNAME:TARGET%は疲れてしまったのか、
+		IF TALENT:恋慕 && PLAYER == MASTER
+			IF RAND:2
+				IF INSERT("インサート")
+					PRINTFORMW 跨ったままの体勢で%CALLNAME:PLAYER%の顔を眺めながら、正気になるまで待った…
+				ELSE
+					PRINTFORMW %CALLNAME:PLAYER%に膝枕をして髪を撫でつつ、正気になるまで待った…
+				ENDIF
+			ELSE
+				PRINTFORMW %CALLNAME:PLAYER%が正気に戻るのを抱きつきながら待った…
+			ENDIF
+		ELSEIF RAND:2
+			PRINTFORMW %CALLNAME:PLAYER%の肩を揺すって正気に戻してきた…
+		ELSE
+			PRINTFORMW %CALLNAME:PLAYER%の頬をぺちぺちして正気に戻してきた…
+		ENDIF
+		CALL REMOVE_STATE, PLAYER, "恍惚"
+	ENDIF
+ENDIF
+
+;撃沈フラグ操作
+FOR LCOUNT, 2, CHARANUM
+	SIF STATE("撃沈", LCOUNT)
+		CALL SETFLAG, "撃沈", LCOUNT
+NEXT
+
+;以下、貞操の代わりにアナルイベント
+IF CFLAG:100 && TALENT:処女 == 0
+	;処女を失ったなら、お尻を触るのを許していたのもおしまい
+	CFLAG:100 = 0
+ELSEIF CFLAG:100 == 0 && TALENT:処女 == 1 && EXP:Ａ経験 > 0 && TALENT:貞操観念 && MARK:反発刻印 < 3
+	CFLAG:100 = 1
+	PRINTW （貞操を守れるなら、少しは後ろを攻められてもよいと思っているようだ…）
+ENDIF
+
+;-------------------------------------------------
+;コマンドの最後の口上
+;-------------------------------------------------
+DRAWLINE
+CALL KOJO_MESSAGE_AFTER_COM
+
+;-------------------------------------------------
+;各種フラグのクリンナップ
+;-------------------------------------------------
+CALL SETFLAG, "ターン終了", TARGET
+CALL SETFLAG, "ターン終了", MASTER
+IF ASSI
+	CALL SETFLAG, "ターン終了", ASSI
+	;助手経験
+	IF TEQUIP:押し倒し == 0 && PLAYER != ASSI && RAND:2
+		EXP:ASSI:助手経験 += 1
+		SIF TALENT:ASSI:賢い && RAND:2
+			EXP:ASSI:助手経験 += 1
+		SIF TALENT:ASSI:愚か && RAND:2
+			EXP:ASSI:助手経験 -= 1
+	ENDIF
+
+	;相性の変動(とりあえずは上昇のみ)。絶頂していなくても上昇します。
+	IF (NOWEX:絶頂数合計 + NOWEX:射精 + NOWEX:噴乳 + NOWEX:絶頂お漏らし >= RAND:10 && ASSIPLAY) || (COND("絶頂", PLAYER) >= RAND:4 && TEQUIP:Ｗ押し倒し && TARGET:1 == ASSI)
+		LOCAL = 0
+		SELECTCASE RELATION:(NO:ASSI)
+		CASE IS >= 200
+			SIF RAND:12 == 0
+				LOCAL = 1
+		CASE IS >= 150
+			SIF RAND:8 == 0
+				LOCAL = 1
+		CASE IS >= 120
+			SIF RAND:6 == 0
+				LOCAL = 1
+		CASEELSE
+			SIF RAND:4 == 0
+				LOCAL = 1
+		ENDSELECT
+		IF LOCAL && NO:ASSI != 99
+			CALL CHANGE_RELATION, 5, TARGET, ASSI
+			;PRINTL 
+			;PRINTFORMW %CALLNAME:TARGET%と%CALLNAME:ASSI%の仲が良くなったようだ…
+		ENDIF
+	ENDIF
+ENDIF
+;-------------------------------------------------
+;助手の行動や起こった事を総合して今回のコマンド行動を記録
+;-------------------------------------------------
+CALL SETFLAG, "今回調教コマンド"
+
+;前回のTARGETが誰か
+TFLAG:49 = TARGET
+;前回の調教者が助手か主人か
+TFLAG:50 = PLAYER

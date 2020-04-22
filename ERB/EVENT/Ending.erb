@@ -1,0 +1,463 @@
+﻿;エンディングチェック
+@ENDING_CHECK
+#DIM IS_ENDING
+#DIM MEMO_TARGET
+
+MEMO_TARGET = TARGET
+
+PRINTFORML 
+
+;単体エンドが書かれた相手とのエンドになるかを調べる
+CALL CHECK_SINGLE_ENDING
+IS_ENDING = RESULT
+
+;相思相愛の相手がいる＆目標金額達成でキャラごとのエンディング
+IF IS_ENDING && MONEY >= NUM("目標金額")
+	TARGET = IS_ENDING
+	;エンディング閲覧フラグＯＮ
+	SETBIT FLAG:(1200 + NO:TARGET), 0
+	;複数いるならハーレムエンド…としたいが、まだできていない…
+	;実際にエンディングが書かれているなら、FLAG:(1200 + NO:TARGET)の1bit〜がＯＮになる
+	CALL SINGLE_ENDING
+;キャラエンドが用意されていないなら共通エンド
+ELSE
+	CALL NORMAL_ENDING, CALCF("最愛の相手")
+ENDIF
+
+PRINTFORML 
+PRINTFORMW 　　　　　　　　―― END 
+PRINTFORML 
+IF MONEY >= NUM("目標金額")
+	PRINTFORMW おめでとうございます。これが、ひとまずの終わりです
+ELSE
+	PRINTFORMW 目標は達成していないようですが、ひとまずの終わりです
+ENDIF
+
+;一時的に変更されたTARGETを元に戻す
+TARGET = MEMO_TARGET
+
+PRINTFORML 
+PRINTFORML ゲームを継続しますか？
+PRINTFORML [0] 終わる（タイトルに戻ります）
+PRINTFORML [1] まだ続ける
+PRINTFORML [2] {FLAG:4 + 2}周目をはじめる
+
+CALL INPUT_SELECT, 3
+
+SELECTCASE RESULT
+CASE 0
+	BEGIN TITLE
+	;QUIT
+CASE 1
+	RETURN 1
+CASE 2
+	;周回フラグ+1
+	FLAG:4 += 1
+	CALL GAME_RENEWAL
+ENDSELECT
+
+
+;キャラごとの単体エンディングがあるかを、実際に書かれているかを加味して調べる
+;ARGにキャラ番号が入っていれば、そのキャラがエンディングが書かれているかを調べる
+;ARG==0の場合にはその時点でエンディング突入した際に単体エンディングが発生するキャラの番号を返す
+@CHECK_SINGLE_ENDING, ARG
+#DIM LCOUNT
+
+SIF ARG == 0
+	ARG = CALCF("最愛の相手")
+SIF ARG == 0
+	RETURN 0
+
+RESULT = 0
+TRYCALLFORM IS_SINGLE_ENDING_K{NO:ARG}_{CFLAG:ARG:209}
+SIF RESULT
+	RETURN ARG
+RETURN 0
+
+
+;共通エンド
+@NORMAL_ENDING, ARG
+DRAWLINE
+IF MONEY >= NUM("目標金額")
+	;汎用グッドエンド
+	IF ARG
+		PRINTFORMW ―――所持金は%MONEY_C(MONEY)%。目標金額突破―――
+		PRINTFORMW …………
+		PRINTFORMW ………
+		PRINTFORMW ……
+		PRINTFORMW いつのまにか自分は調教師として名を馳せるようになった
+		PRINTFORMW 彼女に逢いたい、ひたすらにそう思って始めただけのことだったが、今では人間の調教の仕事さえ舞い込んで来る
+		PRINTFORMW それも悪くはない、彼女に逢えたのだから……
+		PRINTFORML 　
+		PRINTFORMW ふと思いを馳せる―――
+		PRINTFORMW 自分は愛を求める夢魔達に、愛を与え合うことを教えることができただろうか？
+		PRINTFORMW 人間と夢魔の獲物と餌という関係が、愛し合える二つの種族という関係になる日がいつか来るのだろうか？
+		PRINTFORML 　
+		PRINTFORMW いや、自分は勝手にやっている……好きだからやっているのだ
+		PRINTFORML だから言い訳がましい事を考える謂れはない
+		PRINTFORMW 何であろうと今まで夢魔達に無理矢理にしてきたことには変わりがないのだ
+		PRINTFORMW だが……夢魔達と共存できるようになりたいと心のどこかで願っているのも確かだ……
+		PRINTFORMW ノックの音がする
+		PRINTFORMW %CALLNAME:ARG%が紅茶を持ってきてくれたようだ
+		PRINTFORMW 机の上に紅茶を置く%CALLNAME:ARG%に礼を言った
+		PRINTFORMW と、%CALLNAME:ARG%が心配そうに自分を見つめている……
+		PRINTFORMW 紅茶を一口飲み、微笑んでもう一度礼を言う
+		PRINTFORMW %CALLNAME:ARG%の顔をほころびるのを見て嬉しくなった
+		PRINTFORMW ここに、確かに愛し合う関係が存在しているのだ
+		PRINTFORML 　
+		PRINTFORMW %CALLNAME:MASTER%と%CALLNAME:ARG%は熱いくちづけを交わした……
+		SETBIT FLAG:1200, 0
+		RETURN 1
+	ENDIF
+
+	;淫乱ハーレムエンド草案（クリアキャラが全員淫乱持ちで、主人が男）
+	;LOCAL:1〜6がハーレムエンドの登場キャラ、LOCAL:9が淫乱持ちの人数
+	VARSET LOCAL
+	FOR LOCAL, 2, CHARANUM
+		IF TALENT:LOCAL:淫乱 == 0 && TALENT:LOCAL:恋慕
+			LOCAL:9 = 0
+			BREAK
+		ELSEIF TALENT:LOCAL:淫乱 + TALENT:LOCAL:恋慕
+			LOCAL:9 += 1
+			IF LOCAL:6
+				SIF RAND:(LOCAL:9)
+					LOCAL:(1 + RAND:6) = LOCAL
+				CONTINUE
+			ENDIF
+			FOR LOCAL:10, 1, 7
+				IF LOCAL:(LOCAL:10) == 0
+					LOCAL:(LOCAL:10) = LOCAL
+					BREAK
+				ENDIF
+			NEXT
+		ENDIF
+	NEXT
+	IF LOCAL:9 >= 6 && PENIS(MASTER)
+		FOR LOCAL, 0, 10
+			SWAP LOCAL:(1 + RAND:6), LOCAL:(1 + RAND:6)
+		NEXT
+		PRINTFORMW 冷たい月明かりがさす部屋でその宴は行われていた
+		PRINTFORMW %CALLNAME:MASTER%が%CALLNAME:(LOCAL:1)%からペニスを引きずりだすと、\@ TALENT:(LOCAL:1):オトコ ? アナル # 秘裂 \@から泡立った精液が溢れ出した
+		PRINTFORMW 間を置くことなく%CALLNAME:(LOCAL:2)%は解放された%CALLNAME:(LOCAL:1)%を組み伏せると、股に顔を埋め、淫らな音を立てながらすすり始める
+		PRINTFORMW 幾度となく射精したはずのペニスの硬度はまるで衰えず、次の獲物を求めて鎌首をもちあげていた
+		PRINTFORMW それどころか、欲望がそこから吐き出される毎に、より大きな欲望が%CALLNAME:MASTER%の体の中からわき出す
+		PRINTFORMW 我先にと%CALLNAME:MASTER%のペニスに%CALLNAME:(LOCAL:3)%と%CALLNAME:(LOCAL:4)%が舌を這わせ、%CALLNAME:(LOCAL:5)%は後ろから%CALLNAME:MASTER%の唇を奪った
+		PRINTFORMW 機会を逃した者は自らを慰め、あるものはお互いに交わり、あるものは濁った眼で%CALLNAME:MASTER%の性交を見つめている
+		PRINTFORMW 夢魔たちは例外なく全身を白く汚され、穴という穴から白濁液をだらしなく垂れ流していた
+		PRINTFORMW 彼女たちは何度も絶頂に達しながらも、貪欲に次の快楽を求め続ける
+		PRINTFORMW 誰のモノともわからぬ体液で床は濡れ、彼女たちが体を揺するたびに静かな水音を立てている
+		PRINTFORMW %CALLNAME:MASTER%は2人の顔に欲望を解き放つと、自慰にふけっていた%CALLNAME:(LOCAL:6)%を押し倒し、\@ !TALENT:(LOCAL:6):オトコ ? 彼女の中へと # \@肉棒を突き入れた
+		PRINTFORMW ………
+		PRINTFORMW ……
+		PRINTFORMW …
+		PRINTFORMW ここは夜の国
+		PRINTFORMW ここは空間も時間も歪んだ夢の世界
+		PRINTFORMW この夜は続く、%CALLNAME:MASTER%と彼女たちが望む限り、永遠に
+		SETBIT FLAG:1200, 7
+		RETURN 1
+	ENDIF
+
+	;サドだったりマゾだったり自分の娘だったりする夢魔がどのくらいいるかチェック
+	VARSET LOCAL
+	FOR LOCAL, 2, CHARANUM
+		SIF TALENT:LOCAL:サド && TALENT:LOCAL:恋慕
+			LOCAL:1 += 1
+		SIF TALENT:LOCAL:マゾ && TALENT:LOCAL:恋慕
+			LOCAL:2 += 1
+		SIF COND("子孫", LOCAL) && (TALENT:LOCAL:濡れやすい == 0 || TALENT:LOCAL:濡れにくい == 0)
+			LOCAL:3 += 1
+	NEXT
+
+	;ドＭなご主人様のためのエンディング（主人がマゾで、サド持ちの夢魔が手元に８以上）
+	;というか、旧仕様だと主人にマゾが付いてる時点でこのエンディング一直線って気がしないでもない
+	IF LOCAL:1 >= 8 && TALENT:MASTER:マゾ
+		PRINTFORMW 今日も館に一人の男が訪れる
+		PRINTFORMW 出迎えたのは物腰柔らかく\@ TALENT:MASTER:オトコ ? 生真面目そうな執事らしき男 # 楚々とした侍女らしき女 \@…それは%CALLNAME:MASTER%だった
+		PRINTFORMW %CALLNAME:MASTER%は客人を神妙に出迎え、商品である奴隷たちのもとへ案内する
+		PRINTFORML 
+		PRINTFORMW 奴隷を扱う調教師の存在自体はそう珍しいものではない
+		PRINTFORMW しかしここで売られている奴隷は夢魔であり、それは『奴隷』ではなく『ご主人様』だった
+		PRINTFORMW 世にも珍しい『夢魔の調教師』を扱う調教師のもとに、興味本位や怖いもの見たさに訪れる酔狂も少なくはない
+		PRINTFORMW そしてこの男はといえば、自分の屋敷に住まう奴隷の教育係を買うために、%CALLNAME:MASTER%の館を訪ねたのだ
+		PRINTFORML 
+		PRINTFORMW 客間へ通された男は、豪華なソファにずらりと居並んだ夢魔たちに思わず「おお」と声を上げる
+		PRINTFORMW 男に侮蔑の眼差しを向ける者、馬鹿にするかのようにせせら笑う者、
+		PRINTFORMW 興味もなさそうにため息をつく者、新しい玩具が来たとはしゃぐ者、
+		PRINTFORMW 夢魔の容姿と態度に差はあれど、明らかに男を見下した夢魔たちの鋭い視線が男へと集中する
+		PRINTFORML 
+		PRINTFORMW %CALLNAME:MASTER%がそんな夢魔たちに恭しく頭を垂れて、彼女たちに圧倒された男に向き直る
+		PRINTFORMW …が、どうも様子がおかしい
+		PRINTFORMW 急にそわそわしだしたかと思えば居心地が悪そうに顔を紅潮させ、ぶるぶると体を震わせているではないか
+		PRINTFORMW その様子をさも愉快そうに眺めていた夢魔の一人が、おもむろにリモコンを取り出し操作を始めた
+		PRINTFORMW と同時に%CALLNAME:MASTER%が一瞬体を跳ねさせ、ぜえぜえと荒くした息を必死に整えている
+		PRINTFORMW 見れば涙目の%CALLNAME:MASTER%の股間は、漏らしたかのようにぐっしょりと濡れていた
+		PRINTFORMW 驚く男を尻目にくすくすと笑い続ける夢魔たちが、一斉にリモコンを取り出してスイッチを入れる
+		PRINTFORMW 途端に怯え出した%CALLNAME:MASTER%が甲高い悲鳴を上げて体を仰け反らせ、立ったまま白目をむいて気を失い、やがて力なく崩れ落ちた
+		PRINTFORML 
+		PRINTFORMW 男はたいそう興奮した様子で、好みの『ご主人様』を選んで足早に屋敷に連れ帰ったという
+		PRINTFORMW その後、その男がどうなったのかは知る由もないが、彼女たちの危険な魅力に心を引き寄せられた者が辿る末路などたかが知れている
+		PRINTFORMW 売られていった彼女も退屈になれば館に戻ってくるだろう、
+		PRINTFORMW 今度は何ヶ月、いや、何週間もつだろうかと、夢魔たちは吊るした%CALLNAME:MASTER%に鞭を振るいながら笑い続けた
+		PRINTFORML 
+		PRINTFORMW 夢魔の『ご主人様』を育て、多くの好事家を破滅に追いやった%CALLNAME:MASTER%の名は、
+		PRINTFORMW 奴隷商人たちの間で異端者として広まっていった…
+		RETURN 1
+	;ドＳなご主人様のためのエンディング（主人がサドで、マゾ持ちの夢魔が手元に８以上）
+	;むしろやりすぎた感じがします！？
+	ELSEIF LOCAL:2 >= 8 && TALENT:MASTER:サド
+		PRINTFORMW 今日も館に一人の男が訪れる
+		PRINTFORMW 出迎えたのは\@ TALENT:MASTER:オトコ ? 貴族さながらのような品の良い男 # 深窓の令嬢と呼ぶに相応しい気品漂う女 \@…それは%CALLNAME:MASTER%だった
+		PRINTFORMW %CALLNAME:MASTER%は客人をにこやかに出迎え、商品である奴隷たちのもとへ案内する
+		PRINTFORML 
+		PRINTFORMW 奴隷を扱う調教師の存在自体はそう珍しいものではない
+		PRINTFORMW しかしここで売られている奴隷は夢魔であり、そのそれぞれが完璧に調教されたというべき奴隷だった
+		PRINTFORML 
+		PRINTFORMW この男もまたその噂を頼りに%CALLNAME:MASTER%の館を訪ねたのだ
+		PRINTFORMW しかし、噂というものは往々にして当てにならないものであり、
+		PRINTFORMW 聞こえのいい話ほど現実とのギャップが激しいこともまた事実…
+		PRINTFORML 
+		PRINTFORMW 客間から地下へ案内された男が見たものは、無数の鉄格子が並ぶ石畳の地下牢
+		PRINTFORMW %CALLNAME:MASTER%がその牢屋に足を踏み入れた瞬間、檻の中から無数の手が伸びる
+		PRINTFORMW 右の夢魔も左の夢魔も、こぞって%CALLNAME:MASTER%に手を伸ばし、泣いて慈悲を請い続ける
+		PRINTFORMW %CALLNAME:MASTER%が微笑みながら夢魔の一人の顔を踏みつけると、彼女は涙を流して嬉しそうにその靴の裏をなめ続けた
+		PRINTFORML 
+		PRINTFORMW 予想を超えた尋常ならざる光景に怖気づいた男が、恐る恐る奴隷を選んで帰り支度をする
+		PRINTFORMW %CALLNAME:MASTER%はやはりにこやかに見送り『調教したい者がいるなら私に任せて欲しい』と申し出たが
+		PRINTFORMW 男は青ざめた顔で無理矢理な作り笑いをしながら、逃げるように帰っていった
+		PRINTFORML 
+		PRINTFORMW 男がその後どうなったのか、%CALLNAME:MASTER%には当然だが興味のないことだった
+		PRINTFORMW だが、過去に同じ顔で逃げ帰りながら、のちに妻と娘を連れて調教を申し出た輩がいたことを思い出し、
+		PRINTFORMW また近いうちに会うのだろうか、と、人の業の深さを、ふふ、と笑った
+		PRINTFORML 
+		PRINTFORMW そしてまた一つ、館の主は美しくそして恐ろしい、などという噂が触れわたり、
+		PRINTFORMW 怖いもの見たさに館を訪れる者が、その噂を更に大仰に流布するのだ
+		PRINTFORML 
+		PRINTFORMW こうして夢魔でさえも『完璧に調教』する%CALLNAME:MASTER%の名は、
+		PRINTFORML あらゆる夢魔と、あらゆる人間の間で、恐怖の象徴として広まっていった…
+		RETURN 1
+	;娘がいっぱい！（自分の娘が１０人以上のときに発生）マスターが父親か母親かは判断しないことにします…
+	;で、こういうのはなんて言うの？　親バカ？　ドタコン？　むしろ外道？
+	ELSEIF LOCAL:3 >= 10 
+		IF TALENT:MASTER:オトコ
+			PRINTFORML 「お父さーん！」
+			PRINTFORML 「パパーー！」
+			PRINTFORMW 「お父様ー！」
+		ELSE
+			PRINTFORML 「お母さーん！」
+			PRINTFORML 「ママーー！」
+			PRINTFORMW 「お母様ー！」
+		ENDIF
+		PRINTFORMW 子供たちの声が館にこだまする
+		PRINTFORMW そこには、廊下を勢い良く走る少女たちと、彼女たちに追いかけられる%CALLNAME:MASTER%の姿
+		PRINTFORMW 一見して平和な光景だが、逃げる%CALLNAME:MASTER%の顔は必死だった
+		IF TALENT:MASTER:オトコ
+			PRINTFORML 「お父さん遊んでーー！」
+			PRINTFORMW 「パパ待ってよぉー！」
+		ELSE
+			PRINTFORML 「お母さん遊んでーー！」
+			PRINTFORMW 「ママ待ってよぉー！」
+		ENDIF
+		PRINTFORML %CALLNAME:MASTER%もかつては名うての調教師として恐れられた人物だったが、子煩悩な一面が知れ渡ってからと
+		PRINTFORMW いうもの、同業者からは「\@ TALENT:MASTER:オトコ ? 父 # 母 \@ちゃん」などと呼ばれ、からかわれる始末
+		PRINTFORMW ここまでならば微笑ましい逸話ですむのだが、
+		PRINTFORMW もし、その娘たちが皆、奴隷として育てた夢魔たちの娘だとしたら…？
+		PRINTFORMW 「みんな寝てて遊んでくれないんだもん！」
+		PRINTFORMW 「疲れたって言うんだよー！」
+		PRINTFORML 館に訪れた男の子たちはみなぐったりとして動かない。腕を引く彼女たちに返事する力も、
+		PRINTFORMW 彼ら同様にぐったりした下半身を隠す気力も、彼らには残っていなかった。
+		PRINTFORMW 「だからお\@ TALENT:MASTER:オトコ ? 父 # 母 \@さん遊んでーー！」
+		PRINTFORMW 「ねえねえ、ねえってばーー！」
+		PRINTFORMW ２、３人ならいざ知らず、相手は１０人以上。無論、彼女たちの意味する『遊び』がどんな行為かも言うに及ばず…
+		PRINTFORML 「捕まえたーー！」
+		PRINTFORMW 「お\@ TALENT:MASTER:オトコ ? 父 # 母 \@さんゲットーーー！」
+		PRINTFORML さながら獲物に群がる飢えた無数のライオンといったところだろうか
+		PRINTFORMW 娘の一人が%CALLNAME:MASTER%の首に飛びついたのを皮切りに、我も我もと腕に腰に足に娘たちがしがみつく
+		PRINTFORMW そして、今日も%CALLNAME:MASTER%の悲鳴が館に響き渡る…
+		PRINTFORML 
+		PRINTFORMW 世界一幸せな\@ TALENT:MASTER:オトコ ? 父 # 母 \@親と、その娘たちの物語
+		PRINTFORMW 続くかどうかは、%CALLNAME:MASTER%の体力と精力次第…
+		RETURN 1
+	ENDIF
+
+	;汎用ノーマル？エンド
+	PRINTFORMW 「これが今回の報酬だ」
+	PRINTFORMW また一人、夢魔が売れた
+	PRINTFORMW ローブの女に連れられてゆく夢魔の後ろ姿、これを見るのも何度目だろうか
+	PRINTFORMW 「夢魔」なるものの「調教」にも慣れてきた
+	PRINTFORMW しかし、彼女らはどこに売られていくのだろうか…
+	PRINTFORMW 報酬を手に書斎で思案をしていたが、日々の疲れからか%CALLNAME:MASTER%の意識は沈んでいった
+	PRINTFORMW ………
+	PRINTFORMW ……
+	PRINTFORMW …
+	PRINTFORMW 「おい、起きろよ」
+	PRINTFORMW 聞き覚えのある声で目を覚ますと見知った友人が顔を覗き込んでいた
+	PRINTFORMW 周りでは、あるものは酒を飲み、笑い、歌い、ザワザワと喧騒を生み出していた
+	PRINTFORMW ここは…一角獣の角？屋敷の書斎のはずだったのでは？
+	PRINTFORMW 「屋敷？何言ってんだ？この万年平民が」
+	PRINTFORMW 「せっかく勇者ラルスが魔王を倒したというのに、このめでたいパーティーで夢うつつとは困った奴だな」
+	PRINTFORMW 人々は魔物に怯えずに済む日々の到来を祝い、一角獣の角はこれまでにない活気をみせていた
+	PRINTFORMW %CALLNAME:MASTER%がこの事態に戸惑っていると、外からけたたましいラッパの音が鳴り響いた
+	PRINTFORMW 『勇者だ！勇者ラルスの帰還だ！勇者がグルッペンに帰ってきた！』
+	PRINTFORMW 『勇者様のォ！』
+	PRINTFORMW 『ご帰還ンンンンッ！！』
+	PRINTFORMW 声が響き渡ると、一角獣の角の人々は我先に外へと飛び出していった
+	PRINTFORMW 後には%CALLNAME:MASTER%と酒場のマスターだけが取り残された
+	PRINTFORMW 「どうですカ？あなタと世界の目覚メに一杯」
+	PRINTFORMW マスターはグラスを掲げると朗々と詠い出した
+	PRINTFORMW 「おお、勇者ラルスの手によって魔王の野望は打ち砕かれ、人々に安息の日々がもたらされた！」
+	PRINTFORMW 「我々の夢が現になり、昨日までの現は夢へと消えた」
+	PRINTFORMW 「願わくば、この日々が決してひと時の夢ではあらんことを」
+	PRINTFORMW 「乾杯…」
+	SETBIT FLAG:1200, 8
+;バッドエンド？
+;金額が目標を下回った場合、
+;恋慕＋サド持ちが多ければ奴隷エンド、恋慕の相手が一定数以上いれば準ハーレム、
+;恋慕の相手がいれば準グッドに移行します。更に準グッドの条件を満たさずMASTERが夢魔なら失踪エンド、
+;今いる夢魔の反発刻印合計が８を超えるとBAD END、恋慕の夢魔がいないとSAD ENDに移行します。
+;今の時点だとそのままQUITさせてるんだけど、CONTINUEした方がいいかな？
+;CONTINUEさせることにしました(SQN管理者)
+ELSE
+	PRINTFORMW ―――所持金は%MONEY_C(MONEY)%。目標金額に到達せず―――
+	PRINTFORMW …………
+	PRINTFORMW ………
+	PRINTFORMW ……
+	PRINTFORMW 調教師になったのは誰の意志か―――？
+	PRINTFORMW ―――その問いに答える者はいない
+	PRINTFORMW 夢魔を奴隷として調教し、売る…それが紛れもなく%CALLNAME:MASTER%の仕事だった
+	PRINTFORMW しかし、結果として%CALLNAME:MASTER%は成功しなかった
+	PRINTFORMW やがて客足が途絶えるのも時間の問題だろう…%CALLNAME:MASTER%は、廃業することを決意した
+	PRINTFORML 　
+	;恋慕＋サドの夢魔がたくさんいるかチェック
+	LOCAL:1 = 0
+	FOR LOCAL, 2, CHARANUM
+		SIF TALENT:LOCAL:恋慕 && TALENT:LOCAL:サド
+			LOCAL:1 += 1
+	NEXT
+	IF LOCAL:1 > 10
+		PRINTFORMW 屋敷を売り払い、奴隷としてきた夢魔を解放し、%CALLNAME:MASTER%はひとり、旅に出ようとした
+		PRINTFORMW しかし、%CALLNAME:MASTER%を狙う夢魔たちによって、
+		PRINTFORMW %CALLNAME:MASTER%は出立の前日に捕らえられ、夜の国に引きずり込まれてしまった…
+		PRINTFORML 
+		PRINTFORMW かつて住んでいた屋敷と全く同じ、間取りも内装もクローゼットの中身さえも、
+		PRINTFORMW 何一つ変わらない建物の地下牢に、%CALLNAME:MASTER%は幽閉されていた
+		PRINTFORMW 違うのは、夢魔が主人で%CALLNAME:MASTER%が奴隷であること…
+		PRINTFORML 
+		PRINTFORMW だが、何も悲しくはない
+		PRINTFORMW それどころか、%CALLNAME:MASTER%は歓喜にその身を震わせて、
+		PRINTFORMW 夢魔の奴隷となったことに無上の悦びを覚えているのだ
+		PRINTFORMW 今日もたくさんの『ご主人様』に囲まれて、%CALLNAME:MASTER%は狂った嬌声をあげ続ける…
+		PRINTFORML 
+		PRINTFORMW %CALLNAME:MASTER%は、今夜も永遠の夢に囚われ続けている
+		SETBIT FLAG:1200, 6
+	;恋慕の夢魔がたくさんいる
+	ELSEIF CHARANUM > 10 && SUMCARRAY(TALENT:恋慕, 2, CHARANUM - 1) > 10
+		PRINTFORMW 屋敷を売り払い、奴隷としてきた夢魔を解放し、%CALLNAME:MASTER%はひとり、旅に出ようとした
+		PRINTFORMW しかし、%CALLNAME:MASTER%を慕う夢魔たちによって、
+		PRINTFORMW %CALLNAME:MASTER%は出立の前日に捕らえられ、そのまま夢魔たちに玩ばれ…
+		PRINTFORML 
+		PRINTFORMW 屋敷はいつしか評判の娼館となり、立派で豪華なつくりに建て替えられ、
+		PRINTFORMW %CALLNAME:MASTER%はその館の主として、巨万の富を得たのだった
+		PRINTFORMW それは夢魔たちが%CALLNAME:MASTER%とともに過ごすために、
+		PRINTFORMW 各々の力でその館を存続させようと一計を巡らせた結果であり、
+		PRINTFORMW %CALLNAME:MASTER%が彼女たちを売らずに愛してきた相応の結果だったと言えるのだろう
+		PRINTFORML 
+		PRINTFORMW そして今日も%CALLNAME:MASTER%は夢魔たちに玩ばれる
+		PRINTFORMW かつて%CALLNAME:MASTER%が夢魔を手放さず愛で続けたように、
+		PRINTFORMW 今度は%CALLNAME:MASTER%が夢魔に愛され続ける番なのだから
+		PRINTFORML 
+		PRINTFORMW ―――宴は今夜も終わらない
+		SETBIT FLAG:1200, 5
+	;上記条件を満たさず、相思相愛または恋慕の相手が一人以上手元にいて、その中で好感度が一番高いキャラ
+	ELSEIF ARG
+		PRINTFORMW 屋敷を売り払い、奴隷としてきた夢魔を解放し、%CALLNAME:MASTER%はひとり、旅に出る
+		PRINTFORMW しかし、%CALLNAME:ARG%だけはいつまでも%CALLNAME:MASTER%の傍を離れようとしなかった
+		PRINTFORMW 調教師と奴隷という役割を終えた今、%CALLNAME:ARG%を縛るものはなにもない
+		PRINTFORMW %CALLNAME:ARG%は自らの意思で、新たな生活を%CALLNAME:MASTER%と共に歩みたいと申し出てくれたのだ…
+		PRINTFORMW %CALLNAME:MASTER%は%CALLNAME:ARG%を抱きしめ涙する
+		PRINTFORML 
+		PRINTFORMW …%CALLNAME:MASTER%が調教師になれなかったのは
+		PRINTFORMW %CALLNAME:ARG%を愛したがゆえだったのかもしれない
+		PRINTFORML 
+		PRINTFORMW %CALLNAME:MASTER%は%CALLNAME:ARG%の手を取り、新天地へと旅立った……
+		SETBIT FLAG:1200, 4
+	;主人公が夢魔または上位夢魔
+	ELSEIF TALENT:MASTER:夢魔 || TALENT:MASTER:上位夢魔
+		PRINTFORMW 屋敷を売り払い、奴隷としてきた夢魔を解放し、%CALLNAME:MASTER%はひとり、旅に出ようとした
+		PRINTFORMW しかし%CALLNAME:MASTER%は、ふとした違和感を覚えて手を止める
+		PRINTFORML 
+		PRINTFORMW 独りになってからというもの、やけに喉が渇いて仕方がない…
+		PRINTFORML 
+		PRINTFORMW 正確には喉ではなく、体全体が枯渇するような感覚
+		PRINTFORMW その異様なまでの渇きは%CALLNAME:MASTER%の理性を瞬く間に奪い去る
+		PRINTFORMW 欲しいのは水などではなかった
+		PRINTFORMW 肌が愛しい、唇が恋しい…誰かと触れあい、交わって、心の渇きを潤したい
+		PRINTFORMW 夢魔である%CALLNAME:MASTER%は飢えにも等しい衝動を抑えきれず、
+		PRINTFORMW 獲物を求め、やがて闇夜へと消え去った
+		PRINTFORMW 地位も富も理性すらもかなぐり捨てて
+		PRINTFORMW ただひとときの、愛を求めて―――
+		SETBIT FLAG:1200, 3
+	;今いる夢魔の反発刻印Lvの合計が８を超えた
+	ELSEIF CHARANUM > 3 && SUMCARRAY(MARK:反発刻印, 2, CHARANUM - 1) > 8
+		PRINTFORMW 屋敷を売り払い、奴隷としてきた夢魔を解放し、%CALLNAME:MASTER%はひとり、旅に出ようとする
+		PRINTFORMW しかし、%CALLNAME:MASTER%を快く思わない夢魔たちによって、
+		PRINTFORMW %CALLNAME:MASTER%は出立の前日に、夜の国に引きずり込まれてしまった…
+		PRINTFORML 
+		PRINTFORMW それからどれほどの歳月が流れたのか
+		PRINTFORMW 精も根も尽き果てた%CALLNAME:MASTER%の上に、また見知らぬ夢魔が乗る
+		PRINTFORMW 命乞いの台詞はキスに奪われ、腕にはもはや抵抗する力も残されていない
+		PRINTFORMW 目の前の夢魔は嬉しそうに、
+		PRINTFORMW %CALLNAME:MASTER%の生命の最後の一滴を啜り取る
+		PRINTFORML 
+		PRINTFORMW %CALLNAME:MASTER%の魂は、甘い甘い悪夢の中にとけていった―――
+		SETBIT FLAG:1200, 2
+	ELSE
+		PRINTFORMW 屋敷を売り払い、奴隷としてきた夢魔を解放し、%CALLNAME:MASTER%はひとり、旅に出た
+		PRINTFORMW 夢魔と過ごした日々は、まさしく一時の夢だったのだろうか
+		PRINTFORMW あれ以来夢魔との関わりは一切途絶え、現実の時間だけがただ過ぎていく
+		PRINTFORMW あの時売られていった夢魔たちは、今頃何をしているのだろう
+		PRINTFORMW 自分の元を離れた夢魔たちは、これからどこへ行くのだろう
+		PRINTFORMW 夢魔とは一体何者だったのだろう
+		PRINTFORML 
+		PRINTFORMW %CALLNAME:MASTER%は振り返る
+		PRINTFORMW しかし、彼女たちの声は、もう聞こえない―――
+		SETBIT FLAG:1200, 1
+	ENDIF
+ENDIF
+
+
+@SHOW_CHARA_END
+PRINTL 誰の個別ENDを回想しますか？
+FOR LOCAL, 1, 100
+	SIF FLAG:(1200 + LOCAL) >= 2
+		PRINTFORML  [{LOCAL, 2}] %CSVNAME(LOCAL, 0)%
+NEXT
+PRINTFORML [100] 戻る
+
+$INPUT
+CALL INPUT_SELECT, 100, 100
+
+IF RESULT == 100
+	RETURN 0
+ELSEIF RESULT >= 1 && RESULT <= 99 && FLAG:(1200 + RESULT) >= 2
+	LOCAL = FLAG:(1200 + RESULT)
+	ADDCHARA RESULT
+	TARGET = CHARANUM-1
+	CALL SINGLE_ENDING
+	FOR LOCAL:1, 1, 4
+		IF GETBIT(LOCAL, LOCAL:1)
+			PRINTL 
+			CFLAG:209 = LOCAL:1
+			CALL SINGLE_ENDING
+		ENDIF
+	NEXT
+	DELCHARA CHARANUM-1
+ELSE
+	GOTO INPUT
+ENDIF
+
+PRINTL 
+PRINTL 
+PRINTL 回想から戻ります
+PRINTL 
+PRINTL 
+RESTART

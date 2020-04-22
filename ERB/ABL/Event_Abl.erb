@@ -1,0 +1,1375 @@
+﻿;主に、特殊な技能などの設定関数を置く。
+;-------------------------------------------------
+@GET_EXABL, ARG
+#DIM LCOUNT
+SIF ARG <= 0
+	RETURN 0
+
+;具体的なＬＶの算出
+FOR LCOUNT, 30, 35
+	LOCALS = %ABLNAME:LCOUNT%
+	SELECTCASE LOCALS
+	CASE "舌使い"
+		LOCAL = (EXP:ARG:フェラ経験 + EXP:ARG:クンニ経験 + EXP:ARG:キス経験)/3
+	CASE "指使い"
+		LOCAL = EXP:ARG:手淫経験
+	CASE "足使い"
+		LOCAL = EXP:ARG:足コキ経験
+	CASE "腰使い"
+		LOCAL = EXP:ARG:腰使い経験
+	CASE "魔乳"
+		LOCAL = EXP:ARG:パイズリ経験
+	ENDSELECT
+	IF ARG == MASTER
+		TIMES LOCAL , 0.50
+	ELSEIF TALENT:ARG:賢い
+		TIMES LOCAL , 1.50
+	ELSEIF TALENT:ARG:愚か
+		TIMES LOCAL , 0.70
+	ENDIF
+	ABL:ARG:LOCALS = TALENT:ARG:LOCALS + MAX(GET_EXP_LV(LOCAL) - 1, 0)
+NEXT
+
+CALL GET_EXABL2, ARG
+
+
+@GET_EXABL2, ARG
+SIF ARG <= 0
+	RETURN 0
+;ＶＡ名器度補正(性転換に備えて男でもＶ名器度をここで設定)
+IF MIN(TALENT:ARG:Ｖ名器, TALENT:ARG:Ａ名器, TALENT:ARG:喉名器, TALENT:ARG:尿道名器) == 0
+	SELECTCASE RAND:100 + TALENT:ARG:上位夢魔*10
+	CASE IS <= 49
+		TALENT:ARG:Ｖ名器 = 1
+	CASE IS <= 89
+		TALENT:ARG:Ｖ名器 = 1 + RAND:2
+	CASEELSE
+		TALENT:ARG:Ｖ名器 = 1 + RAND:3
+	ENDSELECT
+
+	SELECTCASE RAND:100 + TALENT:ARG:上位夢魔*10
+	CASE IS <= 49
+		TALENT:ARG:Ａ名器 = 1
+	CASE IS <= 89
+		TALENT:ARG:Ａ名器 = 1 + RAND:2
+	CASEELSE
+		TALENT:ARG:Ａ名器 = 1 + RAND:3
+	ENDSELECT
+
+	SELECTCASE RAND:100 + TALENT:ARG:上位夢魔*10
+	CASE IS <= 49
+		TALENT:ARG:喉名器 = 1
+	CASE IS <= 89
+		TALENT:ARG:喉名器 = 1 + RAND:2
+	CASEELSE
+		TALENT:ARG:喉名器 = 1 + RAND:3
+	ENDSELECT
+
+	SELECTCASE RAND:100 + TALENT:ARG:上位夢魔*10
+	CASE IS <= 49
+		TALENT:ARG:尿道名器 = 1
+	CASE IS <= 89
+		TALENT:ARG:尿道名器 = 1 + RAND:2
+	CASEELSE
+		TALENT:ARG:尿道名器 = 1 + RAND:3
+	ENDSELECT
+ENDIF
+
+;Ｖ名器LV（20未満だと緩く、70以上だと名器）
+CALL GET_EXABL_V, ARG
+ABL:ARG:Ｖ名器度 = ABL_V(ARG)
+
+;Ａ名器LV（20未満だと緩く、70以上だと名器）
+CALL GET_EXABL_A, ARG
+ABL:ARG:Ａ名器度 = ABL_A(ARG)
+
+;喉LV(ディープフェラやイラマチオに関係)
+CALL GET_EXABL_T, ARG
+ABL:ARG:喉名器度 = ABL_T(ARG)
+
+;尿道の拡張状況（尿道には名器度は無い…のは過去の話である）
+CALL GET_EXABL_U, ARG
+ABL:ARG:尿道名器度 = ABL_U(ARG)
+
+
+@GET_EXABL_V, ARG
+SIF ARG <= 0
+	RETURN 0
+;膣のLV取得
+;-------------------------------------------------
+;膣などの判定ベース
+;基本的に。入れるものの大きさ基準値(例：バイブやペニスなら1、太いバイブなら2)とペアで使う
+;SEXの時の射精ゲージ増加などを見るときは、　基本値(Ｖ活用LV)*補正(Ｖ拡張LVの過不足)　で算出する。
+;Ｖ拡張調教の時には、入れるものの大きさ基準値とＶ拡張LVを比較して痛みなどを決める。
+;基準値+1の値の時がちょうど良い。
+;その際、Ｖ活用LVが大きさ基準値以上なら、+1できる。
+;スライムは活用が巧いが、拡張LVも+1される
+;-------------------------------------------------
+IF TALENT:ARG:オトコ || TALENT:ARG:処女 == 1
+	ABL:ARG:Ｖ使い = 0
+	ABL:ARG:Ｖ拡張 = 0
+	RETURN 0
+ENDIF
+
+;Ｖ活用LV
+;Ｖ経験、Ｖ性交経験、Ｖ破壊経験、Ｖ感覚、Ｖ敏感、淫壷で判定
+;Ｖ拡張LVの方も同時に用いることが多い。
+ABL:ARG:Ｖ使い = 1
+VARSET LOCAL
+LOCAL:0 = EXP:ARG:Ｖ経験 - EXP_GAIN(0, ARG)
+LOCAL:12 = EXP:ARG:Ｖ性交経験 - EXP_GAIN(12, ARG)
+LOCAL:53 = EXP:ARG:Ｖ拡張経験 - EXP_GAIN(53, ARG)
+
+SIF ABL:ARG:Ｖ感覚 + TALENT:ARG:Ｖ敏感*2 >= 4
+	ABL:ARG:Ｖ使い += 1
+
+IF LOCAL:0 >= 150
+	ABL:ARG:Ｖ使い += 2
+ELSEIF LOCAL:0 >= 50
+	ABL:ARG:Ｖ使い += 1
+ENDIF
+SIF LOCAL:0 < LOCAL:53 * 10 && LOCAL:0 >= 50
+	ABL:ARG:Ｖ使い -= 1
+
+IF LOCAL:12 >= 150 || LOCAL:0 >= 1000
+	ABL:ARG:Ｖ使い += 2
+ELSEIF LOCAL:12 >= 50 || LOCAL:0 >= 600
+	ABL:ARG:Ｖ使い += 1
+ENDIF
+
+IF LOCAL:12 < LOCAL:53 * 5 && (LOCAL:12 >= 50 || LOCAL:0 >= 600)
+	ABL:ARG:Ｖ使い -= 1
+ELSEIF ABL:ARG:Ｖ使い < 2 && COND("夢魔", ARG)
+	ABL:ARG:Ｖ使い += 1
+ENDIF
+;拡張適正ボーナス
+SIF ABL:ARG:Ｖ使い < 3 && TALENT:ARG:拡張適正
+	ABL:ARG:Ｖ使い += 1
+
+IF TALENT:ARG:淫壷
+	ABL:ARG:Ｖ使い += 1
+	SIF LOCAL:12 >= 300 || LOCAL:0 >= 2000
+		ABL:ARG:Ｖ使い += 1
+ENDIF
+;スライム
+SIF TALENT:ARG:スライム
+	ABL:ARG:Ｖ使い += 2
+;力持ち
+SIF TALENT:ARG:力持ち
+	ABL:ARG:Ｖ使い += 1
+;好色
+SIF TALENT:ARG:好色 && ABL:ARG:Ｖ使い < 3
+	ABL:ARG:Ｖ使い += 1
+;損傷したら、即座に痛みで操れなくなる(拡張適正があるなら怪我が治れば元通り)
+SIF TALENT:ARG:Ｖ損傷 || (EXP:ARG:Ｖ損傷経験 && TALENT:ARG:拡張適正 == 0)
+	ABL:ARG:Ｖ使い = MULTIPLY(ABL:ARG:Ｖ使い, 100 - MIN(EXP:ARG:Ｖ損傷経験 + TALENT:ARG:Ｖ損傷, 3)*30)
+
+;アソコに筋弛緩剤
+IF GETBIT(TEQUIP:ARG:筋弛緩剤, 2)
+	IF TALENT:ARG:薬毒耐性
+		ABL:ARG:Ｖ使い /= 2
+	ELSE
+		ABL:ARG:Ｖ使い = 0
+	ENDIF
+ENDIF
+
+;処女で無い場合の拡張度については、ここで最低値だけ管理して個別にABLUP画面で上げるものとする
+IF TALENT:ARG:小柄体型
+	LOCAL = 0
+ELSE
+	LOCAL = 1
+ENDIF
+;スライム
+SIF TALENT:ARG:スライム
+	LOCAL += 1
+
+ABL:ARG:Ｖ拡張 = MAX(ABL:ARG:Ｖ拡張, LOCAL)
+
+;-------------------------------------------------
+;Ｖ名器度
+;Ｖ経験、Ｖ性交経験、Ｖ拡張経験のバランスで名器度決定。淫壷のボーナスもここで処理
+;拡張適正があると損傷が発生しているとき以外のペナルティは無視
+;ARGSに"絶対値"を入れると疲れや経験を無視した最高値が出る
+;-------------------------------------------------
+@ABL_V(ARG, ARGS)
+#FUNCTION
+SIF ARG <= 0
+	RETURNF 0
+SIF TALENT:ARG:オトコ
+	RETURNF 0
+
+VARSET LOCAL
+
+;快感の基準はＶ活用LV
+LOCAL = 15 + ABL:ARG:Ｖ使い*5 + ABL:ARG:Ｖ拡張 + TALENT:ARG:Ｖ名器*5
+
+SELECTCASE ARGS
+CASE "絶対値"
+	LOCAL:1 = EXP:ARG:Ｖ経験
+	LOCAL:2 = EXP:ARG:Ｖ性交経験
+	LOCAL:3 = EXP:ARG:Ｖ拡張経験
+CASEELSE
+	LOCAL:1 = EXP:ARG:Ｖ経験 - EXP_GAIN(0, ARG)
+	LOCAL:2 = EXP:ARG:Ｖ性交経験 - EXP_GAIN(12, ARG)
+	LOCAL:3 = EXP:ARG:Ｖ拡張経験 - EXP_GAIN(53, ARG)
+ENDSELECT
+
+;Ｖ拡張経験がＶ経験の４％を超えているとペナルティ発生(Ｖ拡張LVがＶ使いLVを上回っていると、かなり厳しい)
+;拡張適正がある場合にはペナルティは無い
+IF TALENT:ARG:拡張適正
+	LOCAL:4 = 100
+ELSE
+	;Ｖ拡張ＬＶがＶ使いＬＶを上回っていて、かつ、Ｖ経験100以上orＶ拡張ＬＶが４以上
+	IF ABL:ARG:Ｖ拡張 > ABL:ARG:Ｖ使い && (LOCAL:1 >= 100 || ABL:ARG:Ｖ拡張 >= 4)
+		;Ｖ名器度を、（Ｖ拡張ＬＶとＶ使いＬＶの差）×（Ｖ経験の豊富さに応じた値）だけ減らす。ただし最低でも５は残す
+		LOCAL = MAX(LOCAL - (ABL:ARG:Ｖ拡張 - ABL:ARG:Ｖ使い) * GET_EXP_LV(EXP:ARG:Ｖ経験) * 2, 5)
+
+		;LOCAL:4はＶ名器度に最終的にかかる補正の値。100を越えると名器度が上がり、100未満だと下がる
+		;ここでの式は、100 * (100 + Ｖ経験*2) / (100 + Ｖ経験 + Ｖ拡張経験*25) なので、Ｖ拡張経験が無い場合には100以上になる。（上限100なのでペナルティは無いということ）
+		;そして、Ｖ拡張経験*25がＶ経験を越えていると、加速度的に名器度が下がる事となる
+		LOCAL:4 = LIMIT(100 * (100 + LOCAL:1*2) / (100 + LOCAL:1 + LOCAL:3*25), 20, 100)
+	ELSE
+		;Ｖ拡張経験*10がＶ経験を越えていると、加速度的に名器度が下がる事となる
+		LOCAL:4 = LIMIT(100 * (100 + LOCAL:1*2) / (100 + LOCAL:1 + LOCAL:3*10), 20, 100)
+	ENDIF
+ENDIF
+
+;Ｖ性交経験がＶ経験の25％を超えているとボーナス発生
+;ここでの式は、LOCAL:4 * (100 + Ｖ経験 + Ｖ性交経験*4 + 快Ｖの珠/5000) / (100 + Ｖ経験*2) なので、
+;（Ｖ性交経験*4+快Ｖの珠/5000）がＶ経験を越えていると、名器度が上がる事となる（最大で２倍まで）
+LOCAL:4 = LIMIT(LOCAL:4 * (100 + LOCAL:1 + LOCAL:2*4 + JUEL:ARG:快Ｖ/5000) / (100 + LOCAL:1*2), 20, 200)
+
+LOCAL = MULTIPLY(LOCAL, LOCAL:4 + TALENT:ARG:淫壷*50 + TALENT:ARG:力持ち*10)
+SIF TALENT:ARG:Ｖ損傷
+	LOCAL /= TALENT:ARG:Ｖ損傷 + 1
+
+RETURNF LOCAL
+
+
+@GET_EXABL_A, ARG
+;アナルのLV取得
+SIF ARG <= 0
+	RETURN 0
+
+VARSET LOCAL
+
+LOCAL:1 = EXP:ARG:Ａ経験 - EXP_GAIN(1, ARG)
+LOCAL:13 = EXP:ARG:Ａ性交経験 - EXP_GAIN(13, ARG)
+LOCAL:57 = EXP:ARG:Ａ拡張経験 - EXP_GAIN(57, ARG)
+
+ABL:ARG:Ａ使い = 0
+SIF ABL:ARG:Ａ感覚 + TALENT:ARG:Ａ敏感*2 >= 4
+	ABL:ARG:Ａ使い += 1
+
+IF LOCAL:1 >= 150
+	ABL:ARG:Ａ使い += 3
+ELSEIF LOCAL:1 >= 50
+	ABL:ARG:Ａ使い += 2
+ELSEIF LOCAL:1 >= 20
+	ABL:ARG:Ａ使い += 1
+ENDIF
+SIF LOCAL:1 < LOCAL:57 * 10 && LOCAL:1 >= 20
+	ABL:ARG:Ａ使い -= 1
+
+IF LOCAL:13 >= 150 || LOCAL:1 >= 1000
+	ABL:ARG:Ａ使い += 2
+ELSEIF LOCAL:13 >= 50 || LOCAL:1 >= 600
+	ABL:ARG:Ａ使い += 1
+ENDIF
+SIF LOCAL:13 < LOCAL:57 * 5 && (LOCAL:13 >= 50 || LOCAL:1 >= 600)
+	ABL:ARG:Ａ使い -= 1
+;拡張適正ボーナス
+SIF ABL:ARG:Ａ使い < 3 && TALENT:ARG:拡張適正
+	ABL:ARG:Ａ使い += 1
+;尻穴狂い
+IF TALENT:ARG:尻穴狂い
+	ABL:ARG:Ａ使い += 1
+	SIF LOCAL:13 >= 300 || LOCAL:1 >= 2000
+		ABL:ARG:Ａ使い += 1
+ENDIF
+;スライム
+SIF TALENT:ARG:スライム
+	ABL:ARG:Ａ使い += 2
+;力持ち
+SIF TALENT:ARG:力持ち
+	ABL:ARG:Ａ使い += 1
+;好色
+SIF TALENT:ARG:好色 && ABL:ARG:Ａ使い < 3
+	ABL:ARG:Ａ使い += 1
+
+;損傷したら、即座に痛みで操れなくなる(拡張適正があるなら怪我が治れば元通り)
+SIF TALENT:ARG:Ａ損傷 || (EXP:ARG:Ａ損傷経験 && TALENT:ARG:拡張適正 == 0)
+	ABL:ARG:Ａ使い = MULTIPLY(ABL:ARG:Ａ使い, 100 - MIN(EXP:ARG:Ａ損傷経験 + TALENT:ARG:Ａ損傷, 3)*30)
+
+;アナルに筋弛緩剤
+IF GETBIT(TEQUIP:ARG:筋弛緩剤, 0)
+	IF TALENT:ARG:薬毒耐性
+		ABL:ARG:Ａ使い /= 2
+	ELSE
+		ABL:ARG:Ａ使い = 0
+	ENDIF
+ENDIF
+
+;拡張度については、ここで最低値だけ管理して個別にABLUP画面で上げるものとする
+IF TALENT:ARG:小柄体型
+	LOCAL = 0
+ELSE
+	LOCAL = 1
+ENDIF
+;スライム
+SIF TALENT:ARG:スライム
+	LOCAL += 1
+
+ABL:ARG:Ａ拡張 = MAX(ABL:ARG:Ａ拡張, LOCAL)
+
+;-------------------------------------------------
+;Ａ名器度
+;Ａ経験、Ａ性交経験、Ａ拡張経験のバランスで名器度決定。尻穴狂いのボーナスもここ
+;拡張適正があると損傷が発生しているとき以外のペナルティは無視
+;ARGSに"絶対値"を入れると疲れや経験を無視した最高値が出る
+;-------------------------------------------------
+@ABL_A(ARG, ARGS)
+#FUNCTION
+SIF ARG <= 0
+	RETURNF 0
+
+VARSET LOCAL
+
+;快感の基準はＡ活用LV
+LOCAL = 25 + ABL:ARG:Ａ使い*5 + ABL:ARG:Ａ拡張 + TALENT:ARG:Ａ名器*5
+
+SELECTCASE ARGS
+CASE "絶対値"
+	LOCAL:1 = EXP:ARG:Ａ経験
+	LOCAL:2 = EXP:ARG:Ａ性交経験
+	LOCAL:3 = EXP:ARG:Ａ拡張経験
+CASEELSE
+	LOCAL:1 = EXP:ARG:Ａ経験 - EXP_GAIN(1, ARG)
+	LOCAL:2 = EXP:ARG:Ａ性交経験 - EXP_GAIN(13, ARG)
+	LOCAL:3 = EXP:ARG:Ａ拡張経験 - EXP_GAIN(57, ARG)
+
+ENDSELECT
+
+;Ａ拡張経験がＡ経験の４％を超えているとペナルティ発生
+IF TALENT:ARG:拡張適正
+	LOCAL:4 = 100
+ELSE
+	IF ABL:ARG:Ａ拡張 > ABL:ARG:Ａ使い && (LOCAL:1 >= 100 || ABL:ARG:Ａ拡張 >= 4)
+		LOCAL = MAX(LOCAL - (ABL:ARG:Ａ拡張 - ABL:ARG:Ａ使い) * GET_EXP_LV(EXP:ARG:Ａ経験) * 2, 5)
+		LOCAL:4 = LIMIT(100 * (100 + LOCAL:1*2) / (100 + LOCAL:1 + LOCAL:3*25), 20, 100)
+	ELSE
+		LOCAL:4 = LIMIT(100 * (100 + LOCAL:1*2) / (100 + LOCAL:1 + LOCAL:3*10), 20, 100)
+	ENDIF
+ENDIF
+
+;Ａ性交経験がＡ経験の20％を超えているとボーナス発生
+LOCAL:4 = LIMIT(LOCAL:4 * (100 + LOCAL:1 + LOCAL:2*5 + JUEL:ARG:快Ａ/5000) / (100 + LOCAL:1*2), 20, 200)
+
+LOCAL = MULTIPLY(LOCAL, LOCAL:4 + TALENT:ARG:尻穴狂い*50 + TALENT:ARG:力持ち*10)
+SIF TALENT:ARG:Ａ損傷
+	LOCAL /= TALENT:ARG:Ａ損傷 + 1
+
+RETURNF LOCAL
+
+
+@GET_EXABL_T, ARG
+;-------------------------------------------------
+;喉を使う時の判定ベース
+;咥える物のサイズと比較して判定
+;ペニスの太さがきつい時は奥まで飲み込めないし、余裕も無い
+;スライムはボーナス
+;基準値+1の値の時がちょうど良い。
+;-------------------------------------------------
+SIF ARG <= 0
+	RETURN 0
+;喉の拡張LV取得
+;フェラ経験、技巧、舌使い、夢魔
+VARSET LOCAL
+LOCAL = EXP:ARG:フェラ経験 - EXP_GAIN(22, ARG)
+LOCAL += 5 * (EXP:ARG:喉性交経験 - EXP_GAIN(76, ARG) )
+
+;(フェラ経験など, 喉拡張LV)の対応は、(150, 1)、(300, 2)、(600, 3)、(1000, 4)
+ABL:ARG:喉拡張 = LIMIT(GET_EXP_LV(LOCAL) - 2, 0, 4)
+
+IF ABL:ARG:喉拡張 <= 1
+	IF TALENT:ARG:上位夢魔
+		ABL:ARG:喉拡張 += 1
+	ELSEIF LOCAL >= 50 && ABL:ARG:技巧 >= 2 && TALENT:ARG:夢魔
+		ABL:ARG:喉拡張 += 1
+	ENDIF
+ENDIF
+SIF TALENT:ARG:小柄体型 && ABL:ARG:喉拡張 >= 1
+	ABL:ARG:喉拡張 -= 1
+SIF TALENT:ARG:魔導人形 || TALENT:ARG:スライム || TALENT:ARG:ラミア
+	ABL:ARG:喉拡張 = MAX(ABL:ARG:喉拡張 + 1, 3)
+SIF ABL:ARG:喉拡張 <= TALENT:ARG:舌使い
+	ABL:ARG:喉拡張 += 1
+
+;妖精は半分
+SIF TALENT:ARG:妖精
+	ABL:ARG:喉拡張 /= 2
+
+@ABL_T(ARG)
+#FUNCTION
+SIF ARG <= 0
+	RETURNF 0
+;快感の基準は技巧や奉仕
+LOCAL = 10 + ABL:ARG:技巧 + ABL:ARG:奉仕精神*2 + TALENT:ARG:喉名器*5
+SIF TALENT:ARG:スライム
+	LOCAL += 5
+SIF TALENT:ARG:嘔吐反射耐性
+	LOCAL += 5
+
+SELECTCASE ABL:ARG:喉拡張
+CASE 1
+	LOCAL += 5
+CASE 2
+	LOCAL = MULTIPLY(LOCAL, 120) + 10
+CASE 3
+	LOCAL = MULTIPLY(LOCAL, 150) + 20
+CASE IS >= 4
+	LOCAL = MULTIPLY(LOCAL, 200) + 30
+ENDSELECT
+
+RETURNF LOCAL
+
+@GET_EXABL_U, ARG
+;-------------------------------------------------
+;おもに尿道の太さ ABL:尿道拡張 の判定をする（これはペニスサイズなどに即した値）
+;CSTR:3がＶ尿道拡張度で、CSTR:4がＰ尿道拡張度である。二つに相関関係は一切ない
+;それらが設定されていないなら、まずはここで初期設定する
+;-------------------------------------------------
+SIF ARG <= 0
+	RETURN 0
+
+;Ｖ尿道拡張度の初期設定
+SIF CSTR:ARG:3 == ""
+	CSTR:ARG:3 = %CONDS("Ｖ尿道の初期拡張度", ARG)%
+;Ｐ尿道拡張度の初期設定
+SIF CSTR:ARG:4 == ""
+	CSTR:ARG:4 = %CONDS("Ｐ尿道の初期拡張度", ARG)%
+
+;拡張度
+SELECTCASE CALCF("尿道径", ARG)
+;ここまでは指挿入も無理
+CASE IS < 15
+	ABL:ARG:尿道拡張 = -2
+;ここまではペニス挿入は無理
+CASE IS < 26
+	ABL:ARG:尿道拡張 = -1
+;ペニス挿入可能になります
+CASE IS < 33
+	ABL:ARG:尿道拡張 = 0
+;以下7mm刻み
+CASE IS < 40
+	ABL:ARG:尿道拡張 = 1
+CASE IS < 47
+	ABL:ARG:尿道拡張 = 2
+;現状は３が最大とする
+CASEELSE
+	ABL:ARG:尿道拡張 = 3
+ENDSELECT
+
+
+@ABL_U(ARG)
+#FUNCTION
+SIF ARG <= 0
+	RETURNF 0
+
+;快感の基準は尿道経験
+LOCAL = 20 + GET_EXP_LV(EXP:ARG:尿道経験)*2 + GET_EXP_LV(EXP:ARG:尿道性交経験)*5 + TALENT:ARG:尿道名器*5
+SIF TALENT:ARG:スライム
+	LOCAL += 5
+SIF TALENT:ARG:尿道性感
+	LOCAL += 5
+SIF TALENT:ARG:尿道狂い
+	LOCAL += 20
+
+SELECTCASE ABL:ARG:尿道拡張
+CASE 0
+	LOCAL += 5
+CASE 1
+	LOCAL = MULTIPLY(LOCAL, 120) + 10
+CASE 2
+	LOCAL = MULTIPLY(LOCAL, 150) + 20
+CASE IS >= 3
+	LOCAL = MULTIPLY(LOCAL, 200) + 30
+ENDSELECT
+
+RETURNF LOCAL
+
+;-------------------------------------------------
+;～使いなど、特技は調整の簡便さ等の観点から、csvには記述せずに、ここで全て処理することにする。
+;ARGSに素質名、ARGにキャラを代入する(ARG==0でTARGETが居るならARG = TARGET)
+;-------------------------------------------------
+@SET_EXTALENT(ARGS, ARG)
+#FUNCTION
+
+SIF ARG == 0 && TARGET
+	ARG = TARGET
+
+VARSET LOCAL
+
+SELECTCASE ARGS
+CASE "舌使い"
+	SELECTCASE BASE:ARG:種族
+	CASE 6, 17, 35, 46 TO 48, 57
+		LOCAL = 3
+	CASE 10, 21, 29, 34, 41, 42
+		LOCAL = 2
+	CASE 1, 13, 22, 37, 43
+		LOCAL = 1
+	ENDSELECT
+CASE "指使い"
+	SELECTCASE BASE:ARG:種族
+	CASE 18, 48
+		LOCAL = 3
+	CASE 3, 17, 21
+		LOCAL = 2
+	CASE 1, 22, 46, 54, 41, 61
+		LOCAL = 1
+	ENDSELECT
+CASE "足使い"
+	SELECTCASE BASE:ARG:種族
+	CASE 38, 48
+		LOCAL = 3
+	CASE 11, 12, 39, 41, 42
+		LOCAL = 2
+	CASE 1, 14, 17, 21, 31, 40
+		LOCAL = 1
+	ENDSELECT
+CASE "腰使い"
+	SELECTCASE BASE:ARG:種族
+	CASE 48
+		LOCAL = 3
+	CASE 7, 14, 18, 21, 22, 23, 26, 33, 34, 61
+		LOCAL = 2
+	CASE 1, 6, 29, 30, 31, 35, 42, 43, 46, 47, 50
+		LOCAL = 1
+	ENDSELECT
+CASE "魔乳"
+	SIF TALENT:ARG:オトコ
+		RETURNF 0
+
+	SELECTCASE BASE:ARG:種族
+	CASE 29, 34, 48
+		LOCAL = 3
+	CASE 10, 14
+		LOCAL = 2
+	CASE 1, 18, 21, 35, 43, 61
+		LOCAL = 1
+	ENDSELECT
+CASE "外見年齢"
+	;設定済みなら戻る
+	SIF TALENT:ARG:外見年齢
+		RETURNF TALENT:ARG:外見年齢
+
+	;幼稚とか小柄とかそういうのを抜きにした外見年齢
+	SELECTCASE BASE:ARG:種族
+	;例外のある種族…ただしここでのCFLAG:ARG:209による分岐は特殊なキャラメイクの時のみ有効
+	;通常の召喚をするときには無意味なので、初回調教前の口上選択画面での設定も必須となる
+	;スキュラ
+	CASE 15
+		IF CFLAG:ARG:209 == 2
+			LOCAL = 2
+		ELSE
+			LOCAL = 3
+		ENDIF
+	;ヴァンパイア
+	CASE 25
+		IF CFLAG:ARG:209 == 3
+			LOCAL = 2
+		ELSE
+			LOCAL = 3
+		ENDIF
+	;おとな
+	CASE 10, 14, 18, 27, 47, 49
+		LOCAL = 4
+	;子供
+	CASE 2, 4, 31, 40
+		LOCAL = 1
+	;少女
+	CASE 8, 9, 20, 21, 32, 33, 39, 44, 50, 52, 55, 57, 59, 60
+		LOCAL = 2
+	CASE 98
+		LOCAL = TALENT:MASTER:外見年齢
+	;お姉さん
+	CASEELSE
+		LOCAL = 3
+	ENDSELECT
+
+CASE "吸精体質"
+	SIF (TALENT:ARG:夢魔 && ABL:ARG:精液中毒 >= 5) || (TALENT:ARG:上位夢魔 && ABL:ARG:精液中毒 >= 3)
+		LOCAL += 1
+	;悪魔
+	SIF TALENT:ARG:しっぽ == 6 || TALENT:ARG:ツノ == 6 || TALENT:ARG:翼 == 6
+		LOCAL += 1
+	SIF TALENT:ARG:吸血鬼
+		LOCAL += 1
+	SIF TALENT:ARG:上位夢魔 >= 2
+		LOCAL += 1
+	SIF TALENT:ARG:魔法使い >= 2 && TALENT:ARG:調合知識 && TALENT:ARG:禁断の知識
+		LOCAL += 1
+
+	;素質関係なく、もって居てしかるべきキャラを判定。重複しないように注意！
+	SELECTCASE NO:ARG
+	CASE 3
+		;アルラウネ
+		SIF CFLAG:ARG:8 == 2
+			LOCAL += 1
+	CASE 8, 9
+		;バンシー、アルバスタ
+		SIF CFLAG:ARG:8 == 2 || CFLAG:ARG:8 == 4
+			LOCAL += 1
+	;アルケニー、ルシフェル
+	CASE 18, 21
+		LOCAL += 1
+	ENDSELECT
+
+	;淫紋3LV以上
+	SIF MARK:ARG:淫紋 >= 3
+		LOCAL += 1
+
+CASE "嘔吐反射耐性"
+	SIF TALENT:ARG:スライム || TALENT:ARG:魔導人形 || TALENT:ARG:ラミア
+		RETURNF 1
+CASE "拡張適正"
+	SIF TALENT:ARG:スライム
+		RETURNF 1
+ENDSELECT
+
+RETURNF LOCAL
+
+
+;-------------------------------------------------
+;さまざまな素質の取得や変動の総合管理の場
+;-------------------------------------------------
+@GET_EXTALENT, ARG
+#DIM LCOUNT
+SIF ARG <= 0
+	RETURN 0
+
+IF EXP:ARG:調教回数 == 0 && COND("子孫", ARG) == 0
+	SIF TALENT:ARG:舌使い == 0
+		TALENT:ARG:舌使い = SET_EXTALENT("舌使い", ARG)
+	SIF TALENT:ARG:指使い == 0
+		TALENT:ARG:指使い = SET_EXTALENT("指使い", ARG)
+	SIF TALENT:ARG:足使い == 0
+		TALENT:ARG:足使い = SET_EXTALENT("足使い", ARG)
+	SIF TALENT:ARG:腰使い == 0
+		TALENT:ARG:腰使い = SET_EXTALENT("腰使い", ARG)
+	SIF TALENT:ARG:魔乳 == 0
+		TALENT:ARG:魔乳 = SET_EXTALENT("魔乳", ARG)
+ENDIF
+SIF TALENT:ARG:オトコ
+	TALENT:ARG:魔乳 = 0
+
+;-------------------------------------------------
+;外見、雰囲気由来の年齢層判定。MASTER(あなた)はお姉さんorお兄さん枠。
+;=0 子供　=1 少女(-16)　=2 お姉さん(17-20前半)　=3おとな(20後半-)
+;-------------------------------------------------
+TALENT:ARG:外見年齢 = SET_EXTALENT("外見年齢", ARG)
+
+IF EXP:ARG:Ａ経験 == 0
+	TALENT:ARG:Ａ処女 = 1
+ELSEIF EXP:ARG:Ａ性交経験
+	TALENT:ARG:Ａ処女 = 0
+ENDIF
+
+IF PENIS(ARG) && EXP:ARG:Ｖ挿入経験 == 0
+	TALENT:ARG:童貞 = 1
+ELSEIF PENIS(ARG) == 0
+	TALENT:ARG:童貞 = 0
+ENDIF
+
+SIF TALENT:ARG:濡れやすい
+	TALENT:ARG:濡れにくい = 0
+
+;吸精体質
+TALENT:ARG:吸精体質 = SET_EXTALENT("吸精体質", ARG)
+
+;嘔吐反射耐性
+SIF SET_EXTALENT("嘔吐反射耐性", ARG)
+	TALENT:ARG:嘔吐反射耐性 = 1
+;拡張適正
+SIF SET_EXTALENT("拡張適正", ARG)
+	TALENT:ARG:拡張適正 = 1
+
+;大魔法使い
+IF TALENT:ARG:魔法使い == 2
+	FOR LCOUNT, 230, 260
+		TALENT:ARG:LCOUNT = 0
+	NEXT
+ENDIF
+
+;分身・分裂
+IF TALENT:ARG:ヴィジョン == 0
+	;ハツメは最初から覚えている
+	IF COND("Ｃハツメ", ARG)
+		TALENT:ARG:ヴィジョン = 2
+	;後で時間が出来たら調整する予定
+	ELSEIF TALENT:ARG:スライム
+	;	TALENT:ARG:ヴィジョン = 3
+	ENDIF
+ENDIF
+
+;歌唱技能
+IF TALENT:ARG:歌唱技能
+	SELECTCASE EXP:ARG:歌唱経験
+	CASE IS >= 500
+		TALENT:ARG:歌唱技能 = 5
+	CASE IS >= 300
+		TALENT:ARG:歌唱技能 = 4
+	CASE IS >= 150
+		TALENT:ARG:歌唱技能 = 3
+	CASE IS >= 50
+		TALENT:ARG:歌唱技能 = 2
+	CASEELSE
+		TALENT:ARG:歌唱技能 = 1
+	ENDSELECT
+ENDIF
+
+;各種知識などなど
+IF TALENT:ARG:調教知識 == 0 && COND("子孫", ARG) == 0
+	SELECTCASE BASE:ARG:種族
+	CASE 1
+		IF TALENT:ARG:倒錯的 && RAND:2
+			TALENT:ARG:調教知識 = 1p2
+		ELSEIF RAND:2
+			TALENT:ARG:調教知識 = 1p0
+		ELSE
+			TALENT:ARG:調教知識 = 1p1
+		ENDIF
+	CASE 3
+		IF CFLAG:ARG:8 == 2 && RAND:3 == 0
+			TALENT:ARG:調教知識 = 1p6
+		ELSEIF RAND:2
+			TALENT:ARG:調教知識 = 1p3
+		ELSE
+			TALENT:ARG:調教知識 = 1p1
+		ENDIF
+	CASE 5
+		IF RAND:5
+			TALENT:ARG:調教知識 = 1p0
+		ELSE
+			TALENT:ARG:調教知識 = 1p6
+		ENDIF
+	CASE 6
+		SIF CFLAG:ARG:8 == 2
+			TALENT:ARG:調教知識 = 1p1
+	CASE 10
+		IF RAND:5 == 0
+			TALENT:ARG:調教知識 = 1p0
+		ELSEIF RAND:4 == 0
+			TALENT:ARG:調教知識 = 1p1
+		ELSEIF RAND:3 == 0
+			TALENT:ARG:調教知識 = 1p2
+		ELSEIF RAND:2
+			TALENT:ARG:調教知識 = 1p3
+		ELSE
+			TALENT:ARG:調教知識 = 1p5
+		ENDIF
+	CASE 14
+		IF RAND:5 == 0
+			TALENT:ARG:調教知識 = 1p0
+		ELSEIF RAND:4 == 0
+			TALENT:ARG:調教知識 = 1p1
+		ELSEIF RAND:3 == 0
+			TALENT:ARG:調教知識 = 1p3
+		ELSEIF RAND:2
+			TALENT:ARG:調教知識 = 1p5
+		ELSE
+			TALENT:ARG:調教知識 = 1p6
+		ENDIF
+	CASE 15
+		IF RAND:2
+			TALENT:ARG:調教知識 = 1p0
+		ELSE
+			TALENT:ARG:調教知識 = 1p5
+		ENDIF
+	CASE 16
+		IF CFLAG:ARG:8 == 2 && RAND:2
+			TALENT:ARG:調教知識 = 1p2
+		ELSEIF RAND:2
+			TALENT:ARG:調教知識 = 1p0
+		ELSE
+			TALENT:ARG:調教知識 = 1p1
+		ENDIF
+	CASE 17
+		TALENT:ARG:調教知識 = 1p2
+	CASE 18
+		SIF CFLAG:ARG:8 == 3
+			TALENT:ARG:調教知識 = 1p2
+	CASE 19
+		TALENT:ARG:調教知識 = 1p5
+	CASE 21
+		TALENT:ARG:調教知識 = 1p3
+	CASE 22
+		TALENT:ARG:調教知識 = 1p0
+	CASE 25
+		TALENT:ARG:調教知識 = 1p1
+	CASE 33
+		TALENT:ARG:調教知識 = 1p5
+	CASE 34
+		TALENT:ARG:調教知識 = 1p1
+	CASE 35
+		TALENT:ARG:調教知識 = 1p0
+	CASE 38
+		TALENT:ARG:調教知識 = 1p1
+	CASE 46
+		TALENT:ARG:調教知識 = 1p0
+	CASE 48
+		TALENT:ARG:調教知識 = 1p0
+	CASE 50
+		TALENT:ARG:調教知識 = 1p5
+	CASE 58
+		IF RAND:6 == 0
+			TALENT:ARG:調教知識 = 1p5
+		ELSEIF RAND:5 == 0
+			TALENT:ARG:調教知識 = 1p4
+		ELSEIF RAND:4 == 0
+			TALENT:ARG:調教知識 = 1p3
+		ELSEIF RAND:3 == 0
+			TALENT:ARG:調教知識 = 1p2
+		ELSEIF RAND:2
+			TALENT:ARG:調教知識 = 1p1
+		ELSE
+			TALENT:ARG:調教知識 = 1p0
+		ENDIF
+	ENDSELECT
+ENDIF
+
+;初期のLV設定(短編ＬＶが目安)
+CALL SET_LV_MUMA, ARG
+
+
+@SET_LV_MUMA, ARG
+SIF ARG <= 0
+	RETURN 0
+SIF ABL:ARG:ＬＶ
+	RETURN 0
+
+VARSET LOCAL
+SELECTCASE NO:ARG
+CASE 0
+	IF CONFIG("ＥＡＳＹ")
+		LOCAL = 1 + ABL:ARG:技巧*3
+	ELSEIF CONFIG("ＮＯＲＭＡＬ")
+		LOCAL = 1 + ABL:ARG:技巧*2
+	ELSEIF CONFIG("ＨＡＲＤ")
+		LOCAL = 1 + ABL:ARG:技巧
+	ENDIF
+CASE 1
+	;リリス
+	IF CFLAG:ARG:8 == 4
+		LOCAL = 25
+	;アスモデ
+	ELSEIF CFLAG:ARG:8 == 3
+		LOCAL = 19
+	;ナイトメア
+	ELSEIF CFLAG:ARG:8 == 2
+		LOCAL = 14
+	;サキュバス
+	ELSE
+		LOCAL = 5 + CFLAG:ARG:8*5
+	ENDIF
+CASE 2
+	;リリム
+	IF CFLAG:ARG:8 == 4
+		LOCAL = 24
+	;アルプ
+	ELSEIF CFLAG:ARG:8 == 2
+		LOCAL = 12
+	;インプ
+	ELSE
+		LOCAL = 3 + CFLAG:ARG:8*5
+	ENDIF
+CASE 3
+	;スクーグスロー
+	IF CFLAG:ARG:8 == 3
+		LOCAL = 18
+	;アルラウネ
+	ELSEIF CFLAG:ARG:8 == 2
+		LOCAL = 13
+	;ドライアド
+	ELSE
+		LOCAL = 5 + CFLAG:ARG:8*4
+	ENDIF
+CASE 4
+	;ティターニア
+	IF CFLAG:ARG:8 == 3
+		LOCAL = 18
+	;リャナンシー
+	ELSEIF CFLAG:ARG:8 == 2
+		LOCAL = 11
+	;ピクシー
+	ELSE
+		LOCAL = 3 + CFLAG:ARG:8*5
+	ENDIF
+CASE 5
+	;ウンディーネ
+	IF CFLAG:ARG:8 == 1
+		LOCAL = 5
+	;エアリアル
+	ELSEIF CFLAG:ARG:8 == 3
+		LOCAL = 11
+	;シルフ
+	ELSE
+		LOCAL = 5 + CFLAG:ARG:8*3
+	ENDIF
+CASE 6
+	;スフィンクス
+	IF CFLAG:ARG:8 == 4
+		LOCAL = 19
+	;黒猫
+	ELSEIF CFLAG:ARG:8 == 3
+		LOCAL = 6
+	;ケットシー
+	ELSEIF CFLAG:ARG:8 == 2
+		LOCAL = 12
+	;ネコマタ
+	ELSE
+		LOCAL = 6 + CFLAG:ARG:8*3
+	ENDIF
+CASE 7
+	;ケルベロス
+	IF CFLAG:ARG:8 == 3
+		LOCAL = 17
+	;ワーウルフ
+	ELSE
+		LOCAL = 6 + CFLAG:ARG:8*3
+	ENDIF
+CASE 8 || NO:ARG == 9
+	;アルバスタ
+	IF CFLAG:ARG:8 == 4
+		LOCAL = 20
+	;バンシー
+	ELSEIF CFLAG:ARG:8 == 2
+		LOCAL = 12
+	;ヴィレッジャ
+	ELSE
+		LOCAL = 3 + CFLAG:ARG:8*4
+	ENDIF
+CASE 10
+	;エキドナ
+	IF CFLAG:ARG:8 == 4
+		LOCAL = 20
+	;メリュジーヌ
+	ELSEIF CFLAG:ARG:8 == 2
+		LOCAL = 14
+	;ラミア
+	ELSE
+		LOCAL = 4 + CFLAG:ARG:8*4
+	ENDIF
+CASE 11
+	;モーリアン
+	IF CFLAG:ARG:8 == 3
+		LOCAL = 17
+	;セイレーン
+	ELSEIF CFLAG:ARG:8 == 2
+		LOCAL = 19
+	;ハーピー
+	ELSE
+		LOCAL = 10 + CFLAG:ARG:8*4
+	ENDIF
+CASE 12
+	;ヴィーヴル
+	IF CFLAG:ARG:8 == 4
+		LOCAL = 18
+	;サラマンダー
+	ELSEIF CFLAG:ARG:8 == 2
+		LOCAL = 12
+	;リザードマン
+	ELSE
+		LOCAL = 4 + CFLAG:ARG:8*4
+	ENDIF
+CASE 13
+	;レヴィアタン
+	IF CFLAG:ARG:8 == 3
+		LOCAL = 18
+	;マーメイド
+	ELSE
+		LOCAL = 10 + CFLAG:ARG:8*2
+	ENDIF
+CASE 14
+	;ダーキニー
+	IF CFLAG:ARG:8 == 3
+		LOCAL = 14
+	;アプサラス
+	ELSE
+		LOCAL = 5 + CFLAG:ARG:8*3
+	ENDIF
+CASE 15
+	;カリュブディス
+	IF CFLAG:ARG:8 == 2
+		LOCAL = 17
+	;スキュラ
+	ELSE
+		LOCAL = 14 + CFLAG:ARG:8*2
+	ENDIF
+CASE 16
+	;タマモ
+	IF CFLAG:ARG:8 == 3
+		LOCAL = 19
+	;ダッキ
+	ELSEIF CFLAG:ARG:8 == 2
+		LOCAL = 11
+	;クズノハ
+	ELSE
+		LOCAL = 7 + CFLAG:ARG:8*3
+	ENDIF
+CASE 17
+	;エンプーサ
+	IF CFLAG:ARG:8 == 1
+		LOCAL = 8
+	;マイェストレ
+	ELSEIF CFLAG:ARG:8 == 3
+		LOCAL = 18
+	;クィーンメイブ
+	ELSE
+		LOCAL = 12 + CFLAG:ARG:8*2
+	ENDIF
+CASE 18
+	;シェロブ
+	IF CFLAG:ARG:8 == 3
+		LOCAL = 14
+	;アルケニー
+	ELSE
+		LOCAL = 9 + CFLAG:ARG:8*2
+	ENDIF
+CASE 19
+	;ウィッチ
+	LOCAL = 10 + CFLAG:ARG:8*2
+CASE 20
+	;ガブリエル
+	IF CFLAG:ARG:8 == 2
+		LOCAL = 12
+	;エンジェル
+	ELSE
+		LOCAL = 7 + CFLAG:ARG:8*3
+	ENDIF
+CASE 21
+	;ルシフェル
+	LOCAL = 20 + CFLAG:ARG:8*1
+CASE 22
+	;ハツメ
+	IF CFLAG:ARG:8 == 2
+		LOCAL = 19
+	;クノイチ
+	ELSE
+		LOCAL = 11 + CFLAG:ARG:8*2
+	ENDIF
+CASE 23
+	;ホワイトラビット
+	LOCAL = 15 + CFLAG:ARG:8*1
+CASE 24
+	;サロメ
+	LOCAL = 16 + CFLAG:ARG:8*1
+CASE 25
+	;カーミラ
+	IF CFLAG:ARG:8 == 2
+		LOCAL = 20
+	;ヴァンパイア
+	ELSE
+		LOCAL = 14 + CFLAG:ARG:8*2
+	ENDIF
+CASE 26
+	;ドラグーン
+	LOCAL = 19 + CFLAG:ARG:8*1
+CASE 27
+	;プロフェテス
+	LOCAL = 13 + CFLAG:ARG:8*1
+CASE 28
+	;ソルジャー
+	LOCAL = 7 + CFLAG:ARG:8*2
+CASE 29
+	;スライム
+	LOCAL = 18 + CFLAG:ARG:8*1
+CASE 30
+	;ユニコーン
+	LOCAL = 16 + CFLAG:ARG:8*1
+CASE 31
+	;ゴブリン
+	LOCAL = 4 + CFLAG:ARG:8*3
+CASE 32
+	;マーシャ
+	LOCAL = 4
+CASE 33
+	;マモン
+	IF CFLAG:ARG:8 == 4
+		LOCAL = 18
+	;ミミック
+	ELSE
+		LOCAL = 1
+	ENDIF
+CASE 34
+	;ストゥーナ
+	LOCAL = 20
+CASE 35
+	;メローナ
+	LOCAL = 17
+CASE 36
+
+CASE 37
+	;フレデリカ
+	LOCAL = 12
+CASE 38
+	;エスプラーナ
+	LOCAL = 15
+CASE 39
+	;リズ・ラズ
+	LOCAL = 10
+CASE 40
+	;ロッコ・バロッコ
+	LOCAL = 5
+CASE 41
+	;ジャバウォック
+	LOCAL = 20
+CASE 42
+	;バンダースナッチ
+	LOCAL = 21
+CASE 43
+	;ジャブジャブ
+	LOCAL = 19
+CASE 44
+	;リン(見習い？)
+	IF CFLAG:ARG:8 == 4
+		LOCAL = 25
+	ELSE
+		LOCAL = 4
+	ENDIF
+CASE 45
+
+CASE 46
+	;クララ
+	LOCAL = 14
+CASE 47
+	;ベルナドット
+	LOCAL = 16
+CASE 48
+	;エスト
+	LOCAL = 25
+CASE 49
+	;フィムブルヴェト
+	LOCAL = 18
+CASE 50
+	;ステラ
+	LOCAL = 20
+CASE 52
+	;ルヴィッサ
+	LOCAL = 10
+CASE 54
+	;メルヤ
+	LOCAL = 14
+CASE 55
+	;少女
+	LOCAL = 1
+CASE 57
+	;黒サフィ
+	LOCAL = 20
+CASE 58
+	;マーチヘア
+	LOCAL = 19
+CASE 59
+	;ドロレス
+	LOCAL = 1 + CFLAG:ARG:8*3
+CASE 60
+	;ハニービー
+	LOCAL = 12
+CASE 61
+	;ヴァルキリー
+	LOCAL = 18
+CASE 94
+	;ラルス少年
+	LOCAL = 1
+CASE 95
+	;息子
+	LOCAL = 1
+CASE 97
+	;娘
+	LOCAL = 1
+CASEELSE
+	LOCAL = 1 + CFLAG:ARG:8*4
+ENDSELECT
+
+ABL:ARG:ＬＶ = MIN(LOCAL, NUM("最大レベル", 90) )
+
+;主人の場合には経験値も得る
+SIF ARG == MASTER
+	EXP:ARG:経験値 = EXP_NEXTLV(ARG, ABL:ARG:ＬＶ - 1)
+
+
+@GET_MAGIC, ARG
+SIF ARG <= 0
+	RETURN 0
+
+SIF TALENT:ARG:魔法使い == 2
+	RETURN 0
+
+SIF ABL:ARG:技巧 >= RAND:5 + 1
+	TALENT:ARG:ミニマム = 1
+SIF ABL:ARG:技巧 >= RAND:5
+	TALENT:ARG:センシブ = 1
+SIF ABL:ARG:技巧 >= RAND:5
+	TALENT:ARG:ウルズグン = 1
+SIF ABL:ARG:技巧 >= RAND:5 + 1
+	TALENT:ARG:シギルグン = 1
+SIF ABL:ARG:技巧 >= RAND:5 + 1
+	TALENT:ARG:エオルグン = 1
+
+SIF ABL:ARG:技巧 >= RAND:5
+	TALENT:ARG:ロギン = 1
+SIF ABL:ARG:技巧 >= RAND:5 + 3
+	TALENT:ARG:トワイス = 1
+SIF ABL:ARG:技巧 >= RAND:5 + 1
+	TALENT:ARG:イーサグン = 1
+SIF ABL:ARG:技巧 >= RAND:5 + 2
+	TALENT:ARG:アルスイーサ = 1
+SIF ABL:ARG:技巧 >= RAND:5 + 2
+	TALENT:ARG:バインド = 1
+SIF ABL:ARG:技巧 >= RAND:5 + 1
+	TALENT:ARG:エンラジ = 1
+SIF ABL:ARG:技巧 >= RAND:5 + 3
+	TALENT:ARG:ヴィジョン = 1
+
+;最低でもこのどれかは覚えている
+IF TALENT:ARG:ミニマム + TALENT:ARG:センシブ + TALENT:ARG:ウルズグン == 0
+	IF RAND:3 == 0
+		TALENT:ARG:ミニマム = 1
+	ELSEIF RAND:2
+		TALENT:ARG:センシブ = 1
+	ELSE
+		TALENT:ARG:ウルズグン = 1
+	ENDIF
+ENDIF
+
+@SET_3SIZE, ARG
+VARSET LOCAL
+
+;体型の変更
+IF BASE:ARG:身長
+	;身長の変化による素質の変化
+	IF TALENT:ARG:妖精
+		SIF BASE:ARG:身長 > NUM("妖精の上限")
+			LOCAL = 1
+	ELSE
+		SELECTCASE BASE:ARG:身長
+		;妖精では無くなった時
+		CASE IS <= NUM("妖精の上限")
+			LOCAL = 1
+		CASE IS <= NUM("小柄の上限")
+			SIF TALENT:ARG:長身 || TALENT:ARG:小柄体型 == 0
+				LOCAL = 1
+		CASE IS <= NUM("普通の上限")
+			SIF TALENT:ARG:長身 || TALENT:ARG:小柄体型
+				LOCAL = 1
+		CASEELSE
+			SIF TALENT:ARG:長身 == 0 || TALENT:ARG:小柄体型
+				LOCAL = 1
+		ENDSELECT
+	ENDIF
+	IF LOCAL
+		SIF CONFIG("３サイズ：表示")
+			PRINTFORML （%CALLNAME:ARG%の身長や腰つき等を測り直します）
+
+		IF TALENT:ARG:妖精
+			SIF BASE:ARG:身長 > NUM("妖精の上限")
+				CALL CALC, "妖精化", ARG
+		ELSE
+			SELECTCASE BASE:ARG:身長
+			;妖精では無くなった時
+			CASE IS <= NUM("妖精の上限")
+				IF TALENT:ARG:長身
+					CALL CALC, "長身化", ARG
+				ELSEIF TALENT:ARG:小柄体型
+					CALL CALC, "小柄化", ARG
+				ELSE
+					CALL CALC, "普通体型化", ARG
+				ENDIF
+			CASE IS <= NUM("小柄の上限")
+				TALENT:ARG:長身 = 0
+				TALENT:ARG:小柄体型 = 1
+				CALL CALC, "ＢＷＨ計測", ARG
+			CASE IS <= NUM("普通の上限")
+				TALENT:ARG:長身 = 0
+				TALENT:ARG:小柄体型 = 0
+				CALL CALC, "ＢＷＨ計測", ARG
+			CASEELSE
+				TALENT:ARG:長身 = 1
+				TALENT:ARG:小柄体型 = 0
+				CALL CALC, "ＢＷＨ計測", ARG
+			ENDSELECT
+		ENDIF
+	ENDIF
+
+	LOCAL = 0
+	;ラミアの尻尾
+	IF TALENT:ARG:ラミア && BASE:ARG:身長の追加要素 == 0
+		SIF CONFIG("３サイズ：表示")
+			PRINTFORML （%CALLNAME:ARG%のしっぽの長さを測ります）
+		BASE:ARG:身長の追加要素 = 350 + RAND:100
+	ENDIF
+
+	LOCAL = 0
+
+	;バストカップの変化による素質の変化
+	BASE:ARG:カップ = CALCF("バストカップ", CALCF("バストカップ計算値", ARG) )
+
+	IF TALENT:ARG:オトコ
+		SIF BASE:ARG:カップ
+			CALL CALC, "男乳化", ARG
+	ELSEIF TALENT:ARG:巨乳 >= 3
+		SIF BASE:ARG:カップ <= NUM("爆乳の上限")
+			LOCAL = 1
+	ELSEIF TALENT:ARG:巨乳 == 2
+		SIF BASE:ARG:カップ <= NUM("巨乳の上限")
+			LOCAL = 1
+	ELSEIF TALENT:ARG:巨乳 == 1
+		SIF BASE:ARG:カップ <= NUM("並乳の上限") || BASE:ARG:カップ > NUM("巨乳の上限")
+			LOCAL = 1
+	ELSEIF TALENT:ARG:貧乳
+		SIF BASE:ARG:カップ > NUM("貧乳の上限")
+			LOCAL = 1
+	ELSEIF TALENT:ARG:巨乳 + TALENT:ARG:貧乳 == 0
+		SIF BASE:ARG:カップ <= NUM("貧乳の上限") || BASE:ARG:カップ > NUM("並乳の上限")
+			LOCAL = 1
+	ENDIF
+	IF LOCAL
+		SIF CONFIG("３サイズ：表示")
+			PRINTFORML （%CALLNAME:ARG%のバストサイズを測り直します）
+
+		CALL SETFLAG, "バスト設定", ARG
+
+		SIF TALENT:ARG:妊娠 && CONFIG("３サイズ：表示")
+			PRINTFORML （ウエストサイズを測り直すのは、流石に止めておきます…）
+	ENDIF
+
+	;お尻のサイズ計測（ウェストとヒップから判定するだけなので問題ない）
+	CALL SETFLAG, "ヒップ設定", ARG
+	RETURN 0
+ENDIF
+
+;ゴールデンカノン (バスト = 身長*0.54, ウェスト = 身長*0.38, ヒップ = 身長*0.54)を参考。誤差は上下10%程が妥当か。
+;腰使いLVが高いと、ウェストが低く、ヒップが大きくなりやすい
+;BASE:身長=身長、BASE:バスト=バスト、BASE:カップ=バストカップ、BASE:ウェスト=ウェスト、BASE:ヒップ=ヒップ
+;妖精
+IF TALENT:ARG:妖精
+	CALL CALC, "妖精化", ARG
+;長身 164～180cm
+ELSEIF TALENT:ARG:長身
+	CALL CALC, "長身化", ARG
+;小柄体型 115～144cm
+ELSEIF TALENT:ARG:小柄体型
+	CALL CALC, "小柄化", ARG
+;普通 145～163cm
+ELSE
+	CALL CALC, "普通体型化", ARG
+ENDIF
+
+;バストカップ計測。バストサイズ(BASE:バスト)とカップ(BASE:カップ)が決められる
+CALL SETFLAG, "バスト設定", ARG
+
+;ラミアの尻尾
+SIF TALENT:ARG:ラミア && BASE:ARG:身長の追加要素 == 0
+	BASE:ARG:身長の追加要素 = 350 + RAND:100
+

@@ -1,0 +1,614 @@
+﻿;------------------------------------------------------------------------
+;調教終了時の満足度チェック
+;------------------------------------------------------------------------
+@CHECK_SATISFACTION, ARG
+SIF ARG <= 0
+	RETURN 0
+
+CFLAG:ARG:99 = 0
+;体力チェック…体力500未満かつ気力が少ないor体力1000未満で気力０or精力０
+SIF (BASE:ARG:体力 < 500 && BASE:ARG:気力 < 300) || (BASE:ARG:体力 < MIN(MAXBASE:ARG:体力 / 2, 1000) && BASE:ARG:気力 <= 0) || BASE:ARG:精力 <= 0
+	SETBIT CFLAG:ARG:99, 0
+
+;性欲チェック
+IF ABL:ARG:欲望
+	CALL SETFLAG, "性欲ゲージ", ARG
+
+	SELECTCASE BASE:ARG:性欲
+	CASE 0
+	;大満足
+	CASE IS >= MAXBASE:ARG:性欲 * 2
+		SETBIT CFLAG:ARG:99, 2
+	CASE IS >= MAXBASE:ARG:性欲
+		SETBIT CFLAG:ARG:99, 1
+	ENDSELECT
+ENDIF
+;精液欲チェック
+IF ABL:ARG:精液中毒 + TALENT:ARG:夢魔*2 + TALENT:ARG:上位夢魔*2 >= 3
+	CALL SETFLAG, "精液欲ゲージ", ARG
+	SELECTCASE BASE:ARG:精液欲
+	CASE 0
+	;大満足
+	CASE IS >= MAXBASE:ARG:精液欲 * 2
+		SETBIT CFLAG:ARG:99, 4
+	CASE IS >= MAXBASE:ARG:精液欲
+		SETBIT CFLAG:ARG:99, 3
+	ENDSELECT
+ENDIF
+
+;レズ中毒チェック
+;PLAYER絶頂チェック
+
+
+;------------------------------------------------------------------------
+;TARGETによる否定判定
+;------------------------------------------------------------------------
+@REFUSE_CHECK()
+#FUNCTION
+SIF TFLAG:14
+	RETURNF 1
+SIF NEXTCOM == 999
+	RETURNF 1
+RETURNF 0
+
+;------------------------------------------------------------------------
+;口上等で行われた射精ゲージの増加を変数にも影響させる
+;------------------------------------------------------------------------
+@CHECK_BASEPLAYER2
+TCVAR:101 = MAX(TCVAR:101, BASE:絶頂 - TCVAR:100)
+TCVAR:MASTER:101 = MAX(TCVAR:MASTER:101, BASE:MASTER:絶頂 - TCVAR:MASTER:100)
+SIF ASSI
+	TCVAR:ASSI:101 = MAX(TCVAR:ASSI:101, BASE:ASSI:絶頂 - TCVAR:ASSI:100)
+
+
+;-------------------------------------------------
+;レベルリミッター
+;-------------------------------------------------
+@LV_LIMITTER
+#DIM MEMO_LINECOUNT
+
+MEMO_LINECOUNT = LINECOUNT
+REDRAW 0
+
+PRINTFORML 
+PRINTFORML □ レベルリミッター □---------------------------------------------------------
+PRINTFORML あなたのＬＶ(通常は{FLAG:255}ＬＶ)を制限することができます。
+PRINTFORML 以下から好みのものを選んでください（同じものを選択すると解除します）
+PRINTFORML 
+PRINTFORM  [ 1]〜[{FLAG:255, 2}] 
+IF FLAG:247 && FLAG:247 <= FLAG:255
+	PRINTFORML 常にＬＶ{FLAG:247}
+ELSE
+	PRINTFORML 0〜{FLAG:255}までの範囲で入力したＬＶで固定する
+ENDIF
+PRINTFORML  [91] \@ CONFIG("レベルリミッター：−10ＬＶ") ? ○ # − \@ 相手のＬＶ−10
+PRINTFORML  [92] \@ CONFIG("レベルリミッター：−５ＬＶ") ? ○ # − \@ 相手のＬＶ−５
+PRINTFORML  [93] \@ CONFIG("レベルリミッター：相手に合わせる") ? ○ # − \@ 相手のＬＶに合わせる
+PRINTFORML  [94] \@ CONFIG("レベルリミッター：＋５ＬＶ") ? ○ # − \@ 相手のＬＶ＋５
+PRINTFORML  [95] \@ CONFIG("レベルリミッター：＋10ＬＶ") ? ○ # − \@ 相手のＬＶ＋10
+IF CONFIG("レベルリミッター")
+	PRINTFORML  [99] 使用をやめる
+	PRINTFORML [100] これでよい
+ELSE
+	CALL PRINTL_COLORTEXT, " [99] 使用をやめる", DEF_COLOR("青")
+	PRINTFORML [100] 戻る
+ENDIF
+
+
+CALL INPUT_SELECT, 101
+
+SELECTCASE RESULT
+CASE 100
+	CALL SETFLAG, "レベルリミッター"
+	CALL SETFLAG, "射精ゲージ", MASTER
+	REDRAW 1
+	RETURN 0
+CASE 99
+	FLAG:247 = 0
+CASE 91
+	IF GETBIT(FLAG:247, 11) == 0
+		FLAG:247 = 1p11
+	ELSE
+		FLAG:247 = 0
+	ENDIF
+CASE 92
+	IF GETBIT(FLAG:247, 12) == 0
+		FLAG:247 = 1p12
+	ELSE
+		FLAG:247 = 0
+	ENDIF
+CASE 93
+	IF GETBIT(FLAG:247, 13) == 0
+		FLAG:247 = 1p13
+	ELSE
+		FLAG:247 = 0
+	ENDIF
+CASE 94
+	IF GETBIT(FLAG:247, 14) == 0
+		FLAG:247 = 1p14
+	ELSE
+		FLAG:247 = 0
+	ENDIF
+CASE 95
+	IF GETBIT(FLAG:247, 15) == 0
+		FLAG:247 = 1p15
+	ELSE
+		FLAG:247 = 0
+	ENDIF
+CASE 1 TO FLAG:255
+	FLAG:247 = RESULT
+ENDSELECT
+
+CLEARLINE LINECOUNT - MEMO_LINECOUNT
+RESTART
+
+
+@EVENT_NEXTTIME
+#DIM MEMO_LINECOUNT
+SIF TARGET <= 0
+	RETURN 0
+SIF EXP:調教回数 == 0
+	RETURN 0
+
+MEMO_LINECOUNT = LINECOUNT
+;お漏らし経験３０以上でおもらし癖がつく
+CALL EVENT_MORASI
+
+;イベントは一つまで
+SIF LINECOUNT > MEMO_LINECOUNT
+	RETURN 0
+
+;[精液に弱い]を得るかのチェック。ただし通常は精液中毒を上昇させた時に得るのであくまで補助的
+IF TALENT:精液に弱い == 0
+	CALL CALC, "精液に弱い", TARGET
+	;素質を得た
+	IF TALENT:精液に弱い
+		PRINTFORM %CALLNAME:TARGET%は幾度も精液を受け止めているうちに、
+		SELECTCASE TALENT_NAME(49, TALENT:精液に弱い)
+		CASE "精飲に弱い"
+			PRINT 精液を飲まされる事
+		CASE "膣内射精に弱い"
+			PRINT 膣内に射精される事
+		CASE "肛内射精に弱い"
+			PRINT アナルに射精される事
+		CASE "乳内射精に弱い"
+			PRINT ニプルファック中に射精される事
+		CASE "尿道内射精に弱い"
+			PRINT 尿道を犯されながら射精される事
+		ENDSELECT
+		PRINTFORMW で快楽を得る身体になってしまったようだ…
+		PRINTFORM %CALLNAME:TARGET%は
+		LOCALS = [%TALENT_NAME(49, TALENT:精液に弱い)%]
+		CALL PRINT_COLORTEXT, LOCALS, DEF_COLOR("黄色")
+		PRINTFORMW を得た。
+	ENDIF
+;精液に弱い箇所の変更判定
+ELSE
+	LOCAL = TALENT:精液に弱い
+	CALL CALC, "精液に弱い部位の変化", TARGET
+	IF TALENT:精液に弱い != LOCAL
+		PRINTFORM %CALLNAME:TARGET%は幾度も精液を受け止めているうちに、
+		SELECTCASE TALENT_NAME(49, TALENT:精液に弱い)
+		CASE "精飲に弱い"
+			PRINT 精液を飲まされる事
+		CASE "膣内射精に弱い"
+			PRINT 膣内に射精される事
+		CASE "肛内射精に弱い"
+			PRINT アナルに射精される事
+		CASE "乳内射精に弱い"
+			PRINT ニプルファック中に射精される事
+		CASE "尿道内射精に弱い"
+			PRINT 尿道を犯されながら射精される事
+		ENDSELECT
+		PRINTFORMW で快楽を得る身体になってしまったようだ…
+		PRINTFORM %CALLNAME:TARGET%は
+		LOCALS = [%TALENT_NAME(49, LOCAL)%]
+		CALL PRINT_COLORTEXT, LOCALS, DEF_COLOR("黄色")
+		PRINTFORM を失い、
+		LOCALS = [%TALENT_NAME(49, TALENT:精液に弱い)%]
+		CALL PRINT_COLORTEXT, LOCALS, DEF_COLOR("黄色")
+		PRINTFORMW を得た。
+	ENDIF
+ENDIF
+
+@EVENT_MORASI
+SIF TIME == 0 || TALENT:おもらし癖 || EXP:お漏らし経験 < 30 + CFLAG:34
+	RETURN 0
+;おねしょ
+PRINTFORMW （む･･･なんだこれ？）
+PRINTFORM %CALLNAME:TARGET%は
+IF TALENT:幼稚
+	PRINTFORM おねしょを
+ELSE
+	PRINTFORM 粗相を
+ENDIF
+PRINTFORMW してしまったようだ…
+PRINTFORMW %CALLNAME:TARGET%は[おもらし癖]がついた。
+TALENT:おもらし癖 = 1
+
+@SELL_MILK
+LOCAL = TFLAG:35 * 10
+LOCAL:1 = LOCAL * 10
+IF LOCAL > 0
+	PRINTFORML 搾乳器を使って%CALLNAME:TARGET%から{LOCAL}ccの母乳を搾り出した。
+	SIF TALENT:処女 == 1
+		TIMES LOCAL:1 , 1.50
+	SIF TALENT:人気
+		TIMES LOCAL:1 , 1.50
+	SIF TALENT:巨乳
+		TIMES LOCAL:1 , 1.50
+	LOCAL = MULTIPLY(LOCAL:1, 100 + (RAND:11 + RAND:11) * 10)
+	PRINTFORML %CALLNAME:TARGET%の母乳には%MONEY_C(LOCAL:1)%の買値が付いた。
+	MONEY += LOCAL:1
+	PRINTFORMW 所持金 %MONEY_C(LOCAL:1)%増加
+ENDIF
+
+
+;助手の調教終了時特典（狐で媚薬入手など）
+@AFTERTRA_BONUS_ASSI
+IF ASSI
+	IF TALENT:ASSI:スライム && ITEM:ローション < 99
+		PRINTL 
+		PRINTFORMW %CALLNAME:ASSI%からローションを貰いました。
+		ITEM:ローション += 1
+	ENDIF
+	IF TALENT:ASSI:妖狐 && ITEM:媚薬 < 99
+		PRINTL 
+		PRINTFORMW %CALLNAME:ASSI%から媚薬を貰いました。
+		ITEM:媚薬 += 1
+	ENDIF
+	IF BASE:ASSI:種族 == 3
+		IF TALENT:ASSI:上位夢魔 && ITEM:ラヴェンダー < 99
+			PRINTL 
+			PRINTFORMW %CALLNAME:ASSI%からラヴェンダーを貰いました。
+			ITEM:ラヴェンダー += 1
+		ELSEIF ITEM:ジャスミン < 99
+			PRINTL 
+			PRINTFORMW %CALLNAME:ASSI%からジャスミンを貰いました。
+			ITEM:ジャスミン += 1
+		ENDIF
+	ENDIF
+ENDIF
+
+@EVENT_GROWTH
+;調教終了後それぞれ2/5の確率で体力・気力の最大値が上昇
+;ただし増加する値はそれぞれ＋30が限度に。
+
+;絶頂＆射精回数とイかせた回数、精液経験で体力気力増加
+LOCAL = EXP_GAIN(2) + EXP_GAIN(3) + EXP_GAIN(6)*2 + EXP_GAIN(20)/3
+LOCAL:100 = RAND:5
+SIF LOCAL:100 >= 3 || LOCAL <= RAND:20
+	RETURN 0
+
+SELECTCASE LOCAL
+CASE IS < 5
+	LOCAL:1 = 1 + RAND:5
+CASE IS < 20
+	LOCAL:1 = 3 + RAND:10
+CASE IS < 50
+	LOCAL:1 = 5 + RAND:15
+CASEELSE
+	LOCAL:1 = 10 + RAND:20
+ENDSELECT
+SIF TALENT:魔王のかけら
+	LOCAL:1 += 2
+SIF !COND("成長済み")
+	LOCAL:1 += 3
+LOCAL:1 = MIN(LOCAL:1, 30)
+
+IF LOCAL:100 == 0 || LOCAL:100 == 1
+	IF MAXBASE:体力 >= CSVBASE(NO:TARGET, 0, 0)*3
+		LOCAL:1 = MAX(LOCAL:1/4, 1)
+	ELSEIF MAXBASE:体力 >= CSVBASE(NO:TARGET, 0, 0)*2
+		LOCAL:1 = MAX(LOCAL:1/2, 1)
+	ENDIF
+	MAXBASE:体力 += LOCAL:1
+	PRINTFORML 激しい調教によって%CALLNAME:TARGET%は我慢することの快感を知った。
+	PRINTFORML %CALLNAME:TARGET%の体力の最大値が{LOCAL:1}上がりました。
+ENDIF
+IF LOCAL:100 == 0 || LOCAL:100 == 2
+	LOCAL:2 = MAX(LOCAL:1 + RAND:5 - RAND:5, 1)
+	IF MAXBASE:気力 >= CSVBASE(NO:TARGET, 1, 0)*3
+		LOCAL:2 = MAX(LOCAL:2/4, 1)
+	ELSEIF MAXBASE:気力 >= CSVBASE(NO:TARGET, 1, 0)*2
+		LOCAL:2 = MAX(LOCAL:2/2, 1)
+	ENDIF
+	MAXBASE:気力 += LOCAL:2
+	PRINTFORML 激しい調教によって%CALLNAME:TARGET%の意志は強くなった。
+	PRINTFORML %CALLNAME:TARGET%の気力の最大値が{LOCAL:2}上がりました。
+ENDIF
+WAIT
+
+@RANKING_MUMA
+FLAG:8 = 0
+
+REPEAT CHARANUM
+	SIF COUNT <= 1
+		CONTINUE
+
+	TARGET = COUNT
+	PRINTFORML 〜%CALLNAME:TARGET%〜
+
+	;状況は最高
+	PALAM:Ｖ潤 = PALAMLV:5
+	PALAM:Ａ潤 = PALAMLV:5
+	PALAM:欲情 = PALAMLV:5
+
+	;正常位
+	SELECTCOM = 60
+	CALL SAMEN_CHECK_PLAYER
+	PRINTFORML %TRAINNAME:SELECTCOM%の技術 = {B}
+	;騎乗位
+	SELECTCOM = 65
+	CALL SAMEN_CHECK_PLAYER
+	PRINTFORML %TRAINNAME:SELECTCOM%の技術 = {B}
+	;アナルセックス
+	SELECTCOM = 71
+	CALL SAMEN_CHECK_PLAYER
+	PRINTFORML %TRAINNAME:SELECTCOM%の技術 = {B}
+	;アナル騎乗位
+	SELECTCOM = 75
+	CALL SAMEN_CHECK_PLAYER
+	PRINTFORML %TRAINNAME:SELECTCOM%の技術 = {B}
+	SELECTCOM = 83
+	CALL SAMEN_CHECK_PLAYER
+	PRINTFORML %TRAINNAME:SELECTCOM%の技術 = {B}
+	SELECTCOM = 88
+	CALL SAMEN_CHECK_PLAYER
+	PRINTFORML %TRAINNAME:SELECTCOM%の技術 = {B}
+	;手淫
+	SELECTCOM = 90
+	CALL SAMEN_CHECK_PLAYER
+	PRINTFORML %TRAINNAME:SELECTCOM%の技術 = {B}
+	;フェラチオ
+	SELECTCOM = 91
+	CALL SAMEN_CHECK_PLAYER
+	PRINTFORML %TRAINNAME:SELECTCOM%の技術 = {B}
+	;パイズリ
+	SELECTCOM = 92
+	CALL SAMEN_CHECK_PLAYER
+	PRINTFORML %TRAINNAME:SELECTCOM%の技術 = {B}
+	;足コキ
+	SELECTCOM = 95
+	CALL SAMEN_CHECK_PLAYER
+	PRINTFORML %TRAINNAME:SELECTCOM%の技術 = {B}
+	;アナル奉仕
+	SELECTCOM = 96
+	CALL SAMEN_CHECK_PLAYER
+	PRINTFORML %TRAINNAME:SELECTCOM%の技術 = {B}
+	;逆アナル
+	SELECTCOM = 126
+	CALL SAMEN_CHECK_PLAYER
+	PRINTFORML %TRAINNAME:SELECTCOM%の技術 = {B}
+
+	PALAM:Ｖ潤 = 0
+	PALAM:欲情 = 0
+
+	WAIT
+REND
+
+BASE:PLAYER:絶頂 = 0
+FLAG:8 = 1
+
+;------------------------------------------------------------------------
+;ARGは記憶を失う
+;------------------------------------------------------------------------
+@MEMORY_LOST, ARG
+FOR LOCAL, 0, 999
+	;名前(娘)、名前の長さ、夢魔のランク、異常経験、経験値寄与、妊娠、家系や種族などは忘れない
+	SIF (LOCAL >= 4 && LOCAL <= 16) || LOCAL == 33 || LOCAL == 209 || LOCAL == 468 || LOCAL == 469
+		CONTINUE
+
+	CFLAG:ARG:LOCAL = 0
+NEXT
+FOR LOCAL, 0, 11
+	MARK:ARG:LOCAL = 0
+NEXT
+FOR LOCAL, 0, 20
+	JUEL:ARG:LOCAL = 0
+NEXT
+
+ABL:ARG:従順 = MIN(ABL:ARG:従順, 1)
+
+TALENT:ARG:恋慕 = 0
+
+;------------------------------------------------------------------------
+;ARG:1に夢魔にされたARGが、ARG:1に受ける影響をチェック
+;------------------------------------------------------------------------
+@CHANGE_SUCCUBUS, ARG, ARG:1
+SIF TALENT:ARG:夢魔 || TALENT:ARG:上位夢魔
+	RETURN 0
+
+TALENT:ARG:夢魔 = 1
+CALL SETFLAG, "夢魔化フラグ", ARG
+CALL EXP50_CHECK, ARG
+
+;「変化しない」場合は戻る
+SIF CONFIG("夢魔化時の特徴変化") == 0
+	RETURN 0
+
+;身体特徴を変える（逆の特徴を持つ場合は打ち消し）
+CALL SELECT_TALENT, ARG, ARG:1, "痛みに弱い"
+CALL SELECT_TALENT, ARG, ARG:1, "回復早い"
+CALL SELECT_TALENT, ARG, ARG:1, "日光浴"
+CALL SELECT_TALENT, ARG, ARG:1, "吸血鬼"
+CALL SELECT_TALENT, ARG, ARG:1, "濡れやすさ"
+CALL SELECT_TALENT, ARG, ARG:1, "胸の大きさ"
+
+;夢魔でない人々は外見などにも変化が(魔法使いやドラグーンは生き方なので変化しない)
+IF CSVTALENT(NO:ARG, 200, 0) + CSVTALENT(NO:ARG, 201, 0) == 0
+	CALL SELECT_TALENT, ARG, ARG:1, "身長"
+	CALL SELECT_TALENT, ARG, ARG:1, "猫舌"
+	CALL SELECT_TALENT, ARG, ARG:1, "妖狐"
+	CALL SELECT_TALENT, ARG, ARG:1, "動物耳"
+	CALL SELECT_TALENT, ARG, ARG:1, "しっぽ"
+	CALL SELECT_TALENT, ARG, ARG:1, "竜の血"
+	CALL SELECT_TALENT, ARG, ARG:1, "ツノ"
+	CALL SELECT_TALENT, ARG, ARG:1, "翼"
+	CALL SELECT_TALENT, ARG, ARG:1, "力持ち"
+	CALL SELECT_TALENT, ARG, ARG:1, "妖精"
+	CALL SELECT_TALENT, ARG, ARG:1, "ラミア"
+	CALL SELECT_TALENT, ARG, ARG:1, "マーメイド"
+	CALL SELECT_TALENT, ARG, ARG:1, "ハーピー"
+	CALL SELECT_TALENT, ARG, ARG:1, "旧支配者の名残"
+	CALL SELECT_TALENT, ARG, ARG:1, "スライム"
+	CALL SELECT_TALENT, ARG, ARG:1, "多腕"
+
+	PRINTFORMW %CALLNAME:ARG%は%CALLNAME:(ARG:1)%とそっくりの姿になった…
+	;眷族となる
+	TALENT:ARG:眷属 = BASE:(ARG:1):識別番号
+	BASE:ARG:眷属 = BASE:(ARG:1):種族
+	SETCOLOR DEF_COLOR("ハートピンク")
+	PRINTFORMW %CALLNAME:ARG%は%CALLNAME:(ARG:1)%の[眷属]になりました
+	RESETCOLOR
+ENDIF
+
+;性格を変えないならここまで
+SIF CONFIG("夢魔化時の特徴変化：全部") == 0
+	RETURN 0
+
+;それぞれ、33%程で変化する
+CALL SELECT_TALENT, ARG, ARG:1, "気の強さ"
+CALL SELECT_TALENT, ARG, ARG:1, "素直さ"
+CALL SELECT_TALENT, ARG, ARG:1, "プライドの高さ"
+CALL SELECT_TALENT, ARG, ARG:1, "好奇心"
+CALL SELECT_TALENT, ARG, ARG:1, "陽気さ"
+CALL SELECT_TALENT, ARG, ARG:1, "貞操観念"
+CALL SELECT_TALENT, ARG, ARG:1, "抑圧"
+CALL SELECT_TALENT, ARG, ARG:1, "恥じらい"
+CALL SELECT_TALENT, ARG, ARG:1, "惚れっぽさ"
+CALL SELECT_TALENT, ARG, ARG:1, "快感に素直"
+CALL SELECT_TALENT, ARG, ARG:1, "両刀"
+CALL SELECT_TALENT, ARG, ARG:1, "自慰しやすさ"
+CALL SELECT_TALENT, ARG, ARG:1, "献身"
+CALL SELECT_TALENT, ARG, ARG:1, "中毒しやすい"
+CALL SELECT_TALENT, ARG, ARG:1, "好色"
+CALL SELECT_TALENT, ARG, ARG:1, "倒錯的"
+CALL SELECT_TALENT, ARG, ARG:1, "小悪魔"
+
+
+@SELECT_TALENT, ARG, ARG:1, ARGS
+VARSET LOCAL
+;素質:%ARGS%について、ARGのものをARG:1のもので優性的に変化させる
+;相対変化
+SELECTCASE ARGS
+CASE "痛みに弱い"
+	LOCAL = 40
+	LOCAL:1 = 41
+CASE "身長"
+	LOCAL = 99
+	LOCAL:1 = 100
+CASE "回復早い"
+	LOCAL = 111
+	LOCAL:1 = 112
+CASE "日光浴"
+	LOCAL = 115
+	LOCAL:1 = 116
+;絶対変化(外見)
+CASE "猫舌"
+	LOCAL = 54
+CASE "妖狐"
+	LOCAL = 90
+CASE "吸血鬼"
+	LOCAL = 114
+CASE "動物耳"
+	LOCAL = 124
+CASE "しっぽ"
+	LOCAL = 128
+CASE "竜の血"
+	LOCAL = 129
+CASE "ツノ"
+	LOCAL = 160
+CASE "翼"
+	LOCAL = 161
+CASE "力持ち"
+	LOCAL = 162
+CASE "妖精"
+	LOCAL = 150
+CASE "ラミア"
+	LOCAL = 152
+CASE "人魚", "マーメイド"
+	LOCAL = 153
+CASE "ハーピー"
+	LOCAL = 155
+CASE "旧支配者の名残"
+	LOCAL = 156
+CASE "スライム"
+	LOCAL = 158
+CASE "多腕"
+	LOCAL = 159
+;この二つはオトコではダメ
+CASE "濡れやすさ"
+	IF TALENT:ARG:オトコ == 0
+		LOCAL = 42
+		LOCAL:1 = 43
+	ENDIF
+CASE "胸の大きさ"
+	IF TALENT:ARG:オトコ == 0
+		LOCAL = 109
+		LOCAL:1 = 110
+	ENDIF
+CASEELSE
+	;性格については、それぞれ33%程度の変化率とする
+	SIF RAND:3
+		RETURN 0
+	SELECTCASE ARGS
+	CASE "気の強さ"
+		LOCAL = 10
+		LOCAL:1 = 12
+	CASE "素直さ"
+		LOCAL = 11
+		LOCAL:1 = 13
+	CASE "プライドの高さ"
+		LOCAL = 15
+		LOCAL:1 = 17
+	CASE "好奇心"
+		LOCAL = 23
+		LOCAL:1 = 24
+	CASE "陽気さ"
+		LOCAL = 25
+		LOCAL:1 = 26
+	CASE "貞操観念"
+		LOCAL = 30
+		LOCAL:1 = 31
+	CASE "抑圧", "解放"
+		LOCAL = 32
+		LOCAL:1 = 33
+	CASE "恥じらい"
+		LOCAL = 35
+		LOCAL:1 = 36
+	CASE "惚れっぽさ"
+		LOCAL = 38
+		LOCAL:1 = 27
+	CASE "快感に素直"
+		LOCAL = 70
+		LOCAL:1 = 71
+	CASE "両刀"
+		LOCAL = 81
+		LOCAL:1 = 82
+	;絶対変化(性格)
+	CASE "自慰しやすさ"
+		LOCAL = 60
+	CASE "献身"
+		LOCAL = 63
+	CASE "中毒しやすい"
+		LOCAL = 72
+	CASE "好色"
+		LOCAL = 75
+	CASE "倒錯的"
+		LOCAL = 80
+	CASE "小悪魔"
+		LOCAL = 87
+	CASEELSE
+		RETURN 0
+	ENDSELECT
+ENDSELECT
+
+;比較変化
+IF LOCAL:1 > 0
+	TALENT:ARG:LOCAL = LIMIT(TALENT:ARG:LOCAL + TALENT:(ARG:1):LOCAL - TALENT:(ARG:1):(LOCAL:1), 0, 1)
+	TALENT:ARG:(LOCAL:1) = LIMIT(TALENT:ARG:(LOCAL:1) + TALENT:(ARG:1):(LOCAL:1) - TALENT:(ARG:1):LOCAL, 0, 1)
+;絶対変化
+ELSEIF TALENT:ARG:LOCAL == 0
+	TALENT:ARG:LOCAL = TALENT:(ARG:1):LOCAL
+ENDIF

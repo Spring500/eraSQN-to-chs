@@ -1,0 +1,2693 @@
+﻿;複数調教と大人数対応を合成。複数調教用キャラカードチェックを削除
+;コマンドメニュー及び条件を変更
+;｢@SELECT_TARGET｣を削除
+;｢@SHOW_CHARADATA｣＝ステータス表示
+;｢@CHARA_SALE｣＝キャラ売却
+;｢@SALEITEM_CHECK｣｢@USE_ITEM｣＝アイテムの購入と使用
+;-------------------------------------------------
+;昼や夜の始まりに一度だけ起きるイベントはここで記述
+;-------------------------------------------------
+@EVENTSHOP
+#PRI
+#DIM LCOUNT
+;安全危険日判定(誕生日依存でいってみる)
+CALL SETFLAG, "安全危険日判定"
+
+;朝
+IF TIME == 0
+	CALL YOBAI_ASAGAKE
+
+	SELECTCASE CONFIG("調教終了時の服装")
+	;終了時にお気に入りの服に着替えてもらうなら
+	CASE 2
+		FOR LCOUNT, 2, CHARANUM
+			;昼用の衣装に着替えてもらう
+			IF GETBIT(IS_FAVORITE_DRESS(LCOUNT), 5)
+				CALL SET_FAVORITE_DRESS, LCOUNT, 5
+				SIF CONFIG("パンツを夢魔の好きにさせる")
+					CALL RAND_PANTU, LCOUNT
+			ELSEIF GETBIT(IS_FAVORITE_DRESS(LCOUNT), 0)
+				CALL SET_FAVORITE_DRESS, LCOUNT, 0
+				SIF CONFIG("パンツを夢魔の好きにさせる")
+					CALL RAND_PANTU, LCOUNT
+			ENDIF
+			;パンツの着用禁止
+			SIF COND("身嗜み：ノーパン", LCOUNT)
+				CALL SET_PANTIES, LCOUNT
+		NEXT
+	ENDSELECT
+;夜
+ELSE
+	SELECTCASE CONFIG("調教終了時の服装")
+	;終了時にお気に入りの服に着替えてもらうなら
+	CASE 2
+		FOR LCOUNT, 2, CHARANUM
+			;夜用の衣装に着替えてもらう
+			IF GETBIT(IS_FAVORITE_DRESS(LCOUNT), 6)
+				CALL SET_FAVORITE_DRESS, LCOUNT, 6
+				SIF CONFIG("パンツを夢魔の好きにさせる")
+					CALL RAND_PANTU, LCOUNT
+			ELSEIF GETBIT(IS_FAVORITE_DRESS(LCOUNT), 0)
+				CALL SET_FAVORITE_DRESS, LCOUNT, 0
+				SIF CONFIG("パンツを夢魔の好きにさせる")
+					CALL RAND_PANTU, LCOUNT
+			ENDIF
+			;パンツの着用禁止
+			SIF COND("身嗜み：ノーパン", LCOUNT)
+				CALL SET_PANTIES, LCOUNT
+		NEXT
+	ENDSELECT
+ENDIF
+
+;書類仕事のフラグ
+FLAG:12 = 0
+;一言イベントの発言フラグリセット
+CALL RESET_SEXUHARAFLAG
+
+;極短時間の記録用のCEVENT消去
+FOR LCOUNT, 1, CHARANUM
+	CALL DEL_CEVENT_GROUP, "一言イベント短期", LCOUNT
+NEXT
+
+DRAWLINE
+DRAWLINE
+
+;-------------------------------------------------
+;まだ調教していないキャラへのフラグ設定
+;-------------------------------------------------
+@CHECK_FLAG_MUMA
+#DIM LCOUNT
+
+FOR LCOUNT, 1, CHARANUM
+	;服のずれなどを直す
+	CALL RESETFLAG_CLO, LCOUNT
+	CALL SETFLAG, "ペニス詳細設定"
+	CALL SETFLAG, "属性", LCOUNT
+
+	;ユニークキャラの判定
+	SIF COND("ユニーク", LCOUNT)
+		FLAG:(1000 + NO:LCOUNT) = 1
+	;オトコなら胎内の精液を消去。
+	IF TALENT:LCOUNT:オトコ
+		BASE:LCOUNT:胎内精子量 = 0
+		BASE:LCOUNT:胎内精液量 = 0
+	ENDIF
+
+	;キャラ独自の識別番号を設置
+	CALL SETFLAG, "識別番号", LCOUNT
+
+	;売却価格の計算
+	CALL SETFLAG, "売却価格", LCOUNT
+
+	;既に調教した経験があるならば以下は判定済み
+	SIF EXP:LCOUNT:調教回数
+		CONTINUE
+
+	;男、女の判定
+	SELECTCASE PENIS(LCOUNT)
+	CASE 0
+		TALENT:LCOUNT:オンナ = 1
+	CASEELSE
+		TALENT:LCOUNT:オンナ = 0
+	ENDSELECT
+
+	;スリーサイズの判定や変化
+	CALL SET_3SIZE, LCOUNT
+	;特技LV
+	CALL GET_EXABL, LCOUNT
+	CALL GET_EXTALENT, LCOUNT
+	;衣装の設定
+	IF CHECK_CLO("全裸", LCOUNT)
+		CALL COORDINATE_MUMA, LCOUNT
+		CALL MEMO_FAVORITE_DRESS, LCOUNT
+	ENDIF
+	CALL SETFLAG, "陰毛と腋毛", LCOUNT
+	CALL SETFLAG, "乳首の詳細設定", LCOUNT
+	CALL CALC, "好きな体位", LCOUNT
+	;誕生日の設定
+	SIF BASE:LCOUNT:誕生日 == 0
+		BASE:LCOUNT:誕生日 = RAND:120 + 1
+	;相性の設定
+	SIF RELATION:LCOUNT:(NO:LCOUNT) < 120
+		RELATION:LCOUNT:(NO:LCOUNT) = 120
+	SIF BASE:LCOUNT:排泄物 == 0
+		BASE:LCOUNT:排泄物 = RAND:4 + RAND:4
+NEXT
+
+@SHOW_SHOP
+#DIM LCOUNT
+#DIM MEMO_LINECOUNT
+#DIM NEXT_LINE
+#DIM MEMO_TARGET
+#DIM MEMO_ASSI
+#DIM ACTOR
+#DIMS MENU_SHOP
+
+;-------------------------------------------------
+;バージョンアップ
+;-------------------------------------------------
+CALL VERUP_ERASQN, TARGET
+
+
+REDRAW 0
+
+;実行値の表示/非表示(0で非表示、1で表示)
+FLAG:8 = 1
+;TFLAGをリセット
+VARSET TFLAG
+;各キャラの行動等をリセット(bit)
+;0夜に妊婦と過ごした, 1喫茶店出演, 2一晩開放実行, 3同衾イベント, 4日常イベント出演済み, 5乱交参加, 6喫茶店挨拶
+CVARSET CFLAG, 95, 0
+;助手画面をデフォに戻す
+FLAG:45 = 0
+;能力表示画面の３サイズ表示を初期化
+FLAG:46 = 0
+;調教対象切り替え画面の設定を初期化
+FLAG:47 = 0
+;調教中フラグなどなどOFF
+FLAG:99 = 0
+;非表示コマンドの表示状態をリセット
+CLEARBIT FLAG:210, 21
+;キャラ変更可能フラグリセット
+FLAG:253 = 0
+;PLAYERをMASTERに戻す（念のため）
+MASTER = 1
+PLAYER = MASTER
+;複数キャラを使うイベント用の対象フラグリセット
+VARSET TARGET, 0, 1, 4
+;TARGETとASSIが-1となることを禁止
+TARGET = MAX(TARGET, 0)
+ASSI = MAX(ASSI, 0)
+;レベルリミッターチェック
+CALL SETFLAG, "レベルリミッター"
+
+;-------------------------------------------------
+;幾つかのフラグをここで設定（主に新規キャラ参入のときに働く）
+;-------------------------------------------------
+CALL CHECK_FLAG_MUMA
+
+;精力とストックのセット
+CALL SET_COUNTER_BASE
+;調教コマンド実行前のパラメータの記録
+CALL SAVE_PALAM_BEFORECOM
+
+;-------------------------------------------------
+;さぁ温泉旅行！
+;-------------------------------------------------
+IF FLAG:60 && DAYEV("土曜", "ゲーム内") && TEXTS("時間") == "昼"
+	MEMO_TARGET = TARGET
+	MEMO_ASSI = ASSI
+	CALL EVENT_TRAVEL
+	;昼夜のフラグ変動
+	FOR LOCAL, 0, 2
+		FOR LCOUNT, 1, 5
+			CALL EVENTTURNEND_FLAG, LCOUNT
+		NEXT
+
+		TIME = (TIME + 1)%2
+	NEXT
+	;温泉フラグリセット
+	VARSET FLAG, 0, 60, 70
+	CVARSET CFLAG, 70, 0
+	DAY += 1
+	CALL SETFLAG, "安全危険日判定"
+	TARGET = MEMO_TARGET
+	ASSI = MEMO_ASSI
+	RESTART
+ENDIF
+;-------------------------------------------------
+;SHOP画面
+;-------------------------------------------------
+;この値をもとにCLEARLINEを行う
+FLAG:2 = LINECOUNT
+
+PRINTL 
+DRAWLINE
+
+;ここから季節、年表示部分
+FLAG:871 = (DAY - 1)%120 + 1
+FLAG:872 = (DAY+119)/120
+FLAG:873 = (FLAG:871 - 1) / 30
+
+PRINTFORM {DAY}日目({FLAG:872}年{FLAG:871}日目) %TEXTS("日付表示")% 所持金:%MONEY_C(MONEY)%
+SIF FLAG:40
+	PRINTFORM  [%NAMES("食事", FLAG:40)%]
+
+SIF ITEM:精液貯蓄量
+	PRINTFORM (魔法瓶の精液：{ITEM:精液貯蓄量}) 
+PRINTL 
+
+IF TEXTS("日付対応イベント") != ""
+	SETCOLOR DEF_COLOR("黄色")
+	PRINTFORM %TEXTS("日付対応イベント")%
+	;クリスマスツリーチェック
+	IF DAYEV("クリスマス期間") && NUM("クリスマスツリー")
+		SETCOLOR DEF_COLOR("ハートピンク")
+		FOR LCOUNT, 0, NUM("クリスマスツリー")
+			PRINTFORM %UNICODE(0xD83C)%%UNICODE(0xDF84)%
+		NEXT
+	ENDIF
+
+	RESETCOLOR
+	PRINTL 
+ENDIF
+
+IF TARGET
+	PRINTFORM %NAME:TARGET% 調教中 
+	CALL TEXT, "生理周期", TARGET
+	PRINT 体力
+	BASE:体力 = MAX(BASE:体力, 0)
+	CALL PRINT_BAR, "減少ゲージ", BASE:体力, MAXBASE:体力, 5
+	PRINTFORML ({BASE:体力}/{MAXBASE:体力}) 好感度:{CFLAG:2} 奉仕快楽:{EXP:奉仕快楽経験}
+	;着せ替え表示
+	CALL PRINT_DRESS, TARGET, "短縮表示"
+	PRINTL 
+ENDIF
+IF ASSI
+	PRINTFORM %TEXTS("助手の名称")%：%NAME:ASSI% 
+	CALL TEXT, "生理周期", ASSI
+	CALL ASSI_LIST_ABL, ASSI
+	PRINTFORML 
+	;着せ替え表示
+	CALL PRINT_DRESS, ASSI, "短縮表示"
+	PRINTL 
+	;指示されているならそれも表示
+	IF ABL:ASSI:助手 && CFLAG:ASSI:35
+		PRINT 指示：
+		CALL ASSI_LIST_INDICATE, ASSI
+		PRINTL 
+	ENDIF
+ENDIF
+
+PRINTFORM 主人：%NAME:MASTER%
+IF CONFIG("レベルリミッター")
+	SETCOLOR DEF_COLOR("黄色")
+	IF CONFIG("レベルリミッター：－10ＬＶ")
+		PRINTFORM (相手のLV-10)
+	ELSEIF CONFIG("レベルリミッター：－５ＬＶ")
+		PRINTFORM (相手のLV-５)
+	ELSEIF CONFIG("レベルリミッター：相手に合わせる")
+		PRINTFORM (相手のLVに合わせる)
+	ELSEIF CONFIG("レベルリミッター：＋５ＬＶ")
+		PRINTFORM (相手のLV+５)
+	ELSEIF CONFIG("レベルリミッター：＋10ＬＶ")
+		PRINTFORM (相手のLV+10)
+	ELSE
+		PRINTFORM ({CONFIG("レベルリミッター")}LVに制限)
+	ENDIF
+	RESETCOLOR
+ENDIF
+PRINTFORM  精力{BASE:MASTER:精力}/{MAXBASE:MASTER:精力}
+SIF MAXBASE:MASTER:ストック
+	PRINTFORM ×({BASE:MASTER:ストック}/{MAXBASE:MASTER:ストック})
+PRINT  
+CALL TEXT, "生理周期", MASTER
+CALL ASSI_LIST_ABL, MASTER
+
+PRINTFORML 
+
+;ここでのアイテム販売は中止
+;CALL SALEITEM_CHECK
+;0～99番のITEMSALESを1にする
+VARSET ITEMSALES, 1, 0, 100
+
+DRAWLINE
+
+VARSET MENU_SHOP
+
+SIF TARGET == 0
+	MENU_SHOP = %MENU_SHOP%灰色/
+IF TARGET && GETBIT(CFLAG:201, 4)
+	MENU_SHOP = %MENU_SHOP%[100]逢いに行く/
+ELSE
+	MENU_SHOP = %MENU_SHOP%[100]調教する/
+ENDIF
+
+MENU_SHOP = %MENU_SHOP%[101]能力の表示/
+
+SIF TARGET == 0 || CONFIG("調教相手変更不可")
+	MENU_SHOP = %MENU_SHOP%灰色/
+MENU_SHOP = %MENU_SHOP%[102]休憩/
+
+SIF ASSI == 0 || CONFIG("調教相手変更不可")
+	MENU_SHOP = %MENU_SHOP%灰色/
+MENU_SHOP = %MENU_SHOP%[108]%TEXTS("助手の名称")%を相手する/
+
+SIF CHARA_NUM("助手可能") == 0 || CONFIG("調教相手変更不可")
+	MENU_SHOP = %MENU_SHOP%灰色/
+MENU_SHOP = %MENU_SHOP%[109]%TEXTS("助手の名称")%変更/
+
+SIF CHARA_NUM("控えキャラ") == 0 || CONFIG("調教相手変更不可")
+	MENU_SHOP = %MENU_SHOP%灰色/
+MENU_SHOP = %MENU_SHOP%[110]調教対象切り替え/
+
+IF CHARANUM >= 100 || CONFIG("調教相手変更不可")
+	MENU_SHOP = %MENU_SHOP%灰色/
+ELSEIF CHARANUM <= 2
+	MENU_SHOP = %MENU_SHOP%ハートピンク/
+ENDIF
+MENU_SHOP = %MENU_SHOP%[111]夢魔召喚/
+
+SIF CHARA_NUM("売却可能") == 0 || CONFIG("調教相手変更不可")
+	MENU_SHOP = %MENU_SHOP%灰色/
+MENU_SHOP = %MENU_SHOP%[112]夢魔売却/
+
+SIF CHARANUM <= 2
+	MENU_SHOP = %MENU_SHOP%灰色/
+MENU_SHOP = %MENU_SHOP%[113]コスチューム確認/
+
+MENU_SHOP = %MENU_SHOP%水色/[114]御用商人を呼ぶ/
+
+SIF NUM("総衣装数") == NUM("所持衣装")
+	MENU_SHOP = %MENU_SHOP%灰色/
+MENU_SHOP = %MENU_SHOP%水色/[115]高級服飾店へ/
+
+MENU_SHOP = %MENU_SHOP%水色/[116]アルカナショップへ/
+
+MENU_SHOP = %MENU_SHOP%水色/[117]アクセサリショップへ/
+
+SIF FLAG:40
+	MENU_SHOP = %MENU_SHOP%灰色/
+MENU_SHOP = %MENU_SHOP%水色/[118]酒場へ/
+
+SIF CHARA_NUM("一晩開放可能") == 0
+	MENU_SHOP = %MENU_SHOP%灰色/
+MENU_SHOP = %MENU_SHOP%[120]外出許可を与える/
+
+MENU_SHOP = %MENU_SHOP%[121]探索に出かける/
+
+IF TALENT:MASTER:調合知識  || (ASSI && TALENT:ASSI:調合知識)
+	MENU_SHOP = %MENU_SHOP%[122]素材の調合/
+ELSE
+	MENU_SHOP = %MENU_SHOP%灰色/[122]素材の調合/
+ENDIF
+
+SIF FLAG:12 || CHARA_NUM("書類仕事") == 0
+	MENU_SHOP = %MENU_SHOP%灰色/
+MENU_SHOP = %MENU_SHOP%[123]書類仕事/
+
+SIF ASSI == 0 || CEVENT("助手で性処理：おあずけ", ASSI) || CONFIG("調教相手変更不可")
+	MENU_SHOP = %MENU_SHOP%灰色/
+MENU_SHOP = %MENU_SHOP%[124]%TEXTS("助手の名称")%で性欲処理/
+
+SIF TARGET == 0 || COND("温泉旅行可能") == 0
+	MENU_SHOP = %MENU_SHOP%灰色/
+MENU_SHOP = %MENU_SHOP%[125]旅行の予約(金曜夜)/
+
+SIF FLAG:208
+	MENU_SHOP = %MENU_SHOP%灰色/
+MENU_SHOP = %MENU_SHOP%[131]お気に入り＆弱点設定/
+
+
+SIF NUM("所持アイテム") + NUM("所持衣装") == 0
+	MENU_SHOP = %MENU_SHOP%灰色/
+MENU_SHOP = %MENU_SHOP%[140]アイテム＆衣装一覧/
+SIF NUM("売却可能アイテム") == 0
+	MENU_SHOP = %MENU_SHOP%灰色/
+MENU_SHOP = %MENU_SHOP%[141]アイテム売却/
+
+
+;SIF TARGET <= 0
+;	MENU_SHOP = %MENU_SHOP%灰色/
+;MENU_SHOP = %MENU_SHOP%[142]アナライズ/
+
+IF NUM("所持店舗")
+	MENU_SHOP = %MENU_SHOP%[160]喫茶店の準備/
+ELSE
+	SIF NUM("運営可能店舗") == 0
+		MENU_SHOP = %MENU_SHOP%灰色/
+	MENU_SHOP = %MENU_SHOP%[160]喫茶店をはじめる/
+ENDIF
+
+MENU_SHOP = %MENU_SHOP%改行/[200]セーブ/
+
+MENU_SHOP = %MENU_SHOP%[300]ロード/
+
+SIF ITEM:胡蝶の夢 == 100
+	MENU_SHOP = %MENU_SHOP%[330]夢から覚める/
+
+SIF ITEM:レベルリミッター
+	MENU_SHOP = %MENU_SHOP%[333]レベルリミッター/
+
+MENU_SHOP = %MENU_SHOP%改行/[555]コンフィグ/
+
+;エンディング突入(胡蝶の夢や温泉旅行企画中は駄目)
+SIF COND("エンディング選択可能")
+	MENU_SHOP = %MENU_SHOP%[600]エンディングを迎える/
+SIF NUM("ＥＮＤ閲覧済")
+	MENU_SHOP = %MENU_SHOP%[650]個別ENDの回想/
+
+SIF TARGET && COND("子孫") && (NAME:TARGET == "娘" || NAME:TARGET == "息子")
+	MENU_SHOP = %MENU_SHOP%改行/[700]%NAME:TARGET%に名前を付ける/
+
+
+VARSET LOCALS
+SPLIT MENU_SHOP, "/", LOCALS
+
+
+NEXT_LINE = 0
+
+;SHOP画面の表示
+FOR LCOUNT, 0, 100
+	SELECTCASE LOCALS:LCOUNT
+	CASE ""
+		BREAK
+	CASE "灰色", "水色", "ハートピンク"
+		SETCOLOR DEF_COLOR(LOCALS:LCOUNT)
+		CONTINUE
+	CASE "改行"
+		IF NEXT_LINE%3
+			NEXT_LINE = 0
+			PRINTL 
+		ENDIF
+		CONTINUE
+	CASE "強制改行"
+		NEXT_LINE = 0
+		PRINTL 
+		CONTINUE
+	ENDSELECT
+
+	PRINTFORM %TEXT_LJ(LOCALS:LCOUNT, 27)%
+
+	RESETCOLOR
+
+	NEXT_LINE += 1
+	SIF NEXT_LINE%3 == 0
+		PRINTL 
+NEXT
+SIF NEXT_LINE%3
+	PRINTL 
+
+VARSET LOCALS
+;日付イベントがあるキャラを示唆する試み
+SELECTCASE TEXTS("日付対応イベント")
+;日付固有イベントフラグはイベントが設定されていない日に全消去
+CASE ""
+	FOR LCOUNT, 1, CHARANUM
+		CALL DEL_CEVENT_GROUP, "日付", LCOUNT
+	NEXT
+CASEELSE
+	;こっちは主人のフラグは見ない
+	FOR LCOUNT, 2, CHARANUM
+		SIF CDAYEV(TEXTS("日付対応イベント"), LCOUNT)
+			LOCALS = %LOCALS%[{LCOUNT, 2}]%CALLNAME:LCOUNT%と
+	NEXT
+ENDSELECT
+
+IF LOCALS != ""
+	PRINTL 
+	SETCOLOR DEF_COLOR("黄色")
+	PRINTFORML なにやら、%SUBSTRING(LOCALS, 0, STRLENS(LOCALS) - 2)%がソワソワしている……
+	PRINTFORML 今日ならではのお話がありそうです
+	RESETCOLOR
+ENDIF
+
+MEMO_LINECOUNT = LINECOUNT
+
+;一言イベントなど
+IF CHARANUM >= 3 && COND("一言イベント中") == 0
+	ACTOR = RANDF(CHARANUM - 2) + 2
+
+	PRINTL 
+	;台詞有る場合に、台詞の名前表示をする？
+	SIF CONFIG("台詞の名前非表示") == 0
+		PRINTFORML - %CALLNAME:ACTOR% -
+
+	MEMO_LINECOUNT = LINECOUNT
+
+	TRYCALLFORM GUEST_KOJO_K{NO:ACTOR}_{CFLAG:ACTOR:209}, "一言イベント", ACTOR
+
+	;台詞が無いなら辻褄あわせ
+	IF LINECOUNT == MEMO_LINECOUNT
+		CLEARLINE 1
+		SIF CONFIG("台詞の名前非表示") == 0
+			CLEARLINE 1
+		MEMO_LINECOUNT = LINECOUNT
+	ELSEIF LINECOUNT > MEMO_LINECOUNT
+		FLAG:23 = ACTOR
+		;一言イベント中フラグ
+		SETBIT FLAG:23, 10
+		CALL INPUT_SEXUHARA, ACTOR
+	ENDIF
+
+	IF COND("一言イベント中") == 0 && LINECOUNT == MEMO_LINECOUNT && RAND:3 == 0
+		IF COND("温泉旅行可能", ACTOR)
+			PRINTL 
+			PRINTFORML （%NAME:ACTOR%からの熱い視線を感じる…。温泉にでも連れて行ってあげようか？）
+		ELSEIF ACTOR != TARGET && COND("欲求不満", ACTOR)
+			PRINTL 
+			PRINTFORML （%NAME:ACTOR%からの熱い視線を感じる…。たまには構ってあげるべきかもしれない）
+		ENDIF
+	ENDIF
+ENDIF
+
+SIF LINECOUNT == MEMO_LINECOUNT
+	PRINTL 
+
+
+;-------------------------------------------------
+;SHOP画面入力の0～99は@EVENTBUYへ、100以上は@USERSHOPへと行く
+;ただし、@EVENTBUYではBOUGHTにRESULTが代入され、RESULT自体は0になっている
+;-------------------------------------------------
+@EVENTBUY
+#DIM CHOICE
+;システムで自動的に行われている購入処理を否定
+ITEM:BOUGHT -= 1
+MONEY += ITEMPRICE:BOUGHT
+
+CHOICE = BOUGHT
+
+SIF COND("一言イベント中")
+	CALL EVENTBUY_SEXUHARA, CHOICE
+
+;SHOP表示をクリア
+CLEARLINE LINECOUNT - FLAG:2
+;一言イベント中フラグもクリア
+CLEARBIT FLAG:23, 10
+
+RETURN 0
+
+@USERSHOP
+#DIM CHOICE
+#DIM MEMO_TARGET
+#DIM MEMO_ASSI
+
+CHOICE = RESULT
+TFLAG:102 = RESULT
+
+SIF COND("一言イベント中")
+	CALL USERSHOP_SEXUHARA, CHOICE
+
+;[100]調教する
+IF CHOICE == 100
+	IF TARGET
+		REDRAW 1
+		BEGIN TRAIN
+		RETURN 1
+	ELSE
+		PRINTW 調教する相手が選ばれていません
+	ENDIF
+;[101]能力の表示
+ELSEIF CHOICE == 101
+	;キャラ変更可能フラグ
+	SIF CONFIG("調教相手変更不可")
+		FLAG:253 = 1
+	;1ページ目を表示
+	CALL SHOW_CHARADATA, 0, 0
+;[102]休憩
+ELSEIF CHOICE == 102
+	IF TARGET && CONFIG("調教相手変更不可") == 0
+		REDRAW 1
+		;休憩フラグを立てる
+		FLAG:0 = 1
+		TRYCALL EVENT_REST_PRE
+		BEGIN TURNEND
+		RETURN 1
+	ELSEIF CONFIG("調教相手変更不可")
+		PRINTW 今は休憩を選べません
+	ELSEIF TARGET == 0
+		PRINTW 調教相手が選ばれていません
+	ENDIF
+;ELSEIF CHOICE == 103
+;	CALL SHOW_CHARA_ANALYSIS, 0, 0
+;[108]助手を相手する
+ELSEIF CHOICE == 108
+	IF ASSI && CONFIG("調教相手変更不可") == 0
+		LOCAL = ASSI
+		ASSI = 0
+		SIF TARGET && COND("助手可能")
+			ASSI = TARGET
+		TARGET = LOCAL
+	ELSEIF ASSI && CONFIG("調教相手変更不可")
+		PRINTFORMW 今は%TEXTS("助手の名称")%を相手にできる状況ではありません
+	ELSEIF ASSI == 0
+		PRINTFORMW %TEXTS("助手の名称")%が居ません
+	ENDIF
+;[109]助手変更
+ELSEIF CHOICE == 109
+	MEMO_ASSI = ASSI
+	IF CHARA_NUM("助手可能") && CONFIG("調教相手変更不可") == 0
+		;キャラ変更可能フラグ
+		FLAG:253 = 1
+		;1ページ目を表示
+		CALL SELECT_ASSI, 0, 0
+	ELSEIF CONFIG("調教相手変更不可")
+		PRINTFORMW 今は%TEXTS("助手の名称")%を変更できる状況ではありません
+	ELSEIF CHARA_NUM("助手可能") == 0
+		PRINTFORMW %TEXTS("助手の名称")%が居ません
+	ENDIF
+	IF ASSI && ASSI != MEMO_ASSI
+		TRYCALLFORM GUEST_KOJO_K{NO:ASSI}_{CFLAG:ASSI:209}, "助手に抜擢", ASSI
+		SIF EXP:ASSI:助手経験 == 0
+			EXP:ASSI:助手経験 += 1
+	ENDIF
+;[110]調教対象切り替え
+ELSEIF CHOICE == 110
+	MEMO_TARGET = TARGET
+	IF CHARA_NUM("控えキャラ") && CONFIG("調教相手変更不可") == 0
+		;キャラ変更可能フラグ
+		FLAG:253 = 1
+		;1ページ目を表示
+		CALL CHANGE_TARGET, 0, 0
+	ENDIF
+	;調教対象を変えた＆一度は相手をしたことがある
+	SIF TARGET && TARGET != MEMO_TARGET && EXP:調教回数
+		TRYCALLFORM GUEST_KOJO_K{NO:TARGET}_{CFLAG:209}, "調教相手に選ばれた", TARGET
+;[111]夢魔召喚
+ELSEIF CHOICE == 111
+	IF CHARANUM < 100 && CONFIG("調教相手変更不可") == 0
+		CALL CHARA_BUY
+	ELSEIF CONFIG("調教相手変更不可")
+		PRINTW 今は召喚をしている場合ではありません
+	ELSEIF CHARANUM >= 100
+		PRINTW 館がいっぱいです！
+	ENDIF
+;[112]夢魔売却
+ELSEIF CHOICE == 112
+	IF CHARA_NUM("売却可能") && CONFIG("調教相手変更不可") == 0
+		;売却価格のCFLAGを前もって計算。最高価格をMONEY:1、最高評価をMONEY:3とする
+		MONEY:1 = 0
+		MONEY:3 = 0
+		FOR LOCAL, 2, CHARANUM
+			CALL SETFLAG, "売却価格", LOCAL
+			MONEY:1 = MAX(MONEY:1, CFLAG:LOCAL:40)
+			MONEY:3 = MAX(MONEY:3, CFLAG:LOCAL:44)
+		NEXT
+		;歴代最高額の更新
+		MONEY:2 = MAX(MONEY:1, MONEY:2)
+		MONEY:4 = MAX(MONEY:3, MONEY:4)
+		CALL CHARA_SALE, 0, 0
+	ELSEIF CONFIG("調教相手変更不可")
+		PRINTW 今は売却なんかをしている場合ではありません
+	ELSEIF CHARA_NUM("売却可能") == 0
+		PRINTW 無い袖は振れません
+	ENDIF
+;[113]コスチューム確認
+ELSEIF CHOICE == 113
+	IF CHARANUM > 2
+		;1ページ目を表示
+		CALL COSPLAY_LIST, 0, 0
+	ENDIF
+;[114]御用商人を呼ぶ
+ELSEIF CHOICE == 114
+	CALL EVENT_SHOP
+;[115]高級服飾店『クヴァラットミルク』
+ELSEIF CHOICE == 115
+	IF NUM("総衣装数") > NUM("所持衣装")
+		CALL COSPLAY_SHOP
+	ELSE
+		PRINTW 看板には『ＳＯＬＤ ＯＵＴ』の札が下げてあります…
+	ENDIF
+;[116]アルカナショップ『魔女の家』
+ELSEIF CHOICE == 116
+	CALL ARCANA_SHOP
+;[117]アクセサリショップ『おぼろげ屋』
+ELSEIF CHOICE == 117
+	CALL ACCESSORY_SHOP
+;[118]酒場『一角獣の角』
+ELSEIF CHOICE == 118
+	IF FLAG:40 == 0
+		CALL EAT_LUNCH
+	ELSE
+		PRINTFORMW これ以上は食べ過ぎです
+	ENDIF
+;[120]外出許可を与える
+ELSEIF CHOICE == 120
+	IF CHARA_NUM("一晩開放可能")
+		CALL SET_CHARA_NIGHTWALKER, 0, 0
+
+		;DRAWLINE
+		;夢魔イベント
+		;CALL NIGHTWALKER
+		;BEGIN TURNEND
+		;RETURN 1
+	ELSE
+		PRINTL 外出許可を望むor外出をさせても問題ないキャラがいません
+		PRINTL 性行為に慣れていて[好色]or[淫乱]or露出癖が高いキャラが外出を望みます
+		PRINTW 従順や屈服刻印のLVが高くないと許可が出せない事もあります
+	ENDIF
+;[121]探索に出かける
+ELSEIF CHOICE == 121
+	REDRAW 1
+	CALL EXPLORER, 0, 0
+;[122]素材の調合
+ELSEIF CHOICE == 122
+	IF TALENT:MASTER:調合知識 || (ASSI && TALENT:ASSI:調合知識)
+		CALL COMPOUND_ITEM
+	ELSE
+		PRINTFORMW 主人か%TEXTS("助手の名称")%に[調合知識]が必要です
+	ENDIF
+;[123]書類仕事をする
+ELSEIF CHOICE == 123
+	IF CHARA_NUM("書類仕事")
+		IF FLAG:12 == 0
+			CALL EVENT_DESKWORK
+		ELSE
+ 			PRINTW 仕事は、このぐらいにしておきましょう
+		ENDIF
+	ELSE
+		PRINTL 整理するほど書類が溜まっていません
+		PRINTW （イベントの発生には調教の進んだキャラが必要です）
+	ENDIF
+;[124]助手に性欲処理を頼む
+ELSEIF CHOICE == 124
+	IF ASSI && CONFIG("調教相手変更不可") == 0
+		TRYCALL PLAY_WITH_ASSI
+	ELSEIF ASSI && CONFIG("調教相手変更不可")
+		PRINTFORMW 今は%TEXTS("助手の名称")%を相手にできる状況ではありません
+	ELSEIF ASSI == 0
+		PRINTFORMW %TEXTS("助手の名称")%が居ません
+	ENDIF
+;[125]土曜日に温泉旅行を予約する
+ELSEIF CHOICE == 125
+	IF TARGET && COND("温泉旅行可能")
+		CALL EVENT_TRAVEL_SELECT
+	ELSE
+		PRINTL 金曜夜に$3,000を用意して[恋慕]or[淫乱]のキャラを調教相手にすると選択できます
+		PRINTW ただし、[処女]の場合には[相思相愛]である必要があります
+	ENDIF
+;[131]お気に入りや弱点等の設定
+ELSEIF CHOICE == 131
+	IF FLAG:208 == 0
+		;設定の記録
+		TFLAG:0 = TALENT:MASTER:弱点
+		TFLAG:1 = TALENT:MASTER:性癖
+		FOR LOCAL, 2, CHARANUM
+			TFLAG:LOCAL = TALENT:LOCAL:お気に入り
+		NEXT
+		CALL SET_CHARA_LOVE, 0, 0
+	ELSE
+		PRINTFORMW あと{FLAG:208}日経過しないと変更はできません
+	ENDIF
+;[140]アイテム＆衣装一覧
+ELSEIF CHOICE == 140
+	IF NUM("所持アイテム") + NUM("所持衣装")
+		CALL SHOW_ITEM_HAVE
+	ENDIF
+;[141]アイテム売却
+ELSEIF CHOICE == 141
+	IF NUM("売却可能アイテム")
+		CALL SELL_ITEM
+	ENDIF
+;[142]アナライズ（一応残しておいてみる）
+ELSEIF CHOICE == 142
+	IF TARGET
+		CALL ANALYSIS
+	ELSE
+		PRINTW アナライズしたい相手を調教対象に選択してください
+	ENDIF
+;[160]喫茶店の準備
+ELSEIF CHOICE == 160
+	IF NUM("運営可能店舗") || NUM("所持店舗")
+		CALL SHOP_EX
+	ELSE
+		PRINTFORML 喫茶店のウェイトレスができそうなキャラが不足しています
+		PRINTFORML （見た目が女性な事と、[恋慕]ないし従順が高いことが基本条件となっています）
+		PRINTFORML 一つの店舗につき4人必要なので、あと{4 - CHARA_NUM("バイト可能")}人必要です
+		PRINTFORMW それに加えて開店資金として$10,000が必要となります
+	ENDIF
+ELSEIF CHOICE == 200
+	CALL SAVEGAME_EX
+ELSEIF CHOICE == 300
+	CALL LOADGAME_EX
+;[330]夢から覚める
+ELSEIF CHOICE == 330 && ITEM:胡蝶の夢 == 100
+	PRINTFORML 胡蝶の夢を終わらせます
+	PRINTFORML ……本当に夢から覚めてもいいですか？
+	PRINTFORML [ 0] はい
+	PRINTFORML [ 1] いいえ
+	CALL INPUT_SELECT, 2
+	SIF RESULT == 0
+		CALL EVENT_KOTYOUNOYUME, "夢の終わり"
+ELSEIF CHOICE == 333 && ITEM:レベルリミッター
+	CALL LV_LIMITTER
+ELSEIF CHOICE == 555
+	CALL SET_CONFIGURE
+ELSEIF CHOICE == 600
+	;ノーマルモードでのエンディング突入
+	IF COND("エンディング選択可能")
+		REDRAW 1
+		IF MONEY < NUM("目標金額")
+			PRINTL まだ目標の金額まで稼いでいませんが……
+		ELSEIF CALCF("最愛の相手")
+			PRINTPLAINFORM %CALLNAME:MASTER%の最愛の相手は……[{CALCF("最愛の相手"), 2}]%CALLNAME:CALCF("最愛の相手")%です
+			CALL CHECK_SINGLE_ENDING
+			IF RESULT
+				CALL PRINT_STR, "ハートピンク_（個別ＥＮＤ有）_L_"
+			ELSE
+				PRINTL 
+			ENDIF
+		ENDIF
+		PRINTL 本当にエンディングを迎えて良いですか？
+		PRINTL [ 0] はい
+		PRINTL [ 1] いいえ
+		CALL INPUT_SELECT, 2
+		SIF RESULT
+			RETURN 0
+		CALL ENDING_CHECK
+	ENDIF
+ELSEIF CHOICE == 650 && NUM("ＥＮＤ閲覧済")
+	MEMO_TARGET = TARGET
+	CALL SHOW_CHARA_END
+	TARGET = MEMO_TARGET
+ELSEIF CHOICE == 700 && TARGET && COND("子孫") && (NAME:TARGET == "娘" || NAME:TARGET == "息子")
+	CALL GIVE_NAME
+
+;上位夢魔召喚
+ELSEIF CHOICE == 666 && CHARANUM < 100
+	IF CONFIG("調教相手変更不可") == 0
+		FLAG:666 = 1
+		IF CONFIG("召喚事故") == 0
+			FLAG:221 = 1
+			CALL CHARA_BUY
+			FLAG:221 = 0
+		ELSE
+			CALL CHARA_BUY
+		ENDIF
+	ENDIF
+	FLAG:666 = 0
+ELSEIF CHOICE == 777
+	CALL NAME_CONVERT, 0, 0
+ELSEIF CHOICE == 888
+	SIF TARGET == 0
+		RETURN 0
+	;実行可能コマンドの確認
+	CALL CHECK_COM_ABLE, TARGET
+	CALL EVENT_RANKOU_SET, "夜這い乱交"
+	IF CSTR:夜這い != ""
+		CSTR:乱交 = %CSTR:夜這い%
+		CALL EVENT_RANKOU, "夜這い乱交"
+	ENDIF
+ELSEIF CHOICE == 88224646
+	MEMO_TARGET = TARGET
+
+	SIF TARGET <= 0
+		TARGET = 1
+	TRYCALL DEBUG_MODE
+
+	TARGET = MEMO_TARGET
+	;3サイズと身長
+	FOR LOCAL, 1, CHARANUM
+		CALL SET_3SIZE, LOCAL
+	NEXT
+ENDIF
+
+RETURN 0
+
+@EVENT_SHOP
+REDRAW 0
+
+PRINTL 
+PRINTFORML 「良いものを揃えてありますよ」
+CALL EVENT_SHOP_BUY
+
+@EVENT_SHOP_BUY
+#DIM MEMO_LINECOUNT
+
+MEMO_LINECOUNT = LINECOUNT
+PRINTL 
+PRINTFORML どれをお買い上げになりますか？　(残り%MONEY_C(MONEY)%)
+CALL SALEITEM_CHECK
+DRAWLINE
+PRINTFORML [100] 店を出る
+
+CALL INPUT_SELECT, 100, 100
+
+SELECTCASE RESULT
+CASE 100
+	PRINTFORMW 「またのご利用をお待ちしています」
+	REDRAW 1
+	RETURN 0
+CASEELSE
+	;売ってない番号を選択したらやり直し
+	IF ITEMSALES:RESULT == 0
+		CLEARLINE LINECOUNT - MEMO_LINECOUNT
+	ELSE
+		BOUGHT = RESULT
+		CALL NEW_EVENTBUY
+	ENDIF
+ENDSELECT
+
+RESTART
+
+@SHOW_ITEM_HAVE
+#DIM NEXT_LINE
+#DIM LCOUNT
+
+PRINTL □ 所持アイテム一覧 □---------------------------------------------------------
+
+NEXT_LINE = 0
+FOR LCOUNT, 0, 30
+	SIF ITEM:LCOUNT == 0
+		CONTINUE
+	SIF NEXT_LINE == 0
+		PRINTL □ 調教道具 □-----------------------------------------------------------------
+	SELECTCASE ITEM:LCOUNT
+	CASE 1
+		PRINTFORM %ITEMNAME:LCOUNT%　
+	CASEELSE
+		PRINTFORM %ITEMNAME:LCOUNT%({ITEM:LCOUNT})　
+	ENDSELECT
+	NEXT_LINE += 1
+NEXT
+IF NEXT_LINE
+	PRINTL 
+	PRINTL 
+ENDIF
+
+NEXT_LINE = 0
+FOR LCOUNT, 30, 50
+	SIF ITEM:LCOUNT == 0
+		CONTINUE
+	SIF NEXT_LINE == 0
+		PRINTL □ 消耗品＆インセンス □-------------------------------------------------------
+	SELECTCASE ITEM:LCOUNT
+	CASE 1
+		PRINTFORM %ITEMNAME:LCOUNT%　
+	CASEELSE
+		PRINTFORM %ITEMNAME:LCOUNT%({ITEM:LCOUNT})　
+	ENDSELECT
+	NEXT_LINE += 1
+NEXT
+IF NEXT_LINE
+	PRINTL 
+	PRINTL 
+ENDIF
+
+
+NEXT_LINE = 0
+FOR LCOUNT, 90, 100
+	SIF ITEM:LCOUNT == 0
+		CONTINUE
+	SIF NEXT_LINE == 0
+		PRINTL □ 特殊な品物 □---------------------------------------------------------------
+	SELECTCASE ITEM:LCOUNT
+	CASE 1
+		PRINTFORM %ITEMNAME:LCOUNT%　
+	CASEELSE
+		PRINTFORM %ITEMNAME:LCOUNT%({ITEM:LCOUNT})　
+	ENDSELECT
+	NEXT_LINE += 1
+NEXT
+IF NEXT_LINE
+	PRINTL 
+	PRINTL 
+ENDIF
+
+
+NEXT_LINE = 0
+FOR LCOUNT, 300, 320
+	SIF ITEM:LCOUNT == 0
+		CONTINUE
+	SIF NEXT_LINE == 0
+		PRINTL □ 収集品 □-------------------------------------------------------------------
+	SELECTCASE ITEM:LCOUNT
+	CASE 1
+		PRINTFORM %ITEMNAME:LCOUNT%　
+	CASEELSE
+		PRINTFORM %ITEMNAME:LCOUNT%({ITEM:LCOUNT})　
+	ENDSELECT
+	NEXT_LINE += 1
+NEXT
+IF NEXT_LINE
+	PRINTL 
+	PRINTL 
+ENDIF
+
+IF ITEM:淫魔の雫
+	PRINTL □ 調合材料 □-----------------------------------------------------------------
+	PRINTFORML 淫魔の雫({ITEM:淫魔の雫})
+	PRINTL 
+ENDIF
+
+NEXT_LINE = 0
+FOR LCOUNT, 500, 600
+	SIF ITEM:LCOUNT == 0
+		CONTINUE
+	SIF NEXT_LINE == 0
+		PRINTL □ コスプレ衣装 □-------------------------------------------------------------
+	PRINTFORM %TEXT_LJ(ITEMNAME:LCOUNT, 20)%
+	NEXT_LINE += 1
+	SIF NEXT_LINE%4 == 0
+		PRINTFORML 
+NEXT
+
+SIF NEXT_LINE%4
+	PRINTFORML 
+
+DRAWLINE
+WAIT
+
+
+@COMPOUND_ITEM
+#DIM LCOUNT
+#DIM MEMO_LINECOUNT
+
+MEMO_LINECOUNT = LINECOUNT
+PRINTL 
+DRAWLINE
+PRINTFORML 淫魔の雫を原料として、薬やアイテム等を調合します　(所持雫：{ITEM:淫魔の雫}個)
+
+VARSET LOCAL
+;調合アイテムの実際に使う相手がいるかなどを判定
+;元気になる薬
+SIF FIND_USE_ITEM("元気になる薬")
+	LOCAL:0 = 1
+;ドロップ
+FOR LCOUNT, 1, 5
+	SIF FIND_USE_ITEM(ITEMNAME:(LCOUNT + 54) )
+		LOCAL:LCOUNT = 1
+NEXT
+;330番台のアイテム
+FOR LCOUNT, 5, 16
+	SIF FIND_USE_ITEM(ITEMNAME:(LCOUNT + 325) )
+		LOCAL:LCOUNT = 1
+NEXT
+;淫紋
+SIF FIND_USE_ITEM("淫紋刻印可能")
+	LOCAL:30 = 1
+
+
+SIF ITEM:フランキンセンス < 99
+	LOCAL:40 = 1
+SIF ITEM:ムーンドロップス < 99
+	LOCAL:50 = 1
+
+;淫魔の雫は足りてる？
+SELECTCASE ITEM:淫魔の雫
+CASE IS < 3
+	VARSET LOCAL
+CASE IS < 10
+	FOR LCOUNT, 0, 5
+		LOCAL:LCOUNT = 0
+	NEXT
+	LOCAL:30 = 0
+	LOCAL:40 = 0
+	LOCAL:50 = 0
+CASE IS < 30
+	LOCAL:30 = 0
+ENDSELECT
+
+;淫魔の雫を買い足す？
+SIF ITEM:淫魔の雫 < 999 && MONEY >= ITEMPRICE:淫魔の雫
+	LOCAL:90 = 1
+
+PRINTFORML  [\@ LOCAL:0 ? {0, 2} # × \@] %TEXT_LJ("ふたなり薬", 16)% 10ヶ　ふたなりにしたり、戻したり
+PRINTFORML  [\@ LOCAL:1 ? {1, 2} # × \@] %TEXT_LJ("青いドロップ", 16)% 10ヶ　母乳体質になる
+PRINTFORML  [\@ LOCAL:2 ? {2, 2} # × \@] %TEXT_LJ("赤いドロップ", 16)% 10ヶ　処女膜の再生or母乳体質の喪失
+PRINTFORML  [\@ LOCAL:3 ? {3, 2} # × \@] %TEXT_LJ("黒いドロップ", 16)% 10ヶ　性別が反転する
+PRINTFORML  [\@ LOCAL:4 ? {4, 2} # × \@] %TEXT_LJ("白いドロップ", 16)% 10ヶ　お漏らし癖や、体内の損傷等を治療する
+PRINTFORML  [\@ LOCAL:5 ? {5, 2} # × \@] %TEXT_LJ("巨根薬", 16)% ３ヶ　言わずもがな、おっきくする薬です！
+PRINTFORML  [\@ LOCAL:6 ? {6, 2} # × \@] %TEXT_LJ("縮根薬", 16)% ３ヶ　あれを小さくする薬です
+PRINTFORML  [\@ LOCAL:7 ? {7, 2} # × \@] %TEXT_LJ("剥皮薬", 16)% ３ヶ　包茎を軽減します
+PRINTFORML  [\@ LOCAL:8 ? {8, 2} # × \@] %TEXT_LJ("伸皮薬", 16)% ３ヶ　包茎を促進させます
+PRINTFORML  [\@ LOCAL:9 ? {9, 2} # × \@] %TEXT_LJ("豊胸薬", 16)% ３ヶ　おっぱいを大きくします
+PRINTFORML  [\@ LOCAL:10 ? {10, 2} # × \@] %TEXT_LJ("貧乳薬", 16)% ３ヶ　おっぱいを小さくします
+PRINTFORML  [\@ LOCAL:11 ? {11, 2} # × \@] %TEXT_LJ("巨人の薬", 16)% ３ヶ　身体を大きくします
+PRINTFORML  [\@ LOCAL:12 ? {12, 2} # × \@] %TEXT_LJ("小人の薬", 16)% ３ヶ　身体を小さくします
+PRINTFORML  [\@ LOCAL:13 ? {13, 2} # × \@] %TEXT_LJ("虹の薬", 16)% ３ヶ　肌の色を変化させます
+PRINTFORML  [\@ LOCAL:14 ? {14, 2} # × \@] %TEXT_LJ("桃尻薬", 16)% ３ヶ　お尻を大きくします
+PRINTFORML  [\@ LOCAL:15 ? {15, 2} # × \@] %TEXT_LJ("小尻薬", 16)% ３ヶ　お尻を小さくします
+
+PRINTFORML  [\@ LOCAL:30 ? {30, 2} # × \@] %TEXT_LJ("淫紋", 16)% 30ヶ　色欲を強くする紋章
+
+PRINTFORML  [\@ LOCAL:40 ? {40, 2} # × \@] %TEXT_LJ("フランキンセンス", 16)% 10ヶ　甘く高貴な香りを持つインセンス（所持：{ITEM:フランキンセンス}個）
+PRINTFORML  [\@ LOCAL:50 ? {50, 2} # × \@] %TEXT_LJ("ムーンドロップス", 16)% 10ヶ　夢魔が大好きな飴玉（所持：{ITEM:ムーンドロップス}個）
+
+PRINTFORML  [\@ LOCAL:90 ? {90, 2} # × \@] 淫魔の雫を%MONEY_C(ITEMPRICE:淫魔の雫)%で買い足す（所持金：%MONEY_C(MONEY)%）
+
+PRINTFORML [100] 戻る
+
+CALL INPUT_SELECT, 16, 30, 40, 50, 90, 100
+
+IF RESULT != 100 && LOCAL:RESULT == 0
+	CLEARLINE LINECOUNT - MEMO_LINECOUNT
+	RESTART
+ENDIF
+
+SELECTCASE RESULT
+CASE 100
+	RETURN 0
+CASE 0
+	BOUGHT = 51
+	CALL USE_ITEM, "調合"
+CASE 1 TO 4
+	BOUGHT = RESULT + 54
+	CALL USE_ITEM, "調合"
+CASE 5 TO 29
+	BOUGHT = RESULT + 325
+	CALL USE_ITEM, "調合"
+CASE 30
+	BOUGHT = 350
+	CALL USE_ITEM, "調合"
+CASE 40
+	BOUGHT = 49
+	PRINTFORMW フランキンセンスを調合しました
+	ITEM:フランキンセンス += 1
+	ITEM:淫魔の雫 -= 10
+CASE 50
+	BOUGHT = 99
+	PRINTFORMW ムーンドロップスを調合しました
+	ITEM:ムーンドロップス += 1
+	ITEM:淫魔の雫 -= 10
+CASE 90
+	ITEM:淫魔の雫 += 1
+	MONEY -= ITEMPRICE:淫魔の雫
+	CLEARLINE LINECOUNT - MEMO_LINECOUNT
+ENDSELECT
+
+RESTART
+
+@SELL_ITEM, ARGS
+#DIM LCOUNT
+#DIM MEMO_LINECOUNT
+
+MEMO_LINECOUNT = LINECOUNT
+
+PRINTL 
+DRAWLINE
+PRINTFORML 必要無いアイテムを売却します　所持金：%MONEY_C(MONEY)%
+DRAWLINE
+VARSET LOCAL
+IF FLAG:259
+	;調教アイテム
+	FOR LCOUNT, 0, 30
+		SIF ITEM:LCOUNT <= 0
+			CONTINUE
+		PRINTFORML  [{LCOUNT, 2}] %TEXT_LJ(ITEMNAME:LCOUNT, 23)%×{ITEM:LCOUNT, 3} (%MONEY_C(ITEMPRICE:LCOUNT / 2)%)
+		LOCAL:LCOUNT = 1
+	NEXT
+ELSE
+	;消耗アイテム
+	FOR LCOUNT, 30, 100
+		SIF ITEM:LCOUNT <= 0
+			CONTINUE
+		SELECTCASE LCOUNT
+		CASE 30 TO 49, 96, 99
+			PRINTFORML  [{LCOUNT, 2}] %TEXT_LJ(ITEMNAME:LCOUNT, 23)%×{ITEM:LCOUNT, 3} (%MONEY_C(ITEMPRICE:LCOUNT / 2)%)
+			LOCAL:LCOUNT = 1
+		ENDSELECT
+	NEXT
+	;収集専用アイテム
+	FOR LCOUNT, 300, 330
+		SIF ITEM:LCOUNT <= 0
+			CONTINUE
+		PRINTFORML [{LCOUNT, 3}] %TEXT_LJ(ITEMNAME:LCOUNT, 23)%×{ITEM:LCOUNT, 3} (%MONEY_C(ITEMPRICE:LCOUNT / 2)%)
+		LOCAL:LCOUNT = 1
+	NEXT
+ENDIF
+PRINTFORML [900] \@ FLAG:259 ? 消耗品の表示に戻る # 調教道具などの売却をする \@
+PRINTFORML [999] 戻る
+SIF ARGS != ""
+	PRINTFORML %ARGS%
+
+$INPUT_LOOP
+INPUT
+
+IF RESULT == 999
+	PRINTFORMW 何か掘り出し物があったらお願いしますね
+	FLAG:259 = 0
+	RETURN 0
+ELSEIF RESULT == 900
+	INVERTBIT FLAG:259, 0
+ELSEIF RESULT >= 0 && RESULT < 999 && ITEM:RESULT && LOCAL:RESULT
+	ARGS = %ITEMNAME:RESULT%をひとつ%MONEY_C(ITEMPRICE:RESULT / 2)%で売却しました
+	ITEM:RESULT -= 1
+	MONEY += ITEMPRICE:RESULT / 2
+ELSE
+	GOTO INPUT_LOOP
+ENDIF
+
+CLEARLINE LINECOUNT - MEMO_LINECOUNT
+RESTART
+
+@COSPLAY_SHOP
+DRAWLINE
+PRINTL  □ 高級服飾店『クヴァラットミルク』 □
+DRAWLINE
+PRINTFORML 「いらっしゃいませ。
+PRINTFORML 　当店では世界各国のフォーマルドレスを豊富に取り扱っております。
+PRINTFORMW 　本日に限り、一着なんと%MONEY_C(ITEMPRICE:女教師)%にてご用意しますよ」
+CALL COSPLAY_SHOP_BUY
+
+@COSPLAY_SHOP_BUY
+#DIM LCOUNT
+
+PRINTL 
+PRINTFORML どれをお買い上げになりますか？　(残り%MONEY_C(MONEY)%)
+
+VARSET LOCAL
+FOR LCOUNT, 500, 600
+	SIF ITEM:LCOUNT
+		CONTINUE
+
+	IF STRLENS(ITEMNAME:LCOUNT)
+		PRINTFORML  [{LCOUNT - 500,2}] %ITEMNAME:LCOUNT%
+		LOCAL:(LCOUNT - 500) = 1
+	ENDIF
+NEXT
+
+
+PRINTFORML [100] 店を出る
+$INPUT_LOOP
+INPUT
+IF RESULT == 100
+	PRINTW 「またのお越しをお待ちしております」
+	RETURN 0
+ELSEIF RESULT >= 0 && RESULT <= 99 && ITEM:(RESULT + 500) == 0 && LOCAL:RESULT
+	IF MONEY >= ITEMPRICE:(RESULT + 500)
+		MONEY -= ITEMPRICE:(RESULT + 500)
+		PRINTFORML ＜%ITEMNAME:(RESULT + 500)%を購入しました＞
+		ITEM:(RESULT + 500) = 1
+	ELSE
+		PRINTL 「申し訳ないのですが、代金が不足しているようです」
+		PRINTW 「またのお越しをお待ちしております」
+		RETURN 0
+	ENDIF
+ELSE
+	GOTO INPUT_LOOP
+ENDIF
+
+IF MONEY >= ITEMPRICE:女教師 && NUM("総衣装数") > NUM("所持衣装") 
+	PRINTW 「他のコーディネートも如何でしょうか？」
+	RESTART
+ELSE
+	PRINTW 「またのお越しをお待ちしております」
+	RETURN 0
+ENDIF
+
+@ARCANA_SHOP
+DRAWLINE
+PRINTL  □ アルカナショップ『魔女の家』 □
+DRAWLINE
+;土曜の夜は魔女のお祭り
+IF DAYEV("土曜") && TEXTS("時間") == "夜"
+	PRINTFORML 「おや、いらっしゃい。
+	PRINTFORML 　ここは格安で魔道書を売ってあげてる、とても良心的なお店さ。
+	PRINTFORMW 　……まぁ、難しくて読めないかもしれないけどねぇ？ クックック」
+	PRINTFORML 
+	PRINTFORML  [魔法使い]の素質を持っているならばお金と引き換えにアルカナを習得できます
+	PRINTFORML  ただし、主人以外は一つ覚えるにつき習得の珠が1,000必要となります
+	CALL PRINT_COLORTEXT, " 色の異なるもの", DEF_COLOR("水色")
+	PRINTFORML は中級以上の魔道書です。[賢い]ないし[上位夢魔]が必要です
+	PRINTFORMW （どういう訳か、ストックとバインドは主人には売ってくれないようです……）
+	CALL ARCANA_SHOP_BUY, "中級"
+	PRINTFORMW 「またおいで」
+ELSE
+	PRINTFORML 「あら、いらっしゃい。
+	PRINTFORML 　ここは格安で簡単な魔道書を売ってあげてる、とても良心的なお店よ。
+	PRINTFORMW 　……でも、頭悪い子だと難しくて読めないかもしれないけどね？」
+	PRINTFORML 
+	PRINTFORML  [魔法使い]の素質を持っているならばお金と引き換えにアルカナを習得できます
+	PRINTFORML  ただし、主人以外は一つ覚えるにつき習得の珠が1,000必要となります
+	CALL PRINT_COLORTEXT, " 色の異なるもの", DEF_COLOR("水色")
+	PRINTFORML は中級以上の魔道書です。[賢い]ないし[上位夢魔]が必要です
+	PRINTFORMW （どういう訳か、ストックとバインドは主人には売ってくれないようです……）
+	CALL ARCANA_SHOP_BUY, "中級"
+	PRINTFORMW 「またね」
+ENDIF
+
+
+@ARCANA_SHOP_BUY, ARGS
+#DIM LCOUNT
+#DIM CHOICE
+#DIM MEMO_LINECOUNT
+MEMO_LINECOUNT = LINECOUNT
+REDRAW 0
+
+VARSET ITEMSALES, 0, 600, 700
+VARSET LOCAL
+
+;売られてるアルカナの判定
+FOR LCOUNT, 600, 600 + NUM("存在するアルカナ")
+	SIF MONEY < ITEMPRICE:LCOUNT
+		CONTINUE
+
+	FOR LOCAL, 1, CHARANUM
+		SIF TALENT:LOCAL:魔法使い != 1
+			CONTINUE
+
+		SELECTCASE LOCAL
+		CASE MASTER
+			SELECTCASE ITEMNAME:LCOUNT
+			CASE "ストック", "バインド"
+				CONTINUE
+			ENDSELECT
+		CASEELSE
+			SIF JUEL:LOCAL:習得 < 1000
+				CONTINUE
+		ENDSELECT
+
+		SELECTCASE ITEMNAME:LCOUNT
+		CASE "ストック", "トワイス", "アルスイーサ", "バインド", "アルスグン", "エンラジ", "ヴィジョン"
+			SIF TALENT:LOCAL:賢い == 0 && TALENT:LOCAL:上位夢魔 == 0
+				CONTINUE
+		ENDSELECT
+
+		SIF TALENT:LOCAL:(ITEMNAME:LCOUNT)
+			CONTINUE
+
+		ITEMSALES:LCOUNT = 1
+		BREAK
+	NEXT
+NEXT
+
+PRINTL 
+PRINTFORML 何を購入しますか？　(所持金：%MONEY_C(MONEY)%)
+FOR LCOUNT, 0, NUM("存在するアルカナ")
+	LOCAL = LCOUNT + 600
+
+	SELECTCASE ITEMNAME:LOCAL
+	CASE "バインド"
+		ITEMSALES:LOCAL = 0
+		CONTINUE
+	CASE "ストック", "トワイス", "アルスイーサ", "アルスグン", "エンラジ", "ヴィジョン"
+		SELECTCASE ARGS
+		CASE "初級"
+			ITEMSALES:LOCAL = 0
+			CONTINUE
+		CASEELSE
+			SETCOLOR DEF_COLOR("水色")
+		ENDSELECT
+	ENDSELECT
+
+	PRINTFORML  [\@ ITEMSALES:LOCAL ? {LCOUNT, 2} # × \@] %TEXT_LJ(ITEMNAME:LOCAL, 12)% %TEXT_RJ(MONEY_C(ITEMPRICE:LOCAL), 7)% %TEXTS("アルカナ解説", LCOUNT + 230)%
+	RESETCOLOR
+NEXT
+
+PRINTFORML [100] 店を出る
+
+CALL INPUT_SELECT, NUM("存在するアルカナ"), 100
+
+SELECTCASE RESULT
+CASE 100
+	REDRAW 1
+	RETURN 0
+CASEELSE
+	IF RESULT >= 0 && RESULT < NUM("存在するアルカナ") && ITEMSALES:(RESULT + 600)
+		BOUGHT = RESULT + 600
+		PRINTFORML 誰が%ITEMNAME:BOUGHT%を覚えますか？　(購入後の所持金：%MONEY_C(MONEY - ITEMPRICE:BOUGHT)%)
+
+		VARSET LOCAL
+		FOR LCOUNT, 1, CHARANUM
+			SIF TALENT:LCOUNT:魔法使い != 1
+				CONTINUE
+
+			SELECTCASE LCOUNT
+			CASE MASTER
+				SELECTCASE ITEMNAME:BOUGHT
+				CASE "ストック", "バインド"
+					CONTINUE
+				ENDSELECT
+			CASEELSE
+				SIF JUEL:LCOUNT:習得 < 1000
+					CONTINUE
+			ENDSELECT
+
+			SELECTCASE ITEMNAME:BOUGHT
+			CASE "ストック", "トワイス", "アルスイーサ", "バインド", "アルスグン", "エンラジ", "ヴィジョン"
+				SIF TALENT:LCOUNT:賢い == 0 && TALENT:LCOUNT:上位夢魔 == 0
+					CONTINUE
+			ENDSELECT
+
+			SIF TALENT:LCOUNT:(ITEMNAME:BOUGHT)
+				CONTINUE
+
+			CALL PRINT_NUM_NAME, "体力", LCOUNT
+			LOCAL:LCOUNT = 1
+		NEXT
+		PRINTL  [100]戻る
+
+		CALL INPUT_SELECT, CHARANUM, 100
+		CHOICE = RESULT
+
+		SELECTCASE CHOICE
+		CASE 100
+		CASE IS < CHARANUM
+			IF LOCAL:CHOICE
+				LOCALS = 
+				;覚えているアルカナの表示
+				FOR LCOUNT, 230, 230 + NUM("存在するアルカナ")
+					SIF TALENT:CHOICE:LCOUNT
+						LOCALS = %LOCALS%[%TALENTNAME:LCOUNT%]
+				NEXT
+				IF LOCALS != ""
+					PRINTFORML %CALLNAME:CHOICE%は現在%LOCALS%を習得しています
+					PRINTFORML 新たに[%ITEMNAME:BOUGHT%]を覚えて良いですか？\@ CHOICE != MASTER ? （習得の珠：{JUEL:CHOICE:習得}） # \@
+				ELSE
+					PRINTFORML %CALLNAME:CHOICE%はアルカナを何も習得していません
+					PRINTFORML [%ITEMNAME:BOUGHT%]を覚えて良いですか？\@ CHOICE != MASTER ? （習得の珠：{JUEL:CHOICE:習得}） # \@
+				ENDIF
+
+				PRINTFORML [ 0] はい
+				PRINTFORML [ 1] やっぱやめる
+				CALL INPUT_SELECT, 2
+				SELECTCASE RESULT
+				CASE 1
+					RESTART
+				ENDSELECT
+
+				PRINTFORML ＜%CALLNAME:CHOICE%は[%ITEMNAME:BOUGHT%]を覚えた＞
+				TALENT:CHOICE:(ITEMNAME:BOUGHT) = 1
+				IF CHOICE != MASTER
+					PRINTFORMW 習得の珠-1000
+					JUEL:CHOICE:習得 -= 1000
+				ENDIF
+				MONEY -= ITEMPRICE:BOUGHT
+			ENDIF
+		ENDSELECT
+	ELSE
+		CLEARLINE LINECOUNT - MEMO_LINECOUNT
+	ENDIF
+ENDSELECT
+RESTART
+
+;-------------------------------------------------
+;ARGSを使う事が出来るキャラが一人でもいたら１を返す。いない場合には０
+;-------------------------------------------------
+@FIND_USE_ITEM(ARGS)
+#FUNCTION
+
+SIF TARGET && COND(ARGS)
+	RETURNF 1
+SIF COND(ARGS, MASTER) || FIND_COND(ARGS)
+	RETURNF 1
+RETURNF 0
+
+;-------------------------------------------------
+;アイテム出現条件
+;ARGSに"表示なし"とすればアイテム一覧は出さない
+;-------------------------------------------------
+@SALEITEM_CHECK, ARGS
+#DIM LCOUNT
+#DIM NEXT_LINE
+
+CALL SETFLAG, "アイテムフラグ調整"
+
+ITEMSALES:触手使役術 = 0
+
+ITEMSALES:アナルパール = 0
+SIF ITEM:アナルバイブ && ITEM:アナルパール == 0
+	ITEMSALES:アナルパール = 1
+;魔法瓶
+ITEMSALES:魔法瓶 = 0
+SIF FLAG:91 && ITEM:魔法瓶 == 0
+	ITEMSALES:魔法瓶 = 1
+
+ITEMSALES:排卵誘発剤 = 0
+ITEMSALES:筋弛緩剤 = 0
+
+;50番以降は、初期状態では売られていない
+VARSET ITEMSALES, 0, 50, 100
+
+
+;主人か助手が『調合知識』を持っている
+IF TALENT:MASTER:調合知識 || (ASSI && TALENT:ASSI:調合知識)
+	SIF FIND_USE_ITEM("元気になる薬")
+		ITEMSALES:元気になる薬 = 1
+	SIF FIND_USE_ITEM("ふたなり薬")
+		ITEMSALES:ふたなり薬 = 1
+ENDIF
+
+;主人か助手が『禁断の知識』を持っている
+IF TALENT:MASTER:禁断の知識 || (ASSI && TALENT:ASSI:禁断の知識)
+	SIF ITEM:筋弛緩剤 < 99
+		ITEMSALES:筋弛緩剤 = 1
+	;触手使役術
+	SIF ITEM:触手使役術 == 0
+		ITEMSALES:触手使役術 = 1
+
+	;ドロップ
+	FOR LCOUNT, 55, 59
+		SIF FIND_USE_ITEM(ITEMNAME:LCOUNT)
+			ITEMSALES:LCOUNT = 1
+	NEXT
+
+	FOR LCOUNT, 1, CHARANUM
+		IF TALENT:LCOUNT:誓約 == 0 && TALENT:LCOUNT:相思相愛 == 0
+			ITEMSALES:誓約の巻物 = 1
+			BREAK
+		ENDIF
+	NEXT
+	FOR LCOUNT, 1, CHARANUM
+		IF COND("成長性", LCOUNT)
+			ITEMSALES:歪んだ時計 = 1
+			BREAK
+		ENDIF
+	NEXT
+	FOR LCOUNT, 1, CHARANUM
+		;温泉予約中はダメ
+		SIF FLAG:60
+			BREAK
+		IF ITEM:胡蝶の夢 == 0 && COND("妊娠イベント中", LCOUNT) == 0 && MARK:LCOUNT:反発刻印 == 0 && ABL:LCOUNT:従順 >= 4
+			ITEMSALES:胡蝶の夢 = 1
+			BREAK
+		ENDIF
+	NEXT
+	SIF ITEM:レベルリミッター == 0
+		ITEMSALES:レベルリミッター = 1
+	SIF CHARANUM >= 3
+		ITEMSALES:記憶消去薬 = 1
+ENDIF
+
+
+;素質系アイテムの処理
+SIF ABL:MASTER:技巧 < 3
+	ITEMSALES:☆技巧Lv = 1
+SIF TALENT:MASTER:てかげん == 0
+	ITEMSALES:☆てかげん = 1
+SIF TALENT:MASTER:汚れ無視 == 0
+	ITEMSALES:☆汚れ無視 = 1
+SIF TALENT:MASTER:禁断の知識 == 0
+	ITEMSALES:☆禁断の知識 = 1
+;☆調合大全。賢くて、調合知識を持っていないものがいる。習得の珠も5万必要
+FOR LCOUNT, 1, CHARANUM
+	SIF TALENT:LCOUNT:賢い == 0 || TALENT:LCOUNT:調合知識 || JUEL:LCOUNT:習得 < ITEMPRICE:65
+		CONTINUE
+	ITEMSALES:☆調合大全 = 1
+	BREAK
+NEXT
+;☆調教知識。賢いorＭＡＳＴＥＲ。習得の珠も1万必要
+FOR LCOUNT, 1, CHARANUM
+	IF LCOUNT == MASTER
+		SIF FLAG:240
+			CONTINUE
+	ELSEIF TALENT:LCOUNT:賢い == 0 || JUEL:LCOUNT:習得 < ITEMPRICE:66
+		CONTINUE
+	ENDIF
+	ITEMSALES:☆調教知識 = 1
+	BREAK
+NEXT
+
+;インのモウサポートセンター
+IF CONFIG("陰毛と腋毛")
+	FOR LCOUNT, 1, CHARANUM
+		IF COND("陰毛", LCOUNT) && COND("陰毛", LCOUNT) < 7
+			ITEMSALES:毛生え薬 = 1
+			BREAK
+		ENDIF
+	NEXT
+	FOR LCOUNT, 1, CHARANUM
+		IF COND("陰毛", LCOUNT) >= 4
+			ITEMSALES:脱毛剤 = 1
+			BREAK
+		ENDIF
+	NEXT
+ENDIF
+
+;妊娠パッチをONにしている
+IF CONFIG("妊娠パッチ")
+	ITEMSALES:排卵誘発剤 = 1
+	;避妊薬を使う意味のあるキャラがいるか
+	FOR LCOUNT, 1, CHARANUM
+		;オトコor妊娠中or避妊中or人形
+		SIF TALENT:LCOUNT:オトコ || TALENT:LCOUNT:妊娠 || TALENT:LCOUNT:魔導人形 || COND("着床確認", LCOUNT)
+			CONTINUE
+
+		ITEMSALES:緊急用避妊薬 = 1
+
+		SIF TALENT:LCOUNT:処女 == 0
+			ITEMSALES:避妊の護符 = 1
+
+		SIF TALENT:LCOUNT:避妊の護符 == 0
+			ITEMSALES:避妊薬 = 1
+	NEXT
+ENDIF
+
+;複数指輪が渡せる設定orまだ渡していない
+IF CONFIG("相思相愛：人数制限無し") || TALENT:MASTER:相思相愛 == 0
+	FOR LCOUNT, 1, CHARANUM
+		SIF TALENT:LCOUNT:恋慕 == 0 || TALENT:LCOUNT:相思相愛
+			CONTINUE
+		ITEMSALES:誓約の指輪 = 1
+		BREAK
+	NEXT
+ENDIF
+
+;淫魔の雫は999個まで持てる
+SIF ITEM:淫魔の雫 < 999
+	ITEMSALES:淫魔の雫 = 1
+
+;非売品
+ITEMSALES:フランキンセンス = 0
+ITEMSALES:思考砥ぎの石 = 0
+ITEMSALES:ムーンドロップス = 0
+
+FOR LCOUNT, 30, 50
+	IF ITEM:LCOUNT >= 99
+		ITEM:LCOUNT = 99
+		ITEMSALES:LCOUNT = 0
+	ENDIF
+NEXT
+
+SIF ARGS == "表示なし"
+	RETURN 0
+
+DRAWLINE
+;0-99に自動的に売り物が表示される。
+;PRINT_SHOPITEM
+NEXT_LINE = 0
+FOR LCOUNT, 0, 100
+	SIF ITEMSALES:LCOUNT == 0 || ITEMNAME:LCOUNT == ""
+		CONTINUE
+
+	PRINTFORMLC  [{LCOUNT, 2}]%TEXT_LJ(ITEMNAME:LCOUNT, 14)%%TEXT_RJ(MONEY_C(ITEMPRICE:LCOUNT), MIN(21 - STRLENS(ITEMNAME:LCOUNT), 7) )%
+
+	NEXT_LINE += 1
+	SIF NEXT_LINE%3 == 0
+		PRINTL 
+NEXT
+SIF NEXT_LINE%3
+	PRINTL 
+
+;-------------------------------------------------
+;アイテム購入
+;-------------------------------------------------
+@NEW_EVENTBUY
+;調教アイテム
+SELECTCASE BOUGHT
+CASE 0 TO 29, 97
+	
+	;お金がなければ買えない
+	IF MONEY < ITEMPRICE:BOUGHT
+		RETURN 0
+	ENDIF
+	
+	PRINTFORMW ＜%ITEMNAME:BOUGHT%を購入しました＞
+	ITEM:BOUGHT += 1
+	MONEY -= ITEMPRICE:BOUGHT
+
+	;補足があるならここで
+	SELECTCASE BOUGHT
+	;尿道責めキット
+	CASE 24
+		PRINTFORML □ 補足 □---------------------------------------------------------------------
+		PRINTFORM 尿道を拡張する際には、
+		CALL PRINT_COLORTEXT, "[調教知識(性器拡張)]", DEF_COLOR("黄色")
+		PRINTFORM や
+		CALL PRINT_COLORTEXT, "[拡張適正]", DEF_COLOR("黄色")
+		PRINTFORML があると捗ります
+		PRINTFORM 拡張のしやすさには影響のない素質ですが、
+		CALL PRINT_COLORTEXT, "[倒錯的]", DEF_COLOR("黄色")
+		PRINTFORML が有ると反感を抑えられる事でしょう
+		PRINTFORML 
+		PRINTFORML 尿道での快感はＣ感覚に依存しています……が、初期は痛みが強く殆ど快楽を得られません
+		PRINTFORML 経験を積ませて痛みを減らし、尿道を弄られる事に慣れさせる事が重要となります
+		PRINTFORM 尿道を責められながらの絶頂を経験させる事で、
+		CALL PRINT_COLORTEXT, "[尿道性感]", DEF_COLOR("黄色")
+		PRINTFORML に目覚めさせる事が出来ます
+		CALL PRINT_COLORTEXT, "[尿道性感]", DEF_COLOR("黄色")
+		PRINTFORMW 無しだと基本的には気持ちの良くない調教なので、早めの取得が重要でしょう
+	ENDSELECT
+;ローションなど、消費アイテム。それに加えて淫魔の雫も
+CASE 30 TO 49, 78
+	CALL BUY_PLURAL
+
+;素質アイテム【技巧Lv】
+CASE 60
+	VARSET LOCAL
+	PRINTL  [0] 技巧Lvを上げる
+	IF ABL:MASTER:技巧 > 1
+		PRINTL  [1] 技巧Lvを下げる(代金はかからない)
+		LOCAL:1 = 1
+	ENDIF
+	PRINTL [100] 戻る
+	CALL INPUT_SELECT, 1, LOCAL:1, 100
+	SELECTCASE RESULT
+	CASE 100
+
+	CASE 0
+		IF MONEY < ITEMPRICE:BOUGHT
+			PRINTFORMW お金が足りません
+			RETURN 0
+		ENDIF
+		MONEY -= ITEMPRICE:BOUGHT
+		ABL:MASTER:技巧 += 1
+		PRINTFORMW ＜%NAME:MASTER%の技巧Lvが1つ上がった　今の技巧Lv：{ABL:MASTER:技巧}＞
+	CASE 1
+		ABL:MASTER:技巧 -= 1
+		PRINTFORMW ＜%NAME:MASTER%の技巧Lvが1つ下がった　今の技巧Lv：{ABL:MASTER:技巧}＞
+	ENDSELECT
+
+;MASTERが素質を覚えるアイテム
+CASE 61 TO 64
+	;お金がなければ買えない
+	IF MONEY < ITEMPRICE:BOUGHT
+		RETURN 0
+	ENDIF
+	SELECTCASE ITEMNAME:BOUGHT
+	CASE "☆てかげん"
+		PRINTFORMW ＜%NAME:MASTER%は[てかげん]を覚えた＞
+		TALENT:MASTER:てかげん = 1
+	CASE "☆汚れ無視"
+		PRINTFORMW ＜%NAME:MASTER%は[汚れ無視]を身につけました＞
+		TALENT:MASTER:汚れ無視 = 1
+	;サドは現在封印中
+	CASE "☆サド"
+		PRINTFORMW ＜%NAME:MASTER%は[サド]になりました＞
+		TALENT:MASTER:サド = 1
+	CASE "☆禁断の知識"
+		PRINTFORMW ＜%NAME:MASTER%は[禁断の知識]を手に入れました＞
+		TALENT:MASTER:禁断の知識 = 1
+	ENDSELECT
+	MONEY -= ITEMPRICE:BOUGHT
+
+;使用アイテム、素質アイテム
+CASE 50 TO 91, 94, 95, 98
+	CALL USE_ITEM
+ENDSELECT
+
+
+;-------------------------------------------------
+;複数個所持可能なアイテムについて、同時購入個数を選択
+;-------------------------------------------------
+@BUY_PLURAL
+#DIM MEMO
+
+;買う前の所持数を記録
+MEMO = ITEM:BOUGHT
+
+DRAWLINE
+CALL SHOW_BUY_ITEM, BOUGHT
+
+;１０個以上買った？
+IF ITEM:BOUGHT - MEMO >= 10
+	LOCAL = (ITEM:BOUGHT - MEMO)/10
+	PRINTFORMW いっぱい買ってくれたお礼に、と道具屋の主人が{LOCAL}個おまけしてくれました
+	ITEM:BOUGHT += LOCAL
+ENDIF
+PRINTL 
+
+;-------------------------------------------------
+;所持金に対応して、ITEM:ARGを何個買うかの選択肢を表示する関数
+;-------------------------------------------------
+@SHOW_BUY_ITEM, ARG
+#DIM LCOUNT
+#DIM MEMO_MAX
+
+;買える最大個数
+MEMO_MAX = MIN(99 - ITEM:ARG, MONEY/ITEMPRICE:ARG)
+;淫魔の雫
+SIF ARG == 78
+	MEMO_MAX = MIN(999 - ITEM:ARG, MONEY/ITEMPRICE:ARG)
+
+PRINTFORML %ITEMNAME:ARG%をいくつ買いますか？　(持っている数：{ITEM:ARG}　所持金：%MONEY_C(MONEY)%)
+PRINTFORML （買いたい数を直接入力でも購入可能。0or999で戻る）
+
+FOR LCOUNT, 1, MEMO_MAX+1
+	SIF MONEY < ITEMPRICE:ARG * LCOUNT
+		BREAK
+	SELECTCASE LCOUNT
+	CASE IS <= 5, 10, 20, 50, MEMO_MAX
+		PRINTFORML  [{LCOUNT, 2}] {LCOUNT, 2}個　(%MONEY_C(ITEMPRICE:ARG * LCOUNT)%)
+	ENDSELECT
+NEXT
+PRINTFORML [999] 戻る
+
+$INPUT_LOOP
+INPUT
+
+IF RESULT == 0 || RESULT == 999
+	RETURN 0
+ELSEIF ITEMPRICE:ARG * RESULT > MONEY
+	PRINTL お金が足りません
+	GOTO INPUT_LOOP
+ELSEIF RESULT > MEMO_MAX
+	PRINTL そんなに持てません
+	GOTO INPUT_LOOP
+ELSEIF RESULT >= 1 && RESULT <= MEMO_MAX
+	PRINTFORMW ＜%ITEMNAME:ARG%を\@ RESULT > 1 ? {RESULT}個  # \@購入しました＞
+ELSE
+	GOTO INPUT_LOOP
+ENDIF
+
+ITEM:ARG += RESULT
+MONEY -= ITEMPRICE:ARG * RESULT
+
+RETURN RESULT
+
+;-------------------------------------------------
+;アイテム使用。ARGS == "調合"だと淫魔の雫が通貨扱いになる
+;-------------------------------------------------
+@USE_ITEM, ARGS
+#DIM LCOUNT
+#DIM CHOICE, 2
+#DIM MEMO, 10
+
+DRAWLINE
+;アイテムの効果を表示する。
+SELECTCASE BOUGHT
+CASE 65
+	PRINTFORML %ITEMNAME:BOUGHT%(%MONEY_C(ITEMPRICE:BOUGHT)%):調合知識を覚えさせます（要：賢い＆習得の珠{ITEMPRICE:BOUGHT}）
+CASE 66
+	PRINTFORML %ITEMNAME:BOUGHT%(%MONEY_C(ITEMPRICE:BOUGHT)%):様々な調教にかかわる知識を覚えさせます
+	PRINTFORML MASTERの場合は一度変更するたびに1週間\@ FLAG:240 ? (あと{FLAG:240}日) # \@再設定が出来なくなり、
+	PRINTFORML それ以外の人の場合には、賢い＆習得の珠{ITEMPRICE:BOUGHT}が必要となります
+CASE 70
+	PRINTFORML %ITEMNAME:BOUGHT%(%MONEY_C(ITEMPRICE:BOUGHT)%):アソコ\@ CONFIG("陰毛") ? や%TEXTS("腋")% # \@の毛を急速に生やします
+CASE 71
+	PRINTFORML %ITEMNAME:BOUGHT%(%MONEY_C(ITEMPRICE:BOUGHT)%):アソコ\@ CONFIG("陰毛") ? や%TEXTS("腋")% # \@の毛を脱毛します
+CASE 72
+	PRINTFORML %ITEMNAME:BOUGHT%(%MONEY_C(ITEMPRICE:BOUGHT)%):飲み続けるタイプの事前避妊薬。効果は10日程です
+CASE 73
+	PRINTFORML %ITEMNAME:BOUGHT%(%MONEY_C(ITEMPRICE:BOUGHT)%):緊急避妊薬。最近行った性行為による着床を防ぎます
+CASE 74
+	PRINTFORML %ITEMNAME:BOUGHT%(%MONEY_C(ITEMPRICE:BOUGHT)%):避妊の魔法がかけられたＴ字型の小さな護符です
+	SETCOLOR DEF_COLOR("ハートピンク")
+	PRINTFORML ※効果は永続的ですが、子宮の中に装着します※
+	RESETCOLOR
+	PRINTFORML 既に装着済みのキャラを選択すると、避妊の護符を破壊します
+CASE 90
+	PRINTFORML %ITEMNAME:BOUGHT%(%MONEY_C(ITEMPRICE:BOUGHT)%):手放さないことを誓約します
+CASE 91
+	PRINTFORML %ITEMNAME:BOUGHT%(%MONEY_C(ITEMPRICE:BOUGHT)%):愛を伝えます
+	CALL PRINT_STR, "H_個別ＥＮＤが用意されているキャラは_ハートピンク_名前の色が変わります_H_L"
+CASE 94
+	PRINTFORML %ITEMNAME:BOUGHT%(%MONEY_C(ITEMPRICE:BOUGHT)%):特定の空間の時を操ります(子供を一気に成長させます)
+CASE 95
+	PRINTFORML %ITEMNAME:BOUGHT%(%MONEY_C(ITEMPRICE:BOUGHT)%):奇妙な雰囲気の本。二冊セット。
+	PRINTFORML 選択した二人の身体を入れ替える効果があります
+CASE 98
+	PRINTFORML %ITEMNAME:BOUGHT%(%MONEY_C(ITEMPRICE:BOUGHT)%):調教の記憶を消去します
+;以下は調合系
+CASE 50
+	PRINTFORML %ITEMNAME:BOUGHT%:体力と精力を全回復します（ストックもです！）
+CASE 51
+	PRINTFORML %ITEMNAME:BOUGHT%:オンナをふたなりにしたり、戻したりします
+CASE 55
+	PRINTFORML %ITEMNAME:BOUGHT%:母乳体質にしたり、陥没乳首を治したりします
+CASE 56
+	PRINTFORML %ITEMNAME:BOUGHT%:処女膜を再生し母乳体質を失わせます
+CASE 57
+	PRINTFORML %ITEMNAME:BOUGHT%:性転換します
+CASE 58
+	PRINTFORML %ITEMNAME:BOUGHT%:お漏らし癖や体内の損傷を治します
+ENDSELECT
+
+SELECTCASE BOUGHT
+CASE 72, 95
+	PRINTFORML 誰に渡しますか？　(所持金：%MONEY_C(MONEY)%)
+;淫紋
+CASE 350
+	PRINTFORML 下腹部に、魔力の篭った情欲をかきたてる紋章を刻みます
+	PRINTFORML (最大で４LV。LVが上がるほどに、子宮が快楽と精を求めるようになります)
+	PRINTFORML 誰に刻印しますか？　(所持雫：{ITEM:淫魔の雫}個)
+CASE 55 TO 59
+	SELECTCASE ARGS
+	CASE "調合"
+		PRINTFORML 誰に舐めさせますか？　(所持雫：{ITEM:淫魔の雫}個)
+	CASEELSE
+		PRINTFORML 誰に舐めさせますか？　(所持金：%MONEY_C(MONEY)%)
+	ENDSELECT
+;調合薬
+CASE 330 TO 340
+	PRINTFORML 誰に%ITEMNAME:BOUGHT%を使いますか？　(所持雫：{ITEM:淫魔の雫}個)
+CASEELSE
+	SELECTCASE ARGS
+	CASE "調合"
+		PRINTFORML 誰に使いますか？　(所持雫：{ITEM:淫魔の雫}個)
+	CASEELSE
+		PRINTFORML 誰に使いますか？　(所持金：%MONEY_C(MONEY)%)
+	ENDSELECT
+ENDSELECT
+
+VARSET LOCAL
+FOR LCOUNT, 1, CHARANUM
+	LOCAL:LCOUNT = 0
+
+	SELECTCASE BOUGHT
+	CASE 65
+		SIF TALENT:LCOUNT:賢い == 0 || TALENT:LCOUNT:調合知識 || JUEL:LCOUNT:習得 < ITEMPRICE:BOUGHT
+			CONTINUE
+	CASE 66
+		IF LCOUNT == MASTER
+			SIF FLAG:240
+				CONTINUE
+		ELSEIF TALENT:LCOUNT:賢い == 0 || JUEL:LCOUNT:習得 < ITEMPRICE:BOUGHT
+			CONTINUE
+		ENDIF
+	CASE 73
+		SIF TALENT:LCOUNT:オトコ || TALENT:LCOUNT:妊娠 || TALENT:LCOUNT:魔導人形 || COND("着床確認", LCOUNT)
+			CONTINUE
+	CASE 85
+		SIF LCOUNT == MASTER
+			CONTINUE
+	CASE 90
+		SIF LCOUNT == MASTER || TALENT:LCOUNT:誓約 || TALENT:LCOUNT:相思相愛
+			CONTINUE
+	CASE 91
+		SIF LCOUNT == MASTER || TALENT:LCOUNT:恋慕 == 0 || TALENT:LCOUNT:相思相愛
+			CONTINUE
+	CASE 94
+		SIF !COND("成長性", LCOUNT)
+			CONTINUE
+	;胡蝶の夢
+	CASE 95
+		SIF LCOUNT > MASTER && (COND("妊娠イベント中", LCOUNT) || MARK:LCOUNT:反発刻印 || ABL:LCOUNT:従順 < 4)
+			CONTINUE
+	;MASTERが記憶を失ってどうする…経験を失うのは面白いかも？
+	CASE 98
+		SIF LCOUNT == MASTER
+			CONTINUE
+	ENDSELECT
+
+	;登録番号・名前・体力・その他ステータスをまとめて表示
+	SELECTCASE BOUGHT
+	CASE 50
+		SIF COND(ITEMNAME:BOUGHT, LCOUNT) == 0
+			CONTINUE
+		CALL PRINT_NUM_NAME, "体力と精力", LCOUNT
+	CASE 51
+		SIF TALENT:LCOUNT:オトコ
+			CONTINUE
+		CALL PRINT_NUM_NAME, "ふたなり薬", LCOUNT
+	CASE 55 TO 59
+		SIF COND(ITEMNAME:BOUGHT, LCOUNT) == 0
+			CONTINUE
+		CALL PRINT_NUM_NAME, ITEMNAME:BOUGHT, LCOUNT
+	CASE 66
+		CALL PRINT_NUM_NAME, "調教知識", LCOUNT
+	CASE 70
+		SIF (COND("陰毛", LCOUNT) == 0 || COND("陰毛", LCOUNT) >= 7) && (COND("腋毛", LCOUNT) == 0 || COND("腋毛", LCOUNT) >= 7)
+			CONTINUE
+		CALL PRINT_NUM_NAME, "陰毛＆腋毛", LCOUNT
+	CASE 71
+		SIF COND("陰毛", LCOUNT) <= 2 && COND("腋毛", LCOUNT) <= 2
+			CONTINUE
+		CALL PRINT_NUM_NAME, "陰毛＆腋毛", LCOUNT
+	CASE 72
+		SIF TALENT:LCOUNT:オトコ || TALENT:LCOUNT:妊娠 || TALENT:LCOUNT:魔導人形 || TALENT:LCOUNT:避妊の護符 || COND("着床確認", LCOUNT)
+			CONTINUE
+		CALL PRINT_NUM_NAME, "避妊措置", LCOUNT
+	CASE 74
+		SIF TALENT:LCOUNT:オトコ || TALENT:LCOUNT:妊娠 || TALENT:LCOUNT:魔導人形 || TALENT:LCOUNT:処女 || COND("着床確認", LCOUNT)
+			CONTINUE
+		CALL PRINT_NUM_NAME, "避妊措置", LCOUNT
+	CASE 91
+		CALL PRINT_NUM_NAME, "誓約の指輪", LCOUNT
+	CASE 330 TO 333
+		SIF PENIS(LCOUNT) == 0
+			CONTINUE
+		CALL PRINT_NUM_NAME, ITEMNAME:BOUGHT, LCOUNT
+	CASE 334, 335, 339, 340
+		SIF TALENT:LCOUNT:オトコ
+			CONTINUE
+		CALL PRINT_NUM_NAME, ITEMNAME:BOUGHT, LCOUNT
+	CASE 330 TO 359
+		CALL PRINT_NUM_NAME, ITEMNAME:BOUGHT, LCOUNT
+	CASEELSE
+		CALL PRINT_NUM_NAME, "体力", LCOUNT
+	ENDSELECT
+	LOCAL:LCOUNT = 1
+NEXT
+PRINTL  [100]戻る
+
+;特殊な選択肢
+SELECTCASE BOUGHT
+CASE 72
+	MEMO = 0
+	FOR LCOUNT, 1, CHARANUM
+		SIF LOCAL:LCOUNT == 0 || COND("避妊中", LCOUNT)
+			CONTINUE
+		MEMO += 1
+	NEXT
+	IF MEMO >= 2
+		PRINTFORML  [200]妊娠の危険がある全員に配る
+		LOCAL:200 = 1
+	ENDIF
+ENDSELECT
+
+$INPUT_LOOP
+INPUT
+
+IF RESULT == 100
+	RETURN 0
+ELSEIF RESULT == 200 && LOCAL:200
+
+ELSEIF RESULT < MASTER || RESULT >= CHARANUM
+	GOTO INPUT_LOOP
+ELSEIF LOCAL:RESULT == 0
+	GOTO INPUT_LOOP
+ENDIF
+
+;選択キャラをCHOICEに保存
+CHOICE = RESULT
+
+
+;お会計はSELECTCASEの終了後なので、RESTARTさせる場合にはその前に代金を頂くこと
+SELECTCASE BOUGHT
+;元気になる薬
+CASE 50
+	PRINTFORMW ＜%NAME:CHOICE%の体力と精力が全快した＞
+
+	BASE:CHOICE:体力 = MAX(BASE:CHOICE:体力, MAXBASE:CHOICE:体力)
+	BASE:CHOICE:精力 = MAX(BASE:CHOICE:精力, MAXBASE:CHOICE:精力)
+	BASE:CHOICE:ストック = MAX(BASE:CHOICE:ストック, MAXBASE:CHOICE:ストック)
+
+	MONEY -= ITEMPRICE:BOUGHT
+
+	SIF FIND_USE_ITEM(ITEMNAME:BOUGHT)
+		RESTART
+	RETURN 0
+;ふたなり化
+CASE 51
+	IF TALENT:CHOICE:ふたなり == 0
+		PRINTFORMW ＜%NAME:CHOICE%をふたなり化した＞
+		TALENT:CHOICE:オンナ = 0
+		TALENT:CHOICE:ふたなり = 2
+		CALL EXP50_CHECK, CHOICE
+	ELSE
+		PRINTFORMW ＜%NAME:CHOICE%はふたなりではなくなった＞
+		TALENT:CHOICE:オンナ = 1
+		TALENT:CHOICE:ふたなり = 0
+	ENDIF
+	SWAP TARGET, CHOICE
+	CALL SELF_KOJO, "ふたなり薬"
+	SWAP TARGET, CHOICE
+
+	SELECTCASE ARGS
+	CASE "調合"
+		ITEM:淫魔の雫 -= 10
+	CASEELSE
+		MONEY -= ITEMPRICE:BOUGHT
+	ENDSELECT
+
+	RETURN 0
+;母乳体質にするor陥没乳首を治す
+CASE 55
+	IF TALENT:CHOICE:母乳体質 == 0
+		PRINTL  [ 0] 母乳体質にする
+	ELSE
+		CALL PRINT_STR, "灰色_ [×] 母乳体質にする_L"
+	ENDIF
+	IF COND("陥没乳首", CHOICE)
+		PRINTL  [ 1] 陥没乳首を治す
+	ELSE
+		CALL PRINT_STR, "灰色_ [×] 陥没乳首を治す_L"
+	ENDIF
+	PRINTFORML [100] 戻る
+
+	CALL INPUT_SELECT, 2, 100
+
+	IF RESULT == 100
+		RETURN 0
+	ELSEIF RESULT == 0 && TALENT:CHOICE:母乳体質 == 0
+		PRINTFORMW ＜%NAME:CHOICE%は母乳が出るようになった＞
+		TALENT:CHOICE:母乳体質 = 2
+	ELSEIF RESULT == 1 && COND("陥没乳首", CHOICE)
+		PRINTFORMW ＜%NAME:CHOICE%の陥没乳首が治った＞
+		SETBIT TALENT:CHOICE:乳首, 10
+		CLEARBIT TALENT:CHOICE:乳首, 11
+		CLEARBIT TALENT:CHOICE:乳首, 12
+	ENDIF
+
+	SELECTCASE ARGS
+	CASE "調合"
+		ITEM:淫魔の雫 -= 10
+	CASEELSE
+		MONEY -= ITEMPRICE:BOUGHT
+	ENDSELECT
+
+	SIF FIND_USE_ITEM(ITEMNAME:BOUGHT)
+		RESTART
+	RETURN 0
+
+;処女膜再生or母乳体質喪失
+CASE 56
+	IF TALENT:CHOICE:処女 == 0
+		PRINTL  [ 0] 処女膜を再生する
+	ELSE
+		CALL PRINT_STR, "灰色_ [×] 処女膜を再生する_L"
+	ENDIF
+	IF TALENT:CHOICE:母乳体質
+		PRINTL  [ 1] 母乳体質を失わせる
+	ELSE
+		CALL PRINT_STR, "灰色_ [×] 母乳体質を失わせる_L"
+	ENDIF
+	PRINTFORML [100] 戻る
+
+	CALL INPUT_SELECT, 2, 100
+
+	IF RESULT == 100
+		RETURN 0
+	ELSEIF RESULT == 0 && TALENT:CHOICE:処女 == 0
+		PRINTFORMW ＜%NAME:CHOICE%の処女膜が再生された＞
+		TALENT:CHOICE:処女 = 2
+	ELSEIF RESULT == 1 && TALENT:CHOICE:母乳体質
+		PRINTFORMW ＜%NAME:CHOICE%は母乳体質を失った＞
+		TALENT:CHOICE:母乳体質 = 0
+	ENDIF
+
+	SELECTCASE ARGS
+	CASE "調合"
+		ITEM:淫魔の雫 -= 10
+	CASEELSE
+		MONEY -= ITEMPRICE:BOUGHT
+	ENDSELECT
+
+	SIF FIND_USE_ITEM(ITEMNAME:BOUGHT)
+		RESTART
+	RETURN 0
+;性転換
+CASE 57
+	CALL CHANGE_SEX, CHOICE
+	IF TALENT:CHOICE:ふたなり
+		PRINTFORM ＜%NAME:CHOICE%はふたなり
+	ELSEIF TALENT:CHOICE:オンナ
+		PRINTFORM ＜%NAME:CHOICE%はオンナ
+	ELSE
+		PRINTFORM ＜%NAME:CHOICE%はオトコ
+	ENDIF
+	PRINTFORMW に\@ CFLAG:CHOICE:4 ? なりました # 戻りました \@＞
+	IF TALENT:CHOICE:オトコ
+		PRINTL 
+		PRINTFORML ……%CALLNAME:CHOICE%をいわゆる"男の娘"にしますか？
+		PRINTFORML [ 0] 男の娘にする\@ TALENT:CHOICE:長身 ? (長身は失います) # \@
+		PRINTFORML [ 1] しない
+		CALL INPUT_SELECT, 2
+		IF RESULT == 0
+			TALENT:CHOICE:男の娘 = 1
+			SIF TALENT:CHOICE:長身
+				CALL CALC, "普通体型化", CHOICE
+			PRINTFORMW ＜%CALLNAME:CHOICE%は"男の娘"になりました＞
+		ENDIF
+		PRINTL 
+	ENDIF
+	CALL SET_3SIZE, CHOICE
+
+	SWAP TARGET, CHOICE
+	CALL SELF_KOJO, "黒いドロップ"
+	SWAP TARGET, CHOICE
+
+	SELECTCASE ARGS
+	CASE "調合"
+		ITEM:淫魔の雫 -= 10
+	CASEELSE
+		MONEY -= ITEMPRICE:BOUGHT
+	ENDSELECT
+
+	RETURN 0
+;治療
+CASE 58
+	PRINTFORM ＜%NAME:CHOICE%は
+	IF TALENT:CHOICE:おもらし癖 > 0
+		PRINTFORM %TALENTNAME:57%
+		TALENT:CHOICE:おもらし癖 -= 1
+		;次になるのは、50回お漏らしを追加でした時とする
+		CFLAG:CHOICE:34 = EXP:CHOICE:お漏らし経験 + 20
+		SIF TALENT:CHOICE:Ｖ損傷 + TALENT:CHOICE:Ａ損傷 > 0
+			PRINT と
+	ENDIF
+	IF TALENT:CHOICE:Ｖ損傷 + TALENT:CHOICE:Ａ損傷 > 0
+		TALENT:CHOICE:Ｖ損傷 = 0
+		TALENT:CHOICE:Ａ損傷 = 0
+		PRINTFORM 体内の損傷
+	ENDIF
+	PRINTFORMW が治った＞
+	CALL GET_EXABL2, CHOICE
+
+	SELECTCASE ARGS
+	CASE "調合"
+		ITEM:淫魔の雫 -= 10
+	CASEELSE
+		MONEY -= ITEMPRICE:BOUGHT
+	ENDSELECT
+
+	RETURN 0
+;調合知識
+CASE 65
+	PRINTFORMW ＜%NAME:CHOICE%は調合知識を得た＞
+	TALENT:CHOICE:調合知識 = 1
+	JUEL:CHOICE:習得 -= ITEMPRICE:BOUGHT
+CASE 66
+	CHOICE:1 = TALENT:CHOICE:調教知識
+	CALL SETFLAG, "調教知識の選択", CHOICE
+	SIF TALENT:CHOICE:調教知識 == CHOICE:1
+		RESTART
+;陰毛を生やす
+CASE 70
+	IF COND("陰毛", CHOICE) == 0 || COND("陰毛", CHOICE) >= 7
+		RESULT = 1
+	ELSEIF COND("腋毛", CHOICE) == 0 || COND("腋毛", CHOICE) >= 7
+		RESULT = 0
+	ELSE
+		PRINTFORML 陰毛と%TEXTS("腋")%毛のどちらを育毛しますか？
+		PRINTFORML [ 0] 陰毛
+		PRINTFORML [ 1] %TEXTS("腋")%毛
+		CALL INPUT_SELECT, 2
+	ENDIF
+	IF RESULT == 0
+		PRINTFORMW ＜%NAME:CHOICE%のアソコの毛を伸ばしました＞
+		SELECTCASE COND("陰毛", CHOICE)
+		CASE IS <= 5
+			BASE:CHOICE:陰毛 = 600
+		CASE 6
+			BASE:CHOICE:陰毛 = 700
+		ENDSELECT
+	ELSE
+		PRINTFORMW ＜%NAME:CHOICE%の%TEXTS("腋")%毛を伸ばしました＞
+		BASE:CHOICE:腋毛 = 700
+	ENDIF
+	SIF TALENT:CHOICE:魔導人形
+		PRINTFORMW ただし、%NAME:CHOICE%は魔導人形のため伸びたりはしません。自発的にお手入れもしません。
+;陰毛を失くす
+CASE 71
+	IF COND("陰毛", CHOICE) <= 2
+		RESULT = 1
+	ELSEIF COND("腋毛", CHOICE) <= 2
+		RESULT = 0
+	ELSE
+		PRINTFORML 陰毛と%TEXTS("腋")%毛のどちらを脱毛しますか？
+		PRINTFORML [ 0] 陰毛
+		PRINTFORML [ 1] %TEXTS("腋")%毛
+		CALL INPUT_SELECT, 2
+	ENDIF
+	IF RESULT == 0
+		PRINTFORMW ＜%NAME:CHOICE%のアソコの毛を脱毛しました＞
+		BASE:CHOICE:陰毛 = 200
+		;魔導人形なら、パイパン化
+		SIF TALENT:CHOICE:魔導人形
+			BASE:CHOICE:陰毛 = 100
+	ELSE
+		PRINTFORMW ＜%NAME:CHOICE%の%TEXTS("腋")%毛を脱毛しました＞
+		BASE:CHOICE:腋毛 = 200
+		SIF TALENT:CHOICE:魔導人形
+			BASE:CHOICE:腋毛 = 100
+	ENDIF
+;避妊薬
+CASE 72
+	SELECTCASE CHOICE
+	;全員に配る場合
+	CASE 200
+		MEMO = 0
+		FOR LCOUNT, 1, CHARANUM
+			SIF LOCAL:LCOUNT == 0 || COND("避妊中", LCOUNT)
+				CONTINUE
+			MEMO += 1
+		NEXT
+		PRINTFORML 避妊をしていない人数が{MEMO}人なので%MONEY_C(ITEMPRICE:BOUGHT * MEMO)%が必要です
+		;お金が足りている
+		IF MONEY >= ITEMPRICE:BOUGHT*MEMO
+			PRINTFORML [ 0] 一括購入する　(購入後の所持金：%MONEY_C(MONEY - ITEMPRICE:BOUGHT*MEMO)%)
+			PRINTFORML [ 1] やっぱり買わない
+			CALL INPUT_SELECT, 2
+			IF RESULT == 0
+				MONEY -= ITEMPRICE:BOUGHT*MEMO
+				FOR LCOUNT, 1, CHARANUM
+					SIF LOCAL:LCOUNT == 0 || COND("避妊中", LCOUNT)
+						CONTINUE
+					TALENT:LCOUNT:避妊薬服用 += 10
+				NEXT
+				PRINTFORMW ＜避妊薬を購入して配りました＞
+			ENDIF
+		ELSE
+			PRINTW …どうやら所持金が足りないようですね
+		ENDIF
+	CASEELSE
+		TALENT:CHOICE:避妊薬服用 += 10
+		IF CHOICE == MASTER
+			PRINTFORMW ＜%NAME:CHOICE%の避妊期間が{TALENT:CHOICE:避妊薬服用}日になった＞
+		ELSE
+			PRINTFORMW ＜%NAME:CHOICE%に避妊薬を渡しました。避妊期間が{TALENT:CHOICE:避妊薬服用}日になった＞
+		ENDIF
+
+		SWAP TARGET, CHOICE
+		CALL SELF_KOJO, "避妊薬"
+		SWAP TARGET, CHOICE
+
+		MONEY -= ITEMPRICE:BOUGHT
+	ENDSELECT
+	IF MONEY >= ITEMPRICE:BOUGHT
+		RESTART
+	ELSE
+		RETURN 0
+	ENDIF
+;緊急用避妊薬
+CASE 73
+	CALL SETFLAG, "避妊", CHOICE
+	PRINTFORMW ＜%NAME:CHOICE%の妊娠の危険をなくしました＞
+
+	SWAP TARGET, CHOICE
+	CALL SELF_KOJO, "緊急用避妊薬"
+	SWAP TARGET, CHOICE
+;避妊の護符
+CASE 74
+	;付けている場合には外す
+	IF TALENT:CHOICE:避妊の護符
+		PRINTFORMW ＜%NAME:CHOICE%の子宮口から垂れている紐を引っ張って、避妊の護符を破壊しました＞
+		TALENT:CHOICE:避妊の護符 = 0
+	ELSE
+		PRINTFORML ＜%NAME:CHOICE%の子宮内に避妊の護符を装着しました＞
+		PRINTFORMW 子宮口からは、引っぱる事で護符を取り除く事が出来る柔らかい紐が垂れています…
+		;即座に避妊の効果が出る
+		CALL SETFLAG, "避妊", CHOICE
+		TALENT:CHOICE:避妊の護符 = 1
+		MONEY -= ITEMPRICE:BOUGHT
+	ENDIF
+
+	SWAP TARGET, CHOICE
+	CALL SELF_KOJO, "避妊の護符"
+	SWAP TARGET, CHOICE
+
+	;避妊薬は回収
+	IF TALENT:CHOICE:避妊薬服用 > 0
+		PRINTL 
+		PRINTFORML 必要なくなった避妊薬を換金しました。
+		PRINTFORMW 所持金＋%MONEY_C(TALENT:CHOICE:避妊薬服用*150)%
+		MONEY += TALENT:CHOICE:避妊薬服用*150
+		TALENT:CHOICE:避妊薬服用 = 0
+	ENDIF
+
+	IF MONEY >= ITEMPRICE:BOUGHT
+		RESTART
+	ELSE
+		RETURN 0
+	ENDIF
+;誓約の巻物
+CASE 90
+	PRINTFORMW ＜%NAME:CHOICE%を売却できなくなりました＞
+	TALENT:CHOICE:誓約 = 1
+
+	SWAP TARGET, CHOICE
+	CALL SELF_KOJO, "誓約の巻物"
+	SWAP TARGET, CHOICE
+;誓約の指輪
+CASE 91
+	PRINTFORMW ＜%NAME:CHOICE%に指輪を贈りました＞
+	TALENT:CHOICE:誓約 = 0
+	TALENT:CHOICE:相思相愛 = 1
+	TALENT:MASTER:相思相愛 = 1
+
+	;告白イベント
+	SWAP TARGET, CHOICE
+	CALL SELF_KOJO, "誓約の指輪"
+	SWAP TARGET, CHOICE
+
+	SETCOLOR DEF_COLOR("イエロー")
+	PRINTL 
+	PRINTFORMW %CALLNAME:CHOICE%と相思相愛になりました！
+	RESETCOLOR
+	;指輪をとっておく
+	ITEM:誓約の指輪 += 1
+;歪んだ時計
+CASE 94
+	PRINTFORML ＜%NAME:CHOICE%の時は進みました＞
+	PRINTFORMW 一人前になるために十分な経験を積めば、新たな成長の可能性が見えるでしょう……
+	SETBIT CFLAG:CHOICE:484, 0
+;胡蝶の夢（体の入れ換え）
+CASE 95
+	CALL KOTYOUNOYUME, CHOICE
+	;胡蝶の夢を使わなかった
+	SIF ITEM:胡蝶の夢 == 0
+		RETURN 0
+;記憶消去薬
+CASE 98
+	PRINTFORMW ＜%NAME:CHOICE%は今までのことを忘れました＞
+	CALL MEMORY_LOST, CHOICE
+;身体変化系の効果
+CASE 330 TO 349
+	SIF COND(ITEMNAME:BOUGHT, CHOICE) == 0
+		RESTART
+
+	;元の体型を記憶
+	LOCALS = %CONDS("体型", CHOICE)%
+
+	SELECTCASE BOUGHT
+	CASE 330
+		IF GETBIT(TALENT:CHOICE:ペニス, 4)
+			SETBIT TALENT:CHOICE:ペニス, 5
+			CLEARBIT TALENT:CHOICE:ペニス, 4
+		ELSEIF GETBIT(TALENT:CHOICE:ペニス, 3)
+			SETBIT TALENT:CHOICE:ペニス, 4
+			CLEARBIT TALENT:CHOICE:ペニス, 3
+		ELSEIF GETBIT(TALENT:CHOICE:ペニス, 2)
+			SETBIT TALENT:CHOICE:ペニス, 3
+			CLEARBIT TALENT:CHOICE:ペニス, 2
+		ELSEIF GETBIT(TALENT:CHOICE:ペニス, 1)
+			SETBIT TALENT:CHOICE:ペニス, 0
+			CLEARBIT TALENT:CHOICE:ペニス, 1
+		ELSEIF GETBIT(TALENT:CHOICE:ペニス, 0)
+			SETBIT TALENT:CHOICE:ペニス, 2
+			CLEARBIT TALENT:CHOICE:ペニス, 0
+		ENDIF
+		PRINTFORMW ＜%NAME:CHOICE%のペニスの大きさは[%TALENT_NAME(2, TALENT:CHOICE:ペニス, CHOICE)%]になりました＞
+	CASE 331
+		IF GETBIT(TALENT:CHOICE:ペニス, 5)
+			SETBIT TALENT:CHOICE:ペニス, 4
+			CLEARBIT TALENT:CHOICE:ペニス, 5
+		ELSEIF GETBIT(TALENT:CHOICE:ペニス, 4)
+			SETBIT TALENT:CHOICE:ペニス, 3
+			CLEARBIT TALENT:CHOICE:ペニス, 4
+		ELSEIF GETBIT(TALENT:CHOICE:ペニス, 3)
+			SETBIT TALENT:CHOICE:ペニス, 2
+			CLEARBIT TALENT:CHOICE:ペニス, 3
+		ELSEIF GETBIT(TALENT:CHOICE:ペニス, 2)
+			SETBIT TALENT:CHOICE:ペニス, 0
+			CLEARBIT TALENT:CHOICE:ペニス, 2
+		ELSEIF GETBIT(TALENT:CHOICE:ペニス, 0)
+			SETBIT TALENT:CHOICE:ペニス, 1
+			CLEARBIT TALENT:CHOICE:ペニス, 0
+		ENDIF
+		PRINTFORMW ＜%NAME:CHOICE%のペニスの大きさは[%TALENT_NAME(2, TALENT:CHOICE:ペニス, CHOICE)%]になりました＞
+	CASE 332
+		IF GETBIT(TALENT:CHOICE:ペニス, 12)
+			SETBIT TALENT:CHOICE:ペニス, 11
+			CLEARBIT TALENT:CHOICE:ペニス, 12
+		ELSEIF GETBIT(TALENT:CHOICE:ペニス, 11)
+			CLEARBIT TALENT:CHOICE:ペニス, 11
+		ENDIF
+		PRINTFORMW ＜%NAME:CHOICE%のペニスの状態は[%TALENT_NAME(2, TALENT:CHOICE:ペニス, CHOICE)%]になりました＞
+	CASE 333
+		IF GETBIT(TALENT:CHOICE:ペニス, 11)
+			SETBIT TALENT:CHOICE:ペニス, 12
+			CLEARBIT TALENT:CHOICE:ペニス, 11
+		ELSE
+			SETBIT TALENT:CHOICE:ペニス, 11
+		ENDIF
+		PRINTFORMW ＜%NAME:CHOICE%のペニスの状態は[%TALENT_NAME(2, TALENT:CHOICE:ペニス, CHOICE)%]になりました＞
+	CASE 334
+		IF TALENT:CHOICE:巨乳 >= 2
+			PRINTFORMW ＜%NAME:CHOICE%の胸のサイズは、ありえない大きさの超乳になりました＞
+			CALL CALC, "超乳化", CHOICE
+		ELSEIF TALENT:CHOICE:巨乳
+			PRINTFORMW ＜%NAME:CHOICE%の胸のサイズは、はちきれんばかりの爆乳になりました＞
+			CALL CALC, "爆乳化", CHOICE
+		ELSEIF TALENT:CHOICE:貧乳
+			PRINTFORMW ＜%NAME:CHOICE%の胸のサイズは特に希少価値も無い並の大きさになりました＞
+			CALL CALC, "並乳化", CHOICE
+		ELSE
+			PRINTFORMW ＜%NAME:CHOICE%の胸のサイズは[巨乳]になりました＞
+			CALL CALC, "巨乳化", CHOICE
+		ENDIF
+	CASE 335
+		IF TALENT:CHOICE:巨乳 >= 3
+			PRINTFORMW ＜%NAME:CHOICE%の胸のサイズは[爆乳]になりました＞
+			CALL CALC, "爆乳化", CHOICE
+		ELSEIF TALENT:CHOICE:巨乳 == 2
+			PRINTFORMW ＜%NAME:CHOICE%の胸のサイズは[巨乳]になりました＞
+			CALL CALC, "巨乳化", CHOICE
+		ELSEIF TALENT:CHOICE:巨乳
+			PRINTFORMW ＜%NAME:CHOICE%の胸のサイズは巨乳から一転して並の大きさになりました＞
+			CALL CALC, "並乳化", CHOICE
+		ELSE
+			PRINTFORMW ＜%NAME:CHOICE%の胸のサイズは[貧乳]になりました＞
+			CALL CALC, "貧乳化", CHOICE
+		ENDIF
+	CASE 336
+		IF TALENT:CHOICE:小柄体型
+			PRINTFORMW ＜%NAME:CHOICE%は[小柄体型]を失いました＞
+			CALL CALC, "普通体型化", CHOICE
+		ELSE
+			PRINTFORMW ＜%NAME:CHOICE%は[長身]を得ました＞
+			CALL CALC, "長身化", CHOICE
+			SIF TALENT:CHOICE:男の娘
+				PRINTFORMW ＜…流石に男の娘というのは無理がありそうです＞
+		ENDIF
+	CASE 337
+		IF TALENT:CHOICE:長身
+			PRINTFORMW ＜%NAME:CHOICE%は[長身]を失いました＞
+			CALL CALC, "普通体型化", CHOICE
+		ELSE
+			PRINTFORMW ＜%NAME:CHOICE%は[小柄体型]になりました＞
+			CALL CALC, "小柄化", CHOICE
+		ENDIF
+	CASE 338
+		PRINTFORM 現在[{CHOICE, 2}]%CALLNAME:CHOICE%の肌の色は
+		IF TALENT:CHOICE:肌の色
+			PRINTFORML %CONDS("肌の色", CHOICE)%です
+		ELSE
+			PRINTFORML 普通の色です
+		ENDIF
+		PRINTFORML どの色に変化させますか？
+		PRINTFORML  [ 0] 普通の色
+		PRINTFORML  [ 1] 褐色
+		PRINTFORML  [ 2] 色白
+		PRINTFORML  [ 3] 青
+		PRINTFORML [100] やっぱり変化させない
+		CALL INPUT_SELECT, 4, 100
+		SELECTCASE RESULT
+		CASE 100
+			RETURN 0
+		CASE 0
+			PRINTFORMW ＜%CALLNAME:CHOICE%の肌の色を言わゆる[肌色]に変化させました＞
+		CASE 1
+			PRINTFORMW ＜%CALLNAME:CHOICE%の肌の色を健康そうな[褐色]に変化させました＞
+		CASE 2
+			PRINTFORMW ＜%CALLNAME:CHOICE%の肌の色を抜けるような[色白]に変化させました＞
+		CASE 3
+			PRINTFORMW ＜%CALLNAME:CHOICE%の肌の色を普通ではお目にかかりづらい[青]に変化させました＞
+		ENDSELECT
+		IF TALENT:CHOICE:肌の色 == RESULT
+			PRINTFORMW …って元の色と同じですね。素材はお返しします
+			RETURN 0
+		ELSE
+			TALENT:CHOICE:肌の色 = RESULT
+		ENDIF
+	CASE 339
+		PRINTFORM ＜%NAME:CHOICE%のお尻が{BASE:CHOICE:ヒップ}cmから{BASE:CHOICE:身長*3/100}cm大きくなって、
+		BASE:CHOICE:ヒップ += BASE:CHOICE:身長*3/100
+		PRINTFORMW {BASE:CHOICE:ヒップ}cmになりました＞
+		IF TALENT:CHOICE:巨尻 == 2
+			CALL SETFLAG, "ヒップ設定", CHOICE
+			SIF TALENT:CHOICE:巨尻 != 2
+				PRINTFORMW ＜%NAME:CHOICE%は[%CONDS("お尻", CHOICE)%]になりました＞
+		ELSEIF TALENT:CHOICE:巨尻 == 1
+			CALL SETFLAG, "ヒップ設定", CHOICE
+			SIF TALENT:CHOICE:巨尻 != 1
+				PRINTFORMW ＜%NAME:CHOICE%は[%CONDS("お尻", CHOICE)%]になりました＞
+		ELSEIF TALENT:CHOICE:小尻
+			CALL SETFLAG, "ヒップ設定", CHOICE
+			SIF TALENT:CHOICE:小尻 == 0
+				PRINTFORMW ＜%NAME:CHOICE%は[小尻]を失いました＞
+		ELSEIF TALENT:CHOICE:巨尻 == 0
+			CALL SETFLAG, "ヒップ設定", CHOICE
+			SIF TALENT:CHOICE:巨尻 != 0
+				PRINTFORMW ＜%NAME:CHOICE%は[%CONDS("お尻", CHOICE)%]になりました＞
+		ENDIF
+	CASE 340
+		PRINTFORM ＜%NAME:CHOICE%のお尻が{BASE:CHOICE:ヒップ}cmから{BASE:CHOICE:身長*3/100}cm小さくなって、
+		BASE:CHOICE:ヒップ -= BASE:CHOICE:身長*3/100
+		PRINTFORMW {BASE:CHOICE:ヒップ}cmになりました＞
+		IF TALENT:CHOICE:巨尻 == 3
+			CALL SETFLAG, "ヒップ設定", CHOICE
+			SIF TALENT:CHOICE:巨尻 != 3
+				PRINTFORMW ＜%NAME:CHOICE%は[超尻]を失いました＞
+		ELSEIF TALENT:CHOICE:巨尻 == 2
+			CALL SETFLAG, "ヒップ設定", CHOICE
+			SIF TALENT:CHOICE:巨尻 != 2
+				PRINTFORMW ＜%NAME:CHOICE%は[爆尻]を失いました＞
+		ELSEIF TALENT:CHOICE:巨尻 == 1
+			CALL SETFLAG, "ヒップ設定", CHOICE
+			SIF TALENT:CHOICE:巨尻 != 1
+				PRINTFORMW ＜%NAME:CHOICE%は[巨尻]を失いました＞
+		ELSEIF TALENT:CHOICE:小尻 == 0
+			CALL SETFLAG, "ヒップ設定", CHOICE
+			SIF TALENT:CHOICE:小尻
+				PRINTFORMW ＜%NAME:CHOICE%は[%CONDS("お尻", CHOICE)%]になりました＞
+		ENDIF
+	ENDSELECT
+	;3サイズをチェック
+	CALL SET_3SIZE, CHOICE
+
+	IF LOCALS != CONDS("体型", CHOICE)
+		PRINTFORM ＜変化に伴い、%NAME:CHOICE%の体型は
+		SETCOLOR DEF_COLOR("黄色")
+		PRINTFORM [%CONDS("体型", CHOICE)%]
+		RESETCOLOR
+		PRINTFORMW となりました＞
+	ENDIF
+
+	SWAP TARGET, CHOICE
+	CALL SELF_KOJO, ITEMNAME:BOUGHT
+	SWAP TARGET, CHOICE
+
+	ITEM:淫魔の雫 -= ITEMPRICE:BOUGHT
+
+	;所持雫が足りていて、使う対象が居るならもう一回キャラリスト表示
+	IF ITEM:淫魔の雫 >= ITEMPRICE:BOUGHT
+		FOR LCOUNT, 1, CHARANUM
+			SIF COND(ITEMNAME:BOUGHT, LCOUNT) == 0
+				CONTINUE
+
+			RESTART
+		NEXT
+	ENDIF
+
+	RETURN 0
+
+;淫紋
+CASE 350
+	SIF COND("淫紋刻印可能", CHOICE) == 0
+		RESTART
+
+	;吸精体質の上昇判定などに使う
+	MEMO = TALENT:CHOICE:吸精体質
+	MEMO:1 = COND("子宮口弛緩度", CHOICE)
+
+	SELECTCASE MARK:CHOICE:淫紋
+	CASE 0
+		PRINTFORMW 淫魔の雫を用いて、%NAME:CHOICE%の下腹部に可愛らしいハート型の紋章を刻みました
+	CASE 1
+		PRINTFORMW 既に刻まれているハートのワンポイントに装飾を加え、%NAME:CHOICE%の子宮を象った文様を彫り込みました
+	CASE 2
+		PRINTFORMW %NAME:CHOICE%の下腹部…まさに子宮のある場所に彫り込まれた刻印に、卵管と卵巣を示す模様を描き加えました
+	CASE 3
+		PRINTFORMW %NAME:CHOICE%の子宮を透かしたかの様な淫靡な紋章に、子宮頸部を具象した紋様を彫り足して淫紋を完成させました
+	CASE 4
+		GOTO INPUT_LOOP
+	ENDSELECT
+
+	MARK:CHOICE:淫紋 += 1
+	TALENT:CHOICE:吸精体質 = SET_EXTALENT("吸精体質", CHOICE)
+
+	SWAP TARGET, CHOICE
+	CALL SELF_KOJO, "淫紋"
+	SWAP TARGET, CHOICE
+
+	SETCOLOR DEF_COLOR("ハートピンク")
+	PRINTFORMW ＜%NAME:CHOICE%は淫紋LV{MARK:CHOICE:淫紋}を得た＞
+	RESETCOLOR
+
+	;素質の変化
+	IF TALENT:CHOICE:濡れにくい
+		TALENT:CHOICE:濡れにくい = 0
+		PRINTFORMW ＜%NAME:CHOICE%は[濡れにくい]を失った＞
+	ENDIF
+	IF TALENT:CHOICE:Ｖ鈍感 && MARK:CHOICE:淫紋 >= 4
+		TALENT:CHOICE:Ｖ鈍感 = 1
+		PRINTFORMW ＜%NAME:CHOICE%は[Ｖ鈍感]を失った＞
+	ENDIF
+
+	IF TALENT:CHOICE:濡れやすい == 0 && MARK:CHOICE:淫紋 >= 2
+		TALENT:CHOICE:濡れやすい = 1
+		PRINTFORMW ＜%NAME:CHOICE%は[濡れやすい]を得た＞
+	ENDIF
+	IF TALENT:CHOICE:子宮性感 == 0 && MARK:CHOICE:淫紋 >= 2
+		TALENT:CHOICE:子宮性感 = 1
+		PRINTFORMW ＜%NAME:CHOICE%は[子宮性感]を得た＞
+	ENDIF
+
+	IF TALENT:CHOICE:吸精体質 > MEMO
+		PRINTFORMW ＜%NAME:CHOICE%の吸精体質はLV{TALENT:CHOICE:吸精体質}へと上昇した＞
+	ENDIF
+	IF COND("子宮口弛緩度", CHOICE) > MEMO:1
+		PRINTFORMW ＜%NAME:CHOICE%の子宮口の柔軟性が上昇した＞
+	ENDIF
+
+	ITEM:淫魔の雫 -= ITEMPRICE:BOUGHT
+
+	;所持雫が足りていて、使う対象が居るならもう一回キャラリスト表示
+	IF ITEM:淫魔の雫 >= ITEMPRICE:BOUGHT
+		FOR LCOUNT, 1, CHARANUM
+			SIF TALENT:LCOUNT:オトコ || COND("妊娠イベント中", LCOUNT)
+				CONTINUE
+			RESTART
+		NEXT
+	ENDIF
+
+	RETURN 0
+ENDSELECT
+
+;代金はここで支払う（一部例外あり）
+MONEY -= ITEMPRICE:BOUGHT
+

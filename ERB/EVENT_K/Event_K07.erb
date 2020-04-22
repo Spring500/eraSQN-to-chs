@@ -1,0 +1,3744 @@
+﻿;-------------------------------------------------
+;ワーウルフ口上_2008_008_11（キャラクターの名前を入れる、下にコンセプトなど一言あれば入れる）
+;製作者　eraSQ製作スレッド>>963
+;とりあえず最初からそれなりになついているっぽいです、かなり犬っぽくなってしまいました
+;なんていうか屈服刻印3ついてからは完全に犬です･･･誰か狼らしく書いてください･･･
+;-------------------------------------------------
+;EVENTTRAIN関係（X1をキャラ番号に置換）
+;調教開始時のセリフ CFLAG 201〜210を使用
+;-------------------------------------------------
+@EVENTTRAIN
+SIF NO:TARGET != 7
+	RETURN 1
+SIF CFLAG:209 != 1
+	RETURN 1
+;-------------------------------------------------
+;※カウンター行動のフラグON／OFF　CFLAG:9
+;CFLAG:9 = 1 に変更するとOFF
+;-------------------------------------------------
+;CFLAG:9 = 1
+
+;-------------------------------------------------
+;初調教時 CFLAG201
+;-------------------------------------------------
+IF GETBIT(CFLAG:201, 0) == 0
+	DRAWLINE
+	PRINTFORMW %CALLNAME:PLAYER%が部屋の扉を開けると、突然人間大の何かが飛び掛ってきた
+	PRINTFORMW 「ガォン、ガォン！　ぢゅっ、ぢゅるっ、ぢゅるるっ！」
+	PRINTFORMW それは%CALLNAME:PLAYER%の上に誇ると顔を嘗め回し始めた！
+	PRINTFORMW 「ぢゅるるっ！　ガォンッ、ガウッ！」
+	PRINTFORMW それは%CALLNAME:PLAYER%が買った%CALLNAME:TARGET%だった、少し表情は硬いが意外と人懐っこいようだ
+	PRINTFORMW これは少し楽かもしれないな…%CALLNAME:PLAYER%はそんなことを考えた。
+	SETBIT CFLAG:201, 0
+	RETURN 1
+
+;-------------------------------------------------
+;調教開始時（一回のみ） CFLAG201
+;-------------------------------------------------
+;反発刻印Lv3
+ELSEIF MARK:反発刻印 == 3
+	CALL K7_KOJO2_1
+;屈服刻印Lv1
+ELSEIF GETBIT(CFLAG:201, 1) == 0 && MARK:屈服刻印 == 1
+	DRAWLINE
+	PRINTFORMW %CALLNAME:PLAYER%が扉を開くと部屋の真ん中で%CALLNAME:TARGET%は犬のおもちゃをかじっている
+	PRINTFORMW %CALLNAME:PLAYER%が近づいても%CALLNAME:TARGET%は齧るのをやめない
+	PRINTFORMW 仕方ないので%CALLNAME:PLAYER%は%CALLNAME:TARGET%をベットの上まで運び込んだ。
+	SETBIT CFLAG:201, 1
+	RETURN 1
+;屈服刻印Lv2
+ELSEIF GETBIT(CFLAG:201, 2) == 0 && MARK:屈服刻印 == 2
+	DRAWLINE
+	PRINTFORMW 扉を開くと%CALLNAME:TARGET%が尻尾を振って、待ち構えていた
+	PRINTFORMW 「ガルル･･･ガォン！ガウッ！」
+	PRINTFORMW %CALLNAME:PLAYER%が%CALLNAME:TARGET%を撫でてやると%CALLNAME:TARGET%は嬉しそうにしている
+	PRINTFORMW ･･･なんか犬の調教師みたいになってきたな、と%CALLNAME:PLAYER%は思った。
+	SETBIT CFLAG:201, 2
+	RETURN 1
+;屈服刻印Lv3
+ELSEIF GETBIT(CFLAG:201, 3) == 0 && MARK:屈服刻印 == 3 && TALENT:恋慕 == 0
+	DRAWLINE
+	PRINTFORMW %CALLNAME:PLAYER%は部屋の外で%CALLNAME:TARGET%の様子を伺っている。
+	PRINTFORMW 「くぅーん･･･わんっ･･･わんっ」
+	PRINTFORMW どうやら%CALLNAME:TARGET%は気配を察してはいるが自分からは顔を出そうとしないようだ。
+	PRINTFORMW 調教の成果･･･なのだろうか？
+	SETBIT CFLAG:201, 3
+	RETURN 1
+;屈服刻印Lv3+恋慕
+ELSEIF GETBIT(CFLAG:201, 4) == 0 && TALENT:恋慕
+	DRAWLINE
+	PRINTFORMW %CALLNAME:PLAYER%が部屋に入るとそれまで眠っていたであろう%CALLNAME:TARGET%が飛びついてきた
+	PRINTFORMW 「わんっ！わんっ！わんっ！」
+	PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%の胸に顔をこすり付けている。
+	PRINTFORMW %CALLNAME:PLAYER%は%CALLNAME:TARGET%の頭を撫でると、ベッドに運び込んだ。
+	SETBIT CFLAG:201, 4
+	RETURN 1
+;助手の有無をチェック（いない場合は二回目以降へ飛ぶ）
+ELSEIF ASSI <= 0
+	CALL K7_KOJO2_1
+
+;口上のある助手が居ない場合は、通常の二回目以降の口上へ飛ぶ
+ELSE
+	CALL K7_KOJO2_1
+ENDIF
+
+;-------------------------------------------------
+;調教開始時（2回目以降、X1をキャラ番号に変更する） CFLAGなし 
+;-------------------------------------------------
+@K7_KOJO2_1
+;反発刻印Lv3
+IF MARK:反発刻印 == 3
+	DRAWLINE
+	PRINTFORMW 「グルルルルルッ!」
+	PRINTFORMW %CALLNAME:TARGET%はかなり警戒しているようだ･･･気をつけないと危ないかもしれない。
+	RETURN 1
+;屈服刻印Lv0
+ELSEIF MARK:屈服刻印 == 0
+	DRAWLINE
+	PRINTFORMW 「ガウッ、ガウッ！」
+	PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%が部屋にはいっても遊んでいる
+	PRINTFORMW いろんな意味で調教が必要なようだ。
+	RETURN 1
+;屈服刻印Lv1
+ELSEIF MARK:屈服刻印 == 1
+	DRAWLINE
+	PRINTFORMW 「ガルル･･･、ガウッ、ガウッ！」
+	PRINTFORMW %CALLNAME:TARGET%は部屋中を駆け回っている
+	PRINTFORMW 「わんっ、わんっ、きゃんっ！？」
+	PRINTFORMW %CALLNAME:PLAYER%はベッドの近くに来た%CALLNAME:TARGET%を捕まえて抱き上げた。
+	RETURN 1
+;屈服刻印Lv2
+ELSEIF MARK:屈服刻印 == 2
+	DRAWLINE
+	PRINTFORMW 「ガウッ！ガォン！ガォン！」
+	PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%が声をかけると遊ぶのをやめてベッドにすわりこんだ
+	PRINTFORMW 躾はうまくいっているようだ。
+	RETURN 1
+;屈服刻印Lv3＋恋慕無し
+ELSEIF MARK:屈服刻印 == 3 && TALENT:恋慕 == 0
+	DRAWLINE
+	PRINTFORMW 「くぅ〜ん、わん、わふぅ、わんっ･･････きゃんっ！？」
+	PRINTFORMW どうやら%CALLNAME:TARGET%はオナニーをしてたようだ
+	PRINTFORMW %CALLNAME:PLAYER%が来ると驚いた様子でベットに潜り込んだ。
+	RETURN 1
+;屈服刻印Lv3+恋慕
+ELSEIF TALENT:恋慕
+	DRAWLINE
+	;ランダムで口上が変化する（使わない場合はすべて同じにすればよい）
+	IF RAND:3 == 0
+		PRINTFORMW 「わんっ、わんっ、わんっ！」
+		PRINTFORMW %CALLNAME:TARGET%は今日も絶好調だ。
+	ELSEIF RAND:2 == 0
+		PRINTFORMW 「くぅ〜ん、わん･･･わんっ」
+		PRINTFORMW %CALLNAME:PLAYER%が%CALLNAME:TARGET%に近づくと%CALLNAME:TARGET%は濡れそぼったアソコを開いて見せ付けている
+		PRINTFORMW %CALLNAME:PLAYER%は%CALLNAME:TARGET%に口付けをすると、そのまま押し倒した。
+	ELSE
+		PRINTFORMW 「はっ、はっ、はっ･･･きゅぅぅぅぅん、わんわんっ！」
+		PRINTFORMW %CALLNAME:TARGET%の顔が紅潮している、興奮しているようだ。
+	ENDIF
+	RETURN 1
+ENDIF
+RETURN 1
+
+;-------------------------------------------------
+;EVENTEND関係（X1をキャラ番号に置換）
+;調教終了時のセリフ CFLAG 211〜220を使用
+;-------------------------------------------------
+@EVENTEND
+SIF NO:TARGET != 7
+	RETURN 1
+SIF CFLAG:209 != 1
+	RETURN 1
+;-------------------------------------------------
+;※精力限界値を超えた場合の終了口上　CFLAG451
+;精力0でこちらがダウンしたときはCFLAG451で分岐
+;-------------------------------------------------
+;調教強制終了時の口上
+IF STATE("撃沈", MASTER)
+	DRAWLINE
+	;反発刻印LV3
+	IF MARK:反発刻印 == 3
+		PRINTFORMW 
+	;恋慕
+	ELSEIF TALENT:恋慕
+		PRINTFORMW 「わぅ？…ぅ？」
+		PRINTFORMW %CALLNAME:TARGET%は倒れた%CALLNAME:PLAYER%をしばらくの間不安そうに見ていたが、やがて眠ってしまった
+	;その他
+	ELSE
+		PRINTFORMW %CALLNAME:TARGET%は倒れた%CALLNAME:PLAYER%を不思議そうに見ていたが、そのうち飽きたのか眠りについた
+	ENDIF
+	RETURN 1
+;反発刻印Lv3
+ELSEIF MARK:反発刻印 == 3
+	DRAWLINE
+	PRINTFORMW 
+	RETURN 1
+;屈服刻印Lv1以下
+ELSEIF MARK:屈服刻印 <= 1
+	DRAWLINE
+	PRINTFORMW 「ガウ･･･ガウゥ･･･すーっ、すーっ･･･」
+	PRINTFORMW 調教を終えると%CALLNAME:TARGET%はすぐに眠ってしまった。
+	RETURN 1
+;屈服刻印Lv2
+ELSEIF MARK:屈服刻印 == 2
+	DRAWLINE
+	PRINTFORMW 「ガウッ、ガウッ、ガォウッ」
+	PRINTFORMW %CALLNAME:TARGET%はまだまだ元気らしく、尻尾を激しく振っている。
+	RETURN 1
+;屈服刻印Lv3+恋慕無し
+ELSEIF MARK:屈服刻印 == 3 && TALENT:恋慕 == 0
+	DRAWLINE
+	PRINTFORMW 「くぅ〜んっ、わんわんっ･･･わんっ」
+	PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%に頭を押し付けている
+	PRINTFORMW %CALLNAME:PLAYER%が頭を撫でてやると%CALLNAME:TARGET%は嬉しそうな顔をした。
+	RETURN 1
+;恋慕＋満足
+ELSEIF TALENT:恋慕 && CFLAG:99
+	DRAWLINE
+	PRINTFORMW %CALLNAME:PLAYER%は%CALLNAME:TARGET%が眠ったのを見て部屋を出て行こうとした
+	PRINTFORMW が、%CALLNAME:PLAYER%の腕には%CALLNAME:TARGET%の腕がしっかり巻きついている
+	PRINTFORMW %CALLNAME:PLAYER%は諦めてそのまま眠ることにした。
+	RETURN 1
+;恋慕
+ELSEIF TALENT:恋慕
+	DRAWLINE
+	PRINTFORMW 「わんっわんっわんっ！わんっ！」
+	PRINTFORMW %CALLNAME:TARGET%は、物足りなそうに吠え続けている
+	PRINTFORMW 「わんわんわんわんっ！」
+	PRINTFORMW 躾を間違えただろうか･･･？
+	RETURN 1
+ENDIF
+RETURN 1
+
+;--------------------------------------------------
+;@KOJO_MESSAGE_COM関係（X1をキャラ番号に置換）
+;コマンド実行時に出力されます
+;--------------------------------------------------
+@KOJO_MESSAGE_COM_7_1
+;助手が調教した時に口上をスキップする（好みに応じて使う、行頭の;を消すとスキップするようになる）
+;SIF ASSIPLAY
+;	RETURN 0
+;-------------------------------------------------
+;コマンド実行時のセリフ CFLAG 221〜270を使用
+;-------------------------------------------------
+
+;-------------------------------------------------
+;愛撫 CFLAG221
+;-------------------------------------------------
+IF SELECTCOM == 0
+	;初めて
+	IF CFLAG:221 == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 「グルルルルッ！」
+			PRINTFORMW %CALLNAME:TARGET%は激しく唸っている。
+		;屈服刻印Lv2以上
+		ELSEIF MARK:屈服刻印 >= 2
+			PRINTFORMW 「くぅ〜ん、わんっ･･･わぅぅ･･･」
+			PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%の愛撫を気持ちよさそうに受けている。
+		;それ以外
+		ELSE
+			PRINTFORMW 「わんっ、わんっ、わうっ･･･ぅぅ」
+			PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%が愛撫をするとその身を震わせた。
+		ENDIF
+		CFLAG:221 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 「ガォン！ガォン！グルルッ！」
+			PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%が身体を触ると、威嚇をし始めた。
+		;恋慕+屈服刻印Lv3
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 「きゅぅぅぅん、わふっ、わうぅぅ･･･」
+			PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%の愛撫を受け入れて気持ちよさそうに鳴いている。
+		;屈服刻印Lv3
+		ELSEIF MARK:屈服刻印 == 3
+			PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%の指が触れるたびに身体を震わせている。
+			PRINTFORMW かなり感じているようだ。
+		;屈服刻印Lv2
+		ELSEIF MARK:屈服刻印 == 2
+			PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%の指が触れるたびに身体を震わせている。
+		;それ以外
+		ELSEIF MARK:屈服刻印 <= 1
+			PRINTFORMW 「ガゥ？･･･ガウっ、ガウッ」
+			PRINTFORMW %CALLNAME:TARGET%はまだ少し緊張しているようだ。
+		ENDIF
+		RETURN 1
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;クンニ CFLAG222	CFLAG351(押し倒されているとき)
+;岩清水 CFLAG328
+;-------------------------------------------------
+;クンニ
+IF SELECTCOM == 1
+	;押し倒されているとき
+	IF TEQUIP:押し倒し
+		;初めて
+		IF CFLAG:351 == 0
+			;恋慕
+			IF TALENT:恋慕
+				PRINTFORMW 「わ…う、わぁ…ん」
+				PRINTFORMW %CALLNAME:TARGET%はピクピクと震えながら%CALLNAME:PLAYER%の顔に跨っている
+				PRINTFORMW …まるで子鹿か子犬のようだ
+			;それ以外
+			ELSE
+				PRINTFORMW 「ガゥ…？ウゥン」
+				PRINTFORMW %CALLNAME:TARGET%はおとなしく%CALLNAME:PLAYER%の顔に腰を下ろした
+				PRINTFORMW そのまま不思議そうに見つめていたが、%CALLNAME:PLAYER%が愛撫を始めると少しではあるが反応を示した
+			ENDIF
+			CFLAG:351 = 1
+			RETURN 1
+		;二回目以降
+		ELSE
+			;恋慕
+			IF TALENT:恋慕
+					PRINTFORMW 「わぅ…わふぅ…わ…わん…」
+					PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%の頭に手を添えている。感じすぎているのか、引き離すことも押し付けることも叶わないようだ
+			;屈服刻印2LV
+			ELSEIF MARK:屈服刻印 >= 2
+				PRINTFORMW 「わぅ？…わ…ぅぅ？」
+				PRINTFORMW %CALLNAME:TARGET%は確かに感じているようだが、体勢に対する違和感のほうが強いようだ。しきりに首を傾げている
+			;それ以外
+			ELSE
+				PRINTFORMW 「ガゥ…グゥ？…ガァ」
+				PRINTFORMW %CALLNAME:TARGET%は舐められながらも、%CALLNAME:PLAYER%の頭をぺしぺしと叩いている
+			ENDIF
+			RETURN 1
+		ENDIF
+	;それ以外
+	ELSE
+		;初めて
+		IF CFLAG:222 == 0
+			;反発刻印Lv3
+			IF MARK:反発刻印 == 3
+				PRINTFORMW 
+			;屈服刻印Lv2以上
+			ELSEIF MARK:屈服刻印 >= 2
+				PRINTFORMW 「わぅ･･･わんっ！･･･わん」
+				PRINTFORMW %CALLNAME:TARGET%の目が優しくしてくれと訴えている気がする･･･
+			;それ以外
+			ELSE
+				PRINTFORMW 「ガォン！ガウ、ガウッ！」
+				PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%の舌が這うたびに声をあげている。
+				PRINTFORMW なにを言っているかはわからないが･･･
+			ENDIF
+			CFLAG:222 = 1
+			RETURN 1
+		;二回目以降
+		ELSE
+			;反発刻印Lv3
+			IF MARK:反発刻印 == 3
+				PRINTFORMW 
+			;恋慕
+			ELSEIF TALENT:恋慕
+				PRINTFORMW 「わうっ･･･ふうぅぅ･･･わふっ！」
+				PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%の舌の動きに感じているようだ
+				PRINTFORMW 身体をピクピクと反応させている。
+			;屈服刻印Lv3
+			ELSEIF MARK:屈服刻印 == 3
+				PRINTFORMW 「わぅ･･･？わふっ、わんっ」
+				PRINTFORMW %CALLNAME:TARGET%の瞳が潤んでいる、どうやらしっかり感じているようだ。
+			;それ以外
+			ELSE
+				PRINTFORMW %CALLNAME:PLAYER%は%CALLNAME:TARGET%のアソコに舌を這わせている
+				PRINTFORMW 「ガウ･･･グルルルッ」
+				PRINTFORMW 少しずつだが感じている･･･ようだ。
+			ENDIF
+			RETURN 1
+		ENDIF
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;アナル愛撫 CFLAG223
+;-------------------------------------------------
+IF SELECTCOM == 2
+	;初めて
+	IF CFLAG:223 == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 「ガウッ！？ガォウ！グゥゥゥゥ･･･」
+			PRINTFORMW %CALLNAME:TARGET%はアナルへの刺激に少し反応している。
+		ENDIF
+		CFLAG:223 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			;恋慕+プレイ受け入れ可能
+			IF TALENT:恋慕 && CHECK("Ａ指挿入れ")
+				PRINTFORMW 「わ･･･わふ･･･ぅぅぅ･･･ふっ」
+				PRINTFORMW %CALLNAME:TARGET%はアナルへの愛撫に息も絶え絶えになっている
+			;恋慕
+			ELSEIF TALENT:恋慕
+				PRINTFORMW 「わふっ･･･ぐぅぅぅっ」
+				PRINTFORMW 少し唸っている。どうやら濡らしてからしたほうがよさそうだ。
+			;A感覚Lv3以上+プレイ受け入れ可能
+			ELSEIF ABL:Ａ感覚 >= 3 && CHECK("Ａ指挿入れ")
+				PRINTFORMW %CALLNAME:PLAYER%がアナルに手を近づけると、一瞬肩を震わせたが抵抗はしてこない
+				PRINTFORMW %CALLNAME:TARGET%はアナルを弄られると、その刺激に感じて身を震わせている。
+			;それ以外
+			ELSE
+				PRINTFORMW 「グウゥゥ･･･ガウ、ガフゥゥ･･･」
+				PRINTFORMW %CALLNAME:TARGET%はアナルへの刺激に反応している。
+			ENDIF
+		ENDIF
+		RETURN 1
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;自慰 CFLAG224
+;シャワーオナニー CFLAG312
+;-------------------------------------------------
+;通常自慰（シャワー無し）
+IF SELECTCOM == 3 && TEQUIP:シャワー == 0
+	;初めて
+	IF CFLAG:224 == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 「ガゥ？･･･ガウッ･･･ガゥッ！」
+			PRINTFORMW %CALLNAME:TARGET%は少し戸惑いながらオナニーをしている。
+		ENDIF
+		CFLAG:224 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕＋自慰中毒Lv3以上
+		ELSEIF TALENT:恋慕 && ABL:自慰中毒 >= 3
+			PRINTFORMW 「わんっ、わんっ、ぅぅぅっ、きゃんっ!」
+			PRINTFORMW %CALLNAME:TARGET%は全身で激しいオナニーをしている
+			PRINTFORMW どうやら快感に飲み込まれているようだ。
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 「･･･わぅ･･･きゃん･･･わふぅっ」
+			PRINTFORMW %CALLNAME:TARGET%は恥ずかしそうにオナニーをしている
+		;自慰中毒Lv3以上
+		ELSEIF ABL:自慰中毒 >= 3
+			PRINTFORMW %CALLNAME:TARGET%は激しいオナニーをしている
+			PRINTFORMW かなり感じているようだ
+		;それ以外
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%は恥ずかしそうにオナニーをしている
+		ENDIF
+		RETURN 1
+	ENDIF
+;シャワーオナニー
+ELSEIF SELECTCOM == 3 && TEQUIP:シャワー
+	;初めて
+	IF CFLAG:312 == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%はシャワーノズルを手にしたままクルクルと回している
+			PRINTFORMW %CALLNAME:PLAYER%がその手からノズルを取り%CALLNAME:TARGET%の秘所にお湯を当てると背筋をピンと張らせた
+		ENDIF
+		CFLAG:312 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕＋自慰中毒Lv3以上
+		ELSEIF TALENT:恋慕 && ABL:自慰中毒 >= 3
+			PRINTFORMW %CALLNAME:TARGET%はお湯を当てながら時折ノズルの先端を浅く挿入している
+			PRINTFORMW 水流で膣内を流しているにも関わらず、そこは水よりも粘度の高い液が満たしていた
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW %CALLNAME:TARGET%はお湯が当たる刺激に背筋を張っている。時折高い喘ぎ声を上げる以外は口を閉じていた
+			PRINTFORMW 感じているのを隠しているつもりだろうか…？
+		;自慰中毒Lv3以上
+		ELSEIF ABL:自慰中毒 >= 3
+			PRINTFORMW %CALLNAME:TARGET%はシャワーで自身を慰めながら、空いた手で乳房揉んでいる
+			PRINTFORMW …何気なく、シャワーを止めると潤んだ目で見つめられた…やり辛い
+		;それ以外
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%はまだ何をすれば良いのかわかっていないらしい、%CALLNAME:PLAYER%がノズルを誘導してやらなければ始める気配が無い
+			PRINTFORMW …あるいは%CALLNAME:PLAYER%に触って欲しいという事だろうか？
+		ENDIF
+		RETURN 1
+	ENDIF
+ENDIF
+;-------------------------------------------------
+;フェラされる(ふたなり/オトコのみ) CFLAG225	CFLAG352(押し倒されているとき)
+;-------------------------------------------------
+IF SELECTCOM == 4
+	;押し倒されているとき
+	IF TEQUIP:押し倒し
+		;初めて
+		IF CFLAG:352 == 0
+			;恋慕
+			IF TALENT:恋慕
+				PRINTFORMW 
+			;それ以外
+			ELSE
+				PRINTFORMW 
+			ENDIF
+				CFLAG:352 = 1
+				RETURN 1
+		;二回目以降
+		ELSE
+			;恋慕
+			IF TALENT:恋慕
+				PRINTFORMW 
+			;それ以外
+			ELSE
+				PRINTFORMW 
+			ENDIF
+			RETURN 1
+		ENDIF
+	;それ以外
+	ELSE
+		;初めて
+		IF CFLAG:225 == 0
+			;反発刻印Lv3
+			IF MARK:反発刻印 == 3
+				PRINTFORMW 
+			;恋慕
+			ELSEIF TALENT:恋慕
+				PRINTFORMW %CALLNAME:PLAYER%は本来あるはずのない%CALLNAME:TARGET%のペニスをくわえ、吸い上げた。
+				PRINTFORMW 「わぅ…わ…ふぅぅぅっ」
+				PRINTFORMW %CALLNAME:TARGET%は未知の快感に晒されて、ビクビクと震えている
+			;それ以外
+			ELSE
+				PRINTFORMW %CALLNAME:PLAYER%は%CALLNAME:TARGET%のペニスを舌先でちろちろと舐めている
+				PRINTFORMW %CALLNAME:TARGET%は不慣れな刺激にガクガクと震えている
+			ENDIF
+			CFLAG:225 = 1
+			RETURN 1
+		;二回目以降
+		ELSE
+			;反発刻印Lv3
+			IF MARK:反発刻印 == 3
+				PRINTFORMW 
+			;恋慕
+			ELSEIF TALENT:恋慕
+				PRINTFORMW %CALLNAME:PLAYER%が%CALLNAME:TARGET%のペニスに舌を這わせると、背筋をぴんと張って悶えている
+				PRINTFORMW %CALLNAME:TARGET%はペニスを舐める%CALLNAME:PLAYER%の頭を引き離そうとしているが、その腕に力は入っていない。
+			;屈服刻印Lv3
+			ELSEIF MARK:屈服刻印 == 3
+				PRINTFORMW %CALLNAME:TARGET%はペニスを触られるたびにガクガクと身体を震わせて反応している
+				PRINTFORMW 不慣れだからというのもあるだろうが、それだけではないようだ。
+			;それ以外
+			ELSE
+				PRINTFORMW なれない刺激に警戒しているのか、自分の腰の辺りにある%CALLNAME:PLAYER%の頭をぺしぺしと叩いている
+				PRINTFORMW 少し強めに吸い上げてやると、一瞬手の動きが止まった
+			ENDIF
+			RETURN 1
+		ENDIF
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;胸愛撫 CFLAG226
+;-------------------------------------------------
+IF SELECTCOM == 5
+	;初めて
+	IF CFLAG:226 == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW %CALLNAME:PLAYER%は%CALLNAME:TARGET%のはりのあるバストをつかむと激しく揉みはじめた。
+			PRINTFORMW 「！･･･ッ･･･ぅぅ･･･ぅぅぅん」
+			PRINTFORMW %CALLNAME:TARGET%は呼吸困難のような状態になっている。
+		;それ以外
+		ELSE
+			PRINTFORMW %CALLNAME:PLAYER%は%CALLNAME:TARGET%のバストを揉みはじめた。
+			PRINTFORMW 「ガウッ･･･ガルルルッ」
+			PRINTFORMW %CALLNAME:TARGET%はあまり気持ちよくはなさそうだ。
+		ENDIF
+		CFLAG:226 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 「わうぅっ･･･わんっ･･･わっふぅ！」
+			PRINTFORMW %CALLNAME:TARGET%は胸で感じる快感に揉みくちゃになっている。
+		;B感覚Lv3以上
+		ELSEIF ABL:Ｂ感覚 >= 3
+			PRINTFORMW 「わんっ！、わふっ･･･くぅぅん！」
+			PRINTFORMW %CALLNAME:TARGET%は胸への刺激に身もだえしている。
+		;それ以外
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%はなれない刺激に身をよじっている。
+		ENDIF
+		RETURN 1
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;キス CFLAG227
+;-------------------------------------------------
+IF SELECTCOM == 6
+	;初めて
+	IF CFLAG:227 == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW %CALLNAME:PLAYER%が顔を近づけると%CALLNAME:TARGET%は先に口付けをしてきた！
+			PRINTFORMW 「わんっ･･･ぢゅるるっ、わう･･･っ、ぢゅうぅぅぅっ」
+			PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%の舌が抜けるような勢いで啜っている！
+			PRINTFORMW 「ぷあっ･･･わんっ！」
+			PRINTFORMW %CALLNAME:TARGET%は嬉しそうに尻尾をパタパタしている。
+		;それ以外
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%に口付けをすると身をよじって逃げてしまった
+		ENDIF
+		CFLAG:227 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 「わぅ･･･ぢゅるっ･･･わふぅぅ･･･ぢゅるるるるっ、ぢゅっ」
+			PRINTFORMW %CALLNAME:TARGET%は下品な音を立てて、唇を吸っている。
+		;従順Lv2以上
+		ELSEIF ABL:従順 >=2
+			PRINTFORMW 「ガウッ･･･ちゅぅ･･･ちゅうっ･･･ぢゅるっ」
+			PRINTFORMW %CALLNAME:TARGET%は尻尾を振って喜んでいる。
+		;それ以外
+		ELSE
+			PRINTFORMW 「ガウッ？！･･･グルルっ」
+			PRINTFORMW %CALLNAME:TARGET%はまだキスに抵抗があるようだ。
+		ENDIF
+		RETURN 1
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;ローター CFLAG229
+;-------------------------------------------------
+IF SELECTCOM == 30
+	;初めて
+	IF CFLAG:229 == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;屈服刻印Lv3+恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%の取り出したピンクローターを不思議そうに見つめている
+			PRINTFORMW 「わふ？･･･わうぅ？･･････きゃん！？」
+			PRINTFORMW ローターを%CALLNAME:TARGET%のクリトリスにあてがうと、驚きと快感の入り混じった声をあげた
+		;それ以外
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%のクリトリスにローターをあてがうと、少しだけ身を振るわせた。
+		ENDIF
+		CFLAG:229 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕＋屈服刻印Lv3
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 「わぅぅぅぅぅっ、わうぅっ」
+			PRINTFORMW %CALLNAME:TARGET%はローターの刺激に身を震わせている。
+		;屈服刻印Lv3
+		ELSEIF MARK:屈服刻印 == 3
+			PRINTFORMW 「くぅん･･･わうっ、わうぅ･･･」
+			PRINTFORMW %CALLNAME:TARGET%はローターの振動にあわせて震えている。
+		;それ以外
+		ELSE
+			PRINTFORMW 「ウゥゥゥ･･･ガァウ！」
+			PRINTFORMW なぜか唸っている、ローターは好みではないのかもしれない。
+		ENDIF
+		RETURN 1
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;バイブ CFLAG230　CFLAG301
+;-------------------------------------------------
+;開始時
+IF SELECTCOM == 31 && TEQUIP:バイブ
+	;初めて
+	IF CFLAG:230 == 0
+		;処女
+		IF TALENT:処女 == 1
+			;反発刻印Lv3
+			IF MARK:反発刻印 == 3
+				PRINTFORMW 
+			;恋慕＋従順Lv5
+			ELSEIF TALENT:恋慕 && ABL:従順 >= 5
+				PRINTFORMW 
+			;それ以外
+			ELSE
+				PRINTFORMW 
+			ENDIF
+		;非処女
+		ELSE
+			;反発刻印Lv3
+			IF MARK:反発刻印 == 3
+				PRINTFORMW 
+			;恋慕
+			ELSEIF TALENT:恋慕
+				PRINTFORMW 「わぅ？…わんわんっ」
+				PRINTFORMW %CALLNAME:TARGET%は手に持ったバイブを不思議そうな目で見つめている。
+				PRINTFORMW 説明するのも面倒なので身をかがめ膝に手を当てると、分からないながらも足を開き受け入れる準備をした
+			;それ以外
+			ELSE
+				PRINTFORMW 「ガウッ、ガウガウ！グゥゥゥ」
+				PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%の手に持ったものを秘所に近づけまいとしている。形から何に使うものか分かるのだろうか？
+			ENDIF
+		ENDIF
+		CFLAG:230 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 「……わんっ」
+			PRINTFORMW %CALLNAME:PLAYER%が足を開くように指示すると少し寂しそうな顔をしながらもそれに従う。
+			PRINTFORMW 腹をこちらに向けて寝転がる姿は、どう見ても服従のポーズにしか見えない
+		;V感覚Lv3以上
+		ELSEIF ABL:Ｖ感覚 >= 3
+			PRINTFORMW %CALLNAME:TARGET%はこちらに尻を向けたまま、秘所を指で広げている。
+			PRINTFORMW %CALLNAME:PLAYER%は期待に濡れるそこに置いてあったバイブを押し込んだ
+		;それ以外
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%の後ろに回りこみ、反応されるよりも早くその秘所にバイブを挿入する
+			PRINTFORMW …%CALLNAME:PLAYER%はふと、自分は何をやっているのだろうかという気持ちになった
+		ENDIF
+		RETURN 1
+	ENDIF
+;脱着時
+ELSEIF SELECTCOM == 31 && TEQUIP:バイブ == 0
+	;反発刻印Lv3
+	IF MARK:反発刻印 == 3
+		PRINTFORMW 
+	;恋慕
+	ELSEIF TALENT:恋慕
+		PRINTFORMW 
+	;それ以外
+	ELSE
+		PRINTFORMW 
+		CFLAG:301 = 1
+	ENDIF
+	RETURN 1
+ENDIF
+
+;-------------------------------------------------
+;Ｅマッサージャ CFLAG231
+;-------------------------------------------------
+IF SELECTCOM == 32
+	;初めて
+	IF CFLAG:231 == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		CFLAG:231 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;屈服刻印Lv3
+		ELSEIF MARK:屈服刻印 == 3
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		RETURN 1
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;アナルバイブ CFLAG232　CFLAG302
+;-------------------------------------------------
+;開始時
+IF SELECTCOM == 33 && TEQUIP:アナルバイブ
+	;初めて
+	IF CFLAG:232 == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 「わうっ･･･わんっ･･･わう･･･」
+			PRINTFORMW %CALLNAME:TARGET%はお尻に物がはいるのが不安なようだ。
+		;それ以外
+		ELSE
+			PRINTFORMW 「グルルルルルッ！ガォウ!ガウッ！」
+			PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%が手に持ったものを警戒しているようだ。
+		ENDIF
+		CFLAG:232 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕＋A感覚Lv3以上
+		ELSEIF TALENT:恋慕 && ABL:Ａ感覚 >= 3
+			PRINTFORMW 「わんっ、わん･･･わうぅぅぅ」
+			PRINTFORMW %CALLNAME:TARGET%はお尻での快感を受け入れて喘いでいる。
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 「わんっ、わんっ！わうっ」
+			PRINTFORMW まだ少しお尻はきついようだ。
+		;A感覚Lv3以上
+		ELSEIF ABL:Ａ感覚 >= 3
+			PRINTFORMW 「ガウッ！ガウッ！アオオオオンッ」
+			PRINTFORMW %CALLNAME:TARGET%はお尻で感じているのか、尻尾を振って悦んでいる。
+		;それ以外
+		ELSE
+			PRINTFORMW 「ガォウ！ガォウ！ガルルルルル！」
+			PRINTFORMW %CALLNAME:TARGET%はかなりこちらを警戒している！
+		ENDIF
+		RETURN 1
+	ENDIF
+;脱着時
+ELSEIF SELECTCOM == 33 && TEQUIP:アナルバイブ == 0
+	;反発刻印Lv3
+	IF MARK:反発刻印 == 3
+		PRINTFORMW 
+	;恋慕
+	ELSEIF TALENT:恋慕
+		PRINTFORMW 
+	;A感覚Lv3以上
+	ELSEIF ABL:Ａ感覚 >= 3
+		PRINTFORMW 
+	;それ以外
+	ELSE
+		PRINTFORMW 
+		CFLAG:302 = 1
+	ENDIF
+	RETURN 1
+ENDIF
+
+;-------------------------------------------------
+;クリキャップ CFLAG233　CFLAG303
+;-------------------------------------------------
+;開始時
+IF SELECTCOM == 34 && TEQUIP:クリキャップ
+	;初めて
+	IF CFLAG:233 == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		CFLAG:233 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		RETURN 1
+	ENDIF
+;脱着時
+ELSEIF SELECTCOM == 34 && TEQUIP:クリキャップ == 0
+	;反発刻印Lv3
+	IF MARK:反発刻印 == 3
+		PRINTFORMW 
+	;恋慕
+	ELSEIF TALENT:恋慕
+		PRINTFORMW 
+	;それ以外
+	ELSE
+		PRINTFORMW 
+		CFLAG:303 = 1
+	ENDIF
+	RETURN 1
+ENDIF
+
+;-------------------------------------------------
+;ニプルキャップ CFLAG234　CFLAG304
+;-------------------------------------------------
+;開始時
+IF SELECTCOM == 35 && TEQUIP:ニプルキャップ
+	;初めて
+	IF CFLAG:234 == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		CFLAG:234 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		RETURN 1
+	ENDIF
+;脱着時
+ELSEIF SELECTCOM == 35 && TEQUIP:ニプルキャップ == 0
+	;反発刻印Lv3
+	IF MARK:反発刻印 == 3
+		PRINTFORMW 
+	;恋慕
+	ELSEIF TALENT:恋慕
+		PRINTFORMW 
+	;それ以外
+	ELSE
+		PRINTFORMW 
+		CFLAG:304 = 1
+	ENDIF
+	RETURN 1
+ENDIF
+
+;-------------------------------------------------
+;搾乳機(母乳体質のみ) CFLAG235　CFLAG305
+;-------------------------------------------------
+;開始時
+IF SELECTCOM == 36 && TEQUIP:搾乳機
+	;初めて
+	IF CFLAG:235 == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		CFLAG:235 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		RETURN 1
+	ENDIF
+;脱着時
+ELSEIF SELECTCOM == 36 && TEQUIP:搾乳機 == 0
+	;反発刻印Lv3
+	IF MARK:反発刻印 == 3
+		PRINTFORMW 
+	;恋慕
+	ELSEIF TALENT:恋慕
+		PRINTFORMW 
+	;それ以外
+	ELSE
+		PRINTFORMW 
+		CFLAG:305 = 1
+	ENDIF
+	RETURN 1
+ENDIF
+
+;-------------------------------------------------
+;オナホール(ふたなり/オトコのみ) CFLAG236　CFLAG306
+;-------------------------------------------------
+IF SELECTCOM == 37
+	;初めて
+	IF CFLAG:236 == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW %CALLNAME:TARGET%は自身のペニスを%CALLNAME:PLAYER%に突きつけている
+			PRINTFORMW %CALLNAME:PLAYER%はたまたまそこにあったオナホールで、%CALLNAME:TARGET%のペニスを包み込んだ
+			PRINTFORMW 「きゃう！わふっ！？　わ…ぅ…アオォォォン！」
+			PRINTFORMW %CALLNAME:TARGET%は一瞬驚きと快感の混じった顔をしたが、それはすぐに快感に蕩けきった表情に変わった
+		;それ以外
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%のペニスをオナホールに挿入すると、苦しげな表情を浮かべその身を震わせた。
+		ENDIF
+		CFLAG:236 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW %CALLNAME:TARGET%はオナホールが気に入ったらしい、自分の手で懸命に扱いている
+		;それ以外
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%は時々自分の手でオナホールを上下させるが、少しするとすぐにやめてしまう
+			PRINTFORMW 本来自分にはないはずの器官への刺激に戸惑っているようだ
+		ENDIF
+		RETURN 1
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;正常位 CFLAG237
+;-------------------------------------------------
+IF SELECTCOM == 60
+	;初めて
+	IF CFLAG:237 == 0
+		;処女
+		IF TALENT:処女 == 1
+			;反発刻印Lv3
+			IF MARK:反発刻印 == 3
+				PRINTFORMW 
+			;恋慕＋従順Lv5
+			ELSEIF TALENT:恋慕 && ABL:従順 >= 5
+				PRINTFORMW 
+			;それ以外
+			ELSE
+				PRINTFORMW 
+			ENDIF
+		;非処女
+		ELSE
+			;反発刻印Lv3
+			IF MARK:反発刻印 == 3
+				PRINTFORMW 
+			;恋慕
+			ELSEIF TALENT:恋慕
+				PRINTFORMW %CALLNAME:TARGET%は仰向けになるとこちらを誘うように脚を大きく開いている
+			PRINTFORMW 「わう･･･わんっ、アォォォォン！」
+			PRINTFORMW %CALLNAME:PLAYER%のペニスを挿入すると、%CALLNAME:TARGET%は遠吠えを上げた。
+			;それ以外
+			ELSE
+				PRINTFORMW 「ガォウ！ガゥ！アオオオオオン！」
+				PRINTFORMW %CALLNAME:TARGET%はペニスが挿入されるとに遠吠えをあげた。
+			ENDIF
+		ENDIF
+		CFLAG:237 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 「わふっ･･･わんっ･･･わうっ、わんっ！」
+			PRINTFORMW %CALLNAME:TARGET%はペニスを突きこまれるたびに声をあげている。
+			PRINTFORMW 中をえぐられる快感に我を忘れて感じているようだ。
+		;屈服刻印Lv3＋V感覚Lv3以上
+		ELSEIF MARK:屈服刻印 == 3 && ABL:Ｖ感覚 >= 3
+			PRINTFORMW 「わう…わんっ、わんっ、わふっ」
+			PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%の動きにあわせて膣を締め付けている。
+		;屈服刻印Lv3
+		ELSEIF MARK:屈服刻印 == 3
+			PRINTFORMW 「くぅぅぅ、わうっ、わうっ！」
+			PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%に突かれるたびに身体を震わせている。
+		;それ以外
+		ELSE
+			PRINTFORMW 「ガル･･･ガォウ！ガウッ」
+			PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%の動きではもの足りないのか自ら腰を動かし始めた。
+			PRINTFORMW 「ガウッ、ガウッ、ガルルッ、アオオオウ！」
+		ENDIF
+		RETURN 1
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;後背位 CFLAG238
+;-------------------------------------------------
+IF SELECTCOM == 61
+	;初めて
+	IF CFLAG:238 == 0
+		;処女
+		IF TALENT:処女 == 1
+			;反発刻印Lv3
+			IF MARK:反発刻印 == 3
+				PRINTFORMW 
+			;恋慕＋従順Lv5
+			ELSEIF TALENT:恋慕 && ABL:従順 >= 5
+				PRINTFORMW 
+			;それ以外
+			ELSE
+				PRINTFORMW 
+			ENDIF
+		;非処女
+		ELSE
+			;反発刻印Lv3
+			IF MARK:反発刻印 == 3
+				PRINTFORMW 
+			;恋慕
+			ELSEIF TALENT:恋慕
+				PRINTFORMW %CALLNAME:TARGET%はこちらにお尻を向け尻尾を振っている。
+				PRINTFORMW %CALLNAME:PLAYER%は%CALLNAME:TARGET%のお尻をつかむと奥まで一気に挿入した。
+				PRINTFORMW 「アオオオオオンッ！」
+			;それ以外
+			ELSE
+				PRINTFORMW %CALLNAME:PLAYER%は%CALLNAME:TARGET%の後ろに回りこみ尻を掴んで逃げられないようにすると、奥まで一気に挿入した。
+				PRINTFORMW 「アオオオオオッ？！」
+				PRINTFORMW %CALLNAME:TARGET%は突然の刺激に驚いているようだ。
+			ENDIF
+		ENDIF
+		CFLAG:238 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 「わうっ！わんっ！わんっ、わうっ、わう！」
+			PRINTFORMW %CALLNAME:TARGET%は後ろから突かれることに興奮しているようだ。
+			PRINTFORMW いつもよりもアソコを濡らして悦んでいる。
+		;屈服刻印Lv3＋V感覚Lv3以上
+		ELSEIF MARK:屈服刻印 == 3 && ABL:Ｖ感覚 >= 3
+			PRINTFORMW %CALLNAME:PLAYER%が挿入したまま動かないでいると、%CALLNAME:TARGET%は自分から腰を振り始めた。
+			PRINTFORMW だが、%CALLNAME:PLAYER%のことを気にしているのか、その動きはどこかぎこちない。
+			PRINTFORMW 「わう！？くぅぅぅ、わんっ、わんっ!」
+			PRINTFORMW %CALLNAME:PLAYER%が腰を振り始めると、%CALLNAME:TARGET%はそれに会わせて動きを激しくした。
+		;屈服刻印Lv3
+		ELSEIF MARK:屈服刻印 == 3
+			PRINTFORMW 「わうっ、わうっ、わうっ！うぅぅ、わんっ！」
+			PRINTFORMW %CALLNAME:TARGET%は後ろから突かれることに本能的に興奮しているようだ。
+		;それ以外
+		ELSE
+			PRINTFORMW 「ガウッ、ガウッ、ガォウ！ガルッ！」
+			PRINTFORMW %CALLNAME:TARGET%は後ろから突かれて喜んでいる･････････犬の本能だろうか？
+		ENDIF
+		RETURN 1
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;アナルセックス CFLAG239
+;-------------------------------------------------
+IF SELECTCOM >= 70 && SELECTCOM <= 79 && SELECTCOM != 75
+	;初めて
+	IF CFLAG:239 == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW %CALLNAME:TARGET%はこちらにお尻を向けアナルを広げている。
+			PRINTFORMW アナルに挿入しろ、という事のようだ。
+			PRINTFORMW %CALLNAME:PLAYER%は%CALLNAME:TARGET%の要望に応えてアナルに挿入してやった
+			PRINTFORMW 「わうっ･･･アオオオオオン♪」
+			PRINTFORMW %CALLNAME:TARGET%はアナルへの挿入にかなり悦んでいるようだ。
+		;それ以外
+		ELSE
+			SIF SELECTCOM == 71
+				PRINTFORMW %CALLNAME:PLAYER%は%CALLNAME:TARGET%の後ろに回りこみ、そのお尻をがっちり掴んだ。
+			PRINTFORMW アナルにペニスをあてがうと%CALLNAME:TARGET%は逃げようとじたばたしている。
+			PRINTFORMW が、%CALLNAME:PLAYER%はそのまま%CALLNAME:TARGET%のアナルに挿入した。
+		ENDIF
+		CFLAG:239 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕＋A感覚Lv3以上
+		ELSEIF TALENT:恋慕 && ABL:Ａ感覚 >= 3
+			PRINTFORMW %CALLNAME:TARGET%はアナルへの挿入を悦んでいる。
+			PRINTFORMW %CALLNAME:PLAYER%が腰を振ると、それに合わせて%CALLNAME:TARGET%のアナルが締め付けてくる。
+			PRINTFORMW %CALLNAME:PLAYER%は%CALLNAME:TARGET%の尻を揉みながらアナルへのピストンを愉しんだ。
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW まだ少し%CALLNAME:TARGET%のアナルはきつく、あまり動きすぎると簡単に裂けてしまいそうだ
+			PRINTFORMW 「くぅぅぅん、わう･･･わん、わん」
+			PRINTFORMW 不安そうにしている%CALLNAME:TARGET%にキスをすると%CALLNAME:PLAYER%はゆっくり動き始めた。
+		;屈服刻印3＋A感覚Lv3以上
+		ELSEIF MARK:屈服刻印 == 3 && ABL:Ａ感覚 >= 3
+			PRINTFORMW 「わんっ、わんっ、くぅぅぅっ、わんっ！」
+			PRINTFORMW %CALLNAME:TARGET%のアナルは程よい締め付けで%CALLNAME:PLAYER%のペニスを責めてくる。
+			PRINTFORMW %CALLNAME:PLAYER%はこのままではあまり長く持たないと感じながら、激しいピストンを続けた。
+		;それ以外
+		ELSE
+			PRINTFORMW アナルにペニスがあてがわれると、%CALLNAME:TARGET%は抵抗をはじめた。
+			PRINTFORMW だが、あまり意味を成さず、%CALLNAME:PLAYER%のペニスは%CALLNAME:TARGET%のアナルに飲み込まれていった。
+		ENDIF
+		RETURN 1
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;手淫 CFLAG241	CFLAG353(押し倒されているとき)
+;-------------------------------------------------
+IF SELECTCOM == 90
+	;押し倒されているとき
+	IF TEQUIP:押し倒し
+		;初めて
+		IF CFLAG:353 == 0
+			;恋慕
+			IF TALENT:恋慕
+				PRINTFORMW 
+			;それ以外
+			ELSE
+				PRINTFORMW 
+			ENDIF
+			CFLAG:353 = 1
+			RETURN 1
+		;二回目以降
+		ELSE
+			;恋慕
+			IF TALENT:恋慕
+				PRINTFORMW 
+			;それ以外
+			ELSE
+				PRINTFORMW 
+			ENDIF
+			RETURN 1
+		ENDIF
+	;それ以外
+	ELSE
+		;初めて
+		IF CFLAG:241 == 0
+			;反発刻印Lv3
+			IF MARK:反発刻印 == 3
+				PRINTFORMW 
+			;奉仕精神Lv3以上
+			ELSEIF ABL:奉仕精神 >= 3
+				PRINTFORMW %CALLNAME:TARGET%にペニスを突き出すと、%CALLNAME:TARGET%は嬉しそうにペニスをしごき始めた。
+				PRINTFORMW だが、その動きはぎこちなく、まだ不慣れなのがよくわかった。
+			;それ以外
+			ELSE
+				PRINTFORMW %CALLNAME:TARGET%にペニスを突き出すと、不思議そうにぺちぺちと叩いている。
+				PRINTFORMW なにをするのかよくわからないようだ。
+			ENDIF
+			CFLAG:241 = 1
+			RETURN 1
+		;二回目以降
+		ELSE
+			;反発刻印Lv3
+			IF MARK:反発刻印 == 3
+				PRINTFORMW 
+			;恋慕＋奉仕精神Lv5
+			ELSEIF TALENT:恋慕 && ABL:奉仕精神 >= 5
+				PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%のペニスを掴むとゆっくりとしごき始めた。
+				PRINTFORMW どうやら%CALLNAME:TARGET%はビクビクしているペニスを見て楽しんでいるようだ。
+				PRINTFORMW %CALLNAME:PLAYER%が軽くこづくと少し反省した様子を見せ、手の動きを速めた。
+			;奉仕精神Lv3以上
+			ELSEIF ABL:奉仕精神 >= 3
+				PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%の反応を見ながらペニスを擦りあげている。
+				PRINTFORMW %CALLNAME:PLAYER%が小さな喘ぎ声を上げると、%CALLNAME:TARGET%は手の動きを速めた。
+			;それ以外
+			ELSE
+				PRINTFORMW %CALLNAME:TARGET%は不思議そうな顔で、%CALLNAME:PLAYER%のペニスをしごいている。
+			ENDIF
+			RETURN 1
+		ENDIF
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;フェラチオ CFLAG242	CFLAG354(押し倒されているとき)
+;-------------------------------------------------
+IF SELECTCOM == 91
+	;押し倒されているとき
+	IF TEQUIP:押し倒し
+		;初めて
+		IF CFLAG:354 == 0
+			;恋慕
+			IF TALENT:恋慕
+				PRINTFORMW 
+			;それ以外
+			ELSE
+				PRINTFORMW 
+			ENDIF
+			CFLAG:354 = 1
+			RETURN 1
+		;二回目以降
+		ELSE
+			;恋慕
+			IF TALENT:恋慕
+				PRINTFORMW 
+			;それ以外
+			ELSE
+				PRINTFORMW 
+			ENDIF
+			RETURN 1
+		ENDIF
+	;それ以外
+	ELSE
+		;初めて
+		IF CFLAG:242 == 0
+			;反発刻印Lv3
+			IF MARK:反発刻印 == 3
+				PRINTFORMW 
+			;奉仕精神Lv3以上
+			ELSEIF ABL:奉仕精神 >= 3
+				PRINTFORMW 「わんっ、わんっ、わうっ、ぢゅるっ、ぢゅっ、ちゅるっ」
+				PRINTFORMW %CALLNAME:TARGET%の顔にペニスを近づけると、嬉しそうにしゃぶりついた。
+				PRINTFORMW 「ぢゅるるるっ、ちゅっ、ぢゅうっ、ぢゅううううっ」
+				PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%のペニスを美味しそうにしゃぶっている･･････噛んだりすることはなさそうだ。
+			;それ以外
+			ELSE
+				PRINTFORMW 「グル？･･････ガウッ」
+				PRINTFORMW %CALLNAME:TARGET%の顔にペニスを近づけると、なにを思ったか噛み付いてきた！
+				PRINTFORMW %CALLNAME:PLAYER%が変な悲鳴を上げると%CALLNAME:TARGET%はあわてて口を離した･･････こんどはちゃんと説明しよう。
+			ENDIF
+			CFLAG:242 = 1
+			RETURN 1
+		;二回目以降
+		ELSE
+			;反発刻印Lv3
+			IF MARK:反発刻印 == 3
+				PRINTFORMW 
+			;恋慕＋奉仕精神Lv5
+			ELSEIF TALENT:恋慕 && ABL:奉仕精神 >= 5
+				PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%のペニスに頬張ると一気に吸い上げた！
+				PRINTFORMW 「ふうぅっ、ぢゅるるるるるるるっ！」
+				PRINTFORMW 中に溜まっているものを全て吸い出されるような錯覚を感じ、%CALLNAME:PLAYER%は身震いした！
+				PRINTFORMW %CALLNAME:PLAYER%の反応を見て%CALLNAME:TARGET%は嬉しそうな表情を浮かべ再び吸い上げ始めた･･･。
+			;奉仕精神Lv3以上
+			ELSEIF ABL:奉仕精神 >= 3
+				PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%の表情を上目遣いに伺いながら懸命にペニスにしゃぶりついている。
+				PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%の弱いところを学習したようで、的確にそこを責めるてくる。
+				PRINTFORMW あまりの快感に%CALLNAME:PLAYER%が腰を引くと%CALLNAME:TARGET%はそれに釣られるように前に出てきた。
+			;それ以外
+			ELSE
+				PRINTFORMW %CALLNAME:PLAYER%がペニスを突き出すと、%CALLNAME:TARGET%は舌で舐め始めた。
+				PRINTFORMW これはこれで気持ちいいのだが、少しもどかしく感じた。
+			ENDIF
+			RETURN 1
+		ENDIF
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;パイズリ CFLAG243	CFLAG355(押し倒されているとき)
+;-------------------------------------------------
+IF SELECTCOM == 92
+	;押し倒されているとき
+	IF TEQUIP:押し倒し
+		;初めて
+		IF CFLAG:355 == 0
+			;恋慕
+			IF TALENT:恋慕
+				PRINTFORMW 
+			;それ以外
+			ELSE
+				PRINTFORMW 
+			ENDIF
+			CFLAG:355 = 1
+			RETURN 1
+		;二回目以降
+		ELSE
+			;恋慕
+			IF TALENT:恋慕
+				PRINTFORMW 
+			;それ以外
+			ELSE
+				PRINTFORMW 
+			ENDIF
+			RETURN 1
+		ENDIF
+	;それ以外
+	ELSE
+		;初めて
+		IF CFLAG:243 == 0
+			;反発刻印Lv3
+			IF MARK:反発刻印 == 3
+				PRINTFORMW 
+			;奉仕精神Lv3以上
+			ELSEIF ABL:奉仕精神 >= 3
+				PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%のペニスを胸に挟むとゆっくりとしごき始めた。
+				PRINTFORMW 張りのある胸の間で%CALLNAME:PLAYER%のペニスはビクビクと震えている。
+				PRINTFORMW ペニスが震えたのを見て楽しくなったのか、%CALLNAME:TARGET%はさらに激しくしごき始めた。
+			;それ以外
+			ELSE
+				PRINTFORMW %CALLNAME:PLAYER%がペニスを%CALLNAME:TARGET%の胸に挟むと、%CALLNAME:TARGET%はその先端を舐め始めた。
+				PRINTFORMW 快感に%CALLNAME:PLAYER%のペニスが震えると、%CALLNAME:TARGET%は嬉しそうにペニスをくわえ、口内で弄んでいる。
+			ENDIF
+			CFLAG:243 = 1
+			RETURN 1
+		;二回目以降
+		ELSE
+			;反発刻印Lv3
+			IF MARK:反発刻印 == 3
+				PRINTFORMW 
+			;恋慕＋奉仕精神Lv5
+			ELSEIF TALENT:恋慕 && ABL:奉仕精神 >= 5
+				PRINTFORMW %CALLNAME:TARGET%は胸に挟まった%CALLNAME:PLAYER%のペニスの先っぽをくわえたままを扱いている。
+				PRINTFORMW %CALLNAME:PLAYER%のペニスが快感に震えると、%CALLNAME:TARGET%は先端を甘噛みしてきた！
+				PRINTFORMW %CALLNAME:TARGET%の犬歯が%CALLNAME:PLAYER%のペニスを噛むたび、ペニスはビクビクッと震えている。
+				PRINTFORMW 一段と固さを増したペニスを%CALLNAME:TARGET%はさらに激しく扱き始めた。
+			;奉仕精神Lv3以上
+			ELSEIF ABL:奉仕精神 >= 3
+				PRINTFORMW %CALLNAME:TARGET%は胸の間で震えるペニスを一心不乱に舐め続けている。
+				PRINTFORMW 先端のみの刺激にもどかしくなった%CALLNAME:PLAYER%が腰を突き出すと、%CALLNAME:TARGET%は胸を使って竿を扱き始めた。
+			;それ以外
+			ELSE
+				PRINTFORMW %CALLNAME:TARGET%は難しい顔をしながら、%CALLNAME:PLAYER%のペニスを胸で扱いている。
+			ENDIF
+			RETURN 1
+		ENDIF
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;素股 CFLAG244
+;-------------------------------------------------
+IF SELECTCOM == 93
+	;初めて
+	IF CFLAG:244 == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕有り
+		ELSEIF TALENT:恋慕
+			PRINTFORMW %CALLNAME:PLAYER%が%CALLNAME:TARGET%の太ももにペニスを挟み込むと、%CALLNAME:TARGET%は何かを懇願するような目でこちらを見つめている。
+			PRINTFORMW なにを言いたいのかはわかったが、%CALLNAME:PLAYER%は知らん振りして太ももに擦りつけた。
+			PRINTFORMW %CALLNAME:TARGET%の引き締まった太ももと柔らかなアソコに挟まれて、%CALLNAME:PLAYER%のペニスはますます固くなっていく。
+			PRINTFORMW 擦られる快感に、不服そうだった%CALLNAME:TARGET%も喘ぎ声をあげている。
+		;それ以外
+		ELSE
+			PRINTFORMW %CALLNAME:PLAYER%は%CALLNAME:TARGET%のアソコに、自らのペニスを擦りつけ始めた。
+			PRINTFORMW %CALLNAME:TARGET%は挿入されないことに不満そうな顔をしている。
+		ENDIF
+		CFLAG:244 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕有り
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 「わうっ･･･わうっ、わんっ･･･うぅっ･･･」
+			PRINTFORMW %CALLNAME:TARGET%の太ももにペニスを挟むと、%CALLNAME:TARGET%は自分から腰を振りペニスを刺激している。
+			PRINTFORMW 「きゃうっ！？、わんっ、わんっ！」
+			PRINTFORMW ペニスがビクリと震えると%CALLNAME:TARGET%は驚いたような声をあげた。
+		;それ以外
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%は不満そうな顔をしながら、太ももでペニスを擦っている。
+		ENDIF
+		RETURN 1
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;騎乗位 CFLAG245	CFLAG356(押し倒されているとき)
+;-------------------------------------------------
+IF SELECTCOM == 65
+	;押し倒されているとき
+	IF TEQUIP:押し倒し
+		;初めて
+		IF CFLAG:356 == 0
+			;恋慕
+			IF TALENT:恋慕
+				PRINTFORMW 
+			;それ以外
+			ELSE
+				PRINTFORMW 
+			ENDIF
+			CFLAG:356 = 1
+			RETURN 1
+		;二回目以降
+		ELSE
+			;恋慕
+			IF TALENT:恋慕
+				PRINTFORMW 
+			;それ以外
+			ELSE
+				PRINTFORMW 
+			ENDIF
+			RETURN 1
+		ENDIF
+	;それ以外
+	ELSE
+		;初めて
+		IF CFLAG:245 == 0
+			;処女
+			IF TALENT:処女 == 1
+				;反発刻印Lv3
+				IF MARK:反発刻印 == 3
+					PRINTFORMW 
+				;恋慕＋従順Lv5
+				ELSEIF TALENT:恋慕 && ABL:従順 >= 5
+					PRINTFORMW 
+				;それ以外
+				ELSE
+					PRINTFORMW 
+				ENDIF
+			;非処女
+			ELSE
+				;反発刻印Lv3
+				IF MARK:反発刻印 == 3
+					PRINTFORMW 
+				;恋慕
+				ELSEIF TALENT:恋慕
+					PRINTFORMW %CALLNAME:PLAYER%が仰向けになると、%CALLNAME:TARGET%は%CALLNAME:PLAYER%に誇りそのまま腰を下ろした。
+					PRINTFORMW 「わうぅぅぅ･･･、わんっ！」
+					PRINTFORMW %CALLNAME:PLAYER%が腰を突き上げると%CALLNAME:TARGET%も合わせて動いている。
+				;それ以外
+				ELSE
+					PRINTFORMW %CALLNAME:PLAYER%は%CALLNAME:TARGET%を自分に誇らせるとそのまま挿入した･･･。
+				ENDIF
+			ENDIF
+			CFLAG:245 = 1
+			RETURN 1
+		;二回目以降
+		ELSE
+			;反発刻印Lv3
+			IF MARK:反発刻印 == 3
+				PRINTFORMW 
+			;恋慕
+			ELSEIF TALENT:恋慕
+				PRINTFORMW %CALLNAME:PLAYER%のペニスが根元まで挿入されると、%CALLNAME:TARGET%は激しく腰を振りはじめた！
+				PRINTFORMW 「わうっ、わふっ、わんっ、わん････････！」
+				PRINTFORMW %CALLNAME:TARGET%は一心不乱に腰を振り続けている･･･。
+			;屈服刻印Lv3＋V感覚Lv3以上
+			ELSEIF MARK:屈服刻印 == 3 && ABL:Ｖ感覚 >= 3
+				PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%の上に腰を下ろすと、アソコを使って少しずつペニスを飲み込んでいく。
+				PRINTFORMW 奥までくわえ込むと、激しく腰を振りはじめた！
+			;屈服刻印Lv3
+			ELSEIF MARK:屈服刻印 == 3
+				PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%の動きに合わせて腰をくねらせている。
+				PRINTFORMW 突然%CALLNAME:TARGET%のアソコが、キュッと締め付けてきた！
+				PRINTFORMW 「ふっ･･･あぅ･･･わぅぅ･･･」
+				PRINTFORMW どうやら無意識に締め付けているようだ。
+			;それ以外
+			ELSE
+				PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%の突き上げに反応して喘ぎを漏らしている。
+				PRINTFORMW 感じているの自分からも腰を揺すりはじめている。
+			ENDIF
+			RETURN 1
+		ENDIF
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;スパンキング CFLAG246
+;-------------------------------------------------
+IF SELECTCOM == 130
+	;初めて
+	IF CFLAG:246 == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 「きゃう、わっ、うぅっ？！」
+			PRINTFORMW %CALLNAME:TARGET%は突然お尻を叩かれたことに驚いたのか目をぱちくりさせている。もう一度叩くと、再び同じ反応をした
+			PRINTFORMW …なんとなく楽しい
+		;それ以外
+		ELSE
+			PRINTFORMW 「ガゥ！、カフッ、ガァッ！」
+			PRINTFORMW %CALLNAME:TARGET%を押さえつけその尻を叩くたびに、暴れ拘束から逃れようとする。かなり力のある%CALLNAME:TARGET%を押さえつけるのはなかなかキツイ
+		ENDIF
+		CFLAG:246 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕＋マゾっ気Lv3
+		ELSEIF TALENT:恋慕 && ABL:マゾっ気 >= 3
+			PRINTFORMW 「わぅ！わんっ、…わっ、ふぅ…♪」
+			PRINTFORMW %CALLNAME:TARGET%は猫が伸びをするようなポーズのままお尻を叩かれている、叩かれる音と愛液が飛び散る音が混じって妙な不協和音となっていた
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 「わぅぅ…ひっ、ひゃぅぅぅっ…」
+			PRINTFORMW %CALLNAME:TARGET%は叩かれるたびに悲痛な声をあげる、まるで飼い主に虐待される飼い犬のようだ……大きく間違っているわけでもないが
+		;マゾっ気Lv3
+		ELSEIF ABL:マゾっ気 >= 3
+			PRINTFORMW %CALLNAME:TARGET%は口を自らの手でふさいでいる。声を出さないようにしているのかもしれないが、残念なことに濡れた秘所から感じているのはバレバレだ
+		;それ以外
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%が手を振り下ろすと竦む、再び上げると睨む。一体いつまでこう強気でいられるだろうか、少し楽しみだ
+		ENDIF
+		RETURN 1
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;鞭 CFLAG247
+;-------------------------------------------------
+IF SELECTCOM == 131
+	;初めて
+	IF CFLAG:247 == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%が鞭を取り出しても、変わらぬ様子でベットに腰掛けている
+			PRINTFORMW しかし%CALLNAME:PLAYER%が素振りを始めると急に怯えてベットにもぐりこんだ
+		;それ以外
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%は叩かれるたびに甲高い叫び声を上げる、サーカスの調教師の気分とはこういうことだろうか
+		ENDIF
+		CFLAG:247 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕＋マゾっ気Lv3
+		ELSEIF TALENT:恋慕 && ABL:マゾっ気 >= 3
+			PRINTFORMW 「わっ…ふ、ぅぅん！はっ…くぅぅ！」
+			PRINTFORMW 傷が増えるたび%CALLNAME:TARGET%は嬌声を上げる。最早叩かれるのが嬉しいのか、傷が増えるのが嬉しいのか、その区別は存在しない
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW %CALLNAME:TARGET%はがくがくと震えながら許しでも請うように%CALLNAME:PLAYER%を見上げている。なんだか非常にやり辛い気分になってきた
+		;マゾっ気Lv3
+		ELSEIF ABL:マゾっ気 >= 3
+			PRINTFORMW %CALLNAME:TARGET%に猿轡をかませ、その尻を鞭で打つ。傷つくたびに体を震わせ悶えるさまは、声さえなければ快楽か苦痛かなど分かりはしない
+		;それ以外
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%を暴れないように縛り、その尻を鞭で打つ。拘束がなければ間違いなく飛び付かれるであろうその状態は、まだまだ調教の必要があることを物語っている
+		ENDIF
+		RETURN 1
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;針 CFLAG248
+;-------------------------------------------------
+IF SELECTCOM == 132
+	;初めて
+	IF CFLAG:248 == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 針…それの用途は物を止めたり裁縫したり…それだけではない、針治療というものもある
+			PRINTFORMW そんなことを言いながら%CALLNAME:TARGET%に近寄るが当然のごとくじわりじわりと逃げていく。それを追い詰めるようににじり寄るのは、なかなかに愉快だ
+		;それ以外
+		ELSE
+			PRINTFORMW 針を見られれば間違いなく逃げられるだろう。そこで両手両足をシーツで縛り、ついでに即席の目隠しも作らせて貰った。
+			PRINTFORMW 逃げることすら叶わない獲物に一本ずつ針を刺していくのは、そしてその体に血の筋が浮かぶのを眺めるのははなかなか楽しいものだ。
+		ENDIF
+		CFLAG:248 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+			;恋慕＋マゾっ気Lv5　鞭とスパンキングを恋慕＋マゾっ気3以上で二度以上実行　厨二病イベント
+		ELSEIF TALENT:恋慕 && ABL:マゾっ気 >= 5 && CFLAG:247 >= 5 && CFLAG:246 >= 5 && CFLAG:248 == 5
+			PRINTFORML 素手で叩いても
+			PRINTFORML 鞭で叩いても
+			PRINTFORMW 針で刺しても
+			PRINTFORMW 最早、%CALLNAME:TARGET%は苦痛に顔を歪めることはなくなった。調教の成果といえば聞こえは良い、しかしなんだろうこの物足りない感じは
+			PRINTFORMW %CALLNAME:TARGET%は体中に傷を作りながらも恍惚の表情を浮かべている。どうすればまた初めの頃の様な苦痛に歪む、あるいは恐怖に怯える顔が見られるのだろうか
+			PRINTFORMW ………ダメだ、そんなことを考えてはいけない。調教の成果が出ている。それで、それだけで良いじゃないか
+			PRINTFORMW %CALLNAME:PLAYER%は頭を振り%CALLNAME:TARGET%の身体に刺さった針を抜いて、その傷口を軽く舐めてやった
+		;厨二以後　別に何も起きないよ！
+		ELSEIF TALENT:恋慕 && ABL:マゾっ気 >= 5 && CFLAG:247 >= 5 && CFLAG:246 >= 5 && CFLAG:248 >= 6
+			PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%に抱きつきその唇を奪う。その背を撫でてやりながら尻に一本針を突き刺してやると一瞬舌が止まった、イッたようだ。
+			PRINTFORMW 最近%CALLNAME:TARGET%はキスされたまま針で刺されるのがお気に入りらしい、失神するまでそれを続けてやると殊更喜ぶ。死が夢魔に存在するかは知らないが%CALLNAME:TARGET%はSMにむいているのだろう
+		;恋慕＋マゾっ気Lv3
+		ELSEIF TALENT:恋慕 && ABL:マゾっ気 >= 3
+			PRINTFORMW %CALLNAME:TARGET%は針を刺されるたびに体を大きく跳ねさせる。その様は陸に打ち上げられた魚が最後の足掻きをするさまに見えないことも無い
+			PRINTFORMW しかし、顔を赤らめ舌を出し、だらしなく涎を垂らすその様はどう見ても苦痛によるものには見えなかった
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW %CALLNAME:PLAYER%が針を取り出すたびに%CALLNAME:TARGET%は怯えて体を振るわせる、そしてまたゆっくりと逃げていく。
+			PRINTFORMW それを追い詰めて針を刺すのは何となくだが、気分が良い…
+		;マゾっ気Lv3
+		ELSEIF ABL:マゾっ気 >= 3
+			PRINTFORMW 体を拘束し、シーツで目隠しをすると%CALLNAME:TARGET%はそれだけで秘所を濡らす。こうされた後どうなるかを覚えているのだろう、調教の成果は間違いなく出ている
+		;それ以外
+		ELSE
+			PRINTFORMW 体を拘束し、シーツで目隠しをすると%CALLNAME:TARGET%は無駄な抵抗を始めた。%CALLNAME:PLAYER%はそんなことお構いなしに、容赦なく針を刺した…
+		ENDIF
+		RETURN 1
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;アイマスク CFLAG250　CFLAG:307
+;-------------------------------------------------
+;開始時
+IF SELECTCOM == 133 && TEQUIP:アイマスク
+	;初めて
+	IF CFLAG:250 == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%は目隠しにあまり動じていないようだ、なんと言うか凄く無駄なことをした気分になった
+		ENDIF
+		CFLAG:250 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕＋マゾっ気Lv5
+		ELSEIF TALENT:恋慕 && ABL:マゾっ気 >= 5
+			PRINTFORMW 目隠しをされると鼻を数回鳴らした後%CALLNAME:PLAYER%の胸に向けて飛び込んできた、%CALLNAME:TARGET%は嬉しそうに尻尾を振っているがこれでは意味が無い
+		;マゾっ気Lv3
+		ELSEIF ABL:マゾっ気 >= 3
+			PRINTFORMW %CALLNAME:TARGET%に目隠しをしても意味がないのは分かっているが何となくまたやってしまう、一体自分は何をやっているのだろうか？
+		;それ以外
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%に目隠しをしても意味がないのは分かっているが何となくまたやってしまう、一体自分は何をやっているのだろうか？
+		ENDIF
+		RETURN 1
+	ENDIF
+;終了時
+ELSEIF SELECTCOM == 133 && TEQUIP:アイマスク == 0
+	;反発刻印Lv3
+	IF MARK:反発刻印 == 3
+		PRINTFORMW 
+	;恋慕
+	ELSEIF TALENT:恋慕
+		PRINTFORMW 
+	;それ以外
+	ELSE
+		PRINTFORMW 
+		CFLAG:307 = 1
+	ENDIF
+	RETURN 1
+ENDIF
+
+;-------------------------------------------------
+;縄 CFLAG251　CFLAG:308
+;-------------------------------------------------
+;開始時
+IF SELECTCOM == 134 && TEQUIP:拘束
+	;初めて
+	IF CFLAG:251 == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 肌に縄が食い込むのか%CALLNAME:TARGET%は顔にうっすら苦痛の色を浮かべている
+		ENDIF
+		CFLAG:251 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕＋マゾっ気Lv5
+		ELSEIF TALENT:恋慕 && ABL:マゾっ気 >= 5
+			PRINTFORMW 結構キツク縛ってある、そのはずだ。%CALLNAME:TARGET%の腕の先は少し青くなっている、本来奴隷に傷をつけるような縛り方はするべきではない。
+			PRINTFORMW 分かっているのだが、%CALLNAME:TARGET%が相手だとなぜか手加減を忘れてしまっていた
+		;マゾっ気Lv3
+		ELSEIF ABL:マゾっ気 >= 3
+			PRINTFORMW 縛られているにも拘らず%CALLNAME:TARGET%は顔を上気させ荒い息をついている
+		;それ以外
+		ELSE
+			PRINTFORMW やはり痛むらしい、しきりに体をよじっているがそんなことをしても縄は外れない。むしろ逆効果である
+		ENDIF
+		RETURN 1
+	ENDIF
+;終了時
+ELSEIF SELECTCOM == 134 && TEQUIP:拘束 == 0
+	;反発刻印Lv3
+	IF MARK:反発刻印 == 3
+		PRINTFORMW 
+	;恋慕
+	ELSEIF TALENT:恋慕
+		PRINTFORMW 
+	;それ以外
+	ELSE
+		PRINTFORMW 
+		CFLAG:308 = 1
+	ENDIF
+	RETURN 1
+ENDIF
+
+;-------------------------------------------------
+;ボールギャグ CFLAG252　CFLAG:309
+;-------------------------------------------------
+;開始時
+IF SELECTCOM == 135 && TEQUIP:口枷
+	;初めて
+	IF CFLAG:252 == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		CFLAG:252 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕＋マゾっ気Lv5
+		ELSEIF TALENT:恋慕 && ABL:マゾっ気 >= 5
+			PRINTFORMW 
+		;マゾっ気Lv3
+		ELSEIF ABL:マゾっ気 >= 3
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		RETURN 1
+	ENDIF
+;終了時
+ELSEIF SELECTCOM == 135 && TEQUIP:口枷 == 0
+	;反発刻印Lv3
+	IF MARK:反発刻印 == 3
+		PRINTFORMW 
+	;恋慕
+	ELSEIF TALENT:恋慕
+		PRINTFORMW 
+	;それ以外
+	ELSE
+		PRINTFORMW 
+		CFLAG:309 = 1
+	ENDIF
+	RETURN 1
+ENDIF
+
+;-------------------------------------------------
+;浣腸 CFLAG253
+;-------------------------------------------------
+IF SELECTCOM == 136 && TEQUIP:浣腸
+	;初めて
+	IF CFLAG:253 == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		CFLAG:253 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕＋マゾっ気Lv5
+		ELSEIF TALENT:恋慕 && ABL:マゾっ気 >= 5
+			PRINTFORMW 
+		;マゾっ気Lv3
+		ELSEIF ABL:マゾっ気 >= 3
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		RETURN 1
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;排泄 CFLAG254
+;-------------------------------------------------
+IF SELECTCOM == 136 && TEQUIP:浣腸 == 0
+	;初めて
+	IF CFLAG:254 == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		CFLAG:254 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕＋マゾっ気Lv5
+		ELSEIF TALENT:恋慕 && ABL:マゾっ気 >= 5
+			PRINTFORMW 
+		;マゾっ気Lv3
+		ELSEIF ABL:マゾっ気 >= 3
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		RETURN 1
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;ローション使用 CFLAG255
+;-------------------------------------------------
+IF SELECTCOM == 260
+	;初めて
+	IF CFLAG:255 == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		CFLAG:255 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		RETURN 1
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;媚薬使用 CFLAG256
+;-------------------------------------------------
+IF SELECTCOM == 261
+	;初めて
+	IF CFLAG:256 == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW %CALLNAME:TARGET%は頬を赤らめているがおとなしくベットに横たわっている
+			PRINTFORMW ……いや、興奮しすぎて足腰が立たないらしい、立ち上がろうとしてプルプルと震えている
+		;それ以外
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%は頬を赤らめて%CALLNAME:PLAYER%に飛び掛った、%CALLNAME:PLAYER%はそれをヒラリと避けて、そのまま%CALLNAME:TARGET%をベットに押し倒した
+		ENDIF
+		CFLAG:256 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW %CALLNAME:TARGET%は頬を赤らめているがおとなしくベットに横たわっている
+			PRINTFORMW ……いや、興奮しすぎて足腰が立たないらしい、立ち上がろうとしてプルプルと震えている
+		;それ以外
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%は頬を赤らめて%CALLNAME:PLAYER%に飛び掛った、%CALLNAME:PLAYER%はそれをヒラリと避けて、そのまま%CALLNAME:TARGET%をベットに押し倒した
+		ENDIF
+		RETURN 1
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;ビデオカメラ使用 CFLAG257
+;-------------------------------------------------
+IF SELECTCOM == 170 && TEQUIP:ビデオカメラ
+	;初めて
+	IF CFLAG:257 == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		CFLAG:257 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		RETURN 1
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;助手を犯す CFLAG259
+;-------------------------------------------------
+IF SELECTCOM == 160
+	;初めて
+	IF CFLAG:259 == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		CFLAG:259 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		RETURN 1
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;触手召喚 CFLAG262　CFLAG:311
+;-------------------------------------------------
+;開始時
+IF SELECTCOM == 200 && TEQUIP:触手
+	;初めて
+	IF CFLAG:262 == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		CFLAG:262 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		RETURN 1
+	ENDIF
+;終了時
+ELSEIF SELECTCOM == 200 && TEQUIP:触手 == 0
+	;反発刻印Lv3
+	IF MARK:反発刻印 == 3
+		PRINTFORMW 
+	;恋慕
+	ELSEIF TALENT:恋慕
+		PRINTFORMW 
+	;それ以外
+	ELSE
+		PRINTFORMW 
+		CFLAG:311 = 1
+	ENDIF
+	RETURN 1
+ENDIF
+
+;-------------------------------------------------
+;ミニマム使用 CFLAG263
+;-------------------------------------------------
+IF SELECTCOM == 230 && COND("アルカナ対象", PLAYER)
+	;初めて
+	IF CFLAG:263 == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外（恋慕無し）
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		CFLAG:263 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外（恋慕無し）
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		RETURN 1
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;センシブ使用 CFLAG264
+;-------------------------------------------------
+IF SELECTCOM == 231
+	;初めて
+	IF CFLAG:264 == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外（恋慕無し）
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		CFLAG:264 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外（恋慕無し）
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		RETURN 1
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;ウルズグン使用 CFLAG265
+;-------------------------------------------------
+IF SELECTCOM == 232
+	;初めて
+	IF CFLAG:265 == 0
+		;インサート中
+		IF PREVCOM == 60 ||  PREVCOM == 61 || PREVCOM == 71 || PREVCOM == 63 || PREVCOM == 64 || PREVCOM == 65
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外（恋慕無し）
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		CFLAG:265 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;インサート中
+		IF (PREVCOM == 60 ||  PREVCOM == 61 || PREVCOM == 71 || PREVCOM == 63 || PREVCOM == 64 || PREVCOM == 65)
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外（恋慕無し）
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		RETURN 1
+	ENDIF
+ENDIF
+;-------------------------------------------------
+;てかげん CFLAG344　CFLAG345
+;-------------------------------------------------
+;開始時
+IF SELECTCOM == 301 && TEQUIP:てかげん
+	;初めて
+	IF CFLAG:344 == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		CFLAG:344 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		RETURN 1
+	ENDIF
+;終了時
+ELSEIF SELECTCOM == 301 && TEQUIP:てかげん == 0
+	SELECTCASE CHECK_ECST(TARGET)
+	;五重絶頂
+	CASE IS >= 5
+		PRINTFORMW 
+	;四重絶頂
+	CASE 4
+		PRINTFORMW 
+	;三重絶頂
+	CASE 3
+		PRINTFORMW 
+	;二重絶頂
+	CASE 2
+		PRINTFORMW 
+	;絶頂あり
+	CASE 1
+		PRINTFORMW 
+	;絶頂なし
+	CASEELSE
+		PRINTFORMW 
+	ENDSELECT
+	CFLAG:345 = 1
+	RETURN 1
+ENDIF
+;-------------------------------------------------
+;締め上げる CFLAG267
+;-------------------------------------------------
+IF SELECTCOM == 303
+	;初めて
+	IF CFLAG:267 == 0
+		PRINTFORMW 
+		CFLAG:267 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;恋慕＋マゾっ気Lv5
+		IF TALENT:恋慕 && ABL:マゾっ気 >= 5
+			PRINTFORMW 
+			RETURN 1
+		;マゾっ気Lv5
+		ELSEIF ABL:マゾっ気 >= 5
+			PRINTFORMW 
+			RETURN 1
+		;マゾっ気Lv3
+		ELSEIF ABL:マゾっ気 >= 3
+			PRINTFORMW 
+			RETURN 1
+		;それ以外
+		ELSE
+			PRINTFORMW 
+			RETURN 1
+		ENDIF
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;甘い言葉 CFLAG268(実行判定) CFLAG269(成功判定)
+;-------------------------------------------------
+IF SELECTCOM == 300
+	;成功
+	IF CFLAG:269
+		;恋慕
+		IF TALENT:恋慕
+			PRINTFORMW 「がうっ！わうっ！　ぢゅるっ、ぢゅるるるっ！」
+			PRINTFORMW %CALLNAME:TARGET%は喜んで、%CALLNAME:PLAYER%の顔を嘗め回している！
+		;それ以外
+		ELSE
+			PRINTFORMW 「ガォウ！ガォウ！」
+			PRINTFORMW %CALLNAME:TARGET%は喜んでいる！
+		ENDIF
+		RETURN 1
+	;失敗
+	ELSE
+		;恋慕
+		IF TALENT:恋慕
+			PRINTFORMW 「くぅん･･･」
+			PRINTFORMW %CALLNAME:TARGET%は空腹のようだ！
+		;それ以外
+		ELSE
+			PRINTFORMW 「ガォウ！　ガォウ！　ガォウ！」
+			PRINTFORMW %CALLNAME:TARGET%は肉を要求しているようだ！
+			PRINTFORMW が、ここには肉は用意されていなかった･･･。
+		ENDIF
+		RETURN 1
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;足コキ CFLAG370
+;-------------------------------------------------
+IF SELECTCOM == 95 && PENIS(PLAYER)
+	;初めて
+	IF CFLAG:370 == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%の前に座ると、ペニスに足を当て強く擦っている
+			PRINTFORMW あまり加減がきかないようで、少し痛い……が、これはこれでいいかもしれない
+		;それ以外
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%は後ろ足で%CALLNAME:PLAYER%のペニスを強く擦っている
+			PRINTFORMW ･･･痛い
+		ENDIF
+		CFLAG:370 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;恋慕＋サドっ気Lv3
+		IF TALENT:恋慕 && ABL:サドっ気 >= 3
+			PRINTFORMW %CALLNAME:TARGET%は楽しそうに%CALLNAME:PLAYER%のペニスを踏みつけている
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW %CALLNAME:TARGET%は恐る恐る%CALLNAME:PLAYER%のペニスを踏んでいる
+		;サドっ気Lv3以上
+		ELSEIF ABL:サドっ気 >= 3
+			PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%のペニスを強く踏んでいる
+		;それ以外
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%のペニスに足を当ててじっとしている･･･自分で擦れという事だろうか？
+		ENDIF
+		RETURN 1
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;アナル奉仕 CFLAG371
+;-------------------------------------------------
+IF SELECTCOM == 96
+	;初めて
+	IF CFLAG:371 == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		CFLAG:371 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;恋慕
+		IF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		RETURN 1
+	ENDIF
+ENDIF
+
+;〜〜〜〜〜〜〜〜〜〜〜〜〜〜〜〜〜〜〜〜〜〜〜〜〜
+;追加コマンド CFLAG313以降を使用
+;〜〜〜〜〜〜〜〜〜〜〜〜〜〜〜〜〜〜〜〜〜〜〜〜〜
+
+;-------------------------------------------------
+;指挿入れ CFLAG313
+;Gスポット刺激 CFLAG329
+;-------------------------------------------------
+IF SELECTCOM == 8
+	;Gスポット刺激
+	IF CHECK_COM("Ｇスポ責め")
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;V感覚Lv3以上
+		ELSEIF ABL:Ｖ感覚 >= 3
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		RETURN 1
+	;指挿入れ
+	ELSE
+		;初めて
+		IF CFLAG:313 == 0
+			;処女（処女でないキャラの場合は無記入でよい）
+			IF TALENT:処女
+				;反発刻印Lv3
+				IF MARK:反発刻印 == 3
+					PRINTFORMW 
+				;恋慕+従順Lv5
+				ELSEIF TALENT:恋慕 && ABL:従順 >= 5
+					PRINTFORMW 
+				;それ以外
+				ELSE
+					 PRINTFORMW 
+				ENDIF
+				CFLAG:313 = 1
+				RETURN 1
+			;非処女
+			ELSE
+				;反発刻印Lv3
+				IF MARK:反発刻印 == 3
+					PRINTFORMW 
+				;恋慕
+				ELSEIF TALENT:恋慕
+					PRINTFORMW 「わぅ･･･わん、わんっ」
+					PRINTFORMW %CALLNAME:TARGET%は中で動く%CALLNAME:PLAYER%の指の感触に悶えている。
+				;V感覚Lv3以上
+				ELSEIF ABL:Ｖ感覚 >= 3
+					PRINTFORMW 
+				;それ以外
+				ELSE
+					PRINTFORMW 
+				ENDIF
+				CFLAG:313 = 1
+				RETURN 1
+			ENDIF
+		;二回目以降
+		ELSE
+			;反発刻印Lv3
+			IF MARK:反発刻印 == 3
+				PRINTFORMW 
+			;恋慕
+			ELSEIF TALENT:恋慕
+				IF TEQUIP:バイブ
+					PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%の指がバイブを掴むと身体を震わせた。
+					PRINTFORMW 中で震える張型の感触に身をくねらせて感じている。
+				ELSE
+					PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%の指が挿入されると身体を震わせた。
+					PRINTFORMW 中で蠢く指の感触に身をくねらせて感じている。
+				ENDIF
+			;V感覚Lv3以上
+			ELSEIF ABL:Ｖ感覚 >= 3
+				PRINTFORMW %CALLNAME:TARGET%は大きく脚を開いてこちらを誘っている。
+				PRINTFORMW 「ガルルルル･･･ガォウッ！」
+				IF TEQUIP:バイブ
+					PRINTFORMW %CALLNAME:PLAYER%がバイブを動かし始めると、その快感に喘ぎ声をあげた。
+				ELSE
+					PRINTFORMW %CALLNAME:PLAYER%が指を入れると、その快感に喘ぎ声をあげた。
+				ENDIF
+			;それ以外
+			ELSE
+				IF TEQUIP:バイブ
+					PRINTFORMW %CALLNAME:TARGET%は突きこまれるバイブから何とかして逃れようとしているようだ。
+				ELSE
+					PRINTFORMW %CALLNAME:TARGET%は中で動く%CALLNAME:PLAYER%の指を何とかして抜こうとしているようだ。
+				ENDIF
+			ENDIF
+			RETURN 1
+		ENDIF
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;シャワー CFLAG314
+;-------------------------------------------------
+IF SELECTCOM == 38 && TEQUIP:シャワー
+	;初めて
+	IF CFLAG:314 == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		CFLAG:314 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		RETURN 1
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;対面座位 CFLAG315
+;-------------------------------------------------
+IF SELECTCOM == 63
+	;初めて
+	IF CFLAG:315 == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW %CALLNAME:PLAYER%は%CALLNAME:TARGET%を抱き上げると、そのまま挿入した。
+			PRINTFORMW 「わぅ･･･アオオオォォォン♪」
+			PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%のペニスが挿入されたことを、遠吠えをあげて悦んだ。
+		;それ以外
+		ELSE
+			PRINTFORMW %CALLNAME:PLAYER%は%CALLNAME:TARGET%を抱き寄せると、そのまま挿入した。
+			PRINTFORMW 「ガウッ！ガォウッ！･･･グルルルル」
+			PRINTFORMW %CALLNAME:TARGET%は少し抵抗したが、そのうちに%CALLNAME:PLAYER%のペニスを受け入れた。
+		ENDIF
+		CFLAG:315 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%がペニスを挿入すると、嬉しそうに腰を振っている。
+			PRINTFORMW 「わうっ、わうっ、わうんっ！　わぅ、わんっ！」
+			PRINTFORMW %CALLNAME:PLAYER%が%CALLNAME:TARGET%の動きに合わせて突き上げると、一層激しく喘ぎだした。
+		;屈服刻印Lv3＋V感覚Lv3以上
+		ELSEIF MARK:屈服刻印 == 3 && ABL:Ｖ感覚 >= 3
+			PRINTFORMW %CALLNAME:TARGET%はこの格好が気に入ったのか、激しく腰を振って快楽を貪っている。
+		;屈服刻印Lv3
+		ELSEIF MARK:屈服刻印 == 3
+			PRINTFORMW %CALLNAME:TARGET%は抱きついた格好のままゆっくりと腰を揺すっている。
+			PRINTFORMW どうやら、%CALLNAME:PLAYER%に突いて欲しいようだ。
+		;それ以外
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%は抵抗しつつも、少しずつ%CALLNAME:PLAYER%のペニスを受け入れていく。
+		ENDIF
+		RETURN 1
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;背面座位 CFLAG316
+;乱れ牡丹 CFLAG317
+;-------------------------------------------------
+;背面座位
+IF SELECTCOM == 64
+	;初めて
+	IF CFLAG:316 == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF MARK:屈服刻印 == 3
+			PRINTFORMW %CALLNAME:PLAYER%は%CALLNAME:TARGET%を抱き上げ背をこちらに向けたまま挿入した。
+			PRINTFORMW 「わう！？　わんっ、わうっ！」
+			PRINTFORMW %CALLNAME:TARGET%は突然の挿入に驚いた顔をしているが、その中は%CALLNAME:PLAYER%のペニスをキツク締め付けている。
+		;それ以外
+		ELSE
+			PRINTFORMW %CALLNAME:PLAYER%は%CALLNAME:TARGET%の背に回り、全身を愛撫しながら挿入した。
+			PRINTFORMW 「ガウッ！？　ガォウッ！ガルルルッ」
+			PRINTFORMW %CALLNAME:TARGET%は愛撫しながらの挿入に戸惑ってしまっている。
+		ENDIF
+		CFLAG:316 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW %CALLNAME:PLAYER%が挿入したまま%CALLNAME:TARGET%の身体を愛撫すると、もどかしくなったのか自分から腰を振りはじめた。
+		;屈服刻印Lv3＋V感覚Lv3以上
+		ELSEIF MARK:屈服刻印 == 3 && ABL:Ｖ感覚 >= 3
+			PRINTFORMW %CALLNAME:PLAYER%が後ろから挿入すると%CALLNAME:TARGET%は嬉しそうに腰を動かしている。
+		;屈服刻印Lv3
+		ELSEIF MARK:屈服刻印 == 3
+			PRINTFORMW %CALLNAME:TARGET%は後ろからの挿入に少し寂しそうな顔をしたが、すぐに腰を使い始めた。
+		;それ以外
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%に愛撫されながら、腰を振っている。
+		ENDIF
+		RETURN 1
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;泡踊り CFLAG318
+;-------------------------------------------------
+IF SELECTCOM == 94
+	;初めて
+	IF CFLAG:318 == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;奉仕精神Lv3以上
+		ELSEIF ABL:奉仕精神 >= 3
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		CFLAG:318 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕＋奉仕精神Lv5
+		ELSEIF TALENT:恋慕 && ABL:奉仕精神 >= 5
+			PRINTFORMW 
+		;奉仕精神Lv3以上
+		ELSEIF ABL:奉仕精神 >= 3
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		RETURN 1
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;利尿剤 CFLAG319
+;-------------------------------------------------
+IF SELECTCOM == 262
+	;反発刻印Lv3
+	IF MARK:反発刻印 == 3
+		PRINTFORMW 
+	;恋慕+おもらし癖
+	ELSEIF TALENT:恋慕 && TALENT:おもらし癖
+		PRINTFORMW 
+	;恋慕
+	ELSEIF TALENT:恋慕
+		PRINTFORMW 
+	;屈服刻印Lv3
+	ELSEIF MARK:屈服刻印 == 3
+		PRINTFORMW 
+	;それ以外
+	ELSE
+		PRINTFORMW 
+		CFLAG:319 = 1
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;羞恥プレイ CFLAG320 解除 CFLAG321
+;-------------------------------------------------
+IF SELECTCOM == 179 && TEQUIP:羞恥プレイ
+	;初めて
+	IF CFLAG:320 == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;露出癖Lv3以上
+		ELSEIF ABL:露出癖 >= 3
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		CFLAG:320 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕+露出癖Lv3以上
+		ELSEIF TALENT:恋慕 && ABL:露出癖 >= 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;露出癖Lv3以上
+		ELSEIF ABL:露出癖 >= 3
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		RETURN 1
+	ENDIF
+;終了時
+ELSEIF SELECTCOM == 179 && TEQUIP:羞恥プレイ == 0
+	;初めて
+	IF CFLAG:321 == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		CFLAG:321 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		RETURN 1
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;お風呂場プレイ CFLAG322 解除 CFLAG323
+;-------------------------------------------------
+IF SELECTCOM == 172 && TEQUIP:お風呂プレイ
+	;初めて
+	IF CFLAG:322 == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		CFLAG:322 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		RETURN 1
+	ENDIF
+;終了時
+ELSEIF SELECTCOM == 172 && TEQUIP:お風呂プレイ == 0
+	;初めて
+	IF CFLAG:323 == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		CFLAG:323 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		RETURN 1
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;新妻プレイ CFLAG324 解除 CFLAG325
+;-------------------------------------------------
+;開始時
+IF SELECTCOM == 173 && TEQUIP:新妻プレイ
+	;初めて
+	IF CFLAG:324 == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		CFLAG:324 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		RETURN 1
+	ENDIF
+;終了時
+ELSEIF SELECTCOM == 173 && TEQUIP:新妻プレイ == 0
+	;初めて
+	IF CFLAG:325 == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		CFLAG:325 = 1
+		RETURN 1
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+		RETURN 1
+	ENDIF
+ENDIF
+
+
+;--------------------------------------------------
+;@KOJO_MESSAGE_BEFORE_COM関係
+;CFLAGは変更させないようにしてください
+;--------------------------------------------------
+@KOJO_MESSAGE_BEFORE_COM_7_1
+
+;-------------------------------------------------
+;@KOJO_MESSAGE_PALAMCNG関係（X1をキャラ番号に置換）
+;パラメータ変動をトリガーにした口上
+;パラメータ変動後に口上を発動します
+;-------------------------------------------------
+@KOJO_MESSAGE_PALAMCNG_7_1, ARGS
+;助手が調教した時に口上をスキップする（好みに応じて使う、行頭の;を消すとスキップするようになる）
+;SIF ASSIPLAY
+;	RETURN 0
+;-------------------------------------------------
+;パラメータ変動時のセリフ
+;-------------------------------------------------
+SELECTCASE ARGS
+;-------------------------------------------------
+;初めてＶ潤がLV3超えた
+;-------------------------------------------------
+CASE "Ｖ潤LV3突破"
+	;初めて
+	IF FIRST_EV("Ｖ潤LV3突破") == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			;ローションを使った場合
+			IF SELECTCOM == 260
+				PRINTFORMW 
+			;それ以外
+			ELSE
+				PRINTFORMW 
+			ENDIF
+		;それ以外
+		ELSE
+			;ローションを使った場合
+			IF SELECTCOM == 260
+				PRINTFORMW 
+			;それ以外
+			ELSE
+				PRINTFORMW 
+			ENDIF
+		ENDIF
+	ENDIF
+;-------------------------------------------------
+;初めて欲情がLV3超えた
+;-------------------------------------------------
+CASE "欲情LV3突破"
+	IF FIRST_EV("欲情LV3突破") == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			;媚薬を使った場合
+			IF SELECTCOM == 261
+				PRINTFORMW 
+			;それ以外
+			ELSE
+				PRINTFORMW 
+			ENDIF
+		;それ以外
+		ELSE
+			;媚薬を使った場合
+			IF SELECTCOM == 261
+				PRINTFORMW 「グルルルル･･･」
+				PRINTFORMW %CALLNAME:TARGET%は薬で興奮しているようだ。
+			;それ以外
+			ELSE
+				PRINTFORMW 「グルル･･･ガォウ！」
+				PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%の愛撫にかなり興奮しているようだ。
+			ENDIF
+		ENDIF
+	ENDIF
+;-------------------------------------------------
+;初めて恥情がLV3超えた
+;-------------------------------------------------
+CASE "恥情LV3突破"
+	IF FIRST_EV("恥情LV3突破") == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%は心なしか恥ずかしそうにしている。
+		ENDIF
+	ENDIF
+;-------------------------------------------------
+;初めて恐怖がLV3超えた
+;-------------------------------------------------
+CASE "恐怖LV3突破"
+	IF FIRST_EV("恐怖LV3突破") == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%は身体を震わせおびえている。
+		ENDIF
+	ENDIF
+;-------------------------------------------------
+;初めてC絶頂
+;-------------------------------------------------
+CASE "Ｃ絶頂"
+	IF FIRST_EV("Ｃ絶頂") == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 「ガゥッ･･･アオオォォ！」
+		ENDIF
+	ENDIF
+;-------------------------------------------------
+;初めてV絶頂
+;-------------------------------------------------
+CASE "Ｖ絶頂"
+	IF FIRST_EV("Ｖ絶頂") == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 「ガォウ!･･･グルルルッ、ガウゥゥゥッ！」
+		ENDIF
+	ENDIF
+;-------------------------------------------------
+;初めてA絶頂
+;-------------------------------------------------
+CASE "Ａ絶頂"
+	IF FIRST_EV("Ａ絶頂") == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%はアナルでの絶頂に声もあげられなくなっている。
+		ENDIF
+	ENDIF
+;-------------------------------------------------
+;初めてB絶頂
+;-------------------------------------------------
+CASE "Ｂ絶頂"
+	IF FIRST_EV("Ｂ絶頂") == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 「グルル･･･アオオオォォンッ！」
+		ENDIF
+	ENDIF
+;-------------------------------------------------
+;C焦らし
+;-------------------------------------------------
+CASE "Ｃ焦らし"
+	;初めて
+	IF FIRST_EV("Ｃ焦らし") == 0
+		PRINTFORMW 
+	;２回目以降
+	ELSE
+		;強絶頂Ｃ焦らし
+		IF NOWEX:Ｃ絶頂寸止め >= 2
+			PRINTFORMW 
+		;絶頂Ｃ焦らし
+		ELSEIF NOWEX:Ｃ絶頂寸止め
+			PRINTFORMW 
+		ENDIF
+	ENDIF
+;-------------------------------------------------
+;V焦らし
+;-------------------------------------------------
+CASE "Ｖ焦らし"
+	;初めて
+	IF FIRST_EV("Ｖ焦らし") == 0
+		PRINTFORMW 
+	;２回目以降
+	ELSE
+		;強絶頂Ｖ焦らし
+		IF NOWEX:Ｖ絶頂寸止め >= 2
+			PRINTFORMW 
+		;絶頂Ｖ焦らし
+		ELSEIF NOWEX:Ｖ絶頂寸止め
+			PRINTFORMW 
+		ENDIF
+	ENDIF
+;-------------------------------------------------
+;A焦らし
+;-------------------------------------------------
+CASE "Ａ焦らし"
+	;初めて
+	IF FIRST_EV("Ａ焦らし") == 0
+		PRINTFORMW 
+	;２回目以降
+	ELSE
+		;強絶頂Ａ焦らし
+		IF NOWEX:Ａ絶頂寸止め >= 2
+			PRINTFORMW 
+		;絶頂Ａ焦らし
+		ELSEIF NOWEX:Ａ絶頂寸止め
+			PRINTFORMW 
+		ENDIF
+	ENDIF
+;-------------------------------------------------
+;B焦らし
+;-------------------------------------------------
+CASE "Ｂ焦らし"
+	;初めて
+	IF FIRST_EV("Ｂ焦らし") == 0
+		PRINTFORMW 
+	;２回目以降
+	ELSE
+		;強絶頂Ｂ焦らし
+		IF NOWEX:Ｂ絶頂寸止め >= 2
+			PRINTFORMW 
+		;絶頂Ｂ焦らし
+		ELSEIF NOWEX:Ｂ絶頂寸止め
+			PRINTFORMW 
+		ENDIF
+	ENDIF
+;-------------------------------------------------
+;ふたなり射精焦らし
+;-------------------------------------------------
+CASE "射精焦らし"
+	;初めて
+	IF FIRST_EV("射精焦らし") == 0
+		PRINTFORMW %CALLNAME:TARGET%のペニスは真っ赤に膨れ上がりピクピクと震えている
+	;２回目以降
+	ELSE
+		;大量射精焦らし
+		IF NOWEX:射精寸止め >= 2
+			IF RAND:3 == 0
+				PRINTFORMW 「うぅ…ガ…ぐぅ…」
+				PRINTFORMW %CALLNAME:TARGET%は散々焦らされたためか、苦しそうに呻いている
+			ELSE
+				PRINTFORMW %CALLNAME:TARGET%は降参のポーズを取っている
+			ENDIF
+		;射精焦らし
+		ELSEIF NOWEX:射精寸止め == 1
+			IF RAND:3 == 0
+				PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%にペニスをこすり付けている
+			ELSE
+				PRINTFORMW %CALLNAME:TARGET%は自らのペニスを握り締めている
+			ENDIF
+		ENDIF
+	ENDIF
+;-------------------------------------------------
+;処女喪失(処女のみ)
+;-------------------------------------------------
+CASE "処女喪失"
+	IF FIRST_EV("処女喪失") == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			;主人のセックスによる処女喪失
+			IF PLAYER == MASTER && INSERT("Ｖインサート")
+				PRINTFORMW 
+			ELSE
+				PRINTFORMW 
+			ENDIF
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+	ENDIF
+;-------------------------------------------------
+;射精した(ふたなり/オトコのみ)
+;-------------------------------------------------
+CASE "射精した"
+	;初めて
+	IF FIRST_EV("射精した") == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW %CALLNAME:TARGET%のペニスからは想像以上の量の精液が噴出している
+			PRINTFORMW 一リットル近く出ているが、これだけの量は一体どこに貯蔵されていたのだろうか？
+		;それ以外
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%のペニスから精液が噴出している、%CALLNAME:PLAYER%はしばらく観察していたがなかなか勢いが収まらない
+			PRINTFORMW 床を二畳ほど精液まみれにして、ようやく射精は収まった･･･
+		ENDIF
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 「わふっ…わ…ぅ…わっ…ふぅっ…きゅうぅぅ…」
+			PRINTFORMW %CALLNAME:TARGET%は先ほどから精液と思われるものを垂れ流しにしている
+			PRINTFORMW 犬の射精は交尾開始からしばらく続くそうだが、獣人でも同じなのだろうか？
+			PRINTFORMW あるいは、彼女のペニスがすごい持久力を持っているのかもしれない
+		;それ以外
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%は射精を始めてから急におとなしくなった
+			PRINTFORMW 犬は射精を始めると体勢を維持するそうだが、獣人も同じなのかもしれない。
+		ENDIF
+	ENDIF
+;-------------------------------------------------
+;噴乳した(母乳体質のみ)
+;-------------------------------------------------
+CASE "噴乳した"
+	;初めて
+	IF FIRST_EV("噴乳した") == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;従順Lv4以上
+		ELSEIF ABL:従順 >= 4
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;従順Lv4以上
+		ELSEIF ABL:従順 >= 4
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+	ENDIF
+;-------------------------------------------------
+;絶頂放尿した
+;-------------------------------------------------
+CASE "絶頂放尿"
+	;初めて
+	IF FIRST_EV("絶頂放尿") == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;抵抗なし
+		ELSEIF CHECK_COM("強制放尿") == 0
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;抵抗なし
+		ELSEIF CHECK_COM("強制放尿") == 0
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+	ENDIF
+;-------------------------------------------------
+;Ｃ絶頂20以上
+;-------------------------------------------------
+CASE "Ｃ絶頂20回以上"
+	;初めて
+	IF FIRST_EV("Ｃ絶頂20回以上") == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+	ENDIF
+;-------------------------------------------------
+;Ｖ絶頂20以上
+;-------------------------------------------------
+CASE "Ｖ絶頂20回以上"
+	;初めて
+	IF FIRST_EV("Ｖ絶頂20回以上") == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+	ENDIF
+;-------------------------------------------------
+;Ａ絶頂20以上
+;-------------------------------------------------
+CASE "Ａ絶頂20回以上"
+	;初めて
+	IF FIRST_EV("Ａ絶頂20回以上") == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+	ENDIF
+;-------------------------------------------------
+;Ｂ絶頂20以上
+;-------------------------------------------------
+CASE "Ｂ絶頂20回以上"
+	;初めて
+	IF FIRST_EV("Ｂ絶頂20回以上") == 0
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:反発刻印 == 3
+			PRINTFORMW 
+		;恋慕
+		ELSEIF TALENT:恋慕
+			PRINTFORMW 
+		;それ以外
+		ELSE
+			PRINTFORMW 
+		ENDIF
+	ENDIF
+ENDSELECT
+
+
+;-------------------------------------------------
+;@KOJO_MESSAGE_SAMEN_AND_EXTACY関係（X1をキャラ番号に置換）
+;PLAYER、ドラゴン、触手の射精＆絶頂をトリガーにした口上
+;-------------------------------------------------
+@KOJO_MESSAGE_SAMEN_AND_EXTACY_7_1
+;助手が調教した時に口上をスキップする（好みに応じて使う、行頭の;を消すとスキップするようになる）
+;SIF ASSIPLAY
+;	RETURN 0
+
+;-------------------------------------------------
+;髪、顔、股間、腹、尻へのぶっかけ
+;-------------------------------------------------
+IF SHOOT("ぶっかけ")
+	PRINTFORMW 
+;-------------------------------------------------
+;魔法瓶へ転移
+;-------------------------------------------------
+ELSEIF SHOOT("魔法瓶")
+	PRINTFORMW 
+;以下は通常の射精区分。
+;-------------------------------------------------
+;素股、足コキ、スク水や身体で射精させた
+;-------------------------------------------------
+ELSEIF SHOOT("脚") || SHOOT("素股")
+	PRINTFORMW 
+;-------------------------------------------------
+;口で射精させた
+;-------------------------------------------------
+ELSEIF SHOOT("口")
+	;反発刻印Lv3
+	IF MARK:反発刻印 == 3
+		PRINTFORMW 
+	;精液中毒Lv5
+	ELSEIF ABL:精液中毒 >= 5
+		PRINTFORMW 「ぢゅぷっ、ぢゅるるるるっ、ぢゅっ、」
+		PRINTFORMW %CALLNAME:TARGET%は口に出された精液を下品な音をたてて飲み込んでいく
+		PRINTFORMW 「ちゅっ･･･わんっ、わんっ！」
+		PRINTFORMW すべて飲み干すと、もっと欲しいと言いたげに尻尾を振っている
+	;精液中毒Lv3
+	ELSEIF ABL:精液中毒 >= 3
+		PRINTFORMW 「ぢゅるっ、ちゅっ、げほっ、げほっ！」
+		PRINTFORMW %CALLNAME:TARGET%は口に出された精液をすべて飲み込めず、吐き出してしまった。少し多すぎたようだ
+	;奉仕精神Lv3以上
+	ELSEIF ABL:奉仕精神 >= 3
+		PRINTFORMW %CALLNAME:TARGET%は口に出された精液を少しずつ飲み込んでいる
+	;それ以外
+	ELSE
+		PRINTFORMW %CALLNAME:TARGET%は口に出された精液をほとんど吐き出してしまった
+		PRINTFORMW あまり美味しくなかったようだ
+	ENDIF
+;-------------------------------------------------
+;胸で射精させた
+;-------------------------------------------------
+ELSEIF SHOOT("胸")
+	PRINTFORMW 
+;-------------------------------------------------
+;手で射精させた
+;-------------------------------------------------
+ELSEIF SHOOT("手")
+	;反発刻印Lv3
+	IF MARK:反発刻印 == 3
+		PRINTFORMW 
+	;奉仕精神Lv5
+	ELSEIF ABL:奉仕精神 >= 5
+		PRINTFORMW %CALLNAME:TARGET%は顔にかけられた精液を舐め取って嬉しそうにしている。
+	;奉仕精神Lv3
+	ELSEIF ABL:奉仕精神 >= 3
+		PRINTFORMW %CALLNAME:TARGET%は顔にかけられた精液を舐め取っている。
+	;それ以外
+	ELSE
+		PRINTFORMW %CALLNAME:TARGET%は顔にかかった精液を振り落としている。
+	ENDIF
+;-------------------------------------------------
+;セックスで射精させた
+;-------------------------------------------------
+ELSEIF SHOOT("Ｖ中出し")
+	;反発刻印Lv3
+	IF MARK:反発刻印 == 3
+		PRINTFORMW 
+	;恋慕
+	ELSEIF TALENT:恋慕
+		IF RAND:3 == 0
+			PRINTFORMW 「わう〜･･･わんっ、わんっ！」
+			PRINTFORMW %CALLNAME:TARGET%は膣に全ての精液を注がせようと締め付けている。
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%の中に精液を注ぎこみ、ペニスを抜こうとすると%CALLNAME:TARGET%は激しく締め付けてきた
+			PRINTFORMW どうやらまだ抜かないで欲しいようだ
+		ENDIF
+	;屈服刻印Lv3
+	ELSEIF MARK:屈服刻印 == 3
+		PRINTFORMW %CALLNAME:TARGET%は中に注ぎ込まれた精液を指で掻き出し舐め取っている。
+	;それ以外
+	ELSE
+		PRINTFORMW %CALLNAME:TARGET%の中からペニスを引き抜くと、注いだ精液がゴポッ、と音を立ててあふれ出した。
+	ENDIF
+ELSEIF SHOOT("Ａ中出し")
+	;反発刻印Lv3
+	IF MARK:反発刻印 == 3
+		PRINTFORMW 
+	;恋慕
+	ELSEIF TALENT:恋慕
+		PRINTFORMW %CALLNAME:TARGET%はアナルに注ぎ込まれる精液を零すまいと締め付けている。
+	;屈服刻印Lv3
+	ELSEIF MARK:屈服刻印 == 3
+		PRINTFORMW %CALLNAME:TARGET%はアナルで感じる熱に身体を震わせている。
+	;それ以外
+	ELSE
+		PRINTFORMW %CALLNAME:TARGET%はアナルに注ぎ込まれたことが不満のようだ。
+	ENDIF
+;-------------------------------------------------
+;キスで射精
+;-------------------------------------------------
+ELSEIF SHOOT("キス") || SHOOT("顔面騎乗")
+	PRINTFORMW 
+;-------------------------------------------------
+;クンニで射精
+;-------------------------------------------------
+ELSEIF SHOOT("逆クンニ")
+	PRINTFORMW 
+;-------------------------------------------------
+;逆アナル、逆レイプで射精
+;-------------------------------------------------
+ELSEIF SHOOT("逆レイプ") || SHOOT("逆アナル") || SHOOT("アナル奉仕")
+	PRINTFORMW 
+;-------------------------------------------------
+;MASTERが助手に射精
+;-------------------------------------------------
+ELSEIF SHOOT("助手")
+	PRINTFORMW 
+ENDIF
+
+;-------------------------------------------------
+;※@COUNTER_KOJO関係（7をキャラ番号に置換）
+;カウンター行動をトリガーにした口上
+;カウンター行動時に口上を発動します
+;-------------------------------------------------
+@COUNTER_KOJO_7_1, ARGS
+SELECTCASE ARGS
+CASE "カウンター無し"
+	CALL COUNTER_TEXT, ARGS
+CASE "Ｖインサート"
+	CALL COUNTER_TEXT, ARGS
+CASE "Ａインサート"
+	CALL COUNTER_TEXT, ARGS
+CASE "愛撫"
+	CALL COUNTER_TEXT, ARGS
+CASE "奉仕"
+	CALL COUNTER_TEXT, ARGS
+CASE "ＳＭ"
+	CALL COUNTER_TEXT, ARGS
+CASE "恍惚"
+	PRINTFORMW 
+CASE "押し倒し"
+	PRINTFORMW 
+CASE "ストック使用"
+	PRINTFORMW 
+CASE "強制終了"
+	PRINTFORMW 
+CASE "恍惚から復帰"
+	PRINTFORMW 
+CASE "助手が限界"
+	PRINTFORMW 
+ENDSELECT
+
+RETURN 1
+
+;-------------------------------------------------
+;@KOJO_MESSAGE_MARKCNG関係（X1をキャラ番号に置換）
+;刻印変動をトリガーにした口上
+;刻印変動後に口上を発動します
+;-------------------------------------------------
+@KOJO_MESSAGE_MARKCNG_7_1, ARGS
+;助手が調教した時に口上をスキップする（好みに応じて使う、行頭の;を消すとスキップするようになる）
+;SIF ASSIPLAY
+;	RETURN 0
+
+SELECTCASE ARGS
+;-------------------------------------------------
+;苦痛刻印Lv3取得
+;-------------------------------------------------
+CASE "苦痛刻印Lv3取得"
+	IF FIRST_EV("苦痛刻印Lv3取得") == 0
+		PRINTFORMW %CALLNAME:TARGET%はどうやら、怯えているようだ。
+		PRINTFORMW %CALLNAME:PLAYER%に何かを訴えかけるような目線を向けている。
+		RETURN 1
+	ENDIF
+;-------------------------------------------------
+;快楽刻印Lv3取得
+;-------------------------------------------------
+CASE "快楽刻印Lv3取得"
+	IF FIRST_EV("快楽刻印Lv3取得") == 0
+		PRINTFORMW 「アオオオオォォォォッ！！」
+		PRINTFORMW %CALLNAME:TARGET%は快楽に溺れつつあるようだ。
+		RETURN 1
+	ENDIF
+;-------------------------------------------------
+;屈服刻印Lv3取得
+;-------------------------------------------------
+CASE "屈服刻印Lv3取得"
+	IF FIRST_EV("屈服刻印Lv3取得") == 0
+		PRINTFORMW 「わんっ、わんっ、わんっ♪」
+		PRINTFORMW %CALLNAME:TARGET%はかなり%CALLNAME:PLAYER%に懐いたようだ、尻尾を振って顔を押し付けてくる。
+		RETURN 1
+	ENDIF
+;-------------------------------------------------
+;反発刻印Lv3取得
+;-------------------------------------------------
+CASE "反発刻印Lv3取得"
+	IF FIRST_EV("反発刻印Lv3取得") == 0
+		PRINTFORMW 「グルルルルルッ！！」
+		PRINTFORMW %CALLNAME:TARGET%は誰が見ても警戒してるとすぐわかる様子で、低く唸っている。
+		RETURN 1
+	ENDIF
+ENDSELECT
+
+;-------------------------------------------------
+;イベント口上集（X1、X2をキャラ番号に置換する）
+;-------------------------------------------------
+@SELF_KOJO_K7_1, ARGS
+SELECTCASE ARGS
+;-------------------------------------------------
+;朝フェラ
+;-------------------------------------------------
+CASE "朝フェラ"
+	;恋慕
+	IF TALENT:恋慕
+		PRINTFORMW 朝目が覚めると%CALLNAME:TARGET%は美味しそうに%CALLNAME:PLAYER%のペニスをしゃぶっていた
+		PRINTFORMW 「わんっ！わんっ！わん♪」
+		PRINTFORMW %CALLNAME:PLAYER%が目を覚ますと%CALLNAME:TARGET%は顔を嘗め回してきた。
+	;奉仕精神Lv5以上
+	ELSEIF ABL:奉仕精神 >= 5
+		PRINTFORMW 
+	;それ以外
+	ELSE
+		PRINTFORMW 
+	ENDIF
+	RETURN 1
+;-------------------------------------------------
+;喫茶店
+;-------------------------------------------------
+CASE "喫茶店"
+	IF RAND:3 == 0
+		PRINTFORML 「わふ、わふわふ、うぉふっ♪」
+	ELSEIF RAND:2 == 0
+		PRINTFORML 「あおーん♪　わふわふ、わふっ♪」
+	ELSE
+		PRINTFORML 「わんっ、わんわん♪　わおーん♪」
+	ENDIF
+	RETURN 1
+ENDSELECT
+
+
+;-------------------------------------------------
+;TARGET以外の立場で呼ばれた時の台詞全般
+;-------------------------------------------------
+@GUEST_KOJO_K7_1, ARGS, ARG
+SELECTCASE ARGS
+CASE "調教相手に選ばれた"
+
+CASE "助手に抜擢"
+	;初めて
+	IF EXP:ARG:助手経験 == 0
+
+	ELSE
+
+	ENDIF
+CASE "一言イベント"
+
+CASE "助手：主人にお掃除フェラ"
+
+CASE "助手：調教対象にお掃除クンニ"
+
+CASE "助手：調教対象にお掃除Ａ舐め"
+
+CASE "助手：主人にＰ恥垢お掃除フェラ"
+
+CASE "助手：撮影開始"
+
+CASE "館内調教：登場台詞"
+
+CASE "館内調教：ギャラリー増加台詞"
+
+CASE "館内調教：感想台詞"
+
+CASE "助手で性処理：おあずけ"
+
+CASE "助手で性処理"
+
+CASE "助手で性処理：事後"
+
+CASE "乱交開始"
+	SELECTCASE RAND_MULTI(ARG, CHARA_NUM("乱交参加中") )
+	CASE 0
+		PRINTFORML 「ガオっ！ ガォーン！！」
+	CASE 1
+		PRINTFORML 「わんっ！わんっ！わんっ！」
+	CASEELSE
+		PRINTFORML 「くぅ〜ん……♪」
+	ENDSELECT
+
+;-------------------------------------------------
+;書類仕事イベント
+;-------------------------------------------------
+CASE "書類仕事：お手伝い"
+
+CASE "書類仕事：キス"
+
+CASE "書類仕事：セクハラ"
+
+CASE "書類仕事：無視"
+
+ENDSELECT
+
+;-------------------------------------------------
+;@単体エンディング関係(X1をキャラ番号に置換)
+;通常のエンディングチェックの前に個別エンディングを判定
+;-------------------------------------------------
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;★ここから先にはエンディングが記述されています★
+;ネタバレを避けたい方は閲覧しないようにご注意下さい。
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+@SINGLE_ENDING_K7_1
+RETURN 1

@@ -1,0 +1,676 @@
+﻿@COM1
+;クンニ
+CALL PRINT_TRAIN_NAME(SELECTCOM)
+
+CALL TRAIN_MESSAGE_B
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+STR:0 = %STR:2%
+
+;-------------------------------------------------
+;射精チェック
+;-------------------------------------------------
+SIF TEQUIP:押し倒し
+	CALL SAMEN_CHECK
+
+RETURN 1
+
+@FLAG_COM1, ARG
+;対象のＶ⇔調教者の口の汚れが移動
+CALL EQ_STAIN, TARGET, PLAYER, 3, 0
+
+SIF CHECK_COM("お掃除クンニ", 1)
+	CALL SETFLAG, "お掃除クンニ", PLAYER
+
+
+@SOURCE_COM1, ARG
+VARSET LOCAL
+
+LOCAL:20 += 5
+LOCAL:21 += 50
+
+LOCAL:14 = 50
+
+;ABL:Ｃ感覚をみる
+LOCAL:0 = CALCF("Ｃ刺激", 1)
+;調教者の舌使いをみる
+LOCAL:0 = SOURCE_EXABL(LOCAL:0, 30, PLAYER)
+
+IF CHECK_COM("お掃除クンニ", 1)
+	CALL SOURCE_COM13, 30
+	TIMES LOCAL:0, 0.10
+;顔面騎乗の時には快感を得るよりはむしろ攻撃重視
+ELSEIF TEQUIP:押し倒し
+	TIMES LOCAL:0, 0.30
+ENDIF
+
+LOCAL:10 = 100
+LOCAL:11 = 100 + ABL:Ｃ感覚 * 300
+LOCAL:12 = 500
+
+;ABL:露出癖をみる
+SELECTCASE ABL:露出癖
+CASE 1
+	LOCAL:12 += 100
+	LOCAL:11 += 50
+CASE 2
+	LOCAL:12 += 200
+	LOCAL:11 += 100
+CASE 3
+	LOCAL:12 += 300
+	LOCAL:11 += 200
+CASE 4
+	LOCAL:12 += 500
+	LOCAL:11 += 300
+CASE 5
+	LOCAL:12 += 700
+	LOCAL:11 += 400
+ENDSELECT
+
+;アソコが露出していないと快Ｃ減
+IF CHECK_CLO("Ｖ露出") == 0 && COND("調教中")
+	;ズボン等をはいていると快Ｃ激減
+	IF CHECK_OUTER("ズボン") || CHECK_PANTIES("レザー")
+		TIMES LOCAL:0, 0.20
+		TIMES LOCAL:12, 0.20
+	ELSE
+		TIMES LOCAL:0, 0.60
+		TIMES LOCAL:12, 0.50
+	ENDIF
+ENDIF
+
+CALL CALC, "調教ソース", LOCAL:0, LOCAL:1, LOCAL:2, LOCAL:3, LOCAL:4, LOCAL:5, LOCAL:6, LOCAL:7, LOCAL:8, LOCAL:9, LOCAL:10, LOCAL:11, LOCAL:12, LOCAL:13, LOCAL:14, LOCAL:15, LOCAL:16, LOCAL:17, LOCAL:18, LOCAL:19, LOCAL:20, LOCAL:21, ARG
+
+
+@EQUIP_COM1
+;顔面騎乗中
+SIF SELECTCOM == 1 || SELECTCOM == 9 || SELECTCOM == 99 || SELECTCOM == 144 || TEQUIP:シックスナイン
+	RETURN 0
+;Ａ顔面騎乗でも、体勢的には顔面騎乗となるかな？
+CALL SOURCE_COM1, 50
+
+;射精ゲージの増加
+LOCAL = SELECTCOM
+
+SELECTCOM = 1
+CALL SAMEN_CHECK, 50
+
+SELECTCOM = LOCAL
+
+RETURN 1
+
+@EQUIP_COM1_2
+;顔面騎乗中
+SIF SELECTCOM == 1 || SELECTCOM == 9 || SELECTCOM == 99 || TEQUIP:シックスナイン
+	RETURN 0
+PRINTL ＜顔面騎乗中＞
+
+RETURN 1
+
+
+@TRAIN_MESSAGE_COM1
+;特に[屈服刻印Lv3か恥薄い]、[淫乱]、[アイマスク]、[バイブ]、[ハーピー]、[ラミア]、[縄]、[押し倒され中]等でテキストが変わります。
+;押し倒されているときは顔面騎乗されて反撃できない強制クンニ
+IF TEQUIP:押し倒し
+	;押し倒されているときは顔面騎乗
+	PRINTFORM %CALLNAME:TARGET%は
+
+	;Ｗ押し倒しで助手が前回と同じ行動(違う行動の時は、ここでなく、EQUIP_COM32で記述)
+	SIF TEQUIP:Ｗ押し倒し && SELECTCOM:1 == PREVCOM:1 && SELECTCOM:1 >= 0
+		PRINTFORM %TEXTS("Ｗ押し倒し中")%
+	;連続
+	IF (TEQUIP:顔面騎乗 == 1 || PREVCOM == SELECTCOM) && COND("前Ｔ調教者") == PLAYER
+		PRINTFORM %CALLNAME:PLAYER%の
+
+		SIF PREVEX("放尿") && ABL:サドっ気 >= 3
+			PRINTFORM 口にピュッピュッとおしっこを出し切ってすっきりすると、今度は
+
+		
+		IF RAND:3 == 0
+			IF RAND:2 && PENIS(TARGET) == 0 && CHECK_CLO("Ｖ露出")
+				PRINTFORM 鼻に
+				IF ABL:自慰中毒 >= 3 && RAND:2
+					PRINTFORM 夢中で
+				ELSEIF ABL:欲望 + ABL:Ｃ感覚 + ABL:サドっ気 >= 8
+					PRINTFORM 激しく
+				ENDIF
+				PRINTFORM クリトリス
+			ELSE
+				PRINTFORM 顔に
+				;あそこが剥き出しでない
+				IF CHECK_CLO("Ｖ露出") == 0 && RAND:3
+					IF RAND:3
+						PRINTFORM %CLO("股間")%の食い込む
+					ELSE
+						PRINTFORM スリスリと
+					ENDIF
+				ELSEIF ABL:欲望 + ABL:サドっ気 >= 5
+					IF CHECK_CLO("Ｖ露出") && PALAM:Ｖ潤 >= 3000 && RAND:2
+						PRINTFORM グチュグチュと
+					ELSE
+						PRINTFORM 激しく
+					ENDIF
+				ENDIF
+				PRINTFORM 股間
+			ENDIF
+			PRINTFORM を擦りつけ
+		ELSEIF RAND:2
+			IF ABL:欲望 + ABL:サドっ気 >= 5 && RAND:3 == 0
+				PRINTFORM 顔を騎乗位の時のような
+				IF ABL:腰使い >= 2 && RAND:2
+					PRINTFORM 艶かしい
+				ELSEIF ABL:腰使い
+					PRINTFORM 激しい
+				ENDIF
+				PRINTFORM 腰の動きで犯し
+			ELSEIF ABL:欲望 + ABL:自慰中毒 >= 5 && RAND:2
+				PRINTFORM 顔を使って、激しい自慰行為に没頭し
+			ELSE
+				PRINTFORM 顔に股間を押し付けたり離したりし
+			ENDIF
+		ELSE
+			IF ABL:欲望 + ABL:サドっ気 >= 5 && RAND:3 == 0
+				PRINTFORM 顔を股間で押し潰して、
+				IF RAND:2
+					PRINTFORM ゆっくり腰を動かし
+				ELSE
+					PRINTFORM 激しく腰を動かし
+				ENDIF
+			ELSEIF ABL:欲望 + ABL:サドっ気 >= 3 && RAND:2
+				PRINTFORM 顔にグリグリと股間を押し付け
+			ELSE
+				PRINTFORM 顔を股間で押しつぶし
+			ENDIF
+		ENDIF
+		PRINTFORMW \@ PREVEX("放尿") && ABL:サドっ気 >= 3 ? はじめた # ている \@…
+	;脚が使えない人用
+	ELSEIF COND("脚の使用") == 0
+		IF (TEQUIP:顔面騎乗 == 9 || PREVCOM == 9) && COND("前Ｔ調教者") == PLAYER
+			PRINTFORM 腰を浮かせると、今度は
+		ELSE
+			;恥薄い、淫乱、露出癖3以上
+			IF CHECK_CLO("Ｖ露出") && TALENT:恥薄い && TALENT:淫乱 && ABL:露出癖 >= 3 && RAND:3 == 0
+				;SIF TALENT:ハーピー == 0 && TALENT:ラビアピアス && RAND:2
+				;	PRINTFORM ラビアピアスにかけた
+				PRINTFORM %NAMES("指")%で秘部を全開にして
+			;アソコが剥き出しで無い
+			ELSEIF CHECK_CLO("ずらせる") && !RAND:(3 + !CHOSECOM(1)*3)
+				CALL SETFLAG, "ボトムを１枚ずらす", TARGET
+			ELSEIF TALENT:恥じらい && RAND:2
+				PRINTFORM 恥ずかしそうに
+			;淫乱or恥薄いor好色or露出癖3以上
+			ELSEIF TALENT:恥薄い || TALENT:好色 || TALENT:淫乱 || ABL:露出癖 >= 3
+				PRINTFORM 恥ずかしい部分を見え易いように押し開いてから
+			ENDIF
+			PRINTFORM %CALLNAME:PLAYER%の顔を押さえつけ、
+		ENDIF
+		IF CHECK_CLO("Ｖ露出") && RAND:3 == 0
+			;サドっ気3以上
+			IF ABL:サドっ気 >= 3 && RAND:2
+				PRINTFORMW %TEXTS("アソコ：感触")%で鼻と口を塞いできた…
+			ELSE
+				PRINTFORM %TEXTS("アソコ：感触")%を
+				SIF CHECK_STAIN(STAIN:Ｖ, "精液") || PALAM:Ｖ潤 >= PALAMLV:2
+					PRINTFORM グチュグチュと
+				PRINTW 擦り付けてきた…
+			ENDIF
+		;パンツの記述も追加
+		ELSEIF RAND:4
+			IF (ABL:サドっ気 >= 3 || TALENT:淫乱) && RAND:3 == 0
+				PRINTFORMW %TEXTS("アソコ：感触")%で鼻と口を塞いできた…
+			ELSEIF RAND:2
+				PRINTFORMW %TEXTS("アソコ：感触")%\@ CHECK_CLO("Ｖ露出") ?  # 越しにアソコ \@の%TEXTS("匂い")%を味わわせてきた…
+			ELSE
+				PRINTFORMW ゴシゴシと%TEXTS("アソコ：感触")%で顔を拭いてきた…
+			ENDIF
+		ELSE
+			IF RAND:2
+				PRINTW 股間で押しつぶしてきた…
+			ELSE
+				PRINTFORM グリグリと
+				SIF PALAM:Ｖ潤 >= 3000
+					PRINTFORM 蒸れた
+				PRINTW 股間を擦り付けてきた…
+			ENDIF
+		ENDIF
+	ELSE
+		;Ｗ押し倒し
+		IF TEQUIP:Ｗ押し倒し
+			PRINTFORM %CALLNAME:PLAYER%の顔にまたがり、
+		ELSEIF TEQUIP:シックスナイン
+			PRINTFORM %CALLNAME:PLAYER%の顔にまたがって、
+		ELSEIF (TEQUIP:顔面騎乗 == 9 || PREVCOM == 9) && COND("前Ｔ調教者") == PLAYER
+			PRINTFORM 腰を浮かせると、今度は
+		ELSE
+			;恥薄い、淫乱、露出癖3以上
+			IF CHECK_CLO("Ｖ露出") && TALENT:恥薄い && TALENT:淫乱 && ABL:露出癖 >= 3 && RAND:4 == 0
+				;SIF TALENT:ハーピー == 0 && TALENT:ラビアピアス && RAND:2
+				;	PRINTFORM ラビアピアスにかけた
+				PRINTFORM %NAMES("指")%で秘部を全開にして
+			;アソコが剥き出しで無い
+			ELSEIF CHECK_CLO("ずらせる") && !RAND:(4 + !CHOSECOM(1)*3)
+				CALL SETFLAG, "ボトムを１枚ずらす", TARGET
+			ELSEIF RAND:3 == 0
+				PRINTFORM 頭を%TEXTS("太股：描写")%太股で挟むようにして
+			ELSEIF TALENT:恥じらい && RAND:2
+				PRINTFORM 恥ずかしそうに
+			;淫乱or恥薄いor好色or露出癖3以上
+			ELSEIF TALENT:恥薄い || TALENT:好色 || TALENT:淫乱 || ABL:露出癖 >= 3
+				IF RAND:3 == 0
+					IF TALENT:淫乱 && RAND:(2 + TALENT:好色) == 0
+						PRINTFORM 内腿に筋が浮き出るほどに
+					ELSEIF TALENT:好色 && RAND:2
+						PRINTFORM 恥ずかしい部分がよく見えるように
+					ENDIF
+					IF RAND:2 || TALENT:ハーピー
+						PRINTFORM 股を開いて
+					ELSE
+						PRINTFORM 両手で自分の股を押し開いて
+					ENDIF
+				ELSEIF RAND:2
+					PRINTFORM Ｍ字開脚で
+				ELSE
+					PRINTFORM 騎乗位を始めるかのような仕草で
+				ENDIF
+			ENDIF
+			PRINTFORM %CALLNAME:PLAYER%の顔面にまたがり、
+		ENDIF
+		;ズボンですか？
+		IF CHECK_OUTER("ズボン")
+			IF RAND:2
+				PRINTW 股間で押しつぶしてきた…
+			ELSE
+				PRINTFORM グリグリと
+				SIF PALAM:Ｖ潤 >= 3000
+					PRINTFORM 蒸れた
+				PRINTW 股間を擦り付けてきた…
+			ENDIF
+		ELSEIF CHECK_CLO("Ｖ露出") && RAND:3 == 0
+			;サドっ気3以上
+			IF ABL:サドっ気 >= 3 && RAND:2
+				PRINTFORMW %TEXTS("アソコ：感触")%で鼻と口を塞ぐように座ってきた…
+			ELSE
+				PRINTFORM %TEXTS("アソコ：感触")%を
+				SIF CHECK_STAIN(STAIN:Ｖ, "精液") || PALAM:Ｖ潤 >= PALAMLV:2
+					PRINTFORM グチュグチュと
+				PRINTW 擦り付けてきた…
+			ENDIF
+		;パンツの記述も追加
+		ELSEIF RAND:4
+			IF (ABL:サドっ気 >= 3 || TALENT:淫乱) && RAND:3 == 0
+				PRINTFORMW %TEXTS("アソコ：感触")%で鼻と口を塞ぐように座ってきた…
+			ELSEIF RAND:2
+				PRINTFORMW %TEXTS("アソコ：感触")%\@ CHECK_CLO("Ｖ露出") ?  # 越しにアソコ \@の%TEXTS("匂い")%を味わわせてきた…
+			ELSE
+				PRINTFORMW ゴシゴシと%TEXTS("アソコ：感触")%で顔を拭いてきた…
+			ENDIF
+		ELSE
+			IF RAND:2
+				PRINTW 股間で押しつぶしてきた…
+			ELSE
+				PRINTFORM グリグリと
+				SIF PALAM:Ｖ潤 >= 3000
+					PRINTFORM 蒸れた
+				PRINTW 股間を擦り付けてきた…
+			ENDIF
+		ENDIF
+	ENDIF
+	;Ｗ押し倒しで淫乱or欲情4LV以上なら追加
+	IF TEQUIP:Ｗ押し倒し && (TALENT:淫乱 || PALAM:欲情 >= PALAMLV:4)
+		SIF (SELECTCOM:1 == 65 || SELECTCOM:1 == 75) && ABL:レズっ気 >= 3 && RAND:2
+			PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:(TARGET:1)%と舌を絡めながら、快感を貪っている…
+	ENDIF
+ELSEIF CHECK_COM("恥垢お掃除クンニ")
+	PRINTFORM %CALLNAME:PLAYER%は%CALLNAME:TARGET%のアソコを押し広げ、
+	PRINTFORM %TEXTR("陰唇に残る恥垢", "膣口にこびりついている恥垢", "白くドロリとした汚れ", "チーズの様な汚れ", "粘膜を彩る恥ずかしい汚れ")%
+	;においフェチ分岐
+	IF PLAYER == MASTER && COND("性癖：においフェチ", PLAYER) && TALENT:お気に入り + TALENT:相思相愛 && RAND:3
+		PRINTFORM の%TEXTS("匂い")%を嗅ぎながら、
+	ELSE
+		PRINTFORM を
+	ENDIF
+	PRINTFORMW %TEXTR("舌", "尖らせた舌先")%で%TEXTR("隅々まで舐めとった", "きれいに掃除した", "徹底的に掃除した")%…
+
+ELSEIF PREVCOM == SELECTCOM && COND("前Ｔ調教者") == PLAYER
+	;パンツずらしフラグ
+	SIF (CHECK_COM("お掃除クンニ") || RAND:4 == 0) && CHECK_CLO("Ｖ露出") == 0
+			CALL SETFLAG, "ボトムを露出：テキスト無し", TARGET
+	PRINTFORM %CALLNAME:PLAYER%は%CALLNAME:TARGET%の
+		IF RAND:3 && TEQUIP:尿道ブジー == 0
+		LOCAL:0 = CALCF("尿道刺激", 0)
+		;これは凹凸もないし快楽用の道具ではない
+		TIMES LOCAL:0, 0.20
+		CALL SETFLAG, "尿道性感フラグ", TARGET
+			IF CALCF("尿道径") >= 40
+				PRINTFORML これまでの調教ですっかり緩んでしまった%CALLNAME:TARGET%の尿道に舌を突き入れ、
+				PRINTFORM 粘膜の隅々まで
+			ELSEIF CALCF("尿道径") >= 20
+				PRINTFORML 調教の成果により綻び始めた%CALLNAME:TARGET%の尿道をぐりぐりと舌で、
+				PRINTFORM 粘膜を
+			ELSE
+				PRINTFORML 硬く閉じた%CALLNAME:TARGET%の尿道口を、
+			ENDIF
+			
+			IF RAND:5 == 0
+				PRINTFORM 執拗に
+			ELSEIF RAND:4 == 0
+				PRINTFORM 徹底的に
+			ELSEIF RAND:3 == 0
+				PRINTFORM 丁寧に
+			ELSEIF RAND:2
+				PRINTFORM 激しく
+			ELSE
+				PRINTFORM 休まず
+			ENDIF
+			
+			IF RAND:4 == 0
+			PRINTW 磨き上げた…
+		ELSEIF RAND:3 == 0
+			PRINTW 刺激し続けた…
+		ELSEIF RAND:2
+			PRINTW 舐め回し続けた…
+		ELSE
+			PRINTW 擦りあげ続けた…
+		ENDIF
+	;クリトリスむき出しで、クリキャップなし
+	ELSEIF RAND:2 && PENIS(TARGET) == 0 && CHECK_CLO("Ｖ露出") && TEQUIP:クリキャップ == 0 && ABL:PLAYER:技巧 >= 3 && CHECK_COM("お掃除クンニ") == 0
+		PRINTFORM %TEXTS("クリトリス")%クリトリスを
+		SIF CALCF("Ｃ発情") < 2
+			PRINTFORM 剥きだして、
+		IF RAND:2
+			PRINTFORM 舌で
+		ELSE
+			PRINTFORM 舌先で
+		ENDIF
+		IF RAND:5 == 0
+			PRINTFORM 執拗に
+		ELSEIF RAND:4 == 0
+			PRINTFORM 徹底的に
+		ELSEIF RAND:3 == 0
+			PRINTFORM 丁寧に
+		ELSEIF RAND:2
+			PRINTFORM 激しく
+		ELSE
+			PRINTFORM 休まず
+		ENDIF
+		IF RAND:4 == 0
+			PRINTW 転がし続けた…
+		ELSEIF RAND:3 == 0
+			PRINTW 刺激し続けた…
+		ELSEIF RAND:2
+			PRINTW 舐め回し続けた…
+		ELSE
+			PRINTW 擦りあげ続けた…
+		ENDIF
+	ELSE
+		;アソコむき出しで、ツルツル
+		IF CHECK_CLO("Ｖ露出") && COND("陰毛") && COND("陰毛") <= 3 && RAND:3 == 0
+			PRINTFORM 舐めやすいツルツルのアソコ
+		ELSEIF CHECK_CLO("Ｖ露出") && TALENT:ラビアピアス && TEQUIP:バイブ == 0 && RAND:2
+			SIF PENIS(TARGET) == 0 && TALENT:クリピアス
+				PRINTFORM 幾つもの
+			PRINTFORM ピアスで彩られたアソコ
+		ELSE
+			PRINTFORM %TEXTS("アソコ：感触")%
+			SIF CHECK_CLO("食い込み")
+				PRINTFORM 越しの股間
+		ENDIF
+		PRINTFORM を
+		;とりあえず、むき出しのとき
+		IF CHECK_CLO("Ｖ露出") && TEQUIP:バイブ == 0 && (CHECK_COM("お掃除クンニ") || RAND:3)
+			PRINTFORM 押し広げて、
+			;においフェチ分岐
+			IF PLAYER == MASTER && COND("性癖：においフェチ", PLAYER) && TALENT:お気に入り + TALENT:相思相愛
+				IF CHECK_STAIN(STAIN:Ｖ, "Ｖ恥垢") && RAND:4
+					IF RAND:3 == 0 || CHECK_COM("お掃除クンニ")
+						PRINTFORM 恥垢の%TEXTS("匂い")%を嗅ぎながら
+					ELSEIF RAND:2
+						PRINTFORM 粘膜に残る恥ずかしい垢を
+					ELSE
+						PRINTFORM 膣口にこびりついた恥垢を差し入れた舌で
+					ENDIF
+				ELSEIF PALAM:欲情 >= 3000 && RAND:2
+					PRINTFORM 蒸れた%TEXTS("匂い")%を楽しみながら
+				ELSE
+					PRINTFORM クセのある淫臭を吸い込みながら
+				ENDIF
+			ENDIF
+		ENDIF
+		IF CHECK_COM("お掃除クンニ")
+			PRINTFORMW 念入りにお掃除した…
+		ELSE
+			PRINTFORMW 思うがままに貪った…
+		ENDIF
+	ENDIF
+;それ以外(ズボンは無い)
+ELSE
+	SIF PLAYER != MASTER
+		PRINTFORM %CALLNAME:PLAYER%は
+	;屈服刻印3LV or恥薄いor淫乱+欲情3000以上で、69体勢でなく、縛られてないなら誘ってきます。
+	IF TEQUIP:シックスナイン == 0 && (MARK:屈服刻印 == 3 || TALENT:恥薄い || TALENT:淫乱) && PALAM:欲情 >= 3000 && TEQUIP:拘束 == 0 && RAND:2
+		;前回くぱぁ
+		IF PREVCOM == 13
+			PRINTFORM アソコを指で広げて
+		;バイブ使用中
+		ELSEIF TEQUIP:バイブ
+			PRINTFORM バイブを咥えたアソコを見せ付けて
+			;パンツずらしフラグ
+			SIF CHECK_CLO("Ｖ露出") == 0
+				CALL SETFLAG, "ボトムを露出：テキスト無し", TARGET
+		ELSEIF CHECK_CLO("Ｖ露出") && RAND:3 == 0
+			PRINTFORM %TEXTS("アソコ：視覚")%
+			;露出癖Lv3以上
+			IF ABL:露出癖 >= 3 && RAND:2
+				PRINTFORM を%NAMES("指")%先で押し開いて
+			ELSE
+				PRINTFORM を見せ付けて
+			ENDIF
+		ELSEIF CHECK_CLO("ずらせる") && !RAND:(6 + !CHOSECOM(1)*3)
+			CALL SETFLAG, "ボトムを１枚ずらす", TARGET
+		;アソコを見せ付けてくる
+		ELSEIF RAND:2 || COND("脚が無い")
+			PRINTFORM %TEXTS("アソコ：視覚")%を見せ付けて
+		ELSE
+			PRINTFORM 脚を
+			IF RAND:2
+				PRINTFORM 大胆に
+			ELSE
+				PRINTFORM 大きく
+			ENDIF
+			PRINTFORM 開いて
+		ENDIF
+		IF RAND:3 == 0
+			PRINTFORM おねだりしている
+		ELSEIF RAND:2
+			PRINTFORM 誘っている
+		ELSE
+			PRINTFORM いる
+		ENDIF
+		PRINTFORM %CALLNAME:TARGET%の
+		;スカートあり？
+		IF EQUIP:スカート && RAND:2
+			PRINTFORM %SKIRT(TARGET, 1)%に頭を突っ込んで、
+		ELSE
+			PRINTFORM 股間に顔を埋めて、
+		ENDIF
+	ELSE
+		IF PREVCOM == 13
+			PRINTFORM アソコを指で広げている
+		ELSEIF PREVCOM == 95
+			PRINTFORM 足コキをしていた
+		;縛られてますか？
+		ELSEIF TEQUIP:拘束
+			PRINTFORM 身動きの取れない
+		ENDIF
+		PRINTFORM %CALLNAME:TARGET%の
+		;パンツをずらす
+		IF CHECK_CLO("ずらせる") && !RAND:(2 + !CHOSECOM(1)*3)
+			CALL SETFLAG, "ボトムを１枚ずらす", TARGET
+			PRINTFORM 、
+		ELSE
+			;スカートあり？
+			IF EQUIP:スカート && RAND:2
+				PRINTFORM %SKIRT(TARGET, 1)%に頭を突っ込んで、
+			ELSE
+				PRINTFORM 股間に顔を埋めて、
+			ENDIF
+		ENDIF
+	ENDIF
+
+	IF TEQUIP:バイブ
+		IF PENIS(TARGET)
+			PRINTFORM ペニス
+		ELSE
+			IF CALCF("Ｃ発情") >= 2
+				PRINTFORM 皮から顔を出している
+			ELSE
+				PRINTFORM 包皮をかぶったままの
+			ENDIF
+			;淫乱or欲情3以上orＶ経験100以上
+			IF CALCF("Ｃ発情")
+				PRINTFORM ツンと尖った
+			ELSEIF TALENT:小柄体型
+				PRINTFORM 小さな
+			ENDIF
+			PRINTFORM クリトリス
+		ENDIF
+		PRINTFORM を舐めつつ、
+		;Ｖ潤3以上で追加
+		SIF PALAM:Ｖ潤 >= PALAMLV:3 && RAND:3 >= 1
+			PRINTFORM 粘液にまみれた
+		PRINTFORM バイブを
+		;乱数分岐
+		IF RAND:3 == 0
+			PRINTFORM ズボズボと
+		ELSEIF RAND:2
+			PRINTFORM 優しく
+		ELSE
+			PRINTFORM ゆっくりと
+		ENDIF
+		PRINTFORMW 出し入れした…
+		RETURN 1
+	ELSEIF CHECK_COM("お掃除クンニ")
+		;パンツずらしフラグ
+		SIF CHECK_CLO("Ｖ露出") == 0
+			CALL SETFLAG, "ボトムを露出：テキスト無し", TARGET
+		;尿のお掃除
+		IF GETBIT(CHECK_COM("お掃除クンニ"), 1)
+			;尿道ブジーや指挿入
+			IF (PREVCOM == 15 || PREVCOM == 151) && RAND:3
+				PRINTFORM 虐められたばかりで雫をこぼす小さな穴を
+			ELSEIF PREVPLAY("膣内浴尿")
+				PRINTFORM %TEXTR("小便器として使われたばかりの", "強いアンモニアの臭いを漂わせている")%膣を
+			ELSE
+				PRINTFORM 排尿直後の小さな穴を
+			ENDIF
+		ELSEIF PREVPLAY("尿道インサート")
+			IF RAND:3 == 0
+				PRINTFORM 精液を搾り取ったばかりな小さな穴を
+			ELSEIF RAND:2
+				PRINTFORM ペニスの大きさに馴染んで緩み気味なオシッコの穴を
+			ELSE
+				PRINTFORM 中出しセックス直後で尿混じりの白い涎を垂らす小さな穴を
+			ENDIF
+		ELSE
+			PRINTFORM 中出しセックス直後
+			IF TALENT:小柄体型 && ABL:Ｖ拡張 == 0
+				PRINTFORM の小さな穴を
+			ELSEIF AGE(TARGET) >= 3 && PALAM:欲情 >= 10000 && RAND:2
+				PRINTFORM で凄い臭いをさせているアソコを
+			ELSE
+				PRINTFORM の\@ (TALENT:淫壷 && PALAM:快Ｖ > 8000) ? ヒクヒク蠢く # \@膣口を
+			ENDIF
+		ENDIF
+	;においフェチ分岐
+	ELSEIF PLAYER == MASTER && COND("性癖：においフェチ", PLAYER) && TALENT:お気に入り + TALENT:相思相愛 && (CHOSECOM(SELECTCOM) == 0 || RAND:3 == 0)
+		;パンツずらしフラグ
+		SIF CHECK_CLO("Ｖ露出") == 0
+			CALL SETFLAG, "ボトムを露出：テキスト無し", TARGET
+		;尿のにおい
+		IF CHECK_STAIN(STAIN:Ｖ, "尿") && RAND:3 == 0
+			SIF PREVEX("放尿") == 0
+				PRINTFORM ほのかに
+			PRINTFORM 尿の臭いがする
+			SIF COND("陰毛") && COND("陰毛") <= 3
+				PRINTFORM ツルツルの
+			PRINTFORM アソコを
+		;ナチュラル以上
+		ELSEIF COND("陰毛") >= 6 && RAND:3 == 0
+			PRINTFORM 陰毛に絡みつく淫臭を嗅ぎながら陰唇を
+		ELSEIF PALAM:欲情 >= 3000 && RAND:2
+			PRINTFORM 蒸れた陰部の%TEXTS("匂い")%を楽しみながらアソコを
+		ELSE
+			PRINTFORMW 鼻を鳴らしてクンニしつつ、どんな%TEXTS("匂い")%かささやいた…
+			RETURN 1
+		ENDIF
+	ELSEIF RAND:4 == 0 && TALENT:PLAYER:サド
+		IF TEQUIP:カテーテル
+			PRINTFORM カテーテルが埋め込まれているオシッコの穴を
+		ELSE
+			PRINTFORM \@ TALENT:おもらし癖 ? 緩み気味な # \@オシッコの穴を
+		ENDIF
+	ELSEIF RAND:3 == 0 && PENIS(TARGET) == 0
+		IF CALCF("Ｃ発情") >= 3
+			PRINTFORM 肥大した
+		ELSE
+			PRINTFORM 皮に隠れ気味の
+		ENDIF
+		PRINTFORM クリトリスを
+		SIF TALENT:クリピアス
+			PRINTFORM ピアスごと
+	ELSEIF RAND:2
+		SIF COND("脚が無い") == 0
+			PRINTFORM %TEXTS("太股：描写")%太股の間で主張している
+		IF TALENT:ラビアピアス && RAND:2
+			PRINTFORM %TEXTS("ラビアピアス")%で飾られた
+		ELSEIF TALENT:小柄体型
+			PRINTFORM 小さな
+		ELSEIF EXP:Ｖ経験 >= 300 && PALAM:欲情 >= 30000 && CHECK_CLO("Ｖ露出")
+			PRINTFORM ぽってりと充血した
+		ELSEIF PALAM:欲情 >= 30000 && CHECK_CLO("Ｖ露出")
+			PRINTFORM 軽く赤みを帯びた
+		ENDIF
+		PRINTFORM 陰唇を
+	ELSE
+		IF TALENT:処女 && RAND:3 == 0
+			PRINTFORM 処女膜を
+		ELSEIF TALENT:小柄体型 && ABL:Ｖ拡張 == 0
+			PRINTFORM 小さな穴を
+		ELSE
+			SIF TALENT:淫壷 && PALAM:快Ｖ > 8000 && CHECK_CLO("Ｖ露出")
+				PRINTFORM ヒクヒク蠢く
+			PRINTFORM 膣口を
+		ENDIF
+	ENDIF
+	;穴の開いていないパンツをはいている
+	SIF CHECK_CLO("Ｖ露出") == 0
+		PRINTFORM %CLO("股間")%越しに
+	IF RAND:2
+		PRINTFORM 舌で
+	ELSE
+		PRINTFORM 舌先で
+	ENDIF
+	IF RAND:2 && CHECK_COM("お掃除クンニ") == 0
+		PRINTFORM %TEXTR("荒々しく", "激しく", "休まず")%
+	ELSEIF RAND:2
+		PRINTFORM 優しく
+	ELSE
+		PRINTFORM 丁寧に
+	ENDIF
+	IF CHECK_COM("お掃除クンニ")
+		PRINTFORMW お掃除した…
+	ELSEIF COND("性癖：においフェチ", PLAYER) && TALENT:お気に入り + TALENT:相思相愛 && RAND:3 == 0
+		PRINTFORMW 執拗になぞった…
+	ELSEIF RAND:4 == 0
+		PRINTFORMW 吸い上げた…
+	ELSEIF RAND:3 == 0
+		PRINTFORMW 舐めあげた…
+	ELSEIF RAND:2
+		PRINTFORMW 愛撫した…
+	ELSE
+		PRINTFORMW 味わった…
+	ENDIF
+ENDIF
+

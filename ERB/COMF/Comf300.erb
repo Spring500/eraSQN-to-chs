@@ -1,0 +1,917 @@
+﻿@COM300
+;甘い言葉
+;一度の調教に3回までしか実行できない。
+;成功率判定を行う。成功時には反感を買わずに恭順・欲望が上昇。
+
+PRINTL 甘い言葉
+
+;実行回数判定　
+CFLAG:268 += 1
+;これを制限するとストゥーナでのラルス君攻略が無理になってしまうのでそこだけ緩和。
+IF CFLAG:268 >= 4 && NO:TARGET != 94
+	PRINTFORMW しかし%CALLNAME:TARGET%はこれ以上話を聞く気がないようだ…
+	RETURN 0
+ENDIF
+
+CALL TRAIN_MESSAGE_B
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+STR:0 = 甘い言葉
+
+;-------------------------------------------------
+;成功率の判定
+;-------------------------------------------------
+;基本成功率は30%。ムード依存で上昇する
+CFLAG:269 = 30
+
+;ムードで成功率変化
+SIF PLAYER == MASTER
+	CFLAG:269 += MOOD() / 5
+
+;成功率Up補正
+SIF TALENT:素直
+	CFLAG:269 += 3
+SIF TALENT:高慢
+	CFLAG:269 += 10
+SIF TALENT:好奇心
+	CFLAG:269 += 3
+SIF TALENT:陽気
+	CFLAG:269 += 3
+SIF TALENT:目立ちたがり
+	CFLAG:269 += 3
+SIF TALENT:解放
+	CFLAG:269 += 3
+SIF TALENT:恥じらい
+	CFLAG:269 += 3
+SIF TALENT:愚か
+	CFLAG:269 += 3
+SIF TALENT:淫乱
+	CFLAG:269 += 5
+SIF TALENT:恋慕
+	CFLAG:269 += 10
+SIF TALENT:妄信
+	CFLAG:269 += 5
+SIF TALENT:誓約
+	CFLAG:269 += 2
+SIF TALENT:相思相愛
+	CFLAG:269 += 10
+;魔法使いは誉められるのが大好き！
+SIF TALENT:魔法使い
+	CFLAG:269 += 10
+SIF ABL:従順
+	CFLAG:269 += ABL:従順 * 3
+SIF TEQUIP:新妻プレイ
+	CFLAG:269 += 5
+;前回調教が愛撫系
+SIF PREVCOM == 0 || PREVCOM == 5 || PREVCOM == 7
+	CFLAG:269 += 10
+;前回調教がキス
+SIF PREVCOM == 6 || TEQUIP:キス
+	CFLAG:269 += 15
+;見つめ合って挿入中(反発刻印0LV)
+SIF INSERT("正常位") + INSERT("対面座位") && MARK:反発刻印 == 0
+	CFLAG:269 += 15
+;ムードアップインセンス
+SELECTCASE GETBITS(TEQUIP:MASTER:インセンス, 4, 6)
+CASE 1p4
+	CFLAG:269 += 3
+CASE 1p5
+	CFLAG:269 += 8
+CASE 1p6
+	CFLAG:269 += 15
+ENDSELECT
+
+;フィムブルヴェトとセルマ
+SIF NO:TARGET == 49
+	CFLAG:269 += 50
+;二人とも甘い言葉の使い手
+IF ASSI
+	SIF TALENT:ASSI:甘い言葉 && TALENT:MASTER:甘い言葉
+		CFLAG:269 += 30
+ENDIF
+;詩集の持ってる数
+CFLAG:269 += MIN(ITEM:ローズニルの詩集, 10)
+;前回絶頂
+CFLAG:269 += PREVEX("絶頂数合計")*5
+
+;成功率Down補正
+SIF TALENT:臆病
+	CFLAG:269 -= 8
+SIF TALENT:反抗的
+	CFLAG:269 -= 10
+SIF TALENT:生意気
+	CFLAG:269 -= 10
+SIF TALENT:冷静
+	CFLAG:269 -= 3
+SIF TALENT:無関心
+	CFLAG:269 -= 8
+SIF TALENT:感情乏しい
+	CFLAG:269 -= 5
+SIF TALENT:保守的
+	CFLAG:269 -= 3
+SIF TALENT:陰気
+	CFLAG:269 -= 5
+SIF TALENT:一線越えない
+	CFLAG:269 -= 8
+SIF TALENT:抵抗
+	CFLAG:269 -= 10
+SIF TALENT:賢い
+	CFLAG:269 -= 3
+SIF TALENT:男嫌い && TALENT:PLAYER:オトコ
+	CFLAG:269 -= 10
+SIF TALENT:狂気
+	CFLAG:269 -= 15
+IF MARK:反発刻印
+	CFLAG:269 -= (MARK:反発刻印 + MARK:反発刻印の取得履歴) * 10
+ELSEIF MARK:反発刻印の取得履歴
+	CFLAG:269 -= MARK:反発刻印の取得履歴 * 5
+ENDIF
+SIF TEQUIP:バイブ
+	CFLAG:269 -= 2
+SIF TEQUIP:アナルバイブ
+	CFLAG:269 -= 3
+SIF TEQUIP:クリキャップ || TEQUIP:ニプルキャップ || TEQUIP:搾乳機 || TEQUIP:オナホール
+	CFLAG:269 -= 2
+SIF TEQUIP:媚薬
+	CFLAG:269 -= 5
+SIF TEQUIP:利尿剤
+	CFLAG:269 -= 5
+SIF TEQUIP:アイマスク
+	CFLAG:269 -= 1
+SIF TEQUIP:拘束
+	CFLAG:269 -= 5
+SIF TEQUIP:口枷
+	CFLAG:269 -= 3
+SIF TEQUIP:浣腸 || TEQUIP:拡張バルーン
+	CFLAG:269 -= 10
+SIF TEQUIP:ビデオカメラ
+	CFLAG:269 -= 3
+
+;成功率操作(最初の成功判定だけ)
+CFLAG:269 -= 30
+CFLAG:269 += (FLAG:30 * 2) + (ABL:PLAYER:技巧 * 3)
+SIF TALENT:PLAYER:謎の魅力
+	CFLAG:269 += 10
+SIF CFLAG:269 < 0
+	CFLAG:269 = 0
+
+;合計を表示
+;PRINTFORML 成功率 ： {CFLAG:269}％
+
+;話を聞いてくれる
+IF CFLAG:269  >= MAX(1, RAND:100)
+	TEQUIP:甘い言葉 = 2
+;話を聞いてくれない
+ELSE
+	TEQUIP:甘い言葉 = 0
+	CFLAG:269 = 0
+	DOWNBASE:体力 += 30
+	DOWNBASE:気力 += 120
+ENDIF
+
+RETURN 1
+
+@TRAIN_MESSAGE_COM300
+PRINTFORM %CALLNAME:PLAYER%
+;インサート中
+IF INSERT("合体中") && RANDIF(1, TEQUIP:キス)
+	PRINTFORM は%TEXTS("合体中", PLAYER)%
+ELSEIF TEQUIP:キス
+	PRINTFORM は%TEXTS("キス継続")%、
+	CALL SETFLAG, "追加キスフラグ", TARGET
+ELSEIF PREVCOM == 91
+	PRINTFORM はペニスに口で奉仕している
+ELSEIF PREVCOM == 98
+	PRINTFORM は股間に顔を埋めて奉仕している
+ELSEIF ASSI && TALENT:ASSI:甘い言葉 && TALENT:MASTER:甘い言葉 && ASSIPLAY
+	PRINTFORM と%CALLNAME:MASTER%は
+ELSEIF ASSI && TALENT:ASSI:甘い言葉 && TALENT:MASTER:甘い言葉 && ASSIPLAY == 0
+	PRINTFORM と%CALLNAME:ASSI%は
+ELSE
+	PRINTFORM は
+ENDIF
+IF TALENT:PLAYER:粗野 && AGE(TARGET) < AGE(PLAYER) && INSERT("合体中") == 0
+	PRINTFORMW %CALLNAME:TARGET%に優しく語りかけた…
+ELSE
+	PRINTFORMW %CALLNAME:TARGET%に甘く語りかけた…
+ENDIF
+
+
+@EQUIP_COM33_2
+;実行ターンの成功時のSOURCEはここで処理
+IF SELECTCOM == 300
+	DOWNBASE:体力 += 30
+	DOWNBASE:気力 += 30
+	;成功率Downの素質がある場合、取得sourceにボーナスがつく
+	;ソースの基準量や補正倍率はまだ調整途上。セルマの攻略にちょうど良い程度にコントロールしたい。
+	LOCAL = CALCF("甘い言葉")
+
+	SOURCE:情愛 += LOCAL
+	IF TALENT:オトコ == 0
+		IF TALENT:濡れやすい
+			SOURCE:液体追加 += UP_PALAMLV(LOCAL / 10)
+		ELSEIF TALENT:濡れにくい
+			SOURCE:液体追加 += DOWN_PALAMLV(LOCAL / 10)
+		ELSE
+			SOURCE:液体追加 += LOCAL / 10
+		ENDIF
+	ENDIF
+	SOURCE:恭順追加 += LOCAL / 2
+	SOURCE:欲情追加 += LOCAL / 4
+	;反抗的な人は恭順が上がらな過ぎるので、補正
+	SIF TALENT:反抗的
+		SOURCE:恭順追加 += LOCAL * 3
+	;ムード加算
+	TFLAG:33 += CFLAG:269/10 + 5
+
+	;好感度
+	SIF PLAYER == MASTER
+		TFLAG:30 += 8 + CFLAG:269/10
+ENDIF
+;ムードアップ中
+PRINTFORML ＜甘い言葉効果発揮中＞
+TEQUIP:甘い言葉 += 1
+;好感度
+SIF PLAYER == MASTER
+	TFLAG:30 += 2
+
+RETURN 1
+
+;-------------------------------------------------
+;汎用口上
+;-------------------------------------------------
+@KOJO_MESSAGE_COM300
+VARSET LOCAL
+
+;黙ってキスorお金やアイテムを貢ぐ
+SELECTCASE NO:TARGET
+CASE 3, 10, 12, 13, 16 TO 19, 23, 25, 27, 28, 30
+	LOCAL:1 = 1
+ENDSELECT
+
+;容姿を褒めたり、情熱的アタック！
+SELECTCASE NO:TARGET
+CASE 3, 8 TO 10, 13, 17 TO 19, 22, 23, 25, 27, 28, 30, 32
+	LOCAL:2 = 1
+ENDSELECT
+
+;お菓子を上げるから悪戯させて！ｗ
+SELECTCASE NO:TARGET
+CASE 2, 50
+	LOCAL:3 = 1
+ENDSELECT
+
+SIF INSERT("合体中")
+	VARSET LOCAL
+
+IF LOCAL:3 && RANDIF(3, LOCAL:1, LOCAL:2)
+	CALL TALK_3
+ELSEIF LOCAL:2 && RANDIF(3, LOCAL:1)
+	CALL TALK_2
+ELSEIF LOCAL:1 && RAND:3 == 0
+	CALL TALK_1
+;汎用成功
+ELSEIF TEQUIP:甘い言葉
+	IF TALENT:高慢 && RAND:2
+		PRINTFORMW %CALLNAME:TARGET%は満更でもなさそうだ…
+	ELSEIF TALENT:陽気
+		IF RAND:2
+			PRINTFORM %CALLNAME:TARGET%は、にっこり笑顔で%CALLNAME:PLAYER%
+			IF AGE(TARGET) >= 3
+				PRINTW を抱きしめてきた！
+			ELSE
+				PRINTW に抱きついてきた！
+			ENDIF
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%の台詞を反芻して顔を緩ませている！
+		ENDIF
+	ELSEIF TALENT:恥じらい
+		PRINTFORMW %CALLNAME:TARGET%は顔を赤くしてもじもじしている！
+	ELSE
+		PRINTFORMW %CALLNAME:TARGET%は喜んでいる！
+	ENDIF
+;汎用失敗
+ELSE
+	IF TALENT:高慢 && RAND:2
+		PRINTFORMW %CALLNAME:TARGET%は、%CALLNAME:PLAYER%の口説き文句を鼻で笑った…
+	ELSE
+		PRINTFORMW %CALLNAME:TARGET%は、%CALLNAME:PLAYER%の台詞を聞き流した…
+	ENDIF
+ENDIF
+
+
+;黙ってキスorお金やアイテムを貢ぐ
+@TALK_1
+SELECTCASE NO:TARGET
+CASE 13
+	PRINTFORMW 「あなたは%CNAME("一人称")%に、何をしてくれるの？」
+CASE 8, 9, 32
+	PRINTFORMW 「えっと………」
+	PRINTFORMW 「%CNAME("一人称")%をどうしたいの？」
+CASE 30
+	PRINTFORMW 「あの………」
+	PRINTFORMW 「%CNAME("一人称")%をどうしたいんですか？」
+CASE 16
+	PRINTFORMW 「ほう…………」
+	PRINTFORMW 「ならば%CNAME("二人称")%の誠意を見せてたもれ」
+CASE 28
+	PRINTFORMW 「%CNAME("一人称")%が喜ぶこと、自分で考えてやってみせてよ」
+CASE 12
+	PRINTFORMW 「そ…そんな言葉なんかで惑わされないんだからねっ！」
+	PRINTFORMW 「……ほ……ホンキなら何か行動で示してよ……」
+CASE 23
+	PRINTFORML 「あ…、もしかして、君」
+	PRINTFORMW 「僕のなくしものを返してくれるのかな？」
+	CALL TALK_1_GIFT
+CASE 3, 10, 17, 18, 19, 25, 27
+	IF CFLAG:269 >= 70
+		PRINTFORMW 「あら…%CNAME("一人称")%をどうしたいのかしら？」
+	ELSE
+		PRINTFORML  ｢ふぅん……」
+		PRINTFORMW 「信用できないわね」
+		PRINTFORMW 「誠意を見せてもらおうかしら？｣
+	ENDIF
+ENDSELECT
+
+CALL TALK_1_MAIN
+
+@TALK_1_MAIN
+PRINTL [0] 黙ってキスをする
+PRINTL [1] お金を貢ぐ
+SIF MONEY >= 50
+	PRINTL [2] アイテムを貢ぐ
+
+IF MONEY >= 50
+	CALL INPUT_SELECT, 3
+ELSE
+	CALL INPUT_SELECT, 2
+ENDIF
+
+IF RESULT == 0
+	CALL TALK_1_KISS
+ELSEIF RESULT == 1
+	CALL TALK_1_MONEY
+ELSEIF RESULT == 2
+	CALL TALK_1_GIFT
+ENDIF
+
+@TALK_1_KISS
+PRINTFORML %CALLNAME:MASTER%は黙って%CALLNAME:TARGET%に優しいキスをした
+;成功
+IF (TEQUIP:甘い言葉 || CFLAG:269 >= RAND:100)
+	SELECTCASE NO:TARGET
+	CASE 13
+		PRINTFORMW 「や……っ♪」
+	CASE 8, 9, 30, 32
+		PRINTFORMW 「や……っ♪」
+	CASE 16
+		PRINTFORMW 「ぶ…無礼者……」
+	CASE 28
+		PRINTFORMW 「な…、何偉そうな真似してんのよ！　こ、こんなので感じないからね！」
+	CASE 12
+		PRINTFORMW 「え…、やあっ………♪」
+	CASE 3, 10, 17, 18, 19, 25, 27
+		PRINTFORMW 「ん……、ステキ♪」
+	ENDSELECT
+	TEQUIP:甘い言葉 = 2
+ELSE
+	IF CFLAG:269 <= 50
+		PRINTL 
+		PRINTFORMW しかし%CALLNAME:TARGET%は冷ややかな目でこちらを見ている！
+		TFLAG:30 -= 10
+		TFLAG:33 -= 5
+		TEQUIP:甘い言葉 = 0
+		RETURN 0
+	ENDIF
+
+	SELECTCASE NO:TARGET
+	CASE 8, 9, 30, 32
+		PRINTFORMW 「きゃ……っ！？」
+		TEQUIP:甘い言葉 = 0
+		RETURN 0
+	CASE 28
+		PRINTFORMW 「な…、そんな……、　ナマイキッ！」
+		TEQUIP:甘い言葉 = 0
+		RETURN 0
+	CASE 16
+		PRINTFORMW 「無礼なやつめ」
+		PRINTFORMW 「……それで終わりかえ？」
+	CASE 12
+		PRINTFORMW 「……おしまい？」
+	CASE 13
+		PRINTFORMW 「……おしまい？」
+	CASE 3, 10, 17, 18, 19, 25, 27
+		PRINTFORMW 「……おしまい？」
+	ENDSELECT
+	;一度失望
+	CFLAG:269 = LIMIT(CFLAG:269 - 10, 0, 999)
+
+	PRINTL [0] はい
+	PRINTL [1] いいえ
+	CALL INPUT_SELECT, 2
+	IF RESULT == 0
+		SELECTCASE NO:TARGET
+		CASE 13
+			PRINTFORMW 「あなた…バカにしてるの？」
+		CASE 16
+			IF TALENT:PLAYER:オトコ
+				PRINTFORMW 「つまらぬ男じゃ……」
+			ELSE
+				PRINTFORMW 「つまらんのぅ……」
+			ENDIF
+		CASE 12
+			PRINTFORMW 「つまんないわね……」
+		CASE 3, 10, 17, 18, 19, 25, 27
+			PRINTFORMW 「つまんないわね……」
+		ENDSELECT
+		TFLAG:30 -= 10
+		TFLAG:33 -= 5
+		TEQUIP:甘い言葉 = 0
+		RETURN 0
+	ELSEIF RESULT == 1
+		PRINTL 
+		PRINTL どうしますか？
+		CALL TALK_1_MAIN
+	ENDIF
+ENDIF
+
+@TALK_1_MONEY
+;金額基礎値
+LOCAL = 10 + RAND:100 + TALENT:高慢*RAND:300
+SELECTCASE NO:TARGET
+CASE 13
+	PRINTFORMW 「…おカネなんて興味無いわ」
+	TEQUIP:甘い言葉 = 0
+	RETURN 0
+CASE 8, 9, 32
+	PRINTFORMW 「えっと、それじゃ……%MONEY_C(LOCAL)%…くれる？」
+CASE 30
+	PRINTFORMW 「…おカネなんて興味無いです」
+	TEQUIP:甘い言葉 = 0
+	RETURN 0
+CASE 16, 22
+	LOCAL *= 3 + RAND:5
+	PRINTFORMW 「ほう。では………%MONEY_C(LOCAL)%もらおうか」
+CASE 28
+	LOCAL *= 1 + RAND:5
+	PRINTFORMW 「ふーん。　じゃあ、%MONEY_C(LOCAL)%ちょうだい」
+CASE 12
+	PRINTFORMW 「…おカネなんて興味無いわ」
+	TEQUIP:甘い言葉 = 0
+	RETURN 0
+CASE 10, 25
+	PRINTFORML 「…おカネなんて興味無いわ。　私が欲しいのは…ア･ナ･タ…」
+	PRINTFORMW 「ふふっ…♪」
+	PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%にすり寄り、妖艶に微笑みながら頬を撫でている…
+	RETURN 1
+CASE 17, 19
+	LOCAL *= 2 + RAND:5
+	PRINTFORMW 「ねぇ、それじゃ%MONEY_C(LOCAL)%ちょうだい｣
+CASE 27
+	LOCAL *= 5 + RAND:5
+	PRINTFORMW 「そうね、それじゃ……%MONEY_C(LOCAL)%いただけるかしら？｣
+CASE 3, 18
+	PRINTFORMW 「…おカネなんて興味無いわ」
+	TEQUIP:甘い言葉 = 0
+	RETURN 0
+ENDSELECT
+PRINTL [0] はい
+PRINTL [1] いいえ
+CALL INPUT_SELECT, 2
+IF RESULT == 0 && MONEY >= LOCAL
+	MONEY -= LOCAL
+	PRINTFORML %CALLNAME:TARGET%に%MONEY_C(LOCAL)%手渡した
+	SELECTCASE NO:TARGET
+	CASE 8, 9, 32
+		PRINTFORMW 「あ、ありがとう……♪」
+	CASE 16
+		PRINTFORMW 「ふふ、くるしゅうない」
+	CASE 22
+		PRINTFORMW 「ふん、素直だな」
+	CASE 28
+		PRINTFORMW 「…あ、ホントにくれた。ありがと♪」
+	CASE 17, 19
+		PRINTFORMW 「ありがと♪｣
+	CASE 27
+		PRINTFORMW 「ふふっ、ありがと♪｣
+	ENDSELECT
+	TEQUIP:甘い言葉 = 2
+ELSE
+	SELECTCASE NO:TARGET
+	CASE 8, 9, 32
+		PRINTFORMW 「弄んだのね……」
+	CASE 16
+		PRINTFORMW 「%MONEY_C(LOCAL)%も持たずにわらわを口説くか。この身の程知らずめ！」
+	CASE 22
+		PRINTFORMW 「所詮その程度か……」
+	CASE 28
+		PRINTFORMW 「あ〜あ。　期待して損しちゃったっ！」
+	CASE 17, 19
+		PRINTFORMW 「やだ、%MONEY_C(LOCAL)%ぽっちも持ってないの？｣
+		PRINTFORMW 「興味持ったアタシがバカだったわ……」
+	CASE 27
+		PRINTFORMW 「やだ、%MONEY_C(LOCAL)%ぽっちも持ってないの？｣
+		PRINTFORMW 「つまんないわね……」
+	ENDSELECT
+	TFLAG:30 -= 10
+	TFLAG:33 -= 10
+	TEQUIP:甘い言葉 = 0
+ENDIF
+
+@TALK_1_GIFT
+;10万＄
+IF MONEY >= 100000 && RAND:3
+	SELECTCASE RAND:10
+	CASE 9
+		LOCALS = ダイアモンドチャーム
+		LOCAL = 1780
+	CASE 8
+		LOCALS = クリスタルチャーム
+		LOCAL = 1780
+	CASE 7
+		LOCALS = ペリドットチャーム
+		LOCAL = 1780
+	CASE 6
+		LOCALS = エメラルドチャーム
+		LOCAL = 1780
+	CASE 5
+		LOCALS = サファイアチャーム
+		LOCAL = 1780
+	CASE 4
+		LOCALS = 銀のピアス
+		LOCAL = 1080
+	CASE 3
+		LOCALS = フォシルペンダント
+		LOCAL = 1620
+	CASE 2
+		LOCALS = 瑪瑙のピアス
+		LOCAL = 1780
+	CASE 1
+		LOCALS = 月長石のブレスレット
+		LOCAL = 2360
+	CASEELSE
+		LOCALS = ファイアフライブローチ
+		LOCAL = 2180
+	ENDSELECT
+;1万＄
+ELSEIF MONEY >= 10000 && RAND:2
+	SELECTCASE RAND:6
+	CASE 5
+		LOCALS = ネロリの手袋
+		LOCAL = 850
+	CASE 4
+		LOCALS = コンプレクススカーフ
+		LOCAL = 710
+	CASE 3
+		LOCALS = シルバーネックレス
+		LOCAL = 230
+	CASE 2
+		LOCALS = 青銅のブレスレット
+		LOCAL = 340
+	CASE 1
+		LOCALS = シェルイヤリング
+		LOCAL = 280
+	CASEELSE
+		LOCALS = バタフライブローチ
+		LOCAL = 480
+	ENDSELECT
+ELSEIF MONEY >= 500 && TALENT:幼稚 == 0
+	SELECTCASE RAND:7
+	CASE 6
+		LOCALS = レッドグルッペン
+		LOCAL = 370
+	CASE 5
+		LOCALS = ヴィリジアンホロス
+		LOCAL = 370
+	CASE 4
+		LOCALS = ポッパナアンバー
+		LOCAL = 310
+	CASE 3
+		LOCALS = スノウオブヴァーサ
+		LOCAL = 290
+	CASE 2
+		LOCALS = ブルーフリーベリ
+		LOCAL = 250
+	CASE 1
+		LOCALS = シプリズホワイト
+		LOCAL = 230
+	CASEELSE
+		LOCALS = ブラウンレンシェット
+		LOCAL = 210
+	ENDSELECT
+ELSEIF MONEY >= 50
+	SELECTCASE RAND:7
+	CASE 6
+		LOCALS = 人魚の口づけ
+		LOCAL = 50
+	CASE 5
+		LOCALS = ディバインプティング
+		LOCAL = 50
+	CASE 4
+		LOCALS = グルッペンゴールド
+		LOCAL = 40
+	CASE 3
+		LOCALS = チュロス
+		LOCAL = 25
+	CASE 2
+		LOCALS = プッラ
+		LOCAL = 25
+	CASE 1
+		LOCALS = シュー･ア･ラ･クレーム
+		LOCAL = 20
+	CASEELSE
+		LOCALS = ハニービスケット
+		LOCAL = 10
+	ENDSELECT
+ENDIF
+SELECTCASE NO:TARGET
+CASE 13
+	PRINTFORMW 「それじゃ……その%LOCALS%(%MONEY_C(LOCAL)%相当)…くれる？」
+CASE 8, 9, 32
+	PRINTFORMW 「えっと、それじゃ……その%LOCALS%(%MONEY_C(LOCAL)%相当)…くれるの？」
+CASE 30
+	PRINTFORMW 「それでは……その%LOCALS%(%MONEY_C(LOCAL)%相当)…いただけますか？」
+CASE 16
+	PRINTFORMW 「そうじゃな、では……」
+	PRINTFORMW 「その%LOCALS%(%MONEY_C(LOCAL)%相当)をもらおうか」
+CASE 28
+	PRINTFORMW 「じゃあ、その%LOCALS%(%MONEY_C(LOCAL)%相当)ちょうだい」
+CASE 12
+	PRINTFORMW 「もしかして…その%LOCALS%(%MONEY_C(LOCAL)%相当)、アタシに…？」
+CASE 23
+	IF MONEY < 50
+		PRINTFORMW 「何も持ってないじゃないか！」
+		TEQUIP:甘い言葉 = 0
+		TFLAG:30 -= 10
+		TFLAG:33 -= 5
+		RETURN 0
+	ELSE
+		PRINTFORMW 「ありがとう！　%LOCALS%(%MONEY_C(LOCAL)%相当)を返してくれるんだね！」
+	ENDIF
+CASE 3, 10, 17, 18, 19, 25, 27
+	PRINTFORML 「そうね、それじゃ……」
+	PRINTFORMW 「その%LOCALS%(%MONEY_C(LOCAL)%相当)をくださる？」
+ENDSELECT
+PRINTL [0] はい
+PRINTL [1] いいえ
+CALL INPUT_SELECT, 2
+IF RESULT == 0
+	MONEY -= LOCAL
+	SELECTCASE NO:TARGET
+	CASE 13
+		PRINTFORMW 「うれしい……♪」
+	CASE 8, 9, 32
+		PRINTFORMW 「あ、ありがとう……♪」
+	CASE 30
+		IF LOCAL >= 500
+			PRINTFORMW 「……大事にします♪」
+		ELSE
+			PRINTFORMW 「ありがとうございます……♪」
+		ENDIF
+	CASE 16
+		PRINTFORMW 「うむ、くるしゅうないぞ♪」
+	CASE 28
+		PRINTFORMW 「…あ、ホントにくれた。ありがと♪」
+	CASE 12
+		PRINTFORMW 「も、貰ってあげるけど、勘違いしないでよねっ！」
+	CASE 23
+		PRINTFORMW 「ありがとう！」
+	CASE 17, 19
+		PRINTFORMW 「ありがと♪｣
+	CASE 3, 10, 18, 25, 27
+		PRINTFORMW 「ふふっ、ありがと♪｣
+	ENDSELECT
+	TFLAG:30 += 10
+	TFLAG:33 += 10
+	TEQUIP:甘い言葉 = 2
+ELSE
+	SELECTCASE NO:TARGET
+	CASE 13
+		PRINTFORMW 「そう…。　私で遊んでるのね……」
+	CASE 8, 9, 32
+		PRINTFORMW 「あたしを弄んでるのね？」
+		PRINTFORMW 「ひどい…」
+	CASE 30
+		PRINTFORML 「…ふふ」
+		PRINTFORMW 「%CNAME("一人称")%になんてくれるはず有りませんよね……」
+	CASE 16
+		PRINTFORMW 「この痴れものが…」
+	CASE 28
+		PRINTFORMW 「あ〜あ。　期待して損しちゃった」
+	CASE 12
+		PRINTFORMW 「ばか！ ばか！」
+		PRINTFORMW 「ばかっ！！」
+	CASE 23
+		PRINTFORMW 「どろぼう！」
+	CASE 17, 19
+		PRINTFORMW 「…そんな覚悟で、よく声なんてかけられたものね？｣
+	CASE 3, 10, 18, 25, 27
+		PRINTFORMW 「…バカにしてるのかしら？｣
+	ENDSELECT
+	TFLAG:30 -= 10
+	TFLAG:33 -= 10
+	TEQUIP:甘い言葉 = 0
+ENDIF
+
+;容姿を褒めたり、情熱的アタック！
+@TALK_2
+SELECTCASE NO:TARGET
+CASE 22
+	PRINTFORMW 「私を口説こうとは命知らずな……」
+	PRINTFORMW 「私が欲しいのか？」
+CASE 23
+	PRINTFORMW 「そんなに僕と一緒にいたい？」
+CASE 28
+	PRINTFORMW 「ふぅん、アタシの魅力にめろめろなのね？」
+CASE 30
+	PRINTFORMW 「え…。　%CNAME("一人称")%、そんな綺麗ですか？」
+CASEELSE
+	PRINTFORMW 「あら、ステキなこと言うわね」
+	PRINTFORMW 「%CNAME("一人称")%、そんなにキレイ？」
+ENDSELECT
+PRINTL [0] はい
+PRINTL [1] いいえ
+CALL INPUT_SELECT, 2
+IF RESULT == 0 && (TEQUIP:甘い言葉 || CFLAG:269 >= RAND:100 || NO:TARGET == 22 || NO:TARGET == 23)
+	SELECTCASE NO:TARGET
+	CASE 22
+		IF CFLAG:269 >= RAND:100
+			PRINTFORMW 「ふふ…正直な奴だな」
+		ELSEIF RAND:2
+			CALL TALK_1_MONEY
+			RETURN 1
+		ELSE
+			CALL TALK_2_1
+			RETURN 1
+		ENDIF
+	CASE 23
+		IF RAND:2
+			PRINTFORMW 「それじゃ、一緒にいこうっ♪」
+		ELSE
+			PRINTFORMW 「それじゃ、不思議の国へレッツ・ゴー！」
+			PRINTFORMW 「つかまえてごらん！」
+		ENDIF
+	CASE 28
+		PRINTFORMW 「無理もないけどね…フフフフッ♪」
+	CASE 30
+		PRINTFORMW 「て、照れます…♪」
+		PRINTFORMW %CALLNAME:TARGET%は下を向いて、両手で長めの耳をふにふに弄りはじめた…
+	CASEELSE
+		PRINTFORMW 「ふふっ、ありがと♪」
+	ENDSELECT
+	TEQUIP:甘い言葉 = 2
+	;虜になる？
+	SELECTCASE NO:TARGET
+	CASE 3, 10, 13, 17, 18, 25
+		IF RAND:2
+			PRINTL 
+			CALL TALK_2_1
+		ENDIF
+	ENDSELECT
+ELSEIF RESULT == 0
+	IF NO:TARGET == 28
+		PRINTFORMW 「…アンタ、お世辞言ってるでしょ。　バッカみたい…」
+		TFLAG:30 -= 5
+		TFLAG:33 -= 5
+		TEQUIP:甘い言葉 = 0
+	ELSE
+		PRINTFORMW 「…なんだかバカにされた気がするわ」
+		PRINTFORMW 「誠意を見せてもらおうかしら？｣
+		CFLAG:269 = LIMIT(CFLAG:269 - 10, 0, 999)
+		CALL TALK_1_MAIN
+	ENDIF
+ELSEIF RESULT == 1
+	SELECTCASE NO:TARGET
+	CASE 22
+		PRINTFORMW 「枯れたやつだな…」
+	CASE 23
+		PRINTFORMW 「残念っ！」
+	CASE 28
+		PRINTFORMW 「ナマイキ…」
+	CASE 30
+		PRINTFORMW 「………はぁ…」
+	CASEELSE
+		IF RAND:2
+			PRINTFORMW 「…なんだかバカにされた気がするわ」
+		ELSE
+			PRINTFORMW 「……あら、そう」
+		ENDIF
+	ENDSELECT
+	TFLAG:30 -= 10
+	TFLAG:33 -= 5
+	TEQUIP:甘い言葉 = 0
+ENDIF
+
+;主に容姿を褒めたあとの展開…虜になる？
+@TALK_2_1
+;マーメイド
+SELECTCASE NO:TARGET
+CASE 13
+	PRINTFORMW 「%CNAME("一人称")%の歌、聴いてくれる？」
+CASE 22
+	PRINTFORMW 「ふふ…ではこちらに来るといい」
+CASEELSE
+	PRINTFORMW 「%CNAME("一人称")%とずっと一緒にいたい？」
+ENDSELECT
+PRINTL [0] はい
+PRINTL [1] いいえ
+CALL INPUT_SELECT, 2
+IF RESULT == 0 || NO:TARGET == 22
+	TEQUIP:甘い言葉 = 2
+	SELECTCASE NO:TARGET
+	CASE 13
+		PRINTFORMW 「ふふ…♪」
+		PRINTFORMW %CALLNAME:TARGET%は思うが侭に歌い始めた…
+		TFLAG:30 += 5
+	CASE 25
+		PRINTFORMW 「素敵よ、貴方……たくさん感じさせてあげる♪」
+	CASE 22
+		IF RESULT == 0
+			PRINTFORMW 「さあ…望みどおりにしてやるぞ！」
+		ELSE
+			PRINTFORMW 「もう遅いわッ！」
+			TEQUIP:甘い言葉 = 0
+		ENDIF
+		PRINTFORMW %CALLNAME:PLAYER%は%CALLNAME:TARGET%に押し倒されてしまった…！
+		TEQUIP:押し倒し = 1
+	CASEELSE
+		PRINTFORMW 「お望みどおりにしてあげる♪」
+		SELECTCASE NO:TARGET
+			CASE 3, 10, 17, 18
+				PRINTFORM %CALLNAME:TARGET%
+				IF NO:TARGET == 3
+					PRINT の蔦
+				ELSEIF NO:TARGET == 10
+					PRINT のしっぽ
+				ELSEIF NO:TARGET == 17
+					PRINT のムチ
+				ELSEIF NO:TARGET == 18
+					PRINT の糸
+				ENDIF
+				PRINTFORML が%CALLNAME:PLAYER%の身体を拘束する！
+		ENDSELECT
+		PRINTFORMW %CALLNAME:PLAYER%は押し倒されてしまった…
+		TEQUIP:押し倒し = 1
+	ENDSELECT
+ELSEIF RESULT == 1
+	IF CFLAG:269 >= RAND:100
+		PRINTFORMW 「あら…私をどうしたいのかしら？」
+		CFLAG:269 = LIMIT(CFLAG:269 - 10, 0, 999)
+		CALL TALK_1_MAIN
+	ELSE
+		PRINTFORMW 「……あら、そう」
+		TFLAG:30 -= 10
+		TFLAG:33 -= 5
+		TEQUIP:甘い言葉 = 0
+	ENDIF
+ENDIF
+
+;お菓子を上げるから悪戯させて！ｗ
+@TALK_3
+IF TEQUIP:甘い言葉 == 0 || CFLAG:269 <= RAND:100 || MONEY < 50
+	PRINTFORMW 「ん〜〜？　%CNAME("一人称")%、よくわかんないや♪」
+	TEQUIP:甘い言葉 = 0
+	RETURN 0
+ENDIF
+
+PRINTFORMW 「ん〜〜〜〜」
+PRINTFORMW 「ね、そんなことより何か甘いモノちょうだぁい♪」
+SELECTCASE RAND:7
+CASE 6
+	LOCALS = 人魚の口づけ
+	LOCAL = 50
+CASE 5
+	LOCALS = ディバインプティング
+	LOCAL = 50
+CASE 4
+	LOCALS = グルッペンゴールド
+	LOCAL = 40
+CASE 3
+	LOCALS = チュロス
+	LOCAL = 25
+CASE 2
+	LOCALS = プッラ
+	LOCAL = 25
+CASE 1
+	LOCALS = シュー･ア･ラ･クレーム
+	LOCAL = 20
+CASEELSE
+	LOCALS = ハニービスケット
+	LOCAL = 10
+ENDSELECT
+PRINTFORMW 「%CNAME("一人称")%、その%LOCALS%(%MONEY_C(LOCAL)%相当)が食べたいなぁ♪」
+PRINTL [0] はい
+PRINTL [1] いいえ
+CALL INPUT_SELECT, 2
+IF RESULT == 0
+	PRINTFORMW 「わぁい、ありがとぉ〜〜っ♪」
+	TEQUIP:甘い言葉 = 2
+ELSE
+	PRINTFORMW 「え〜、けちんぼ〜〜っ！」
+	TFLAG:30 -= 10
+	TFLAG:33 -= 5
+	TEQUIP:甘い言葉 = 0
+ENDIF
+

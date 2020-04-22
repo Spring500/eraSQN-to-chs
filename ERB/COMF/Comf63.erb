@@ -1,0 +1,154 @@
+﻿@COM63
+;対面座位
+CALL PRINT_TRAIN_NAME(SELECTCOM)
+
+CALL TRAIN_MESSAGE_B
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+STR:0 = %STR:2%
+
+;-------------------------------------------------
+;射精チェック
+;-------------------------------------------------
+CALL SAMEN_CHECK
+
+RETURN 1
+
+@FLAG_COM63, ARG
+CALL FLAG_INSERTION, "Ｖインサート", ARG, 50
+
+@SOURCE_COM63, ARG
+CALL SOURCE_INSERTION, "Ｖインサート", ARG, 50
+
+VARSET LOCAL
+
+LOCAL:12 = 300
+
+;ABL:Ｖ感覚をみる
+SELECTCASE ABL:Ｖ感覚
+CASE 0
+	LOCAL:3 = 300
+CASE 1
+	LOCAL:3 = 500
+CASE 2
+	LOCAL:3 = 700
+CASE 3
+	LOCAL:3 = 1000
+CASE 4
+	LOCAL:3 = 1400
+CASEELSE
+	LOCAL:3 = 2000
+ENDSELECT
+
+;PALAM:欲情をみる
+SELECTCASE PALAM:欲情
+CASE IS < PALAMLV:1
+	TIMES LOCAL:3 , 0.30
+CASE IS < PALAMLV:2
+	TIMES LOCAL:3 , 0.60
+CASE IS < PALAMLV:3
+	TIMES LOCAL:3 , 1.00
+CASE IS < PALAMLV:4
+	TIMES LOCAL:3 , 1.50
+CASE IS >= PALAMLV:4
+	TIMES LOCAL:3 , 1.80
+ENDSELECT
+
+;ABL:奉仕精神をみる
+SELECTCASE ABL:奉仕精神
+CASE 0
+	LOCAL:16 = 100
+CASE 1
+	LOCAL:16 = 300
+CASE 2
+	LOCAL:16 = 700
+CASE 3
+	LOCAL:16 = 1200
+CASE 4
+	LOCAL:16 = 1800
+CASEELSE
+	LOCAL:16 = 2500
+ENDSELECT
+
+CALL CALC, "調教ソース", LOCAL:0, LOCAL:1, LOCAL:2, LOCAL:3, LOCAL:4, LOCAL:5, LOCAL:6, LOCAL:7, LOCAL:8, LOCAL:9, LOCAL:10, LOCAL:11, LOCAL:12, LOCAL:13, LOCAL:14, LOCAL:15, LOCAL:16, LOCAL:17, LOCAL:18, LOCAL:19, LOCAL:20, LOCAL:21, ARG
+
+
+@TRAIN_MESSAGE_COM63
+;ラブトラップ
+IF TEQUIP:ラブトラップ
+	;前回と今回の調教者が同じで、抜かないフラグがある場合
+	IF INSERT("インサート") && COND("前Ｔ調教者") == PLAYER
+		;体位が対面座位
+		IF INSERT("対面座位")
+			PRINTFORM %CALLNAME:TARGET%は
+			IF CHECK_COM("キス") && TALENT:恋慕
+				PRINTFORM %CALLNAME:PLAYER%とキスをし、舌を絡めながら
+				CALL SETFLAG, "追加キスフラグ", TARGET
+			ENDIF
+			PRINTFORMW 再び腰を揺すり始めた…
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%は膣内からペニスを解放することなく、%CALLNAME:PLAYER%の身体をぎゅっと抱き寄せ、腰を揺すり始めた…
+		ENDIF
+	ELSE
+		PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%を抱き寄せ、奥深くまでペニスを呑みこみながら腰を揺すり始めた…
+	ENDIF
+ELSEIF CHECK_COM("３Ｐ奉仕")
+	CALL TRAIN_MESSAGE_3P
+;それ以外
+ELSE
+	;前回と今回の調教者が同じで、抜かないフラグがある場合
+	IF INSERT("Ｖインサート") && COND("前Ｔ調教者") == PLAYER
+		IF INSERT("正常位") || INSERT("屈曲位")
+			PRINTFORMW %CALLNAME:TARGET%の身体を起こしてぎゅっと抱き寄せ、腰を揺すり始めた…
+		ELSEIF INSERT("後背位")
+			PRINTFORMW %CALLNAME:TARGET%を仰向けにし、身体を抱き起こして腰を揺すり始めた…
+		ELSEIF INSERT("対面座位")
+			PRINTFORM %CALLNAME:TARGET%は
+			IF (CHECK_COM("キス") && TALENT:恋慕) || TEQUIP:キス
+				PRINTFORM %CALLNAME:PLAYER%とキスをし、舌を絡めながら
+				CALL SETFLAG, "追加キスフラグ", TARGET
+			ENDIF
+			PRINTFORMW 再び腰を揺すり始めた…
+		ELSEIF INSERT("背面座位")
+			PRINTFORMW 繋がりあったまま%CALLNAME:TARGET%をこちらに向かせ、抱き合うようにして腰を揺すり始めた…
+		ELSEIF INSERT("騎乗位")
+			PRINTFORMW 体を起こして%CALLNAME:TARGET%をぎゅっと抱き寄せ、腰を揺すり始めた…
+		ENDIF
+	ELSEIF INSERT("Ａインサート") && COND("前Ｔ調教者") == PLAYER
+		PRINTFORM %CALLNAME:TARGET%
+		IF INSERT("正常位") || INSERT("屈曲位") || INSERT("対面座位")
+			PRINTFORM を
+		ELSE
+			PRINTFORM と向き合って
+		ENDIF
+		PRINTFORMW ぎゅっと抱き寄せると、お尻の穴で汚れた%NAMES("ペニス", PLAYER)%の上に降ろして挿入した…
+	ELSE
+		;前回、挿入前に暴発してしまった
+		IF PREVCOM == 511 && COND("前Ｔ調教者") == PLAYER
+			PRINTFORM 気を取り直した%CALLNAME:PLAYER%は、
+		ELSE
+			PRINTFORM %CALLNAME:PLAYER%は
+		ENDIF
+		IF COND("前Ｔから対象のみ変更") && PREVCOM:1 >= 60 && PREVCOM:1 <= 79
+			CALL TEXT, "追加地の文：穴から穴へ"
+			PRINTFORM %CALLNAME:TARGET%に正面から抱きつかせながら、%TEXTS("Ｖ挿入前")%でペニスを咥え込ませ
+		;穴開きでないパンツをはいていて、ずらされていないなら、必ずずらす
+		ELSEIF !CHECK_CLO("Ｖ露出") && CHECK_CLO("Ｖ露出可")
+			PRINTFORM %CALLNAME:TARGET%の
+			CALL SETFLAG, "ボトムを露出：テキスト有り", TARGET
+			PRINTFORM 、正面から抱きつかせながら%TEXTS("Ｖ挿入前")%でペニスを咥え込ませ
+		ELSE
+
+			PRINTFORM %CALLNAME:TARGET%に正面から抱きつかせながら%TEXTS("Ｖ挿入前")%でペニスを咥え込ませ
+		ENDIF
+
+		IF (CHECK_COM("キス") && TALENT:恋慕) || TEQUIP:キス
+			PRINTFORMW 、キスをしながら腰を揺すった…
+			CALL SETFLAG, "追加キスフラグ", TARGET
+		ELSE
+			PRINTFORMW た…
+		ENDIF
+	ENDIF
+ENDIF

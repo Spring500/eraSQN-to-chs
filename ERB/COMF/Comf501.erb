@@ -1,0 +1,73 @@
+﻿@COM501
+RETURN 0
+
+@USE_ITEM_TRAIN
+#DIM LCOUNT
+
+VARSET LOCAL
+FOR LCOUNT, 260, 280
+	TRYCALLFORM COM_ABLE{LCOUNT}_2
+	LOCAL:LCOUNT = RESULT
+NEXT
+
+PRINTL どれを使用しますか？
+VARSET LOCALS
+LOCALS:0 = \@ LOCAL:260 ? [ 0] # [×] \@ %TEXT_LJ("ローション", 16)%（{ITEM:ローション, 2}個） %TEXTS("アイテム解説", 30)%
+LOCALS:1 = \@ LOCAL:261 ? [ 1] # [×] \@ %TEXT_LJ("媚薬", 16)%（{ITEM:媚薬, 2}個） %TEXTS("アイテム解説", 31)%
+LOCALS:2 = \@ LOCAL:262 ? [ 2] # [×] \@ %TEXT_LJ("利尿剤", 16)%（{ITEM:利尿剤, 2}個） %TEXTS("アイテム解説", 32)%
+LOCALS:3 = \@ LOCAL:263 ? [ 3] # [×] \@ %TEXT_LJ("鎮静剤", 16)%（{ITEM:鎮静剤, 2}個） %TEXTS("アイテム解説", 34)%
+LOCALS:4 = \@ LOCAL:264 ? [ 4] # [×] \@ %TEXT_LJ("排卵誘発剤", 16)%（{ITEM:排卵誘発剤, 2}個） %TEXTS("アイテム解説", 35)%
+LOCALS:6 = \@ LOCAL:266 ? [ 6] # [×] \@ %TEXT_LJ("入浴剤", 16)%（{ITEM:入浴剤, 2}個） %TEXTS("アイテム解説", 36)%
+LOCALS:7 = \@ LOCAL:267 ? [ 7] # [×] \@ %TEXT_LJ("筋弛緩剤", 16)%（{ITEM:筋弛緩剤, 2}個） %TEXTS("アイテム解説", 37)%
+LOCALS:10 = \@ LOCAL:265 && ITEM:ジャスミン ? [10] # [×] \@ %TEXT_LJ("ジャスミン", 16)%（{ITEM:ジャスミン, 2}個） %TEXTS("アイテム解説", 40)%
+LOCALS:11 = \@ LOCAL:265 && ITEM:ラヴェンダー ? [11] # [×] \@ %TEXT_LJ("ラヴェンダー", 16)%（{ITEM:ラヴェンダー, 2}個） %TEXTS("アイテム解説", 41)%
+LOCALS:12 = \@ LOCAL:265 && ITEM:ムスク ? [12] # [×] \@ %TEXT_LJ("ムスク", 16)%（{ITEM:ムスク, 2}個） %TEXTS("アイテム解説", 42)%
+LOCALS:13 = \@ LOCAL:265 && ITEM:サンダルウッド ? [13] # [×] \@ %TEXT_LJ("サンダルウッド", 16)%（{ITEM:サンダルウッド, 2}個） %TEXTS("アイテム解説", 43)%
+LOCALS:14 = \@ LOCAL:265 && ITEM:ローズマリー ? [14] # [×] \@ %TEXT_LJ("ローズマリー", 16)%（{ITEM:ローズマリー, 2}個） %TEXTS("アイテム解説", 44)%
+SIF ITEM:フランキンセンス
+	LOCALS:19 = \@ LOCAL:265 && ITEM:フランキンセンス ? [19] # [×] \@ %TEXT_LJ("フランキンセンス", 16)%（{ITEM:フランキンセンス, 2}個） %TEXTS("アイテム解説", 49)%
+
+FOR LCOUNT, 0, 20
+	SIF LOCALS:LCOUNT == ""
+		CONTINUE
+	SIF SUBSTRING(LOCALS:LCOUNT, 1, 2) == "×"
+		SETCOLOR DEF_COLOR("灰色")
+
+	PRINTFORML %LOCALS:LCOUNT%
+	RESETCOLOR
+NEXT
+
+PRINTFORML [100] 戻る
+
+$INPUT_LOOP
+INPUT
+
+IF RESULT == 100
+	RETURN 0
+ELSEIF RESULT >= 0 && RESULT <= 4 && LOCAL:(RESULT + 260)
+	SELECTCOM = 260 + RESULT
+ELSEIF RESULT == 6 && LOCAL:266
+	SELECTCOM = 266
+ELSEIF RESULT == 7 && LOCAL:267
+	SELECTCOM = 267
+ELSEIF RESULT == 10 && LOCAL:265 && ITEM:ジャスミン
+	SELECTCOM = 265
+	TEQUIP:MASTER:インセンス = 1p4
+ELSEIF RESULT == 11 && LOCAL:265 && ITEM:ラヴェンダー
+	SELECTCOM = 265
+	TEQUIP:MASTER:インセンス = 1p5
+ELSEIF RESULT == 12 && LOCAL:265 && ITEM:ムスク
+	SELECTCOM = 265
+	TEQUIP:MASTER:インセンス = 1p6
+ELSEIF RESULT == 13 && LOCAL:265 && ITEM:サンダルウッド
+	SELECTCOM = 265
+	TEQUIP:MASTER:インセンス = 1p5 + 1p8
+ELSEIF RESULT == 14 && LOCAL:265 && ITEM:ローズマリー
+	SELECTCOM = 265
+	TEQUIP:MASTER:インセンス = 1p5 + 1p11
+ELSEIF RESULT == 19 && LOCAL:265 && ITEM:フランキンセンス
+	SELECTCOM = 265
+	TEQUIP:MASTER:インセンス = 1p6 + 1p9 + 1p12
+ELSE
+	GOTO INPUT_LOOP
+ENDIF

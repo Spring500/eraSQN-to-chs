@@ -1,0 +1,282 @@
+﻿@COM104
+;ぱふぱふ
+CALL PRINT_TRAIN_NAME(SELECTCOM)
+
+;-------------------------------------------------
+;実行できるかの判定
+;-------------------------------------------------
+CALL SHOW_COM_ORDER_COM, 104
+
+;実行できない
+SIF TCVAR:28 == 0
+	RETURN 0
+;-------------------------------------------------
+;実行決定
+;-------------------------------------------------
+CALL TRAIN_MESSAGE_B
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+STR:0 = %STR:2%
+;-------------------------------------------------
+;射精チェック
+;-------------------------------------------------
+IF CHECK_COM("ぱふぱふ手コキ")
+	CALL SAMEN_CHECK, 70
+	SELECTCOM = PREVCOM
+	CALL SAMEN_CHECK, 50
+	SELECTCOM = 104
+ELSE
+	CALL SAMEN_CHECK
+ENDIF
+
+RETURN 1
+
+@FLAG_COM104, ARG
+SIF CHECK_CLO("谷間露出") == 0 && CHECK_CLO("はだけ可")
+	CALL SETFLAG, "胸をはだける", TARGET
+SIF CHECK_COM("ぱふぱふ手コキ") == 104
+	CALL FLAG_COM90, 50
+;対象のＢ⇔調教者の口の汚れが移動
+CALL EQ_STAIN, TARGET, PLAYER, 5, 0
+
+@SOURCE_COM104, ARG
+VARSET LOCAL
+
+SIF CHECK_COM("ぱふぱふ手コキ") == 104
+	CALL SOURCE_COM90, 50
+SIF COND("母乳飲みフラグ", PLAYER)
+	CALL SOURCE_COM5, 80
+
+LOCAL:20 += 50
+LOCAL:21 += 160
+
+LOCAL:14 = 200
+
+;巨乳
+SIF TALENT:巨乳
+	LOCAL:14 -= 200
+;貧乳
+SIF TALENT:貧乳
+	LOCAL:14 += 400
+
+;ABL:奉仕精神をみる
+SELECTCASE ABL:奉仕精神
+CASE 0
+	LOCAL:4 = 420
+	LOCAL:5 = 150
+CASE 1
+	LOCAL:4 = 500
+	LOCAL:5 = 300
+CASE 2
+	LOCAL:4 = 580
+	LOCAL:5 = 600
+CASE 3
+	LOCAL:4 = 660
+	LOCAL:5 = 900
+CASE 4
+	LOCAL:4 = 740
+	LOCAL:5 = 1500
+CASEELSE
+	LOCAL:4 = 820
+	LOCAL:5 = 2200
+ENDSELECT
+
+;ABL:Ｂ感覚をみる
+LOCAL:17 = CALCF("Ｂ刺激", 2, 80)
+
+;ABL:技巧をみる
+SELECTCASE ABL:技巧
+CASE 0
+	TIMES LOCAL:4 , 0.50
+	TIMES LOCAL:5 , 0.50
+CASE 1
+	TIMES LOCAL:4 , 0.80
+	TIMES LOCAL:5 , 0.80
+CASE 2
+CASE 3
+	TIMES LOCAL:4 , 1.20
+	TIMES LOCAL:5 , 1.20
+CASE 4
+	TIMES LOCAL:4 , 1.50
+	TIMES LOCAL:5 , 1.50
+CASEELSE
+	TIMES LOCAL:4 , 2.00
+	TIMES LOCAL:5 , 2.00
+ENDSELECT
+
+CALL CALC, "調教ソース", LOCAL:0, LOCAL:1, LOCAL:2, LOCAL:3, LOCAL:4, LOCAL:5, LOCAL:6, LOCAL:7, LOCAL:8, LOCAL:9, LOCAL:10, LOCAL:11, LOCAL:12, LOCAL:13, LOCAL:14, LOCAL:15, LOCAL:16, LOCAL:17, LOCAL:18, LOCAL:19, LOCAL:20, LOCAL:21, ARG
+
+
+@TRAIN_MESSAGE_COM104
+IF CHECK_COM("Ｗ奉仕")
+	;二人とも前回と同じ行動
+	IF SELECTCOM:1 == PREVCOM:1 && SELECTCOM == PREVCOM
+		PRINTFORM 二人は
+		IF TALENT:(TARGET:1):淫乱 + TALENT:(TARGET:1):恋慕 && TALENT:淫乱 + TALENT:恋慕 && RAND:3 == 0
+			PRINTFORM うっとりしながら
+		ELSEIF RAND:2 == 0
+			PRINTFORM 夢中になって
+		ENDIF
+		PRINTFORMW %CALLNAME:MASTER%の顔を胸で挟んで、柔らかな乳房を味わわせている…
+	ELSE
+		PRINTFORM %CALLNAME:TARGET%と%CALLNAME:(TARGET:1)%は
+		SIF TALENT:(TARGET:1):淫乱 + TALENT:(TARGET:1):恋慕 + TALENT:淫乱 + TALENT:恋慕 && RAND:2 == 0
+			PRINTFORM 上気した瞳で%CALLNAME:MASTER%を見つめながら、
+		IF RAND:3 == 0
+			PRINTFORMW 競うようにして顔に胸を擦りつけてきた…
+		ELSEIF RAND:2 == 0
+			PRINTFORMW 胸の谷間で頭を挟み込んで圧迫してきた…
+		ELSE
+			PRINTFORMW 協力して顔を胸で挟み込んできた…
+		ENDIF
+	ENDIF
+;同時押し倒し&連続
+ELSEIF SELECTCOM == PREVCOM && SELECTCOM:1 >= 0 && TEQUIP:Ｗ押し倒し
+	PRINTFORMW %CALLNAME:TARGET%と%CALLNAME:(TARGET:1)%は%CALLNAME:MASTER%の上で、快楽をむさぼっている…
+;前回と同じ
+ELSEIF PREVCOM == SELECTCOM && COND("前Ｔ調教者") == PLAYER
+	PRINTFORM %CALLNAME:TARGET%は%CALLNAME:PLAYER%の
+	IF TALENT:貧乳
+		IF TEQUIP:押し倒し && RAND:2
+			PRINTFORMW 顔を薄い胸で押しつぶしている…
+		ELSE
+			PRINTFORMW 頭を胸で抱きかかえて、小さなおっぱいを顔にくっつけたり離したりしている…
+		ENDIF
+	ELSE
+		IF TEQUIP:押し倒し && RAND:2
+			PRINTFORMW 顔を乳房で押しつぶしている…
+		ELSE
+			PRINTFORMW 頭を胸で抱きかかえて、むにゅむにゅと乳房で顔を挟んだりしている…
+		ENDIF
+	ENDIF
+ELSE
+	PRINTFORM %CALLNAME:TARGET%は
+	IF CHECK_COM("ぱふぱふ手コキ")
+		IF PREVCOM == 97
+			LOCALS = %CLO("ぱんつコキ")%
+			LOCALS:1 = %LOCALS%
+		ELSE
+			LOCALS = 手
+			LOCALS:1 = 掌
+		ENDIF
+		IF TALENT:恋慕 && RAND:4 == 0
+			PRINTFORM ペニスを愛しそうに%LOCALS%で扱きながら、
+		ELSEIF ABL:技巧 >= 3 && ABL:奉仕精神 >= 3 && RAND:3 == 0
+			PRINTFORM 亀頭を%LOCALS:1%でこね回しながら、
+		ELSEIF ABL:技巧 >= 3 && RAND:2 == 0
+			PRINTFORM ペニスを絶妙な力加減で刺激しながら、
+		ELSEIF RAND:2 == 0
+			PRINTFORM ペニスをゆっくりと%LOCALS%で扱きながら、
+		ELSE
+			PRINTFORM ペニスを%LOCALS%で扱きながら、
+		ENDIF
+	;インサート中
+	ELSEIF INSERT("合体中")
+		PRINTFORM %TEXTS("合体中", TARGET)%
+	ENDIF
+	;助手が前回と同じ行動(違う行動の時は、ここでなく、EQUIP_COM32で記述)
+	SIF TEQUIP:Ｗ押し倒し && SELECTCOM:1 == PREVCOM:1 && SELECTCOM:1 >= 0
+		PRINTFORM %TEXTS("Ｗ押し倒し中")%
+
+	PRINTFORM %CALLNAME:PLAYER%
+	IF RAND:2 && TALENT:恋慕 && TEQUIP:押し倒し
+		IF CHECK_COM("ぱふぱふ手コキ")
+			PRINTFORM にギュッと抱きついて顔
+		ELSE
+			PRINTFORM にギュッと抱きついて、顔
+		ENDIF
+	ELSE
+		PRINTFORM の顔
+	ENDIF
+	IF TALENT:貧乳
+		IF RAND:2 || CALCF("Ｂ発情") == 0
+			PRINTFORM を%TEXTR("小ぶりなおっぱい", "控えめな胸", "平坦な胸")%
+			IF TEQUIP:押し倒し && RAND:2
+				PRINTFORMW で押し潰してきた…
+			ELSE
+				PRINTFORMW で愛撫してきた…
+			ENDIF
+		ELSE
+			PRINTFORMW に%TEXTR("小さなおっぱい", "可愛らしい乳首")%を擦り付けてきた…
+		ENDIF
+	ELSE
+		IF TALENT:巨乳 && RAND:3
+			PRINTFORM を%TEXTR("重量感溢れるおっぱい", "豊満な胸", "たわわに実った乳房")%
+		ELSE
+			PRINTFORM を%TEXTR("柔らかなおっぱい", "触り心地の良い乳房")%
+		ENDIF
+		;押し潰し
+		IF TEQUIP:押し倒し && RAND:2
+			IF TALENT:巨乳 && RAND:2 == 0
+				PRINTFORMW の谷間に埋めてきた…
+			ELSE
+				PRINTFORMW で押し潰してきた…
+			ENDIF
+		ELSEIF TALENT:巨乳 && RAND:4 == 0
+			PRINTFORMW で包んできた…
+		ELSEIF RAND:3 == 0
+			PRINTFORMW で愛撫してきた…
+		ELSEIF RAND:2 == 0
+			PRINTFORMW で優しく揉みしだいてきた…
+		ELSE
+			PRINTFORMW で挟んできた…
+		ENDIF
+	ENDIF
+ENDIF
+
+;母乳体質とかだと母乳を飲めるかも
+CALL TEXT, "母乳飲み"
+
+@COM_ORDER_COM104, ARG
+VARSET LOCAL
+LOCALS = 
+
+;すべての命令に共通の要素を考慮
+;(従順が高いと命令に従いやすいなど)
+CALL COM_ORDER, ARG
+
+LOCAL = RESULT
+
+;ABL:奉仕精神
+IF ABL:奉仕精神
+	LOCAL += ABL:奉仕精神 * 4
+	LOCALS = %LOCALS% + %ABLNAME:6%LV{ABL:奉仕精神}({ABL:奉仕精神 * 4})
+ENDIF
+;ABL:Ｂ感覚
+IF ABL:Ｂ感覚
+	LOCAL += ABL:Ｂ感覚 * 3
+	LOCALS = %LOCALS% + %ABLNAME:14%LV{ABL:Ｂ感覚}({ABL:Ｂ感覚 * 3})
+ENDIF
+;恥じらい
+IF TALENT:恥じらい
+	LOCAL -= 3
+	LOCALS = %LOCALS% - %TALENTNAME:35%(3)
+ENDIF
+;汚臭鈍感
+IF TALENT:汚臭鈍感
+	LOCAL += 1
+	LOCALS = %LOCALS% + %TALENTNAME:61%(1)
+ENDIF
+;献身的
+IF TALENT:献身
+	LOCAL += 6
+	LOCALS = %LOCALS% + %TALENTNAME:63%(6)
+ENDIF
+;巨乳
+IF TALENT:巨乳
+	LOCAL += TALENT:巨乳 * 5
+	IF TALENT:巨乳 >= 3
+		LOCALS = %LOCALS% + 超乳(15)
+	ELSEIF TALENT:巨乳 == 2
+		LOCALS = %LOCALS% + 爆乳(10)
+	ELSE
+		LOCALS = %LOCALS% + %TALENTNAME:110%(5)
+	ENDIF
+ENDIF
+
+;合計を表示(40以上で実行)
+CALL PRINT_COM_ORDER_COM, LOCALS, ARG, LOCAL, 40
+
+RETURN RESULT

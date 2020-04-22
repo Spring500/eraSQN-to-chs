@@ -1,0 +1,109 @@
+﻿@COM34
+;クリキャップ
+IF TEQUIP:触手
+	PRINTL 触手クリ責め
+ELSE
+	PRINTL クリキャップ
+ENDIF
+
+CALL TRAIN_MESSAGE_B
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+IF TEQUIP:触手
+	STR:0 = 触手クリ責め
+ELSE
+	STR:0 = クリキャップ
+ENDIF
+
+RETURN 1
+
+@FLAG_COM34, ARG
+
+@SOURCE_COM34, ARG
+VARSET LOCAL
+
+LOCAL:20 += 10
+LOCAL:21 += 20
+
+LOCAL:14 = 300
+
+LOCAL:0 = CALCF("Ｃ刺激", 0, 40)
+
+SIF TALENT:クリピアス
+	TIMES LOCAL:0, 2.00
+
+CALL CALC, "調教ソース", LOCAL:0, LOCAL:1, LOCAL:2, LOCAL:3, LOCAL:4, LOCAL:5, LOCAL:6, LOCAL:7, LOCAL:8, LOCAL:9, LOCAL:10, LOCAL:11, LOCAL:12, LOCAL:13, LOCAL:14, LOCAL:15, LOCAL:16, LOCAL:17, LOCAL:18, LOCAL:19, LOCAL:20, LOCAL:21, ARG
+
+
+@EQUIP_COM14
+;クリキャップ装備中
+CALL SOURCE_COM34, 100
+CALL FLAG_COM34, 100
+
+RETURN 1
+
+@TRAIN_MESSAGE_COM34
+;クリキャップの着脱
+IF TEQUIP:クリキャップ
+	CALL COM_ABLE35
+	IF RESULT && TEQUIP:ニプルキャップ
+		PRINTFORML ニプルキャップも外しますか？
+		PRINTFORML [ 0] はい
+		PRINTFORML [ 1] いいえ
+		CALL INPUT_SELECT, 2
+		IF RESULT == 0
+			PRINTFORMW %CALLNAME:TARGET%からクリキャップとニプルキャップを取り外した…
+			TEQUIP:クリキャップ = 0
+			TEQUIP:ニプルキャップ = 0
+			RETURN 1
+		ENDIF
+	ENDIF
+	PRINTFORMW %CALLNAME:TARGET%からクリトリスからクリキャップを外した…
+	TEQUIP:クリキャップ = 0
+ELSE
+	CALL COM_ABLE35
+	IF RESULT && TEQUIP:ニプルキャップ == 0
+		PRINTFORML ニプルキャップも付けますか？
+		PRINTFORML [ 0] はい
+		PRINTFORML [ 1] いいえ
+		CALL INPUT_SELECT, 2
+		IF RESULT == 0
+			PRINTFORMW %CALLNAME:TARGET%にクリキャップとニプルキャップを取りつけた
+			PRINTFORMW 二種類の淫具は%CALLNAME:TARGET%の敏感な場所を執拗に責めて快楽を与えている…
+			TEQUIP:クリキャップ = 1
+			TEQUIP:ニプルキャップ = 1
+			RETURN 1
+		ENDIF
+	ENDIF
+	PRINTFORMW %CALLNAME:TARGET%のクリトリスに細かく振動するキャップを取り付けた
+	PRINTFORMW 丸みを帯びたスポイトのようなそれは淫核を執拗に吸い上げ、%CALLNAME:TARGET%に甘い快楽をもたらしている…
+	TEQUIP:クリキャップ = 1
+ENDIF
+
+@TRAIN_MESSAGE_COM203
+IF TEQUIP:クリキャップ
+	PRINTFORMW 触手は%CALLNAME:TARGET%のクリ責めを中断した…
+	TEQUIP:クリキャップ = 0
+ELSE
+	IF RAND:3 == 0
+		PRINTFORMW 細かく枝分かれした触手が%CALLNAME:TARGET%のクリトリスを責めはじめた…
+	ELSEIF RAND:2 == 0
+		PRINTFORMW ひも状の触手が%CALLNAME:TARGET%のクリトリスに巻きつき、高速で擦り上げはじめた…
+	ELSE
+		PRINTFORMW 吸盤状の触手が%CALLNAME:TARGET%のクリトリスに吸い付きはじめた…
+	ENDIF
+	TEQUIP:クリキャップ = 1
+	CALL ADD_STAIN, TARGET, "Ｖ", "触手"
+ENDIF
+
+@EQUIP_COM14_2
+;クリキャップ装備中
+IF TEQUIP:触手
+	PRINTL ＜触手クリ責め中＞
+ELSE
+	PRINTL ＜クリキャップ装備中＞
+ENDIF
+
+RETURN 1

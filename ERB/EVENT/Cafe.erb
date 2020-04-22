@@ -1,0 +1,4099 @@
+﻿;-------------------------------------------------
+;喫茶店
+;#eraSQ製作スレＩＲＣメンバー合作！ｗ
+;-------------------------------------------------
+@SHOP_EX
+#DIM LCOUNT
+;FLAG:400 店舗数
+;FLAG:401 制服の情報
+;SAVESTR:1 各店舗の名前　デフォはDream Goblet
+
+PRINTL 
+PRINTL 懐いた夢魔を店員にして、可愛い制服を売りにした喫茶店を運営します
+PRINTL 収入は日の行の朝に一週間分をまとめて得ます
+PRINTL 店舗の通路は広いので、ラミア等の身体の大きな夢魔でも問題なく働けますし、
+PRINTL 働き難い姿の夢魔には、体形を人型に変える魔法をかけたり、かけなかったりします
+PRINTL オトコでも見目麗しい容姿なら働けますが、お客の夢を壊さない用に配慮して、
+PRINTL 中性的な容姿の人に限り、同じ服装でウェイトレスとして働いてもらいます
+PRINTFORML
+
+VARSET LOCAL
+MONEY:8 = 0
+
+;喫茶店が稼動しているとき
+IF NUM("運営店舗")
+	FOR LCOUNT, 2, CHARANUM
+		IF COND("フロア店員", LCOUNT)
+			CALL SETFLAG, "売却価格", LCOUNT
+			MONEY:8 += CALCF("喫茶店の給金", LCOUNT)
+		ENDIF
+	NEXT
+	LOCAL = (MONEY:8 * 14 * NUM("運営店舗") ) / CHARA_NUM("フロア店員")/1000*1000
+	PRINTFORML フロア店員数：{CHARA_NUM("フロア店員")}人　運営店舗数：{NUM("運営店舗")}　予想収入:%MONEY_C(LOCAL)%/週
+ELSEIF NUM("所持店舗")
+	PRINTFORML フロア店員数：{CHARA_NUM("フロア店員")}人…店員不足です
+ELSE
+	PRINTFORM 店員数：{CHARA_NUM("バイト可能")}人　運営可能店舗数：{NUM("運営可能店舗")}　
+	FLAG:400 += 1
+	IF CHARA_NUM("フロア店員") > 0
+		FOR LCOUNT, 2, CHARANUM
+			IF COND("フロア店員", LCOUNT)
+				CALL SETFLAG, "売却価格", LCOUNT
+				MONEY:8 += CALCF("喫茶店の給金", LCOUNT)
+			ENDIF
+		NEXT
+		LOCAL = (MONEY:8 * 14 * NUM("運営店舗") ) / CHARA_NUM("フロア店員")/1000*1000
+	ENDIF
+	FLAG:400 -= 1
+	PRINTFORML 予想収入:%MONEY_C(LOCAL)%/週
+ENDIF
+PRINTL 
+
+SIF NUM("所持店舗") < NUM("運営可能店舗")
+	PRINTFORML  [ 0] 新店を作る　（$10,000） 所持金:%MONEY_C(MONEY)%
+IF NUM("所持店舗")
+	PRINTFORML  [ 1] 店名を変更　　　　現在：%NAMES("喫茶店")%
+	PRINTFORML  [ 2] 制服を変更　　　　現在：%TEXTS("制服")%
+	;営業方針はとりあえず凍結
+	;PRINTFORML  [ 3] 営業方針を変更　　現在：%TEXTS("営業方針")%
+	PRINTFORML  [98] イベント頻度変更　現在：\@ CONFIG("喫茶店描写") ? 時間経過時に発生 # 発生しない \@
+ENDIF
+SIF CHARA_NUM("バイト可能")
+	PRINTL  [99] 店員一覧＆指示
+PRINTL [100] 戻る
+
+$INPUT_LOOP
+INPUT
+
+IF RESULT == 100
+	RETURN 0
+ELSEIF RESULT == 98 && FLAG:400
+	CALL SETCONFIG, "喫茶店"
+ELSEIF RESULT == 99 && CHARA_NUM("バイト可能")
+	CALL CAFE_LIST, 0, 0
+ELSEIF RESULT == 0 && NUM("所持店舗") < NUM("運営可能店舗")
+	IF MONEY >= 10000
+		IF NUM("所持店舗") == 0
+			SAVESTR:1 = Dream Goblet
+			FLAG:401 = 1p0
+			PRINTFORML 初期設定では、店名は%NAMES("喫茶店")%で制服は%TEXTS("制服")%となっています
+			PRINTFORMW お好みの内容に変更してお楽しみください
+		ELSE
+			PRINTFORMW 店舗を一つ増やしました
+		ENDIF
+		MONEY -= 10000
+		FLAG:400 += 1
+	ELSE
+		PRINTFORMW お金が足りません。
+	ENDIF
+ELSEIF RESULT == 1 && NUM("所持店舗")
+	PRINTFORML 喫茶店の名前を『%NAMES("喫茶店")%』から変更します
+	PRINTFORML 名前を入力してください（何も入力しない場合は変更しません）
+	CALL INPUTS_SELECT, 24
+	IF RESULTS != "" && SAVESTR:1 != RESULTS
+		SAVESTR:1 = %RESULTS%
+		PRINTFORMW 店名を%NAMES("喫茶店")%に変更しました
+	ENDIF
+ELSEIF RESULT == 2 && NUM("所持店舗")
+	CALL SETFLAG, "喫茶店の服装"
+ELSE
+	GOTO INPUT_LOOP
+ENDIF
+
+RESTART
+
+@CAFE
+#DIM LCOUNT
+#DIM MEMO_TARGET
+#DIM MEMO_LINECOUNT, 2
+
+;ここではTARGETを変更させるので保存
+MEMO_TARGET = TARGET
+TARGET = 0
+
+;同じイベントは起こさない
+VARSET TFLAG
+;勤労フラグ初期化(一日二回あるので)
+FOR LCOUNT, 1, CHARANUM
+	CLEARBIT CFLAG:LCOUNT:95, 1
+NEXT
+
+IF CONFIG("喫茶店描写")
+	PRINTL 
+	CUSTOMDRAWLINE ☆
+
+	;挨拶。LINECOUNTを記録して、キャラが喋ったかを判別させる
+	MEMO_LINECOUNT = LINECOUNT
+
+	;喋るキャラの選別
+	FOR LCOUNT, 1, MAX(4, NUM("運営店舗") + 1)
+		;挨拶していない人から選出
+		TARGET = FIND_COND("出演可能な店員", "喫茶店挨拶まだ")
+
+		MEMO_LINECOUNT:1 = LINECOUNT
+		;台詞有る場合に、台詞の名前表示をする？
+		SIF CONFIG("台詞の名前非表示") == 0
+			PRINTFORM %TEXT_LJ(CALLNAME:TARGET, 16)%
+
+		CALL SELF_KOJO, "喫茶店"
+
+		;挨拶フラグ
+		SETBIT CFLAG:95, 6
+
+		;台詞が無いなら辻褄あわせ
+		IF LINECOUNT == MEMO_LINECOUNT:1
+			PRINTL 
+			CLEARLINE 1
+		ENDIF
+	NEXT
+	IF LINECOUNT > MEMO_LINECOUNT
+		WAIT
+		PRINTL 
+	ENDIF
+ENDIF
+
+FOR LCOUNT, 1, NUM("運営店舗") + 1
+	;FIND_CONDはTARGET以外から探すので一旦リセット
+	TARGET = 0
+	;挨拶済みを優遇
+	TARGET = FIND_COND("出演可能な店員", "喫茶店挨拶済み")
+	SIF TARGET == 0
+		TARGET = FIND_COND("出演可能な店員")
+
+	;収入get
+	CALL SETFLAG, "売却価格", TARGET
+	MONEY:7 += CALCF("喫茶店の給金", TARGET)
+
+	;イベント描写フラグON
+	SETBIT CFLAG:95, 1
+	IF CONFIG("喫茶店描写")
+		SIF LCOUNT >= 2
+			PRINTL 
+
+		CALL EVENT_CAFE, LCOUNT
+	ENDIF
+NEXT
+
+IF CONFIG("喫茶店描写")
+	CUSTOMDRAWLINE ☆
+	PRINTL 
+ENDIF
+
+TARGET = MEMO_TARGET
+
+;-------------------------------------------------
+;喫茶店で起きたイベントの名称
+;-------------------------------------------------
+@EVENT_NAMES_CAFE(ARG)
+#FUNCTIONS
+
+SELECTCASE ARG
+CASE 1
+	LOCALS = パンチラ
+CASE 2
+	LOCALS = セクハラ
+CASE 3
+	LOCALS = オムライス
+CASE 4
+	LOCALS = スカートめくり
+CASE 5
+	LOCALS = こけてパンもろ
+CASE 6
+	LOCALS = 自慰中毒
+CASE 7
+	LOCALS = 身体が火照る
+CASE 8
+	LOCALS = テーブル拭き１
+CASE 9
+	LOCALS = クリーム拭き取り
+CASE 10
+	LOCALS = あ〜ん
+CASE 11
+	LOCALS = ノーパン接客
+CASE 12
+	LOCALS = 飲み物溢してつまみ食い
+CASE 13
+	LOCALS = トイレでつまみ食い
+CASE 14
+	LOCALS = テーブル拭き２
+CASE 15
+	LOCALS = チップ
+CASE 16
+	LOCALS = 財布忘れた相手をつまみ食い
+CASE 17
+	LOCALS = 暇なときの時間潰し
+CASE 18
+	LOCALS = 休憩
+CASE 19
+	LOCALS = 査察
+
+CASE 100
+	LOCALS = 目立ちたがり
+CASE 101
+	LOCALS = レズっ気
+CASE 102
+	LOCALS = 不遜な接客
+CASE 103
+	LOCALS = 母乳
+CASE 104
+	LOCALS = 子供
+CASE 105
+	LOCALS = 爆乳
+CASE 106
+	LOCALS = パンツ見せつけ
+CASE 107
+	LOCALS = 内気
+CASE 108
+	LOCALS = 陽気
+CASE 109
+	LOCALS = 陰気
+CASE 110
+	LOCALS = クール
+CASE 111
+	LOCALS = 妖精
+CASE 112
+	LOCALS = ラミア
+CASE 113
+	LOCALS = マーメイド
+CASE 114
+	LOCALS = カオス料理
+CASE 115
+	LOCALS = 盗撮
+;CASE 116
+;	LOCALS = しっぽ
+CASE 117
+	LOCALS = 胸の谷間
+CASE 118
+	LOCALS = 治療の名目でつまみ食い
+CASE 119
+	LOCALS = ハーブティー
+CASE 120
+	LOCALS = 主人がトイレで
+CASE 121
+	LOCALS = お茶を淹れる
+
+CASE 200
+	LOCALS = コスプレ
+ENDSELECT
+RETURNF LOCALS
+
+;-------------------------------------------------
+;喫茶店ARG号店のイベント
+;-------------------------------------------------
+@EVENT_CAFE, ARG
+#DIM LCOUNT
+#DIM MEMO_LINECOUNT
+#DIM WAITRESS
+#DIMS EVENT_NAMES
+
+PRINTFORML 〜%NAMES("喫茶店")%\@ NUM("所持店舗") >= 2 ? %BL(1)%{ARG}号店 # \@〜
+
+;大別すると、対客系(これが一番多い)、経営系（一番少ない）、勤務態度系。
+;種族限定イベント、季節イベントも追加したいところですな。BY□ボ
+
+VARSET LOCAL
+
+;素質の関係ないイベント(1〜99)と素質イベント(100〜)で番号をわける。
+;ラミアやハーピーとかはどうしようかな…
+
+CALL CALC, "ランダム選択"
+;パンチラやエッチな仕草サービス
+SIF TFLAG:1 == 0 && ABL:露出癖 >= 3 && COND("制服：ロング") == 0 && COND("喫茶店：パンチラ") && COND("身嗜み：ノーパン") == 0
+	CALL CALC, "ランダム選択", 1
+;セクハラ
+SIF TFLAG:2 == 0
+	CALL CALC, "ランダム選択", 2
+;オムライスにお絵かき
+SIF TFLAG:3 == 0
+	CALL CALC, "ランダム選択", 3
+;スカートめくり
+SIF TFLAG:4 == 0 && COND("制服：スカート") && COND("制服：ロング") == 0 && COND("身嗜み：ノーパン") == 0
+	CALL CALC, "ランダム選択", 4
+;ミニスカでこけてパンもろorＭ字開脚披露
+SIF TFLAG:5 == 0 && COND("制服：ミニスカ") + COND("制服：バニー") && COND("身嗜み：ノーパン") == 0 && COND("脚の使用") && TALENT:妖精 == 0
+	CALL CALC, "ランダム選択", 5
+;自慰中毒だと自然に指が…
+SIF TFLAG:6 == 0 && ABL:自慰中毒 >= 3 && TALENT:オトコ == 0
+	CALL CALC, "ランダム選択", 6
+;相手したばかり+淫乱
+SIF TFLAG:7 == 0 && TALENT:好色 + TALENT:淫乱 && COND("喫茶店：セックス")
+	CALL CALC, "ランダム選択", 7
+;テーブルを拭く時に胸が…
+SIF TFLAG:8 == 0 && TALENT:オトコ == 0 && TALENT:妖精 == 0
+	CALL CALC, "ランダム選択", 8
+;頬をクリームで汚したお客にサービス
+SIF TFLAG:9 == 0 && ABL:奉仕精神 >= 3
+	CALL CALC, "ランダム選択", 9
+;伝説の「あ〜ん」ktkr！
+SIF TFLAG:10 == 0 && ABL:奉仕精神 >= 3
+	CALL CALC, "ランダム選択", 10
+;どきどきノーパンorファスナー開けっ放し接客
+SIF TFLAG:11 == 0 && ABL:欲望 >= 4 && ABL:露出癖 >= 4 && TALENT:オトコ == 0 && COND("制服：スカート") + COND("制服：ファスナー")
+	CALL CALC, "ランダム選択", 11
+;ちょっと暇な時間帯で、ジュースをこぼして拭き拭き
+SIF TFLAG:12 == 0 && MIN(ABL:技巧 + ABL:舌使い, ABL:精液中毒) >= 3 && COND("喫茶店：フェラ")
+	CALL CALC, "ランダム選択", 12
+;溜まっていると、トイレで摘み食い
+SIF TFLAG:13 == 0 && COND("喫茶店：セックス")
+	CALL CALC, "ランダム選択", 13
+;テーブル拭き その２
+SIF TFLAG:14 == 0 && ABL:奉仕精神 >= 3 && TALENT:オトコ == 0 && TALENT:妖精 == 0
+	CALL CALC, "ランダム選択", 14
+;いっぱい稼ぐ人はチップをいっぱい貰う
+SIF TFLAG:15 == 0 && CALCF("喫茶店の給金", TARGET) >= 5000 && TALENT:オトコ == 0
+	CALL CALC, "ランダム選択", 15
+;定番のお皿洗いとおもいきや
+SIF TFLAG:16 == 0 && COND("喫茶店：セックス") && TALENT:オトコ == 0
+	CALL CALC, "ランダム選択", 16
+;いつになく暇な店内
+SIF TFLAG:17 == 0
+	CALL CALC, "ランダム選択", 17
+;休憩
+SIF TFLAG:18 == 0
+	CALL CALC, "ランダム選択", 18
+;MASTERの査察
+SIF TFLAG:19 == 0 && COND("喫茶店出演済み", MASTER) == 0
+	CALL CALC, "ランダム選択", 19
+
+;目立ちたがり（とーかお嬢様みたいなイメージ？）
+SIF TFLAG:100 == 0 && TALENT:目立ちたがり
+	CALL CALC, "ランダム選択", 100
+;女性客をガン見
+SIF TFLAG:101 == 0 && TALENT:両刀 && ABL:レズっ気 >= 3
+	CALL CALC, "ランダム選択", 101
+;不遜な接客
+SIF TFLAG:102 == 0 && (TALENT:高慢 || TALENT:生意気)
+	CALL CALC, "ランダム選択", 102
+;ミルク系(巨乳系？……巨乳はミルクと別にしようか考え中)
+SIF TFLAG:103 == 0 && TALENT:巨乳 && TALENT:母乳体質
+	CALL CALC, "ランダム選択", 103
+;幼稚で小柄で愚か
+SIF TFLAG:104 == 0 && TALENT:愚か && TALENT:小柄体型 && TALENT:幼稚
+	CALL CALC, "ランダム選択", 104
+;爆乳
+SIF TFLAG:105 == 0 && TALENT:巨乳 >= 2 && TALENT:妖精 == 0
+	CALL CALC, "ランダム選択", 105
+;パンツ見せつけ
+SIF TFLAG:106 == 0 && (TALENT:好色 || ABL:露出癖 >= 3) && COND("制服：ミニスカ") + COND("制服：バニー") && TALENT:妖精 == 0 && COND("喫茶店：パンチラ") && TALENT:オトコ == 0
+	CALL CALC, "ランダム選択", 106
+;内気（おどおどウェイトレスは萌える）
+SIF TFLAG:107 == 0 && TALENT:内気
+	CALL CALC, "ランダム選択", 107
+;陽気、愚か（おバカ）
+SIF TFLAG:108 == 0 && TALENT:陽気 + TALENT:愚か
+	CALL CALC, "ランダム選択", 108
+;陰気(店内が妙に暗くなる感じで)
+SIF TFLAG:109 == 0 && TALENT:陰気
+	CALL CALC, "ランダム選択", 109
+;クール系（と見られてしまうイベント、ルリコンホイホイ）
+SIF TFLAG:110 == 0 && TALENT:冷静 + TALENT:無関心 + TALENT:感情乏しい
+	CALL CALC, "ランダム選択", 110
+;妖精さん
+SIF TFLAG:111 == 0 && TALENT:妖精
+	CALL CALC, "ランダム選択", 111
+;ラミアさん
+SIF TFLAG:112 == 0 && TALENT:ラミア
+	CALL CALC, "ランダム選択", 112
+;マーメイドさん…ちょっと乾いていないか？イベント
+SIF TFLAG:113 == 0 && TALENT:マーメイド
+	CALL CALC, "ランダム選択", 113
+;カオス料理…好奇心、調合知識、狂気、禁断の知識、魔法使い
+SIF TFLAG:114 == 0 && TALENT:好奇心 + TALENT:調合知識 + TALENT:狂気 + TALENT:禁断の知識 + TALENT:魔法使い
+	CALL CALC, "ランダム選択", 114
+;盗撮（魅力or人気）
+SIF TFLAG:115 == 0 && TALENT:人気 + TALENT:魅力 && COND("制服：ロング") == 0 && TALENT:妖精 == 0
+	CALL CALC, "ランダム選択", 115
+;しっぽが可愛い！
+;SIF TFLAG:116 == 0 && TALENT:しっぽ
+;	CALL CALC, "ランダム選択", 116
+;胸の谷間
+SIF TFLAG:117 == 0 && TALENT:巨乳 && TALENT:陽気 + TALENT:恥薄い && TALENT:恥じらい == 0
+	CALL CALC, "ランダム選択", 117
+;治療の名目で摘み食い(調合知識)
+SIF TFLAG:118 == 0 && TALENT:調合知識 && COND("喫茶店：フェラ") && TALENT:オトコ == 0
+	CALL CALC, "ランダム選択", 118
+;ハーブティー作ったり
+SIF TFLAG:119 == 0 && TALENT:調合知識
+	CALL CALC, "ランダム選択", 119
+;MASTERがトイレを覗くと…
+SIF TFLAG:120 == 0 && COND("喫茶店出演済み", MASTER) == 0 && MIN(ABL:技巧, ABL:レズっ気) >= 3 && COND("喫茶店：フェラ") && FIND_COND("出演可能な店員", "調合知識")
+	CALL CALC, "ランダム選択", 120
+;お茶を淹れるぞー
+SIF TFLAG:121 == 0 && TALENT:献身 + TALENT:調合知識 + TALENT:気品
+	CALL CALC, "ランダム選択", 121
+
+
+;200番台は時節イベント
+;コスプレ着物
+;SIF TFLAG:200 == 0 && FLAG:873 == 0 && DAY%7 == 0
+;	CALL CALC, "ランダム選択", 200
+
+;既読イベントの記録
+TFLAG:RESULT = 1
+
+VARSET LOCALS
+
+WAITRESS = 0
+
+EVENT_NAMES = %EVENT_NAMES_CAFE(RESULT)%
+
+;EVENT_NAMES = パンチラ
+;EVENT_NAMES = 飲み物溢してつまみ食い
+;EVENT_NAMES = トイレでつまみ食い
+;EVENT_NAMES = 治療の名目でつまみ食い
+
+;以下、イベント内容の記述
+;素質の関係ないイベント群
+SELECTCASE EVENT_NAMES
+CASE "パンチラ"
+	PRINTFORM %CALLNAME:TARGET%は、お客にさりげなく
+	IF COND("制服：バニー")
+		PRINTFORMW エッチな仕草を見せつけて楽しみながら仕事しています。
+	ELSE
+		PRINTFORMW パンチラをサービスして楽しみながら仕事しています。
+	ENDIF
+
+	CALL SELF_KOJO_L, EVENT_NAMES
+
+	IF TALENT:恥じらい && RAND:2
+		PRINTFORMW かなり恥ずかしいようですが、見てもらう快感には勝てないみたいです…
+	ELSEIF TALENT:意地悪 + TALENT:小悪魔 && RAND:2
+		PRINTFORM どうやら、
+		IF COND("制服：バニー")
+			IF TALENT:オトコ == 0 && TALENT:貧乳 == 0 && RAND:3 == 0
+				IF RAND:2
+					PRINTFORM お辞儀した
+				ELSE
+					PRINTFORM 屈んだ
+				ENDIF
+				PRINTFORM ついでに胸の谷間を強調して見せてあげた時
+			ELSEIF RAND:2
+				PRINTFORM 足元の物を拾う時に脚を伸ばしたままで前屈の姿勢をとって
+				IF RAND:2
+					PRINTFORM お尻
+				ELSE
+					PRINTFORM 脚線美
+				ENDIF
+				PRINTFORM を見せ付けた時
+			ELSE
+				SIF TALENT:好色 + TALENT:小悪魔
+					PRINTFORM 流し目を送りながら
+				IF RAND:2
+					;PRINTFORM 髪をかき上げて
+					PRINTFORM 髪形を整えつつ
+				ELSE
+					PRINTFORM 腕を頭の後ろで組んで
+				ENDIF
+				PRINTFORM %TEXTS("腋")%を見せてあげた時
+			ENDIF
+		ELSE
+			IF RAND:2
+				PRINTFORM パンツを見た時
+			ELSE
+				PRINTFORM スカートの中を見せてあげた時
+			ENDIF
+		ENDIF
+		IF RAND:2
+			PRINTFORMW のお客の幸せそうな態度が面白くて仕方ないようです…
+		ELSE
+			PRINTFORMW にお客が\@ RAND:2 ? 赤く # 前屈みに \@なるのが面白くて仕方ないようです…
+		ENDIF
+	ELSE
+		LOCAL = 100 + RAND:8
+		IF COND("制服：バニー")
+			PRINTFORM 身体のラインが浮き出るエロチックなスーツ
+			SELECTCASE AGE(TARGET)
+			CASE IS >= 4
+				PRINTFORM に包まれたオトナの魅力
+			CASE 3
+				PRINTFORM に引き立てられた%CALLNAME:TARGET%の魅力
+			CASE 2
+				PRINTFORM で背伸びしているような可愛らしい少女の魅力
+			CASE 1
+				PRINTFORM と幼い外見のアンバランスな魅力
+			ENDSELECT
+		ELSEIF RAND:2
+			PRINTFORM チラチラっと見える%CALLNAME:TARGET%の
+			SIF CHECK_CLO("パンスト露出")
+				PRINTFORM パンスト越しの
+			IF (AGE(TARGET) >= 3 || ABL:露出癖 >= 3 || TALENT:好色 + TALENT:淫乱) && RAND:2
+				IF AGE(TARGET) <= 2 && RAND:4
+					PRINTFORM 大人びた
+				ELSEIF RAND:2
+					PRINTFORM きわどい
+				ELSE
+					PRINTFORM 過激な
+				ENDIF
+			ELSEIF RAND:2 || AGE(TARGET) >= 3
+				IF RAND:3 == 0
+					PRINTFORM シルクの
+				ELSEIF RAND:2
+					PRINTFORM 純白の
+				ELSE
+					PRINTFORM 清楚なレースの
+				ENDIF
+			ELSEIF RAND:2
+				IF RAND:2 || AGE(TARGET) >= 2
+					PRINTFORM おとなしめな
+				ELSE
+					PRINTFORM 子供っぽい
+				ENDIF
+			ENDIF
+			PRINTFORM パンツ
+		ELSEIF LOCAL == 100
+			PRINTFORM チラチラ見える縞々のパンツ
+		ELSEIF LOCAL == 101
+			PRINTFORM チラッと見える大人っぽい黒いパンツ
+		ELSEIF LOCAL == 102
+			PRINTFORM 可愛らしいフリルいっぱいのパンツ
+		ELSEIF LOCAL == 103
+			PRINTFORM 「ほどけるかも」と期待をさせるサイドの紐
+		ELSEIF LOCAL == 104
+			PRINTFORM ばっちり丸見えのムチムチなお尻
+		ELSEIF LOCAL == 105
+			IF COND("陰毛") >= 7
+				PRINTFORM パンツからはみ出ている恥ずかしい毛
+			ELSE
+				IF AGE(TARGET) >= 3
+					PRINTFORM \@ COND("男の娘") ? 先っちょ # 割れ目 \@が上から見えそうな浅履きのパンツ
+				ELSE
+					PRINTFORM お腹が丸見えの小さなパンツ
+				ENDIF
+			ENDIF
+		ELSEIF LOCAL == 106
+			IF RAND:2
+				PRINTFORM スケスケのバックから見える
+				IF AGE(TARGET) >= 3
+					PRINTFORM お尻の谷間
+				ELSE
+					PRINTFORM 小さなお尻
+				ENDIF
+			ELSE
+				PRINTFORM うっすらと透けて見える
+				IF COND("陰毛") == 0 || RAND:3 == 0
+					PRINTFORM 肌
+				ELSEIF COND("陰毛") <= 3
+					PRINTFORM 無毛の丘
+				ELSEIF COND("陰毛") <= 6
+					PRINTFORM 陰毛
+				ELSE
+					PRINTFORM 剛毛
+				ENDIF
+			ENDIF
+		ELSEIF LOCAL == 107 || CHECK_PANTIES("ハイレグ")
+			PRINTFORM 小さなパンツが食い込む
+			IF (AGE(TARGET) >= 3 && RAND:2) || COND("男の娘")
+				PRINTFORM 盛り上がり
+			ELSE
+				PRINTFORM 柔らかそうな丘
+			ENDIF
+		ELSE
+			PRINTFORM ガードの甘い%CALLNAME:TARGET%のスカートから覗く光景
+		ENDIF
+		PRINTFORMW に、お客の視線は釘付けのようです。
+		IF RAND:2 && COND("男の娘")
+			PRINTFORMW 実はオトコなわけですが…可愛いので知ってるお客も知らないお客も、みんな幸せそうです…
+		ELSE
+			PRINTFORMW エスカレートしないなら、皆が幸せでしょう…
+		ENDIF
+	ENDIF
+CASE "セクハラ"
+	PRINTFORM %CALLNAME:TARGET%は
+	IF RAND:3 == 0
+		PRINTFORM テーブルの拭き掃除をしている最中に、
+		LOCALS = 拭き掃除
+	ELSEIF RAND:2
+		PRINTFORM 料理を運んでいる最中に、
+		LOCALS = 配膳
+	ELSE
+		PRINTFORM オーダーを取っている最中に、
+		LOCALS = 注文
+	ENDIF
+	PRINTFORM 客に
+	LOCAL = 0
+	IF RAND:3 == 0 && LOCALS != "配膳"
+		PRINTFORMW 股間を撫でられました。
+		LOCAL = COND("男の娘")
+	ELSEIF RAND:3 == 0 && LOCALS != "注文"
+		PRINTFORMW お尻を撫でられました。
+	ELSEIF RAND:2
+		PRINTFORMW 太ももを撫でられました。
+	ELSE
+		PRINTFORMW エッチな悪戯をされました。
+	ENDIF
+	;露骨過ぎるので、ちょっと確率低い
+	IF TALENT:淫乱 && TALENT:恥じらい == 0 && COND("喫茶店：おさわり") && RANDIF(3, TALENT:冷静 + TALENT:感情乏しい + TALENT:淫乱, TALENT:強気)
+		PRINTFORM …が、%CALLNAME:TARGET%は妖艶な笑みを浮かべながら、逆にお客
+		IF RAND:2 == 0
+			PRINTFORM の手を
+			IF COND("制服：バニー") || COND("身嗜み：ノーパン")
+				IF RAND:2
+					PRINTFORM 太ももと股間が形作る三角形の隙間へと
+				ELSE
+					PRINTFORM 触られると気持ちよくなってしまう場所へと
+				ENDIF
+			ELSE
+				PRINTFORM パンツの中の\@ COND("男の娘") ? ペニス # 秘部 \@に
+			ENDIF
+			PRINTFORMW 誘導して楽しんだようです。
+		ELSE
+			PRINTFORMW に身体を擦りつけはじめました。
+		ENDIF
+		IF RAND:2 == 0
+			PRINTFORMW 軽い気持ちで手を出したのでしょうが、お客は予想外の展開に固まってしまった…
+		ELSE
+			WAITRESS = FIND_COND("出演可能な店員")
+			SETBIT CFLAG:WAITRESS:95, 1
+			PRINTFORM そこだけ空気が変わってしまったので、%CALLNAME:WAITRESS%が
+			IF TALENT:WAITRESS:好色 + TALENT:WAITRESS:小悪魔
+				PRINTFORMW ニヤつきながら取り成しに向かいました…
+			ELSE
+				PRINTFORMW 慌てて取り成しに向かいました…
+			ENDIF
+		ENDIF
+	ELSEIF TALENT:恥じらい && RANDIF(1, TALENT:冷静 + TALENT:感情乏しい + TALENT:淫乱, TALENT:強気)
+		PRINTFORMW %CALLNAME:TARGET%は突然のことに「\@ COND("男の娘") ? わっ # ひゃんっ \@！」と可愛らしい声を上げてしまい、とても恥ずかしそうにしながら、お客をたしなめました。
+		PRINTFORMW お客は好きだった女の子を悪戯で泣かしちゃったような面持ちで、慌てて謝っています…
+	ELSEIF TALENT:強気 && RANDIF(1, TALENT:冷静 + TALENT:感情乏しい + TALENT:好色 + TALENT:淫乱)
+		PRINTFORM %CALLNAME:TARGET%は反射的に
+		IF RAND:3 == 0 && COND("脚が無い") == 0
+			PRINTFORM 蹴ってしまいましたが、
+		ELSEIF RAND:2
+			PRINTFORM はたいてしまいましたが、
+		ELSE
+			PRINTFORM 殴ってしまいましたが、
+		ENDIF
+		PRINTFORMW 周りからはなぜか拍手が巻き起こっています…
+	ELSEIF TALENT:冷静 + TALENT:感情乏しい + TALENT:淫乱
+		IF (CHECK_PANTIES("Ｈ") || RAND:3 == 0) && ABL:奉仕精神 >= 3 && ABL:露出癖 && LOCALS != "配膳" && COND("喫茶店：おさわり")
+			PRINTFORM …周りに客がいないことを確認した%CALLNAME:TARGET%は
+			IF LOCALS == "拭き掃除"
+				PRINTFORM 肩越しにお客を一瞥すると、脚を肩幅に開いて拭き掃除の間だけ
+			ELSE
+				PRINTFORM お客を一瞥すると、
+				IF COND("制服：バニー") && COND("制服：ファスナー") && COND("喫茶店：Ｖセックス") && TALENT:オンナ
+					PRINTFORM 悪戯している手をクロッチ部分のファスナーのつまみに誘導して注文の間だけ
+					LOCALS:2 = ファスナー
+				ELSEIF RAND:2 || COND("制服：バニー")
+					PRINTFORM 脚をちょっと開いて注文の間だけ
+				ELSE
+					PRINTFORM 片手でスカートを持ち上げて注文の間だけ
+				ENDIF
+			ENDIF
+			PRINTFORMW 悪戯するのを黙認してあげたようです。
+			PRINTFORM お客は
+			IF COND("制服：バニー")
+				PRINTFORM 思いがけない展開に心の中で歓声をあげながら、
+				IF LOCALS:2 == "ファスナー"
+					PRINTFORMW %CALLNAME:TARGET%の膣内に指を差し入れて束の間の遊びに熱中しています…
+				ELSE
+					PRINTFORMW 通気性の悪い衣装の下で蒸れた股間や肌触りの良い網タイツ越しのお尻や内腿を手のひら全体で楽しみました…
+				ENDIF
+			ELSE
+				LOCALS:1 = 
+				IF LOCALS == "拭き掃除"
+					IF (ABL:露出癖 >= 3 && RAND:2) || CHECK_PANTIES("Ｔバック")
+						IF RAND:2
+							LOCALS:1 = Ｔバックをずらして\@ RAND:2 ? 親指の腹でアナルを弄り # %CALLNAME:TARGET%のアナルを眺め \@ながら
+						ELSE
+							LOCALS:1 = 紐のような細さのＴバックでは隠しきれていない肛門の皺や色を眺めながら
+						ENDIF
+					ELSEIF ABL:露出癖 >= 3 || CHECK_PANTIES("シースルー")
+						LOCALS:1 = シースルーのパンツ越しにお尻の谷間を鑑賞しながら
+					ENDIF
+				ELSE
+					IF (ABL:露出癖 >= 3 && RAND:2) || CHECK_PANTIES("食い込み")
+						IF RAND:3 == 0 && PENIS(TARGET) == 0
+							LOCALS:1 = 股間に食い込んでいるパンツをずらしてアソコを露出させ
+						ELSEIF (AGE(TARGET) >= 3 && RAND:2) || COND("男の娘")
+							LOCALS:1 = 小さなパンツが食い込む盛り上がりを眺めながら
+						ELSE
+							LOCALS:1 = 小さなパンツが食い込む柔らかそうな丘を眺めながら
+						ENDIF
+					ELSEIF ABL:露出癖 >= 3 || CHECK_PANTIES("シースルー")
+						LOCALS:1 = うっすらと透けて見える
+						IF COND("陰毛") == 0 || RAND:3 == 0
+							LOCALS:1 = %LOCALS:1%下腹部
+						ELSEIF COND("陰毛") <= 3
+							LOCALS:1 = %LOCALS:1%無毛の丘
+						ELSEIF COND("陰毛") <= 6
+							LOCALS:1 = %LOCALS:1%陰毛
+						ELSE
+							LOCALS:1 = %LOCALS:1%剛毛
+						ENDIF
+						LOCALS:1 = %LOCALS:1%を鑑賞しながら
+					ENDIF
+				ENDIF
+				SIF LOCALS:1 == "" || COND("身嗜み：ノーパン") || RAND:4 == 0
+					LOCALS:1 = 思いがけない展開に心の中で歓声をあげながら
+				PRINTFORMW %LOCALS:1%、股間の柔らかな感触やしっとりとした内腿を手のひら全体で楽しみました…
+			ENDIF
+		ELSE
+			PRINTFORMW …が、%CALLNAME:TARGET%は手馴れた様子でスルーしています…
+		ENDIF
+	ELSE
+		PRINTFORMW %CALLNAME:TARGET%は思わず、頬を赤らめて色っぽい声を出してしまいました…。
+		PRINTFORMW 予想外の\@ LOCAL ? 感触に首を傾げながら、お客は # 反応に戸惑った客は、\@すぐに悪戯をやめて謝罪しました…
+	ENDIF
+CASE "オムライス"
+	PRINTFORMW %CALLNAME:TARGET%はオムライスにケチャップで似顔絵を描くサービスを注文されました。
+	PRINTL 
+	IF TALENT:高慢 + TALENT:強気 && RANDIF(2, TALENT:陽気, TALENT:好色, TALENT:賢い)
+		PRINTFORMW …%CALLNAME:TARGET%は自分の笑顔を描くのに抵抗あるようで、どうも\@TALENT:生意気 ? 生意気な # 澄ました\@感じの絵になってしまいました。
+		PRINTFORMW でも、いかにもなリアルさがお客には受けているようです…
+	ELSEIF TALENT:陽気 && RANDIF(2, TALENT:好色, TALENT:賢い)
+		IF TALENT:小柄体型 && TALENT:幼稚 && RAND:2
+			PRINTFORMW …%CALLNAME:TARGET%はお客の膝の上に座って、手馴れた様子で描きあげました…
+			PRINTFORMW お客は%CALLNAME:TARGET%を撫でたい衝動を必死で堪えています…
+		ELSE
+			PRINTFORMW …%CALLNAME:TARGET%はデフォルメした自分の笑顔を描くと、にこっとお客に微笑みました…
+			PRINTFORMW お客は楽しげな笑顔にすっかりやられてしまっています…
+		ENDIF
+	ELSEIF TALENT:好色 && RANDIF(2, TALENT:賢い)
+		PRINTFORM ……%CALLNAME:TARGET%はお客の
+		IF ABL:欲望 >= 5 && RAND:2
+			PRINTFORM ふとももの上に腰を下ろして、
+		ELSE
+			PRINTFORM 横に腰を下ろして、
+		ENDIF
+		IF ABL:奉仕精神 >= 3 && RAND:2
+			PRINTFORMW 股間の大きくなったものをテーブルの下で撫でながら描き描きしています。
+			PRINTFORMW お客はこんな所で射精するわけにはいかないと、この幸運か不幸か判らない状況で必至に耐えていますが限界は近そうです…
+		ELSE
+			PRINTFORMW わざと身体を接触させながら描き描きしています。
+			PRINTFORMW お客は距離が近すぎる%CALLNAME:TARGET%に、ドキドキしっぱなしです…
+		ENDIF
+	;賢い人にはみんな厳しいｗ
+	ELSEIF TALENT:賢い && RAND:2
+		PRINTFORMW ……ちょっとミスってしまったようで、%CALLNAME:TARGET%の描いたものは抽象画にしか見えませでした。
+		PRINTFORMW お客は「味があるよ」とフォローしてくれましたが、仲間内からは『巨匠、巨匠！』とからかわれたようです…
+	ELSEIF RAND:2
+		PRINTFORMW …が、%CALLNAME:TARGET%の描いたものは「可もなく不可もなく」といった程度のできばえでした。
+		PRINTFORMW お客の微妙な反応に、%CALLNAME:TARGET%はリベンジを誓っているようです…
+	ELSE
+		PRINTFORMW ……どうやら、自分でも満足できる出来栄えのものを描きあげたようです。
+		IF ABL:奉仕精神 + TALENT:献身*3 >= 4 && RAND:2
+			PRINTFORMW 一仕事やり終えて良い気分の%CALLNAME:TARGET%は、お客に『あーん』もしてあげています…
+		ELSE
+			PRINTFORMW お客も感心しています…
+		ENDIF
+	ENDIF
+CASE "スカートめくり"
+	IF RAND:2 && CHECK_PANTIES("紐")
+		PRINTFORMW %CALLNAME:TARGET%は悪戯好きな子供に紐パンの紐を片方解かれてしまいました！
+		LOCALS = 紐解き
+	ELSE
+		PRINTFORMW %CALLNAME:TARGET%は悪戯好きな子供にスカートめくりされてしまいました！
+	ENDIF
+
+	IF TALENT:高慢 + TALENT:強気 && TALENT:恥じらい == 0 && RANDIF(1, TALENT:恥薄い, TALENT:冷静 + TALENT:感情乏しい)
+		PRINTFORMW %CALLNAME:TARGET%は\@ TALENT:粗野 && RAND:3 == 0 ? お尻側のパンツの食い込みを後ろ手で直しながら # \@マセた子供を軽く説教しはじめましたが、子供が理解した様子を見せると、笑顔で頭を撫でながら解放したようです…
+	ELSEIF TALENT:冷静 + TALENT:感情乏しい && RANDIF(1, TALENT:恥薄い)
+		IF LOCALS == "紐解き" && RAND:2 && ABL:露出癖 >= 1
+			PRINTFORM おへそが見えるほどに捲り上げられたスカートの下から現れた
+			IF AGE(TARGET) <= 2 && RAND:4
+				PRINTFORM 大人びたパンツに
+			ELSEIF RAND:4 == 0
+				PRINTFORM \@ RAND:2 ? 黒 # 赤 \@いレースの下着に
+			ELSEIF RAND:3 == 0
+				PRINTFORM シースルーのパンツに
+			ELSEIF ABL:露出癖 < 3
+				IF RAND:3 == 0
+					PRINTFORM シルクの下着に
+				ELSEIF RAND:2
+					PRINTFORM 純白のパンツに
+				ELSE
+					PRINTFORM 清楚な下着に
+				ENDIF
+			ELSEIF RAND:2
+				PRINTFORM きわどいパンツに
+			ELSE
+				PRINTFORM \@ RAND:2 ? Ｈ # 過激 \@な下着に
+			ENDIF
+		ENDIF
+		PRINTFORMW 一瞬店内がザワっとしましたが、%CALLNAME:TARGET%は華麗にスルーしたようです…
+	ELSEIF TALENT:恥薄い
+		IF TALENT:素直 + TALENT:陽気 && TALENT:小柄体型 == 0
+			PRINTFORM %CALLNAME:TARGET%はしゃがんで目線の高さを合わせると、
+			IF ABL:露出癖 >= 3 + RAND:4 && COND("制服：ミニスカ")
+				PRINTFORM さりげなく脚を開いて
+				IF RAND:3 == 0
+					PRINTFORM 見たかったモノ
+				ELSEIF RAND:2
+					PRINTFORM パンツ
+				ELSEIF CHECK_PANTIES("Ｈ") || ABL:露出癖 >= 5 + RAND:2
+					PRINTFORM Ｈなパンツが食い込む股間
+				ELSE
+					PRINTFORM パンツを柔らかく盛り上げている股間
+				ENDIF
+				PRINTFORM を見せてあげながら、赤面している
+			ELSE
+				PRINTFORM 悪戯好きな
+			ENDIF
+			IF TALENT:素直 == 0 || RAND:2
+				PRINTFORMW 子供をちゃめっけ豊かに諭したようです…
+			ELSE
+				PRINTFORMW 子供を頭を撫でながら優しく諭しました…
+			ENDIF
+		ELSE
+			PRINTFORM …が、%CALLNAME:TARGET%は
+			IF TALENT:冷静 + TALENT:感情乏しい && ABL:奉仕精神 >= 3 && ABL:露出癖 && COND("制服：ミニスカ") && RAND:2
+				PRINTFORM スカートを摘まんで子供だけにこっそりとパンツを見せてあげながら注意すると
+			ELSE
+				PRINTFORM 子供に軽く注意して
+			ENDIF
+			PRINTFORMW 、何事もなかったかのように接客を始めました…
+		ENDIF
+	ELSEIF RAND:2
+		IF COND("男の娘") && RAND:2
+			PRINTFORM %CALLNAME:TARGET%は不自然な股間の盛り上がりを指摘されないかと冷や冷やしながら、
+		ELSE
+			PRINTFORM %CALLNAME:TARGET%は恥ずかしいのに怒ることもできず、
+		ENDIF
+		PRINTFORMW なんともいえない気持ちでその後を過ごしたようです…
+	ELSEIF RAND:2 && EQUIP:パンツ && LOCALS != "紐解き"
+		PRINTFORMW 周りのお客達に食い込みがちの%PANTIES(TARGET)%をばっちり見られてしまった%CALLNAME:TARGET%は、真っ赤な顔で早口になりながら子供をたしなめています…
+	ELSE
+		PRINTFORMW %CALLNAME:TARGET%は少し頬を赤らめ、困ったような顔で子供をたしなめています…
+	ENDIF
+CASE "こけてパンもろ"
+	PRINTFORM %CALLNAME:TARGET%は
+	IF COND("制服：スカート") && TALENT:恥じらい && RAND:2
+		PRINTFORM スカート丈を気にしすぎるあまり、
+	ELSE
+		PRINTFORM 忙しさのあまり、
+	ENDIF
+	PRINTFORMW 店内でこけて大股開きで尻餅をついてしまいました。
+	IF TALENT:恥じらい == 0 && (TALENT:恥薄い || ABL:露出癖 >= 3)
+		IF ABL:露出癖 >= 3 && RAND:2
+			PRINTFORM 注目が集まっているのを感じた%CALLNAME:TARGET%は
+			IF COND("制服：バニー")
+				IF RAND:2
+					PRINTFORMW 両脚を内腿に筋が浮き出るほどにグっと広げて、蒸れた股間を近くのお客に向けて思い切り突き出しました
+				ELSE
+					PRINTFORMW 更に脚を開き、エッチなＭ字開脚の姿勢でハイレグの衣装が食い込む股間を近くのお客に見せ付けはじめました
+				ENDIF
+				PRINTFORMW 周りのお客たちは喫茶店内とは思えない光景に、いっせいに前屈みになって身動き取れなくなってしまっています…
+			ELSEIF TALENT:淫乱 && PENIS(TARGET) == 0 && RAND:2
+				PRINTFORMW %TEXTR("股を開いたままの" , "腰を突き出した", "Ｍ字開脚の")%体勢で近くのお客にパンツを見せ付けはじめました
+				PRINTFORM ほんの数秒の短いショーでしたが、
+				IF TALENT:濡れやすい && RAND:3 == 0
+					PRINTFORM 腰を突き出して染みの浮いた部分を見せ付けている
+				ELSEIF RAND:2
+					PRINTFORM パンツを食い込ませて僅かに色濃い陰唇周辺を披露している
+				ELSE
+					PRINTFORM 下着越しにアソコを押し広げたりして痴態を披露している
+				ENDIF
+				PRINTFORMW %CALLNAME:TARGET%に周囲のお客は身動き取れなくなっています…
+			ELSE
+				PRINTFORMW 、股を開いたままの体勢で近くのお客にパンツを見せ付けはじめました
+				PRINTFORMW \@ PENIS(TARGET) ? 股間のふくらみ # アソコ \@をパンツ越しに撫でさすったりしている%CALLNAME:TARGET%の姿に、周囲の視線は釘付けのようです…
+			ENDIF
+		ELSE
+			IF COND("制服：バニー")
+				IF AGE(TARGET) >= 3 && RAND:2
+					PRINTFORM ぴっちりとした衣装のおかげで股間周辺の魅力的な曲線
+				ELSE
+					PRINTFORM バニースーツ越しとはいえ股間
+				ENDIF
+			ELSE
+				PRINTFORM パンツ
+			ENDIF
+			IF TALENT:陽気 && RAND:2
+				PRINTFORMW が見えたままの体勢で照れ隠しに笑顔を振りまいている%CALLNAME:TARGET%に感謝しながら、周囲の客は思う存分目の保養を楽しんだようです…
+			ELSE
+				PRINTFORMW が見えてるのを隠そうともしない%CALLNAME:TARGET%に感謝しながら、周囲の客は思う存分目の保養を楽しんだようです…
+			ENDIF
+		ENDIF
+	ELSE
+		IF COND("制服：スカート")
+			PRINTFORM とっさに手で隠しはしましたが、周囲の客にはバッチリ
+		ELSE
+			PRINTFORM とっさに取り繕いはしましたが、周囲の客にはだらしなく開脚した姿を
+		ENDIF
+		PRINTFORMW 見られてしまったようです。
+		IF COND("男の娘") && RAND:2
+			PRINTFORM 幸いにも勃起してなかったので男だとはバレていないでしょうが、
+		ELSEIF TALENT:気品 == 0 && ABL:露出癖 <= 1 && PENIS(TARGET) == 0 && RAND:2
+			PRINTFORM 見せる予定の無かった普段履きのパンツを見られて
+		ENDIF
+		PRINTFORMW 情けないやら恥ずかしいやらで、その後は仕事にならなかったようです…
+	ENDIF
+CASE "自慰中毒"
+	PRINTFORMW %CALLNAME:TARGET%は、おおむねまじめに働いたようです。
+	PRINTFORM …が、店内が暇になった時等に、無意識に
+	IF RAND:2
+		PRINTFORM テーブルの角に\@ COND("男の娘") ? ペニス # アソコ \@を擦り付けたりしているの
+	ELSE
+		PRINTFORM \@ COND("男の娘") ? ペニス # アソコ \@を弄っているの
+	ENDIF
+	WAITRESS = FIND_COND("出演可能な店員")
+	SETBIT CFLAG:WAITRESS:95, 1
+	PRINTFORMW を%CALLNAME:WAITRESS%に注意されてしまいました。
+	IF (ABL:欲望 >= 5 || ABL:自慰中毒 >= 5 || TALENT:淫乱) && ABL:WAITRESS:レズっ気 + COND("男の娘") + COND("男の娘", WAITRESS)
+		PRINTFORM その発情ぶり
+		IF ABL:WAITRESS:レズっ気 >= 3 && RAND:2
+			PRINTFORM にドキっとした
+		ELSE
+			PRINTFORM が目に余った
+		ENDIF
+		PRINTFORM %CALLNAME:WAITRESS%は、%CALLNAME:TARGET%を更衣室
+		IF ABL:WAITRESS:レズっ気 >= 3 && RAND:2
+			PRINTFORM に連れ込んで満足させる
+		ELSE
+			PRINTFORM で慰めてあげる
+		ENDIF
+		PRINTFORMW 事にしたようです。
+		PRINTL 
+		PRINTFORMW −更衣室−
+		IF ABL:レズっ気 >= 3 || (TALENT:恥じらい == 0 && ABL:レズっ気 >= 5)
+			PRINTFORM この提案には%CALLNAME:TARGET%も乗り気なようで、
+			IF RAND:2 || COND("制服：バニー") || COND("身嗜み：ノーパン")
+				IF COND("制服：バニー") || COND("身嗜み：ノーパン")
+					PRINTFORM 下半身を露出させて
+				ELSE
+					PRINTFORM \@ COND("男の娘") ? 可愛らしい # しっとりと湿った \@パンツを足首に引っ掛けて
+				ENDIF
+				PRINTFORM から椅子に腰掛けて股を開き、
+				IF PENIS(TARGET) && RAND:2 + COND("男の娘")
+					PRINTFORMW 大きくなったペニスを扱きながらおねだりをしはじめました…
+				ELSE
+					PRINTFORMW アソコを押し広げておねだりをしはじめました…
+				ENDIF
+			ELSE
+				PRINTFORMW 椅子に腰掛けて股を開くと、\@ COND("男の娘") ? 女物の # \@パンツをずらしておねだりを始めました…
+			ENDIF
+		ELSE
+			PRINTFORM 椅子に腰掛けた%CALLNAME:TARGET%は
+			IF TALENT:高慢 + TALENT:強気 && TALENT:恥じらい == 0
+				PRINTFORM きまりが悪そうな表情で
+			ELSEIF TALENT:好色 && ABL:レズっ気
+				PRINTFORM 期待に満ちた眼差し
+			ELSEIF TALENT:冷静 || TALENT:感情乏しい
+				PRINTFORM 呼吸を整えながら
+			ELSEIF TALENT:恥じらい
+				PRINTFORM 頬を赤らめながら
+			ELSEIF TALENT:素直 || TALENT:陽気
+				PRINTFORM ドキドキしながら
+			ELSE
+				PRINTFORM もじもじしながら
+			ENDIF
+			PRINTFORMW 控えめに脚を開いて、\@ COND("男の娘") ? おちんちんを大きくしながら # \@%CALLNAME:WAITRESS%の動向を見守っています…
+		ENDIF
+		PRINTFORMW ………
+		PRINTFORMW ……
+
+		PLAYER = WAITRESS
+		CALL ADD_STATE, TARGET, "媚薬"
+		PALAM:快Ｃ = MAXBASE:快感許容値オンナ
+		PALAM:欲情 = 30000
+
+		LOCAL:1 = LIMIT(RAND:4 + (ABL:WAITRESS:欲望 + ABL:WAITRESS:レズっ気)/2, 2, 7)
+		CALL SIMULATE_TRAIN_FIRST
+		IF TALENT:オトコ
+			CALL SIMULATE_TRAIN_COM, 4, LOCAL:1
+		ELSEIF TALENT:ふたなり
+			CALL SIMULATE_TRAIN_COM, 4, LOCAL:1/2
+			CALL SIMULATE_TRAIN_COM, 1, LOCAL:1/2
+		ELSE
+			CALL SIMULATE_TRAIN_COM, 1, LOCAL:1
+		ENDIF
+		SIF COND("男の娘", WAITRESS) && ABL:精液中毒 >= 1
+			CALL SIMULATE_TRAIN_COM, 91, 1+RAND:2
+
+		CALL SIMULATE_TRAIN_CALC
+		CALL SIMULATE_TRAIN_SHOW
+		PLAYER = MASTER
+		TEQUIP:媚薬 = 0
+
+		PRINTFORM …%CALLNAME:WAITRESS%は%CALLNAME:TARGET%の
+		IF (CONDS("陰毛") == "ツルツル" || CONDS("陰毛") == "剃り跡") && RAND:3 == 0
+			PRINTFORM 股間が剃毛されている事等をからかいながら
+		ELSEIF ABL:サドっ気 >= 3 && RAND:2
+			PRINTFORM 股間の様子を実況しながら
+		ELSEIF TALENT:オトコ
+			PRINTFORM 股間の
+		ELSEIF RAND:2
+			PRINTFORM 股間を押し開いて
+		ELSE
+			PRINTFORM 股間に顔を埋めて
+		ENDIF
+		PRINTFORM 隅々まで舌を這わせ、
+		IF TALENT:オトコ && TALENT:クリピアス && RAND:3 == 0
+			PRINTFORM ピアスで飾られた
+		ELSEIF TALENT:オトコ == 0 && TALENT:クリピアス + TALENT:ラビアピアス && RAND:3 == 0
+			IF PENIS(TARGET) == 0 && TALENT:クリピアス && TALENT:ラビアピアス && RAND:2
+				PRINTFORM ピアスまみれな
+			ELSE
+				PRINTFORM ピアスで飾られた
+			ENDIF
+		ELSEIF TALENT:おもらし癖 && RAND:3 == 0
+			PRINTFORM %TEXTS("匂い")%のキツめな
+		ELSEIF TALENT:オトコ
+			PRINTFORM 勃起しきった
+		ELSEIF RAND:2
+			PRINTFORM 発情した
+		ELSE
+			PRINTFORM 蒸れた
+		ENDIF
+		IF AGE(TARGET) >= 4 && AGE(WAITRESS) < 4
+			PRINTFORM オトナの
+		ELSEIF AGE(TARGET) == 1 && AGE(WAITRESS) > 1
+			PRINTFORM 幼い
+		ENDIF
+		IF TALENT:オトコ
+			PRINTFORM ペニスを存分に
+		ELSEIF TALENT:ふたなり
+			PRINTFORM アソコをペニスと共に存分に
+		ELSE
+			PRINTFORM アソコを存分に
+		ENDIF
+		IF ABL:レズっ気 >= 5 && RAND:2
+			PRINTFORMW 味わいました。
+		ELSEIF ABL:レズっ気 >= 3 && RAND:2
+			PRINTFORMW 楽しみました。
+		ELSE
+			PRINTFORMW 刺激しました。
+		ENDIF
+		IF COND("男の娘", WAITRESS) && ABL:精液中毒 >= 1
+			PRINTFORM その後、勃起してしまったペニスをお返しに口で処理してもらった%CALLNAME:WAITRESS%は、
+		ELSE
+			PRINTFORM その後、ぐったりとした%CALLNAME:TARGET%に
+		ENDIF
+		IF ABL:レズっ気 >= 5 && TALENT:陽気 + TALENT:小悪魔 && COND("男の娘", WAITRESS) == 0 && RAND:3 == 0
+			PRINTFORM 『ごちそうさま♪』
+		ELSEIF RAND:3 == 0 && COND("男の娘", WAITRESS) && ABL:精液中毒 >= 1
+			PRINTFORM 念のため口を濯いでからフロアに来るように
+		ELSEIF RAND:3 == 0
+			PRINTFORM 椅子を拭いておくように
+		ELSEIF RAND:2 == 0
+			IF COND("制服：バニー") || COND("身嗜み：ノーパン")
+				PRINTFORM 身だしなみを整えるように
+			ELSE
+				PRINTFORM パンツをはきかえるように
+			ENDIF
+		ELSE
+			PRINTFORM しゃきっとしてからフロアに来るように
+		ENDIF
+		PRINTFORMW と言い残して、通常業務に戻りました…
+	ELSE
+		PRINTFORMW お客に見つかる前にきちんと教育しなおすべきかも知れません…
+	ENDIF
+CASE "身体が火照る"
+	PRINTFORMW 客のオーダーを聞いている%CALLNAME:TARGET%は、どこか熱に浮かされたような顔でぽーっとしています。
+	PRINTFORMW 訝しんだ客が呼びかけると、%CALLNAME:TARGET%は慌てた様子でオーダーを取り始めました。
+	PRINTFORML …キッチンにオーダーを伝えたあと、逃げるようにトイレに引っ込んだ%CALLNAME:TARGET%は、
+	IF COND("制服：バニー")
+		LOCALS = アンダー
+	ELSE
+		LOCALS = パンツ
+	ENDIF
+	IF COND("喫茶店：Ｖセックス") && RAND:2
+		EXP:Ｖ経験 += ABL:欲望
+		EXP:Ｖ性交経験 += ABL:欲望
+		EXP:腰使い経験 += RAND:(ABL:欲望 + 1) + 1
+		EXP:精液経験 += ABL:欲望 + 2
+		CALL SETFLAG, "膣内精液経験", ABL:欲望/2 + 1, TARGET, -4
+	ENDIF
+	IF COND("喫茶店：Ａセックス") && RAND:2
+		EXP:Ａ経験 += ABL:欲望
+		EXP:Ａ性交経験 += ABL:欲望
+		EXP:腰使い経験 += RAND:(ABL:欲望 + 1) + 1
+		EXP:精液経験 += ABL:欲望 + 2
+		CALL SETFLAG, "肛内精液経験", ABL:欲望/2 + 1, TARGET, -4
+	ENDIF
+	IF COND("喫茶店：インサート") && RAND:2
+		EXP:Ｖ挿入経験 += ABL:欲望
+		EXP:腰使い経験 += ABL:欲望
+		EXP:射精経験 += ABL:欲望/2 + 1
+	ENDIF
+	IF EXP_GAIN(17) + EXP_GAIN(18) + EXP_GAIN(15)
+		PRINTFORM 先ほど摘み食いしたお客との情事を思い出しながら、
+		CFLAG:36 += 1
+	ELSE
+		PRINTFORM %CALLNAME:MASTER%との情事を思い出しながら、
+	ENDIF
+	;中出しされた
+	IF EXP_GAIN(17) && RAND:2
+		IF RAND:2 && (COND("身嗜み：ノーパン") || ABL:精液中毒 >= 3)
+			PRINTFORMW 膣からかき出した精液を舐めとり、熱い息を吐き出しました…
+		ELSE
+			IF RAND:3 == 0 && ABL:精液中毒 >= 5
+				PRINTFORMW %LOCALS%のクロッチを汚す精液を舐めとりました…
+			ELSE
+				PRINTFORMW 膣から垂れた精液でべたべたの%LOCALS%を履き替えました…
+			ENDIF
+		ENDIF
+	;Ａ中出しされた
+	ELSEIF EXP_GAIN(18) && RAND:2
+		IF RAND:2 && ABL:精液中毒 >= 3 && ABL:Ａ感覚 >= 3 && (TALENT:汚臭鈍感 + TALENT:汚れ無視 + TALENT:倒錯的 || ABL:Ａ感覚 >= 5 || ABL:マゾっ気 >= 3)
+			PRINTFORMW アナルからかき出した精液を口に含み、倒錯的な快楽を味わいました…
+		ELSE
+			IF ABL:Ａ拡張 >= 3 && COND("身嗜み：ノーパン") == 0 && RAND:2
+				PRINTFORMW 緩んだアナルから漏れた精液で汚れた%LOCALS%を履き替えました…
+			ELSE
+				PRINTFORMW 熱を持ったアナルを弄って熱を収めました…
+			ENDIF
+		ENDIF
+	ELSEIF TALENT:オトコ
+		PRINTFORMW ペニスから溢れてくる先走り汁を指で拭って口に運びました…
+	ELSE
+		PRINTFORMW 太ももに垂れてきた液体を恍惚とした顔で拭いました…
+	ENDIF
+CASE "テーブル拭き１"
+	PRINTFORM %CALLNAME:TARGET%は
+	IF RAND:2
+		PRINTFORM デザートの配膳を残すのみの
+	ELSE
+		PRINTFORM 片付けの済んでいない
+	ENDIF
+	PRINTFORM テーブルに向かうと、
+	IF TALENT:冷静 || TALENT:感情乏しい
+		PRINTFORM 丁寧な
+	ELSEIF TALENT:生意気
+		PRINTFORM ざっくばらんな
+	ELSE
+		PRINTFORM 笑顔での
+	ENDIF
+	PRINTFORMW 挨拶のあと、手馴れた様子で食器をトレイの上に重ね、布巾で手早くテーブルを拭き始めました。
+	PRINTFORML その様子をなんとなく眺めていた客の視線が、突然ある一点に釘付けになりました。
+	PRINTFORM テーブルを拭く%CALLNAME:TARGET%の
+	IF TALENT:巨乳 && RAND:4
+		IF TALENT:巨乳 >= 2
+			PRINTFORM 凄い大きさの胸
+		ELSE
+			PRINTFORM 巨乳
+		ENDIF
+		PRINTFORM が、目の前で
+		IF RAND:2
+			PRINTFORM ユッサユッサ重そうに
+		ELSE
+			PRINTFORM フルフルと
+		ENDIF
+		PRINTFORMW 揺れています…
+		LOCAL = 1
+	ELSEIF TALENT:貧乳 && (RAND:4 || COND("制服：バニー") )
+		IF COND("制服：バニー")
+			PRINTFORM エナメル生地の衣装の胸元の隙間から、
+		ELSE
+			PRINTFORM 襟元から、
+		ENDIF
+		IF RAND:3 == 0 && TALENT:ニプルピアス
+			PRINTFORM ピアスが輝く桜色の突起
+		ELSEIF RAND:3 == 0
+			PRINTFORM うすい胸
+		ELSEIF RAND:2 && COND("巨乳輪")
+			PRINTFORM 控えめなおっぱいとは裏腹に面積の広い乳輪
+		ELSEIF COND("陥没乳首")
+			PRINTFORM 陥没状態の乳首周辺
+		ELSEIF COND("乳首肥大")
+			PRINTFORM ふくらみに反して大きな突起
+		ELSE
+			PRINTFORM ちいさな桜色の突起
+		ENDIF
+		PRINTFORMW が覗いています…
+		LOCAL = 2
+	ELSEIF COND("制服：バニー")
+		PRINTFORMW 衣装の胸元の隙間から、蒸れた胸の谷間がばっちり見えています…
+	ELSE
+		IF ABL:露出癖 + TALENT:好色 >= 5 && RAND:5 == 0
+			IF TALENT:ニプルピアス && RAND:3
+				PRINTFORM 乳首につけられた%TEXTS("ニプルピアス")%が、
+			ELSEIF RAND:2 && COND("巨乳輪")
+				PRINTFORM 目に鮮やかな大きな乳輪が、
+			ELSEIF COND("陥没乳首")
+				PRINTFORM 陥没状態の乳首が、
+			ELSEIF COND("乳首肥大")
+				PRINTFORM 平均よりも明らかに大きな乳首が、
+			ELSE
+				PRINTFORM ピンクの乳首が、
+			ENDIF
+		ELSE
+			IF TALENT:好色 && RAND:2
+				IF RAND:3 == 0
+					PRINTFORM 過激な
+				ELSEIF TALENT:幼稚 == 0
+					PRINTFORM 大人っぽい
+				ENDIF
+			ELSEIF RAND:3 == 0
+				PRINTFORM カラフルな
+			ELSEIF TALENT:小柄体型 && TALENT:幼稚 && RAND:3 == 0
+				PRINTFORM 子供っぽい
+			ENDIF
+			PRINTFORM ブラが、
+		ENDIF
+		PRINTFORMW 汗でうっすらと透けています…
+		LOCAL = 3
+	ENDIF
+	;欲望+露出癖-恥じらい*3が３以上なら
+	IF LOCAL <= 2 && ABL:欲望 + ABL:露出癖 - TALENT:恥じらい*3 >= 3 && RAND:4
+		PRINTFORM ふと自分の胸元に夢中な視線に気付いた%CALLNAME:TARGET%は、
+		IF LOCAL == 1 && COND("喫茶店：おさわり")
+			PRINTFORM テーブルの上に置かれたお客の手に、
+			IF RAND:2
+				PRINTFORM ふにゅっと
+			ELSE
+				PRINTFORM のしっと
+			ENDIF
+			PRINTFORMW 巨乳を乗っけて拭き掃除を再開しました。
+		ELSEIF COND("制服：バニー")
+			PRINTFORM 上体を屈めた体勢のまま指でそっとバニースーツの胸元を下げて
+			IF TALENT:ニプルピアス && RAND:3
+				PRINTFORM 乳首につけられたピアス
+			ELSEIF RAND:2 && COND("巨乳輪")
+				PRINTFORM 見事な大きさの乳輪
+			ELSEIF COND("陥没乳首")
+				PRINTFORM ともすればコンプレックスともなりそうな陥没状態の乳首
+			ELSEIF COND("乳首肥大")
+				IF TALENT:淫乳
+					PRINTFORM 秘かな自慢となっている肥大した乳首
+				ELSE
+					PRINTFORM 恥ずかしい位に大きな乳首
+				ENDIF
+			ELSE
+				PRINTFORM ピンクの乳首
+			ENDIF
+			PRINTFORMW を見せてきました。
+		ELSE
+			PRINTFORMW 空いている手でそっと襟を下げました。
+		ENDIF
+		PRINTFORM 驚いた顔をする客に、%CALLNAME:TARGET%は
+		IF TALENT:高慢 && TALENT:強気
+			IF TALENT:意地悪 && RAND:2
+				PRINTFORMW ニヤニヤしながらウィンクしました…
+			ELSE
+				PRINTFORMW ニヤリと挑発的な笑みを浮かべました…
+			ENDIF
+		ELSEIF TALENT:冷静 || TALENT:感情乏しい
+			IF RAND:2
+				PRINTFORMW パチリとウィンクしました…
+			ELSE
+				PRINTFORMW 薄く微笑みました…
+			ENDIF
+		ELSE
+			IF RAND:3 == 0
+				PRINTFORM 頬を染めながら
+			ELSEIF RAND:2
+				PRINTFORM 悪戯っぽい笑顔で
+			ELSE
+				PRINTFORM 『ないしょ』と人差し指を唇に当てて
+			ENDIF
+			PRINTFORMW ウィンクしました…
+		ENDIF
+	ELSE
+		PRINTFORM 綺麗に拭き終えた%CALLNAME:TARGET%は、
+		IF RAND:2
+			PRINTFORM 顔を赤くしておどおどしている
+		ELSE
+			PRINTFORM 前屈みになっている
+		ENDIF
+		PRINTFORM 客を見て、
+		;見せてんのよor事態に気づくｗ
+		IF TALENT:賢い
+			IF TALENT:恥じらい
+				IF LOCAL == 2
+					PRINTFORMW 赤い顔で襟を押さえました…
+				ELSE
+					PRINTFORMW 慌てて胸を手で隠しました…
+				ENDIF
+			ELSE
+				PRINTFORMW 楽しそうに注文をとり始めました…
+			ENDIF
+		ELSE
+			PRINTFORMW 首を傾げました…
+		ENDIF
+	ENDIF
+CASE "クリーム拭き取り"
+	IF RAND:10
+		LOCALS = 少年
+	ELSEIF RAND:10 == 0
+		LOCALS = 女の子
+	ELSE
+		LOCALS = 青年
+	ENDIF
+	PRINTFORM キッチンに戻ろうとした%CALLNAME:TARGET%は、頬をクリームで汚しながら
+	IF RAND:3 == 0
+		PRINTFORM パフェを口に運ぶ
+	ELSEIF RAND:2
+		PRINTFORM シュークリームを頬張る
+	ELSE
+		PRINTFORM ソフトクリームにかぶりつく
+	ENDIF
+	PRINTFORMW %LOCALS%の前を通りました。
+	PRINTFORM %CALLNAME:TARGET%は%LOCALS%の顔を見て
+	IF TALENT:強気 && RAND:2 == 0
+		PRINTFORM ニッとすると、
+	ELSEIF RAND:3 == 0 || TALENT:意地悪
+		PRINTFORM 軽くふきだすと、
+	ELSEIF RAND:2 == 0
+		PRINTFORM クスっと笑うと、
+	ELSE
+		PRINTFORM 顔をほころばせると、
+	ENDIF
+	IF TALENT:好色 && RAND:(TALENT:好色 + TALENT:献身 + 1) == 0 && COND("喫茶店：おさわり")
+		PRINTFORMW そっと顔を近づけて、ぺろりとクリームを舌で舐めとりました。
+		LOCAL = 1
+	ELSEIF TALENT:献身 && RAND:(TALENT:献身 + 1) == 0
+		PRINTFORMW 持っていたハンカチで優しく拭いてあげました…
+		LOCAL = 2
+	ELSEIF MAX(ABL:欲望, ABL:奉仕精神) >= 3 && RAND:2 && COND("喫茶店：おさわり")
+		PRINTFORMW クリームを指で拭って、ぺろりと舐めとりました。
+		LOCAL = 3
+	ELSE
+		PRINTFORMW クリームを指差して教えてあげました…
+	ENDIF
+	;舐めとった時
+	IF LOCAL == 1 || LOCAL == 3
+		IF LOCAL == 1
+			PRINTFORM 頬に残る
+			IF RAND:2
+				PRINTFORM 柔らかい唇の感触に
+			ELSE
+				PRINTFORM 温かい舌の温度に
+			ENDIF
+			PRINTFORM のぼせている
+		ELSE
+			PRINTFORM 突然のことにびっくりしている
+		ENDIF
+		PRINTFORM %LOCALS%に
+		IF RAND:2
+			PRINTFORM 悪戯っぽくウィンクして
+		ELSE
+			PRINTFORM 微笑んで
+		ENDIF
+		PRINTFORMW 、%CALLNAME:TARGET%は店の奥へ戻って行きました…
+	ENDIF
+;あーん（ハーピーさんは、手がそのままの場合はついばむ？）
+CASE "あ〜ん"
+	PRINTFORM %CALLNAME:TARGET%はお会計の仕事をしながら、レジの脇に置かれた
+	IF RAND:3 == 0
+		PRINTFORM 色とりどりの
+	ELSEIF RAND:2
+		PRINTFORM 甘い匂いを振りまく
+	ELSE
+		PRINTFORM 籠に盛られた
+	ENDIF
+	IF RAND:4 == 0
+		LOCALS = クッキー
+	ELSEIF RAND:3 == 0
+		LOCALS = チュロス
+	ELSEIF RAND:2
+		LOCALS = ショートブレッド
+	ELSE
+		LOCALS = ビスケット
+	ENDIF
+	PRINTFORMW %LOCALS%をお客にサービスしています。
+	PRINTFORM 単純作業の繰り返しに飽きたのか、%CALLNAME:TARGET%はお釣りを財布にしまっているお客の口元に、
+	;素直
+	IF TALENT:素直 && RANDIF(2, TALENT:感情乏しい, TALENT:陽気, TALENT:恥じらい, TALENT:小悪魔, TALENT:小柄体型)
+		PRINTFORM にっこり笑いながら
+	;陽気
+	ELSEIF TALENT:陽気 && RANDIF(2, TALENT:感情乏しい, TALENT:恥じらい, TALENT:小悪魔, TALENT:小柄体型)
+		PRINTFORM 元気よく
+	;小悪魔
+	ELSEIF TALENT:小悪魔 && RANDIF(2, TALENT:感情乏しい, TALENT:恥じらい, TALENT:小柄体型)
+		PRINTFORM ニヤニヤしながら
+	;感情乏しい
+	ELSEIF TALENT:感情乏しい && RANDIF(2, TALENT:恥じらい, TALENT:小柄体型)
+		PRINTFORM 表情を変えずに
+	;小柄
+	ELSEIF TALENT:小柄体型 && RANDIF(2, TALENT:恥じらい)
+		PRINTFORM 笑顔で背伸びして
+	;恥じらい
+	ELSEIF TALENT:恥じらい && RAND:2
+		IF RAND:2
+			PRINTFORM ほんのり頬を染めて
+		ELSE
+			PRINTFORM 少し恥ずかしそうに
+		ENDIF
+	ELSE
+		PRINTFORM 微笑みながら
+	ENDIF
+	PRINTFORMW %LOCALS%を差し出しました。
+
+	MEMO_LINECOUNT = LINECOUNT
+	CALL SELF_KOJO_L, EVENT_NAMES
+	IF LINECOUNT == MEMO_LINECOUNT
+		;口上案
+		SELECTCASE NO:TARGET
+		CASE 1
+			PRINTFORM 「ふふ…サービスよ♪はい、あーん
+			CALL HEARTMARK_E
+		CASE 2
+			IF RAND:2
+				PRINTFORMW 「はいっ、あ〜ん。ぱくっ♪」
+			ELSE
+				PRINTFORMW 「ねぇねぇ、はんぶんこしよ！ぼき。はいっ」
+			ENDIF
+		CASE 5
+			PRINTFORMW 「なんか恋人みたいだね、これ♪」
+		CASE 6
+			IF RAND:2
+				PRINTFORMW 「はい、にゃーん♪」
+			ELSE
+				PRINTFORMW 「ボク？ボクは甘すぎるのは苦手だからにゃ〜」
+			ENDIF
+		CASE 7
+			;ワーウルフは…喋らないで良いか
+			SIF TALENT:四足歩行 == 0
+				PRINTFORMW 「はい、あ〜ん♪」
+		CASE 8, 9
+			IF RAND:3 == 0
+				PRINTFORMW 「あ、あの…お口、あけてください…」
+			ELSEIF RAND:2 == 0
+				PRINTFORMW 「…焼き加減、いかがでしょう？」
+			ELSE
+				PRINTFORMW 「あ…あの！これ…どうぞっ」
+			ENDIF
+		CASE 11
+			IF RAND:2
+				PRINTFORMW 「ほぉら、雛鳥みたいに口を開けなさいな♪」
+			ELSE
+				PRINTFORMW 「ここから先は別料金となりま〜す。…なんてね♪」
+			ENDIF
+		CASE 12
+			IF RAND:2
+				PRINTFORMW 「だ、だからっ、早く食べなさいよ、もうっ…」
+			ELSE
+				PRINTFORMW 「なに、ニヤニヤしてるのよ…。…はい。だから、ニヤニヤしないっ」
+			ENDIF
+		CASE 16
+			IF RAND:2
+				PRINTFORMW 「現世の"おやくそく"とやらは、妾にはちと難しいの」
+			ELSE
+				PRINTFORMW 「なに、これも"さあびす"の一環じゃ。ほれ、あ〜ん、するがよい」
+			ENDIF
+		CASE 19
+			IF RAND:2
+				PRINTFORM 「これも、おいしく食べるための術式よ…あーん
+				CALL HEARTMARK_E
+			ELSE
+				PRINTFORMW 「はい。イモリの黒焼き入り。…嘘嘘。冗談だってば」
+			ENDIF
+		CASE 20
+			IF RAND:2
+				PRINTFORMW 「これもカミサマのお恵みですよ？はいっ、大きくお口を開けて♪」
+			ELSE
+				PRINTFORMW 「はぁい、よく噛んで下さいね？ちゃあんと歯を磨きましょうね？カミサマにお祈りもしましょうね？暖かくして寝ましょうね？」
+			ENDIF
+		CASE 21
+			IF RAND:2
+				PRINTFORMW 「聖人をも堕落させる甘い誘惑…。君には抗えるかい？」
+			ELSE
+				PRINTFORMW 「おいしいに決まってるよね？」
+			ENDIF
+		CASE 22
+			IF RAND:2
+				PRINTFORMW 「特別だぞ。私の気が変わらないうちに、受け取るがいい」
+			ELSE
+				PRINTFORMW 「南蛮の菓子もなかなかいいものだが。私の国にも、煎餅という焼き菓子があってな…」
+			ENDIF
+		CASE 24
+			PRINTFORMW 「ふふ…。あたしが、焼いたの…食べて…」
+		CASE 25
+			IF RAND:2
+				PRINTFORM 「これもいずれ、あなたの血となるもの…。よぉく噛んで食べるのよ
+				CALL HEARTMARK_E
+			ELSE
+				PRINTFORMW 「わたくしとしては、レバーやほうれん草を勧めたいのですけど。…ほうれん草クッキー。これですわ」
+			ENDIF
+		CASE 27
+			IF RAND:2
+				PRINTFORMW 「ふふっ、あなたがおいしそうにこれを食べる姿、私はもう見てるのよ♪」
+			ELSE
+				PRINTFORMW 「予言するわ、あなたはこれを食べるの♪」
+			ENDIF
+		CASE 28
+			IF RAND:2
+				PRINTFORMW 「さっさと口開けなさいよ。…ほら」
+			ELSE
+				PRINTFORMW 「おいしい？そ。よかったわね」
+			ENDIF
+		CASE 29
+			IF RAND:2
+				PRINTFORMW 「ぷるぷる〜じゃないけど、おいしいよっ♪」
+			ELSE
+				PRINTFORMW 「ぷるぷるしたのも、食べたいよねぇ？」
+			ENDIF
+		CASE 34
+			PRINTFORMW 「ほーら、食わせてやるよ♪」
+		CASE 35
+			PRINTFORMW 「ふふふっ、どう、おいしい〜？」
+		CASE 46
+			PRINTFORMW 「ふふ、いかがですか？」
+		CASE 54
+			PRINTFORMW 「えへへ、ちょっとは自信あるんですよ♪」
+		CASE 58
+			IF RAND:3 == 0
+				PRINTFORMW 「そう…。そのまま飲み込んで。僕のエースオブスペード…」
+			ELSEIF RAND:2
+				PRINTFORMW 「ワインはいかが」
+			ELSE
+				PRINTFORMW 「そいつは最上のバターだぜ」
+			ENDIF
+		CASEELSE
+			PRINTFORMW 「はい、あ〜ん♪」
+		ENDSELECT
+	ENDIF
+	PRINTFORMW 予想しなかった幸運な展開に、お客はデレデレになってしまっています…
+
+	;唇に挟んで・子供専用→皿を置くと、%CALLNAME:TARGET%はおもむろに1つを唇に挟んで(咥えて)、「んっ」と差し出してきました。
+	;少年(少女)はどきどきしながらも(ためらいながらも)口を近づけ、%CALLNAME:TARGET%が咥えたお菓子に口を近づけました。
+	;(TARGET幼稚専用？)唇が触れそうになる瞬間、%CALLNAME:TARGET%はお菓子を半分持っていってしまいました。%CALLNAME:TARGET%は、悪戯が成功した子供のように微笑んでいます。
+	;少年(略)が唇が触れないように受け取ろうとすると、%CALLNAME:TARGET%は口を突き出し、柔らかい唇を押し付けてきました(ついばむ様なくちづけをしました)。
+	;唇を触れ合わせたまま、%CALLNAME:TARGET%は舌を使って、お菓子を少年(略)の口に含ませました。
+	;顔を真っ赤にしたまま固まっている(柔らかくなったお菓子を呆然と噛んでいる)少年(略)に、%CALLNAME:TARGET%は少年(略)の頭を撫でて(ウィンクして・ニカッと笑って)、店の奥へ戻っていきました。
+;どきどきノーパン接客(露出癖？淫乱？両方？)
+CASE "ノーパン接客"
+	PRINTFORM お客のオーダーを聞いている%CALLNAME:TARGET%は、
+	IF RAND:3 == 0 && COND("制服：スカート")
+		PRINTFORMW しきりにスカートのすそを気にしています。
+	ELSEIF RAND:2
+		PRINTFORMW なにやらもぞもぞと太腿を擦り付けて落ち着かない様子です。
+	ELSE
+		PRINTFORMW 頬をほんのり上気させて、挙動不審です。
+	ENDIF
+	PRINTFORML 不思議に思ったお客が話しかけると、%CALLNAME:TARGET%は慌ててオーダーを復唱し始めました。
+	PRINTFORM そして、首をかしげるお客を尻目に、
+	IF TALENT:恥じらい && RAND:3
+		PRINTFORM 逃げるように
+	ELSE
+		PRINTFORM 足早に
+	ENDIF
+	PRINTFORMW 奥に引っ込んでいきました。
+	PRINTL 
+	IF RAND:2 == 0
+		PRINTFORM トイレ
+	ELSE
+		PRINTFORM 誰もいない更衣室
+	ENDIF
+	PRINTFORM に逃げ込んだ%CALLNAME:TARGET%は
+	IF RAND:3 == 0
+		PRINTFORM 興奮に瞳を濁らせながら
+	ELSEIF RAND:2
+		PRINTFORM 羞恥と興奮がない交ぜになった表情で
+	ELSE
+		PRINTFORM 羞恥で真っ赤になった顔に妖しい微笑を浮かべて
+	ENDIF
+	IF COND("制服：ファスナー")
+		PRINTFORM 開けっ放しだったファスナーの隙間へと指を差し入れ、
+	ELSE
+		PRINTFORM スカートをたくしあげ、
+	ENDIF
+	IF RAND:3 == 0
+		PRINTFORM 何も守るものがない
+	ELSEIF RAND:2 == 0
+		PRINTFORM 熱を帯びた
+	ELSE
+		PRINTFORM 剥き出しの
+	ENDIF
+	IF RAND:2
+		PRINTFORM アソコ
+	ELSE
+		PRINTFORM 秘所
+	ENDIF
+	IF TALENT:処女 == 0 && ABL:欲望 >= 5 && RAND:4 == 0
+		PRINTFORMW からコードを引っ張ってローターを取り出すと、舌で舐めて綺麗にしました。
+		PRINTFORM そして、再びアソコに入れなおすと、
+	ELSE
+		IF RAND:2
+			PRINTFORMW から垂れてくる液体を指ですくって舐めとりました。
+		ELSE
+			PRINTFORMW から垂れてくる液体が太腿を伝う感触に、身体をぶるっ、と震わせました。
+		ENDIF
+		PRINTFORM そして、
+		IF RAND:3
+			PRINTFORM 内腿を濡らす液体をハンカチで拭うと、
+		ELSE
+			PRINTFORM 濡れたアソコをそのままに、
+		ENDIF
+	ENDIF
+
+	IF RAND:2
+		IF RAND:2
+			PRINTFORM 太ももを擦り合わせながら
+		ELSE
+			PRINTFORM 秘所に当たる空気に頬を火照らせながら
+		ENDIF
+	ELSE
+		IF RAND:3 == 0
+			PRINTFORM ドキドキと
+		ELSEIF RAND:2 == 0
+			PRINTFORM どくんどくんと
+		ELSE
+			PRINTFORM 息苦しいほどに
+		ENDIF
+		IF RAND:3 == 0
+			PRINTFORM 高鳴る鼓動を感じながら
+		ELSEIF RAND:2
+			PRINTFORM 胸を高鳴らせながら
+		ELSE
+			PRINTFORM 早鐘を打つ胸に手を当てながら
+		ENDIF
+	ENDIF
+	PRINTFORMW 店内に戻りました…
+CASE "飲み物溢してつまみ食い"
+	PRINTFORMW %CALLNAME:TARGET%は角の奥まった席で読書しているお客のズボンに、お冷をこぼしてしまいました。
+	PRINTFORMW 慌てて足元に屈んで濡れた箇所を拭きはじめましたが、どうやら青年の股間が盛り上がりつつある事に気付いたようです…
+	PRINTFORM それを見
+	;好色
+	IF TALENT:好色 && RANDIF(2, TALENT:冷静, TALENT:陽気, TALENT:恥じらい, TALENT:小悪魔)
+		PRINTFORM て舌なめずりした
+	;陽気
+	ELSEIF TALENT:陽気 && RANDIF(2, TALENT:冷静, TALENT:恥じらい, TALENT:小悪魔)
+		PRINTFORM てニコッとした
+	;小悪魔
+	ELSEIF TALENT:小悪魔 && RANDIF(2, TALENT:冷静, TALENT:恥じらい)
+		PRINTFORM てニヤリとした
+	;冷静
+	ELSEIF TALENT:冷静 && RANDIF(2, TALENT:恥じらい)
+		PRINTFORM て状況を理解した
+	;恥じらい
+	ELSEIF TALENT:恥じらい && RAND:2
+		PRINTFORM て赤面した
+	ELSEIF RAND:2
+		PRINTFORM て顔を上気させた
+	ELSE
+		PRINTFORM た
+	ENDIF
+	PRINTFORM %CALLNAME:TARGET%は\@RAND:2 ? 店内が暇な # 席が死角にある \@ことを素早く確認すると、お客
+	;高慢
+	IF TALENT:高慢 && RANDIF(2, TALENT:冷静, TALENT:陽気, TALENT:恥じらい, TALENT:小悪魔, TALENT:好色)
+		PRINTFORM を自信たっぷりに
+	;好色
+	ELSEIF TALENT:好色 && RANDIF(2, TALENT:冷静, TALENT:陽気, TALENT:恥じらい, TALENT:小悪魔)
+		PRINTFORM を妖艶に
+	;陽気
+	ELSEIF TALENT:陽気 && RANDIF(2, TALENT:冷静, TALENT:恥じらい, TALENT:小悪魔)
+		PRINTFORM を軽い調子で
+	;小悪魔
+	ELSEIF TALENT:小悪魔 && RANDIF(2, TALENT:冷静, TALENT:恥じらい)
+		PRINTFORM を悪戯っぽく
+	;冷静
+	ELSEIF TALENT:冷静 && RANDIF(2, TALENT:恥じらい)
+		PRINTFORM を無表情で
+	ELSEIF RAND:3 == 0
+		PRINTFORM を見上げて
+	ELSEIF RAND:2
+		PRINTFORM を上目遣いで
+	ELSE
+		PRINTFORM の膨らんだ股間を撫でながら
+	ENDIF
+	PRINTFORMW 誘惑しはじめました！
+	PRINTFORM 突然の展開に面食らいながらも青年が頷くと、%CALLNAME:TARGET%は素早くお客のペニスを取り出して
+	IF TALENT:高慢 + TALENT:意地悪 + TALENT:小悪魔 && RANDIF(2, TALENT:汚臭鈍感 == 0)
+		PRINTFORM %TEXTR("勃起したこと", "包茎気味なの", "恥垢が溜まっている事", "オシッコ臭いこと")%を
+		PRINTFORM %TEXTR("詰り", "からかい")%ながら
+	ELSEIF TALENT:汚臭鈍感 == 0 && RAND:2
+		PRINTFORM %TEXTS("匂い")%を嗅ぎながら
+	ELSEIF PENIS(TARGET) && RAND:2
+		IF TALENT:オトコ && RAND:2
+			PRINTFORM 倒錯した行為に興奮しながら
+		ELSE
+			PRINTFORM 自分のものとの違いを楽しみながら
+		ENDIF
+	ELSEIF TALENT:恥薄い == 0
+		PRINTFORM 声を押し殺しながら
+	ELSE
+		PRINTFORM 楽しそうに
+	ENDIF
+
+	CALL SETFLAG, "一般人相手の性行為初期設定"
+
+	IF TALENT:オトコ == 0 && (RAND:3 == 0 || (TALENT:巨乳 && RAND:2) )
+		IF TALENT:巨乳
+			IF COND("制服：ウェイトレス") && TALENT:好色 && RAND:3 == 0
+				PRINTFORM 、シャツのボタンを一つだけ外して拵えた穴にソレを迎えて
+			ELSE
+				PRINTFORM 自慢の胸で
+			ENDIF
+		ELSEIF TALENT:貧乳
+			PRINTFORM 小さな胸で
+		ELSE
+			PRINTFORM 柔らかな胸で
+		ENDIF
+		PRINTFORMW パイズリし始めました…
+		SELECTCOM = 92
+	ELSE
+		IF ABL:喉拡張 >= 2 && RAND:2
+			PRINTFORMW 喉奥まで咥えて味わいはじめました…
+		ELSE
+			PRINTFORMW しゃぶり始めました…
+		ENDIF
+		SELECTCOM = 91
+	ENDIF
+
+	CALL SIMULATE_TRAIN_COM, SELECTCOM, RAND:(ABL:欲望 + ABL:奉仕精神 + 1)/3 + 1
+	;文章に齟齬が出ないように調整
+	EXP:精液経験 += 1
+	CALL SETFLAG, "精飲経験", 1, TARGET, -4
+
+	MEMO_LINECOUNT = LINECOUNT
+	;SELECTCOMでフェラ展開かパイズリ展開かを判別可能
+	CALL SELF_KOJO_L, EVENT_NAMES
+	IF LINECOUNT == MEMO_LINECOUNT
+		PRINTL 
+		PRINTFORML ………
+		PRINTFORML ……
+		PRINTFORMW …
+		PRINTL 
+	ENDIF
+
+	PRINTFORM 持ち前のテクニックで搾り出した精液を\@TALENT:小柄体型 ? コクコク # ゴクリ \@と飲み込んだ%CALLNAME:TARGET%は、唾液等でべたべたのペニスを
+	LOCAL = 0
+	IF ABL:露出癖 >= 3 && TALENT:好色 + TALENT:淫乱 + TALENT:倒錯的 && COND("制服：スカート") && RAND:3 == 0
+		PRINTFORM 脱ぎたてのパンツで拭い
+		SIF TALENT:好色 && ABL:欲望 >= 4 && RAND:3 == 0
+			PRINTFORM 、お客の目の前で穿きなおし
+		PRINTFORMW ました。
+		LOCAL = 1
+	ELSE
+		PRINTFORMW ハンカチで拭き清めました。
+	ENDIF
+	PRINTFORM そうして一通り始末を終えた%CALLNAME:TARGET%は、
+	IF LOCAL == 0 && TALENT:好色 && ABL:奉仕精神 >= 3 && ABL:露出癖 >= 3 && PENIS(TARGET) == 0 && RAND:3 == 0
+		IF COND("制服：バニー")
+			PRINTFORM 奉仕しているうちに興奮して熱く蒸れてしまった自らの股間をお客に一撫でさせると、
+		ELSEIF ABL:欲望 >= 5 && ABL:精液中毒 >= 5 && RAND:2
+			PRINTFORM スカートをたくし上げて発情した股間を楽しそうにお客に見せ付けると、
+		ELSE
+			PRINTFORM お客の目の前でパンツをスルリと脱いで\@ ABL:奉仕精神 >= 3 ? "お詫び" # "記念品" \@として手渡しした後、
+		ENDIF
+	ELSE
+		PRINTFORM お客に拭くのに手間取った事を少し大きめの声で謝り、
+	ENDIF
+	IF ABL:精液中毒 >= 5
+		PRINTFORM 満足げな足取りで
+	ELSE
+		PRINTFORM 軽い足取りで
+	ENDIF
+	PRINTFORMW 仕事に戻りました…
+
+	CALL SETFLAG, "一般人相手の性行為終了"
+	;つまみ食い人数+1
+	CFLAG:36 += 1
+
+CASE "トイレでつまみ食い"
+	;LOCALS==お客、LOCALS:1==休憩or掃除、LOCALS:2==ＶorＡ
+
+	;女性客を犯す
+	IF COND("喫茶店：インサート") && RANDIF(1, COND("喫茶店：Ｖセックス"), COND("喫茶店：Ａセックス") )
+		SELECTCASE RAND:10
+		CASE 8 TO 9
+			LOCALS = 少女
+		CASEELSE
+			LOCALS = 女性客
+		ENDSELECT
+		SIF SIZE("ペニス", TARGET) >= 2
+			LOCALS = 女性客
+	ELSE
+		LOCALS = 青年
+	ENDIF
+
+	LOCALS:1 = \@ RAND:2 ? 休憩 # 掃除 \@
+
+	IF LOCALS:1 == "休憩"
+		PRINTFORM 休憩時間にトイレを訪れた
+	ELSE
+		PRINTFORM トイレを掃除しに来た
+	ENDIF
+	PRINTFORMW %CALLNAME:TARGET%が奥の個室を空けると、一人の%LOCALS%が便座に座って\@ ( PENIS(TARGET) || RAND:3 == 0) ? %CALLNAME:TARGET%の名前を口に出しながら # \@自慰行為をしている場面に出くわしました！
+	PRINTFORM %CALLNAME:TARGET%は一瞬ぽかんとした顔をしましたが、
+	IF LOCALS:1 == "休憩" && RAND:2
+		PRINTFORM まだまだ時間があることを思い出し、
+	ELSEIF RAND:2 && ABL:精液中毒 >= 3 && LOCALS == "青年"
+		IF RAND:2
+			PRINTFORM 大好物の%TEXTS("匂い")%に鼻を鳴らすと、
+		ELSE
+			PRINTFORM 手で握られているペニスに生唾を飲み込むと、
+		ENDIF
+	ELSE
+		PRINTFORM 状況を理解すると、
+	ENDIF
+	PRINTFORM 後ろ手に鍵を閉め
+	IF ABL:サドっ気 >= MAX(ABL:奉仕精神, 3)
+		PRINTFORMW ました。
+		PRINTFORMW どうやら、この%LOCALS%で愉しむ事にしたようです…
+	ELSE
+		PRINTFORMW て%LOCALS%を誘惑し始めました…
+	ENDIF
+	PRINTL 
+	PRINTFORM お客は恥ずかしい場面を見られて暫し固まっていましたが、
+	IF MIN(ABL:欲望, ABL:露出癖) >= 3 && RAND:2
+		IF TALENT:巨乳 && RAND:3 == 0
+			IF COND("制服：バニー")
+				PRINTFORM 大きなおっぱいを見せつけながら
+			ELSE
+				PRINTFORM 胸元のボタンを外して大きなおっぱいを見せつけながら
+			ENDIF
+		ELSEIF LOCALS != "青年" && PENIS(TARGET)
+			PRINTFORM 露出させた
+			SELECTCASE SIZE("ペニス", TARGET)
+			CASE IS >= 3
+				PRINTFORM \@ RAND:2 ? 凶暴な # 凄まじい大きさの \@
+			CASE 2
+				PRINTFORM \@ RAND:2 ? 自慢の # 惚れ惚れするサイズの \@
+			CASE 0
+				PRINTFORM \@ RAND:2 ? 可愛らしい # 瑞々しい \@
+			ENDSELECT
+			PRINTFORM ペニスを\@ RAND:2 ? 見せ付けながら # 扱きながら \@
+		ELSEIF COND("制服：バニー")
+			IF COND("制服：ファスナー")
+				PRINTFORM クロッチのファスナーを下ろしながら
+			ELSE
+				PRINTFORM バニースーツの股間部分を留めているボタンを外しながら
+			ENDIF
+		ELSEIF RAND:2 || COND("身嗜み：ノーパン")
+			PRINTFORM 制服を緩めながら
+		ELSE
+			PRINTFORM パンツを脱ぎながら
+		ENDIF
+	;好色
+	ELSEIF TALENT:好色 && RANDIF(2, TALENT:陽気, TALENT:恥じらい, TALENT:小悪魔)
+		IF LOCALS == "青年"
+			PRINTFORM 膨らんだ股間
+		ELSE
+			PRINTFORM オナニーで濡れた股間
+		ENDIF
+		IF RAND:2
+			PRINTFORM を撫でながら
+		ELSE
+			PRINTFORM に手を這わせながら
+		ENDIF
+	;陽気
+	ELSEIF TALENT:陽気 && RANDIF(2, TALENT:恥じらい, TALENT:小悪魔)
+		PRINTFORM ノリノリの笑顔を浮かべながら
+	;小悪魔
+	ELSEIF TALENT:小悪魔 && RANDIF(2, TALENT:恥じらい)
+		PRINTFORM ニヤニヤしながら
+	;恥じらい
+	ELSEIF TALENT:恥じらい && RAND:2
+		PRINTFORM 赤面しながら
+	;強気＆生意気な人はここまで
+	ELSEIF TALENT:高慢 && TALENT:生意気
+		PRINTFORM 不敵な笑みを浮かべながら
+	ELSEIF RAND:2
+		PRINTFORM 顔を上気させながら
+	ELSE
+		PRINTFORM 微笑みながら
+	ENDIF
+	IF TALENT:高慢 && RANDIF(2, TALENT:陽気, TALENT:好色)
+		PRINTFORM 自信たっぷりに
+	;好色
+	ELSEIF TALENT:好色 && RANDIF(2, TALENT:陽気)
+		PRINTFORM 妖艶に
+	;陽気
+	ELSEIF TALENT:陽気 && RAND:2
+		PRINTFORM 軽い調子で
+	ENDIF
+	IF TALENT:好色 && RAND:2
+		IF LOCALS == "青年"
+			PRINTFORM 跨ってきた%CALLNAME:TARGET%
+		ELSE
+			PRINTFORM 脚の間に身体を割り込ませてきた%CALLNAME:TARGET%
+		ENDIF
+	ELSE
+		PRINTFORM 抱きついてきた%CALLNAME:TARGET%
+	ENDIF
+	IF LOCALS == "青年"
+		IF RAND:3 == 0
+			PRINTFORM の柔らかさ
+		ELSEIF RAND:2
+			PRINTFORM の発情した匂い
+		ENDIF
+		PRINTFORMW に、瞬く間に物凄い角度の勃起を見せる……！！
+	ELSE
+		PRINTFORMW に、身体を許す気になったようだ…！！
+	ENDIF
+
+	CALL SETFLAG, "一般人相手の性行為初期設定"
+
+	IF LOCALS == "青年"
+		;アナル好き？
+		IF COND("喫茶店：Ａセックス") && (TALENT:処女 || TALENT:オトコ || RAND:2)
+			SELECTCOM = 75
+			;文章に齟齬が出ないように調整
+			EXP:精液経験 += 1
+			CALL SETFLAG, "肛内精液経験", 1, TARGET, -4
+		ELSE
+			SELECTCOM = 65
+			EXP:精液経験 += 1
+			CALL SETFLAG, "膣内精液経験", 1, TARGET, -4
+			IF TALENT:PLAYER:童貞
+				EXP:童貞狩り経験 += 1
+				EXP:経験値 += 50
+			ENDIF
+		ENDIF
+
+		MEMO_LINECOUNT = LINECOUNT
+		;SELECTCOMでＶＡ騎乗位を判別可能
+		CALL SELF_KOJO_L, EVENT_NAMES
+		IF LINECOUNT == MEMO_LINECOUNT
+			PRINTL 
+			PRINTFORML ………
+			PRINTFORML ……
+			PRINTFORMW …
+			PRINTL 
+		ENDIF
+
+		PRINTFORM %CALLNAME:TARGET%は
+		IF RAND:10 == 0
+			IF RAND:2
+				PRINTFORM 年の割には大きなモノに
+			ELSE
+				PRINTFORM 青年の逞しい肉棒に
+			ENDIF
+		ELSEIF TALENT:PLAYER:童貞
+			PRINTFORM 青年が童貞だという事に
+		ELSEIF RAND:2
+			PRINTFORM 自分に夢中な青年の態度に
+		ELSE
+			PRINTFORM 若い男特有の堅いモノに
+		ENDIF
+		PRINTFORM 気を良くしたか、
+		IF ABL:サドっ気 >= MAX(ABL:奉仕精神, 3) && RAND:3 == 0
+			IF ABL:腰使い >= 3 && RAND:2
+				PRINTFORM 獰猛な腰使いで
+			ELSE
+				PRINTFORM 初心者向けの言葉責めをしながら
+			ENDIF
+		ELSEIF TALENT:小柄体型 && TALENT:幼稚 && !TALENT:巨乳 && ABL:Ｖ拡張 >= 2 && RAND:3 == 0
+			PRINTFORM 幼い身体でしっかり根元までくわえながら
+		ELSEIF TALENT:巨乳 && RANDIF(2, ABL:技巧 >= 3, ABL:Ｍ感覚 >= 3, TALENT:陽気 + TALENT:恥じらい, TALENT:好色)
+			IF TALENT:小柄体型 == 0 && RAND:2
+				PRINTFORM 豊満な体で抱きしめながら
+			ELSE
+				PRINTFORM 大きな胸でぱふぱふしたりしながら
+				CALL SIMULATE_TRAIN_COM, 104, RAND:(ABL:欲望 + ABL:奉仕精神 + 1)/3 + 1
+			ENDIF
+		ELSEIF TALENT:好色 && RANDIF(2, ABL:技巧 >= 3, ABL:Ｍ感覚 >= 3, TALENT:陽気 + TALENT:恥じらい)
+			PRINTFORM ちょっと感じてる顔で応援しながら
+		ELSEIF TALENT:陽気 + TALENT:恥じらい && RANDIF(2, ABL:技巧 >= 3, ABL:Ｍ感覚 >= 3)
+			PRINTFORM 可愛らしくおねだりしながら
+		ELSEIF ABL:Ｍ感覚 >= 3 && RANDIF(2, ABL:技巧 >= 3)
+			IF COND("身嗜み：キス独占") || RAND:3 == 0
+				PRINTFORM 顔や体にキスをしながら
+			ELSE
+				PRINTFORM 何度もキスをしながら
+				CALL SIMULATE_TRAIN_COM, 6, RAND:(ABL:欲望 + 1)/2 + 2
+			ENDIF
+		ELSEIF ABL:技巧 >= 3 && RAND:2
+			PRINTFORM 色々手ほどきしながら
+		ELSE
+			PRINTFORM 抱き合いながら
+		ENDIF
+
+		IF ABL:精液中毒 >= 5 || TALENT:上位夢魔 || ABL:サドっ気 >= MAX(ABL:奉仕精神, 3)
+			LOCAL += RAND:5 + 5
+			PRINTFORMW 限界を超えて\@ SELECTCOM == 75 ? お尻の穴で # \@精を搾り取った。
+		ELSE
+			LOCAL += RAND:5 + 2
+			PRINTFORMW 求められるままに{LOCAL}回程楽しんだ。
+		ENDIF
+
+		CALL SIMULATE_TRAIN_COM, SELECTCOM, LOCAL
+
+		IF ABL:サドっ気 >= MAX(ABL:奉仕精神, 3) && RAND:3
+			PRINTFORM 程ほど満足した%CALLNAME:TARGET%は、精液を垂らす\@ SELECTCOM == 75 ? アナル # アソコ \@をくたくたの
+			IF ABL:サドっ気 >= 5 && RAND:3
+				PRINTFORM 青年に奥まで啜らせて綺麗にさせた
+				CALL SIMULATE_TRAIN_COM, 1, 3
+			ELSEIF ABL:サドっ気 >= 3 && RAND:3
+				PRINTFORM 青年に舐めさせて綺麗にした
+				CALL SIMULATE_TRAIN_COM, 1, 1
+			ELSE
+				PRINTFORM 青年に綺麗に拭かせた
+			ENDIF
+			PRINTFORMW 後に、ひらひらと手を振りながら\@ LOCALS:1 == "休憩" ? その場を後にした # バイトに戻った \@……
+		ELSE
+			PRINTFORM その頑張りに応えて、%CALLNAME:TARGET%は
+			IF EQUIP:パンツ && RAND:5 == 0 && (COND("制服：スカート") || COND("制服：ファスナー") == 0)
+				IF COND("制服：バニー")
+					PRINTFORM 汗ばんだハイレグのパンツをプレゼントしてあげた
+				ELSE
+					PRINTFORM 自分のパンツをプレゼントしてあげた
+				ENDIF
+				CALL SET_PANTIES, TARGET
+			ELSEIF RAND:4 == 0 && COND("制服：スカート") && COND("身嗜み：ノーパン") == 0
+				PRINTFORM 温もりの残るパンツでお掃除をしてあげた
+			ELSEIF RAND:3 == 0 && ABL:奉仕精神 >= 3
+				PRINTFORM 上目遣いにお掃除フェラをした
+				EXP:お掃除フェラ経験 += 1
+				CALL SIMULATE_TRAIN_COM, 91, 1
+			ELSEIF RAND:3 == 0
+				PRINTFORM おでこにキスをした
+			ELSEIF RAND:2
+				PRINTFORM 笑顔で褒めた
+			ELSE
+				PRINTFORM 胸に抱き寄せてなでなでした
+			ENDIF
+			PRINTFORM 後に
+			IF RAND:2 && ABL:精液中毒 >= 5
+				IF EQUIP:パンツ && RAND:2
+					PRINTFORM 精液の垂れる\@ SELECTCOM == 75 ? アナル # アソコ \@をそのままに
+					IF COND("制服：バニー")
+						PRINTFORM 制服を着なおし、
+					ELSE
+						PRINTFORM 下着を穿き、
+					ENDIF
+				ELSE
+					PRINTFORM \@ SELECTCOM == 75 ? アヌス # アソコ \@から精液を指で拭って舐めしゃぶりながら
+				ENDIF
+			ELSE
+				PRINTFORM 手を振って
+			ENDIF
+			PRINTFORMW \@ LOCALS:1 == "休憩" ? その場を後にした # 店内に戻った \@……
+		ENDIF
+	ELSE
+		CALL SETFLAG, "一般人相手の性行為設定：相手が女"
+
+		;アナル好き？
+		IF RAND:10 == 0 && TALENT:倒錯的
+			SELECTCOM = 126
+		ELSE
+			SELECTCOM = 121
+		ENDIF
+		EXP:射精経験 += 1
+
+		MEMO_LINECOUNT = LINECOUNT
+		;SELECTCOMでＶＡセックスを判別可能
+		CALL SELF_KOJO_L, EVENT_NAMES
+		IF LINECOUNT == MEMO_LINECOUNT
+			PRINTL 
+			PRINTFORML ………
+			PRINTFORML ……
+			PRINTFORMW …
+			PRINTL 
+		ENDIF
+
+		PRINTFORM %CALLNAME:TARGET%は
+
+		IF SELECTCOM == 126
+			PRINTFORM アナルセックスを求めてきた%LOCALS%の淫らさに
+		ELSEIF (LOCALS == "少女" && RAND:3 == 0) || RAND:20 == 0
+			PRINTFORM %LOCALS%が処女だという事に
+		ELSEIF RAND:2
+			PRINTFORM 自分に夢中な%LOCALS%の態度に
+		ELSE
+			PRINTFORM %LOCALS%の膣の具合に
+		ENDIF
+		PRINTFORM 気を良くしたか、
+		IF ABL:サドっ気 >= MAX(ABL:奉仕精神, 3) && RAND:3 == 0
+			IF ABL:腰使い >= 3 && RAND:2
+				PRINTFORM 獰猛な腰使いで
+			ELSE
+				PRINTFORM 初心者向けの言葉責めをしながら
+			ENDIF
+		ELSEIF SIZE("ペニス", TARGET) >= 2 && RAND:3 == 0
+			PRINTFORM そうは見れない大きさの肉棒で奥まで念入りにほぐしながら
+		ELSEIF TALENT:好色 && RANDIF(2, ABL:技巧 >= 3, ABL:Ｍ感覚 >= 3, TALENT:陽気 + TALENT:恥じらい)
+			PRINTFORM ちょっと感じてる顔でしきりに褒めながら
+		ELSEIF TALENT:陽気 + TALENT:恥じらい && RANDIF(2, ABL:技巧 >= 3, ABL:Ｍ感覚 >= 3)
+			PRINTFORM 可愛らしくおねだりしながら
+		ELSEIF ABL:Ｍ感覚 >= 3 && RANDIF(2, ABL:技巧 >= 3)
+			IF COND("身嗜み：キス独占") || RAND:3 == 0
+				PRINTFORM 顔や体にキスをしながら
+			ELSE
+				PRINTFORM 何度もキスをしながら
+				CALL SIMULATE_TRAIN_COM, 6, RAND:(ABL:欲望 + 1)/2 + 2
+			ENDIF
+		ELSEIF ABL:技巧 >= 3 && RAND:2
+			PRINTFORM 色々手ほどきしながら
+		ELSE
+			PRINTFORM 抱き合いながら
+		ENDIF
+		IF ABL:サドっ気 >= MAX(ABL:奉仕精神, 3)
+			LOCAL = RAND:5 + 5
+			PRINTFORMW 強すぎる快楽で失神するまで犯しぬいた。
+		ELSE
+			LOCAL = RAND:5 + 2
+			PRINTFORMW 求められるままに{LOCAL}回程楽しんだ。
+		ENDIF
+
+		CALL SIMULATE_TRAIN_COM, SELECTCOM, LOCAL
+
+		IF ABL:サドっ気 >= MAX(ABL:奉仕精神, 3) && RAND:3
+			PRINTFORM いっぱい射精できて満足な%CALLNAME:TARGET%は、\@ SELECTCOM == 126 ? お尻の穴から引き抜いた # お互いの粘液でどろどろの \@ペニスをすっかり快楽に蕩けた%LOCALS%
+			IF ABL:サドっ気 >= 5 && RAND:3
+				PRINTFORM に念入りにお掃除フェラさせて綺麗にさせた
+				CALL SIMULATE_TRAIN_COM, 4, 3
+			ELSEIF ABL:サドっ気 >= 3 && RAND:3
+				PRINTFORM に舐めて綺麗にさせた
+				CALL SIMULATE_TRAIN_COM, 4, 3
+			ELSE
+				PRINTFORM に\@ RAND:2 ? パンツで # \@綺麗に拭かせた
+			ENDIF
+			PRINTFORMW 後に、ひらひらと手を振りながら\@ LOCALS:1 == "休憩" ? その場を後にした # バイトに戻った \@……
+		ELSE
+			PRINTFORM その頑張りに応えて、%CALLNAME:TARGET%は
+			IF RAND:3 == 0
+				PRINTFORM おでこにキスをした
+			ELSEIF RAND:2
+				PRINTFORM 笑顔で褒めた
+			ELSE
+				PRINTFORM 胸に抱き寄せてなでなでした
+			ENDIF
+			PRINTFORM 後に%LOCALS%
+			IF RAND:2 && ABL:精液中毒 >= 5
+				IF RAND:2
+					PRINTFORM の\@ SELECTCOM == 126 ? アナル # アソコ \@を舐めしゃぶって綺麗にし、
+					CALL SIMULATE_TRAIN_COM, 98, 1
+				ELSE
+					PRINTFORM の精液の垂れる\@ SELECTCOM == 126 ? アナル # アソコ \@を丁寧に拭き拭きして、
+				ENDIF
+			ELSE
+				PRINTFORM に手を振って
+			ENDIF
+			PRINTFORMW \@ LOCALS:1 == "休憩" ? その場を後にした # バイトに戻った \@……
+		ENDIF
+	ENDIF
+
+	CALL SETFLAG, "一般人相手の性行為終了"
+	;つまみ食い人数+1
+	CFLAG:36 += 1
+
+CASE "テーブル拭き２"
+	PRINTFORM 店内の混雑が一段落したので、%CALLNAME:TARGET%は
+	IF RAND:2
+		PRINTFORMW 食器の片付いたテーブルを掃除してまわりはじめました。
+	ELSE
+		PRINTFORMW 拭き掃除をはじめました。
+	ENDIF
+	IF TALENT:小柄体型 && (TALENT:幼稚 || RAND:2)
+		IF RAND:2
+			IF TALENT:幼稚 && RAND:2
+				PRINTFORM %CALLNAME:TARGET%がテーブルに腹這いになって、足をパタパタさせながら布巾で
+			ELSE
+				PRINTFORM %CALLNAME:TARGET%みたいな小さい子が長いモップで
+			ENDIF
+			PRINTFORMW ゴシゴシしているのは、まるでおままごとのようで周りのお客を和ませています…
+			IF TALENT:力持ち
+				PRINTFORMW …が。
+				PRINTFORMW 多人数用の重そうなテーブルを片手で軽々と持ち上げて余った手でモップ掛けをし始めるのは、いつもの事ながら初見のお客の度肝を抜いているようです…
+			ENDIF
+		ELSEIF RAND:2
+			PRINTFORMW …が、手の長さが足りないのか、テーブルの上で腹這いになったりして席の奥の方を拭いています。
+			PRINTFORMW 周りにいるお客は、足をパタパタさせながら拭き掃除をしている%CALLNAME:TARGET%を遠目に愛でながら、お茶を楽しんでいるようです…
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%は奥の方には手が届かないので、席に座ってテーブルを丁寧に拭いています。
+			PRINTFORMW …が、混雑を捌いたあとの単純作業の繰り返しのせいか、最後のテーブルを拭いている途中で突っ伏して眠ってしまいました…
+		ENDIF
+	ELSEIF TALENT:力持ち && RAND:2
+		PRINTFORMW それほど筋肉質には見えない%CALLNAME:TARGET%ですが、重そうな机等をヒョイヒョイ片手で動かしながら鼻歌交じりでモップ掛けをしています…
+	ELSE
+		PRINTFORMW %CALLNAME:TARGET%は身体を前傾させてテンポ良くテーブルを奥まで綺麗にしていましたが…
+		IF COND("制服：ミニスカ")
+			LOCALS = スカートが捲れ上がって、
+			IF COND("身嗜み：ノーパン")
+				LOCALS = パンツを穿いて無いせいで丸出しのアソコ
+			ELSEIF COND("男の娘") || (PENIS(TARGET) && RAND:2)
+				LOCALS = %LOCALS%盛り上がったクロッチ部分
+			ELSEIF RAND:3 == 0 && CHECK_PANTIES("ハイレグ")
+				LOCALS = %LOCALS%際どいパンツが食い込んで\@ COND("陰毛") >= 6 ? 陰毛がはみ出ている # 今にもアソコが見えそうな \@股間の様子
+			ELSEIF RAND:2
+				LOCALS = %LOCALS%\@ CHECK_PANTIES("Ｈ") ? Ｈな # \@パンツの食い込む\@ RAND:2 ? お尻 # 股間 \@
+			ELSE
+				LOCALS = %LOCALS%汗ばんで僅かに湿ったパンツのクロッチ部分
+			ENDIF
+		ELSEIF COND("制服：バニー")
+			IF RAND:2
+				LOCALS = 網タイツに包まれたお尻
+			ELSE
+				LOCALS = Ｔバックが食い込むお尻
+			ENDIF
+		ELSE
+			LOCALS = スカート越しにお尻
+		ENDIF
+		;ひそひそ話に気付く？
+		IF RAND:2
+			PRINTFORMW 後ろの席のお客のひそひそ話の内容で、%LOCALS%を見られていたことに気付いたようです！
+			PRINTFORM その事に気付いた%CALLNAME:TARGET%は
+			IF TALENT:好色 && ABL:露出癖 >= 3
+				IF ABL:露出癖 >= 5 && COND("制服：スカート") && CHECK_PANTIES("Ｈ") && RAND:2
+					PRINTFORMW 、…後ろ手でスカートを押さえる振りをしながら、Ｔバックを指でずらして一瞬だけお尻の穴を見せてあげたようです！
+				ELSE
+					PRINTFORM 、…身体をテーブルに水平になるまで倒して脚を大きめに開き、
+					IF COND("制服：バニー")
+						PRINTFORMW 蒸れた股間をお客に見せ付けて楽しみはじめました！
+					ELSEIF COND("身嗜み：ノーパン") && COND("制服：スカート")
+						PRINTFORMW 左右に大陰唇が引っ張られて内側の見えそうなアソコをお客に見せ付けて楽しみはじめました！
+					ELSE
+						PRINTFORMW パンツ越しの股間をお客に見せ付けて楽しみはじめました！
+					ENDIF
+				ENDIF
+				PRINTFORMW そして、拭き掃除を終えた%CALLNAME:TARGET%は後ろのお客の大きくなった股間を一瞥すると、楽しそうな笑みを浮かべながら次のテーブルへ向かいました…
+			ELSEIF TALENT:冷静 || TALENT:感情乏しい || (TALENT:恥薄い && TALENT:粗野)
+				PRINTFORMW 、…特に顔色を変えることもなく、お客に見られながら黙々と掃除を続けました…
+			ELSE
+				PRINTFORMW 慌てて後ろ手で\@ COND("制服：バニー") ? お尻を隠し # スカートを押さえ \@ましたが、その後はあまり掃除に力が入らなかったようです…
+			ENDIF
+		ELSE
+			PRINTFORMW 熱中するあまり、後ろの席のお客に%LOCALS%をじっくりと鑑賞されてしまったようです。
+			PRINTFORMW それに気付かない%CALLNAME:TARGET%は、どこか幸せそうなお客に不思議な顔をしながら次のテーブルに移りました…
+		ENDIF
+	ENDIF
+CASE "チップ"
+	IF ABL:奉仕精神 >= 5 && RANDIF(2, TALENT:魅力, TALENT:清楚, TALENT:好色 + TALENT:淫乱)
+		PRINTFORM 細かい所まで行き届いたサービス
+	ELSEIF TALENT:好色 + TALENT:淫乱 && RANDIF(2, TALENT:魅力, TALENT:清楚)
+		PRINTFORM ちょっとエッチな仕草
+	ELSEIF TALENT:清楚 && RANDIF(2, TALENT:魅力)
+		PRINTFORM おしとやかな所作
+	ELSEIF TALENT:魅力 && RAND:2 == 0
+		PRINTFORM 並外れた美しさ
+	ELSEIF RAND:2
+		PRINTFORM 頑張っている姿
+	ELSE
+		PRINTFORM 言葉遣い
+	ENDIF
+	PRINTFORMW が気に入られたのか、%CALLNAME:TARGET%は担当したお客から随分と多めにチップを貰ったようです。
+	IF TALENT:好色 && RANDIF(1, TALENT:幼稚, TALENT:ハーピー)
+		IF COND("制服：バニー") || (TALENT:巨乳 && RAND:2) || COND("身嗜み：ノーパン")
+			LOCALS = 胸
+		ELSE
+			LOCALS = パンツ
+		ENDIF
+		PRINTFORM すると、紙幣をつまんだお客に対して%CALLNAME:TARGET%は
+		SELECTCASE LOCALS
+		CASE "胸"
+			IF COND("制服：バニー")
+				PRINTFORM 前屈みになり、
+			ELSE
+				PRINTFORM 胸元を緩め、
+			ENDIF
+		CASEELSE
+			PRINTFORM スカートをおへそが見えるまでたくし上げ、
+		ENDSELECT
+		IF TALENT:素直 && RANDIF(2, TALENT:恥じらい, TALENT:小悪魔)
+			PRINTFORM にっこり笑いながら
+		ELSEIF TALENT:小悪魔 && RANDIF(2, TALENT:恥じらい)
+			PRINTFORM ニヤニヤしながら
+		ELSEIF TALENT:恥じらい && RAND:2
+			IF RAND:2
+				PRINTFORM ほんのり頬を染めて
+			ELSE
+				PRINTFORM 少し恥ずかしそうに
+			ENDIF
+		ELSE
+			PRINTFORM 微笑みながら
+		ENDIF
+		SELECTCASE LOCALS
+		CASE "胸"
+			PRINTFORMW \@ RAND:2 ? 柔らか # 魅力的 \@な胸の谷間を差し出しました！
+			IF RAND:3 == 0
+				PRINTFORMW %CALLNAME:TARGET%は紙幣を差し入れるだけで離れようとしたお客の手を上から押さえて、一瞬だけ胸を触らせてあげたようです…
+			ELSEIF RAND:2
+				PRINTFORMW %CALLNAME:TARGET%は乳房を揉みしだいてお客を視覚的に楽しませながら、隙間にチップを差し入れるように促しています…
+			ELSE
+				PRINTFORMW おっぱいに触れないように慎重に差し込んでいるお客に、%CALLNAME:TARGET%は奥まで入れるようにと囁いています…
+			ENDIF
+		CASEELSE
+			PRINTFORMW パンツの中に入れるように促しました！
+			IF RAND:2
+				PRINTFORMW %CALLNAME:TARGET%は紙幣を差し入れるだけで離れようとしたお客の手を上から押さえて、ちょっとだけ股間を触らせてあげたようです…
+			ELSE
+				PRINTFORMW 敏感な場所に触れないように慎重に差し込んでいるお客に、%CALLNAME:TARGET%は奥まで入れるようにと囁いています…
+			ENDIF
+		ENDSELECT
+		PRINTL 
+		PRINTFORMW ……その後は不思議な事に高額なチップを%CALLNAME:TARGET%へ差し出すお客が後を絶ちませんでした。
+	ELSEIF TALENT:ハーピー && RANDIF(1, TALENT:幼稚)
+		PRINTFORMW まさかの高額なコインの登場に%CALLNAME:TARGET%は瞳を輝かせ、あせる気持ちを抑えながらチップを懐にしまいました。
+		PRINTFORMW 本能的な欲求が充足されたのか、金品を得る喜びに浸っているようです…
+	ELSEIF TALENT:幼稚
+		PRINTFORML %CALLNAME:TARGET%は目を輝かせて、体全体で喜びを表現しました。
+		PRINTFORMW 頭の中は\@ RAND:2 ? お菓子 # 何を買うか \@でいっぱいなようです…
+	ELSE
+		PRINTFORM %CALLNAME:TARGET%は
+		IF TALENT:冷静 + TALENT:感情乏しい
+			PRINTFORMW 表情には出していないものの、心なしか嬉しそうです。
+		ELSE
+			PRINTFORMW 思わぬ臨時収入に顔をほころばせています。
+		ENDIF
+		PRINTFORMW その光景に触発されたか、この日のお店のサービスは上々だったようです…
+	ENDIF
+CASE "財布忘れた相手をつまみ食い"
+	PRINTFORM %CALLNAME:TARGET%が一段落した店内
+	IF RAND:2
+		PRINTFORM でお皿をさげる仕事を
+	ELSE
+		PRINTFORM を掃除
+	ENDIF
+	PRINTFORMW していると、落ち着かない様子でポケットをゴソゴソやっているお客を見つけました。
+	PRINTFORMW …どうやら食事を終えた後に財布を忘れたことに気がついた、という事のようです。
+	PRINTFORM それを聞いた%CALLNAME:TARGET%は
+	;素直
+	IF TALENT:素直 && RANDIF(2, TALENT:感情乏しい, TALENT:陽気, TALENT:恥じらい, TALENT:小悪魔)
+		PRINTFORM にっこり笑顔を浮かべると、
+	;陽気
+	ELSEIF TALENT:陽気 && RANDIF(2, TALENT:冷静 + TALENT:感情乏しい, TALENT:恥じらい, TALENT:小悪魔)
+		PRINTFORM 楽しそうに微笑むと、
+	;小悪魔
+	ELSEIF TALENT:小悪魔 && RANDIF(2, TALENT:冷静 + TALENT:感情乏しい, TALENT:恥じらい)
+		PRINTFORM ニヤリとすると、
+	;感情乏しいor冷静
+	ELSEIF TALENT:冷静 + TALENT:感情乏しい && RANDIF(2, TALENT:恥じらい)
+		PRINTFORM 僅かに思案すると、
+	;恥じらい
+	ELSEIF TALENT:恥じらい && RAND:2
+		PRINTFORM ほんのり頬を染めると、
+	ELSE
+		PRINTFORM 微笑を浮かべると、
+	ENDIF
+	PRINTFORMW 青年の耳元で「身体で払ってもらう」旨を告げて、"お仕事"に関わる説明と問診をしながら一緒にスタッフルームへと向かいました…
+	PRINTL 
+	PRINTFORMW 〜更衣室〜
+
+	VARSET LOCAL
+	CALL SETFLAG, "一般人相手の性行為初期設定"
+
+	IF RAND:2
+		PRINTFORM とりあえず
+	ELSE
+		PRINTFORM 手始めに
+	ENDIF
+	CALL COM_ABLE99
+	IF RESULT && ABL:奉仕精神 >= 3 && RAND:3 == 0
+		PRINTFORM シックスナインの体勢で
+		IF ABL:サドっ気 >= 3 && RAND:3 == 0
+			PRINTFORM 顔を押しつぶしながら
+		ELSEIF RAND:2
+			PRINTFORM 股間を貪られながら
+		ELSE
+			PRINTFORM アソコを自由にさせながら
+		ENDIF
+		CALL SIMULATE_TRAIN_COM, 99, RAND:3 + 2
+	ELSE
+		CALL COM_ABLE92
+		LOCAL:92 = RESULT
+		CALL COM_ABLE95
+		LOCAL:95 = RESULT
+		;足コキ
+		IF LOCAL:95 && ABL:足使い >= 3 && RAND:4 == 0
+			LOCAL = ABL:足使い
+			LOCALS = 足コキ
+			CALL SIMULATE_TRAIN_COM, 95, RAND:3 + 2
+		;パイズリ
+		ELSEIF LOCAL:92 && (ABL:魔乳 >= 3 || TALENT:巨乳) && RAND:3 == 0
+			LOCAL = ABL:魔乳
+			LOCALS = パイズリ
+			CALL SIMULATE_TRAIN_COM, 92, RAND:3 + 2
+		ELSEIF RAND:2
+			LOCAL = ABL:舌使い
+			IF ABL:奉仕精神 >= 3 && CHECK("喉姦") && RAND:3 == 0
+				LOCALS = ディープフェラ
+			ELSE
+				LOCALS = フェラ
+			ENDIF
+			CALL SIMULATE_TRAIN_COM, 91, RAND:3 + 2
+		ELSE
+			LOCAL = ABL:指使い
+			LOCALS = 手コキ
+			CALL SIMULATE_TRAIN_COM, 90, RAND:3 + 2
+		ENDIF
+		IF RAND:2 && LOCAL >= MAX(3, ABL:舌使い, ABL:指使い, ABL:足使い, ABL:魔乳)
+			PRINTFORM 自慢の
+		ELSEIF LOCAL >= 3
+			PRINTFORM 巧みな
+		ENDIF
+		PRINTFORM %LOCALS%で
+	ENDIF
+	PRINTFORM 何度か抜い\@ ABL:奉仕精神 >= 3 ? てあげ # \@た%CALLNAME:TARGET%は、
+	IF COND("制服：バニー")
+		PRINTFORM 股間部分だけを露出させた状態で
+	ELSEIF ABL:露出癖 >= 3 && RAND:2
+		PRINTFORM スカートを持ち上げて下腹部を見せつけつつ
+	ELSEIF RAND:2 || COND("身嗜み：ノーパン")
+		PRINTFORM 制服姿のまま
+	ELSEIF RAND:3 == 0
+		PRINTFORM スカートだけ脱いだ状態で
+	ELSEIF RAND:2
+		PRINTFORM スカートとパンツだけ脱いだ状態で
+	ELSE
+		PRINTFORM パンツだけ膝に絡めた状態で
+	ENDIF
+	PRINTFORM 青年の腰に跨って
+	IF TALENT:巨乳 && RAND:2
+		;爆乳
+		IF TALENT:巨乳 >= 2 && RAND:3 == 0
+			PRINTFORM 重量感のある胸
+		ELSEIF RAND:3 == 0
+			PRINTFORM 豊満な胸
+		ELSEIF RAND:2
+			PRINTFORM お餅の様な胸
+		ELSE
+			PRINTFORM 弾力に富んだ胸
+		ENDIF
+		IF RAND:3 == 0
+			PRINTFORM を揺らしながら、
+		ELSEIF RAND:2
+			PRINTFORM を弾ませながら、
+		ELSE
+			PRINTFORM で顔を圧迫しながら、
+		ENDIF
+	ENDIF
+	PRINTFORM 何度も何度も、
+	LOCAL = 4 + RAND:5
+	IF ABL:サドっ気 >= MAX(ABL:奉仕精神, 3)
+		LOCAL:1 = 2 + RAND:5
+		LOCAL += LOCAL:1
+		PRINTFORM 具体的には『もう出ない』といわれた後に{LOCAL:1}回ぐらい
+	ELSE
+		PRINTFORM 求められるままに
+	ENDIF
+	;童貞？
+	SIF TALENT:PLAYER:童貞
+		LOCALS:1 = 童貞
+	IF TALENT:処女 || (RAND:2 && ABL:Ａ感覚 > MAX(2, ABL:Ｖ感覚) && TALENT:意地悪 + TALENT:貞操観念 + TALENT:尻穴狂い + TALENT:倒錯的)
+		PRINTFORM お尻の穴で
+		CALL SIMULATE_TRAIN_COM, 75, LOCAL
+	ELSE
+		IF ABL:Ａ感覚 >= MAX(3, ABL:Ｖ感覚)
+			PRINTFORM 両方の穴で
+			LOCAL:1 = LOCAL/2
+			LOCAL -= LOCAL:1
+			CALL SIMULATE_TRAIN_COM, 75, LOCAL:1
+		ENDIF
+		CALL SIMULATE_TRAIN_COM, 65, LOCAL
+		EXP:精液経験 += LOCAL:1
+		;童貞狩り完了！
+		IF LOCALS:1 == "童貞"
+			EXP:童貞狩り経験 += 1
+			EXP:経験値 += 50
+		ENDIF
+	ENDIF
+	IF ABL:サドっ気 >= MAX(ABL:奉仕精神, 3)
+		PRINTFORMW 精液を搾り取りました…
+	ELSE
+		PRINTFORMW 射精を受け止めました…
+	ENDIF
+	CALL SETFLAG, "一般人相手の性行為終了"
+
+	PRINTFORM %CALLNAME:TARGET%は
+	;相手は童貞
+	IF LOCALS:1 == "童貞"
+		IF RAND:3
+			PRINTFORM 青年が童貞だった事に
+		ELSEIF EXP_GAIN(14)
+			PRINTFORM 期せずして童貞狩り数を増やせて
+		ELSE
+			PRINTFORM 童貞相手にＡセックスから経験させるという異常なプレイを楽しめて
+		ENDIF
+	ELSEIF RAND:3
+		PRINTFORM 若い精をたっぷりと摂取して
+	ELSE
+		PRINTFORM 良い汗をかけて
+	ENDIF
+	PRINTFORML 上機嫌な様子で飲食代を立て替えてあげると、
+
+	MEMO_LINECOUNT = LINECOUNT
+	CALL SELF_KOJO_L, EVENT_NAMES
+	SIF LINECOUNT == MEMO_LINECOUNT
+		PRINTFORML 「次はお財布忘れないように」
+
+	PRINTFORMW と釘をさしてから意気揚々と仕事に戻っていきました…
+	;つまみ食い人数+1
+	CFLAG:36 += 1
+
+CASE "暇なときの時間潰し"
+	PRINTFORMW 今日は天候がいまいちなせいか、店内はお客の姿がまばらです
+	PRINTFORM 暇を持て余した%CALLNAME:TARGET%は
+	IF ABL:精液中毒 >= 3 && (TALENT:好色 || ABL:サドっ気 >= 3) && FIND_COND("出演可能な店員", "!オンナ") && RANDIF(2, ABL:奉仕精神 >= 3, ABL:自慰中毒 + TALENT:淫乱 >= 4)
+		WAITRESS = FIND_COND("出演可能な店員", "!オンナ")
+		SETBIT CFLAG:WAITRESS:95, 1
+		IF RAND:2 && (TALENT:高慢 || TALENT:汚臭敏感)
+			PRINTFORMW 、スタッフルームで%CALLNAME:WAITRESS%にミルクティーを淹れて貰う事にしたようです
+			PRINTFORMW ……
+			PRINTFORM …%CALLNAME:TARGET%は用意してくれた%CALLNAME:WAITRESS%にお礼を言うと、
+			IF BASE:WAITRESS:精力 > BASE:MASTER:精力
+				PRINTFORMW コクや喉越しの素晴らしさに感嘆のため息を漏らしつつティータイムを楽しみました…
+			ELSEIF AGE(WAITRESS) <= 2
+				PRINTFORMW フレッシュな味わいを満喫しながらティータイムを楽しみました…
+			ELSE
+				PRINTFORMW あらためて%CALLNAME:MASTER%の味が一番だと再確認しながらティータイムを過ごしました…
+			ENDIF
+			CALL SETFLAG, "精飲経験", 1, TARGET, -4
+			PRINTFORML 精飲経験＋1
+			EXP:精液経験 += 2
+			PRINTFORMW 精液経験＋2
+		ELSE
+			PRINTFORM レジカウンターの死角に身を隠しながら、お会計をしている%CALLNAME:WAITRESS%の\@ SIZE("ペニス", WAITRESS) >= 2 ? 大きな # \@ペニス
+			IF CHECK("喉姦", TARGET, WAITRESS) >= 2 && RAND:2
+				PRINTFORMW を根元まで咥えこんで味わい始めました
+			ELSE
+				PRINTFORMW を舐めしゃぶりはじめました
+			ENDIF
+			IF ABL:自慰中毒 >= 3 && RAND:3 == 0
+				PRINTFORMW %CALLNAME:TARGET%は喉に絡みつく精液の味に舌鼓を打ちつつ、オナニーをしながら店内が混み始めるまで%CALLNAME:WAITRESS%を快楽責めにして過ごしたようです…
+			ELSEIF RAND:2
+				PRINTFORM %CALLNAME:TARGET%は、自分の口に大量に射精しながら
+				SIF ABL:ＬＶ > ABL:WAITRESS:ＬＶ
+					PRINTFORM 必死で
+				PRINTFORMW 平静を繕う%CALLNAME:WAITRESS%の仕事振りを横目で眺めつつ、楽しく暇な時間を満喫したようです…
+			ELSE
+				PRINTFORMW %CALLNAME:TARGET%は接客中だろうと構うことなく%CALLNAME:WAITRESS%から何度も精を搾り取り、喉を潤しながら楽しく過ごしたようです…
+			ENDIF
+			LOCAL:1 = 2 + RAND:(ABL:精液中毒 + 1)
+			EXP:フェラ経験 += LOCAL:1
+			PRINTFORML フェラ経験＋{LOCAL:1}
+			CALL SETFLAG, "精飲経験", LOCAL:1/2 + 1, TARGET, -4
+			PRINTFORML 精飲経験＋{LOCAL:1/2 + 1}
+			EXP:精液経験 += LOCAL:1 + 2
+			PRINTFORML 精液経験＋{LOCAL:1 + 2}
+			EXP:WAITRESS:射精経験 += LOCAL:1/2 + 1
+			PRINTFORMW 射精経験＋{LOCAL:1/2 + 1}（%CALLNAME:WAITRESS%）
+		ENDIF
+	ELSEIF COND("身嗜み：自慰禁止") == 0 && ABL:自慰中毒 + TALENT:淫乱 >= 4 && RANDIF(2, ABL:奉仕精神 >= 3)
+		PRINTFORMW 更衣室でオナニーをすることにしたようです
+		IF RAND:3
+			PRINTFORMW …が、絶頂間際で呼び出されてしまった%CALLNAME:TARGET%は、身なりを最低限整えるだけでフロアに戻る羽目になってしまいました
+			IF TALENT:淫乱 && (COND("発情期") || TALENT:発情体質) && RAND:3 == 0
+				PRINTFORMW 火照った身体で隠し切れないエッチな%TEXTS("匂い")%をさせている%CALLNAME:TARGET%に近寄られたお客たちは、例外なく立ち上がれなくなってしまっています…
+			ELSEIF RAND:3 || COND("制服：バニー") || COND("身嗜み：ノーパン")
+				PRINTFORM \@ TALENT:賢い ? 手馴れた様子で # \@頭を切り替えて忙しい店内を駆け回り始めた%CALLNAME:TARGET%でしたが、
+				IF TALENT:オトコ == 0 && (COND("発情期") || TALENT:発情体質) && RAND:2
+					PRINTFORM 興奮の冷めない子宮と膣から溢れてくる愛液
+					IF COND("制服：バニー")
+						PRINTFORMW が内ももの網タイツにまで染み出てきてしまっています…
+						PRINTFORMW この状態は流石に隠さないと…と%CALLNAME:TARGET%はフトモモを擦り付けて股間の隙間をなくしつつ、いつもよりもドキドキしながら仕事をやり遂げました
+					ELSE
+						IF COND("身嗜み：ノーパン")
+							PRINTFORMW が一筋、パンツを穿いてないおかげで太ももに伝っています…
+						ELSE
+							PRINTFORMW でパンツには刻一刻と大きな染みが広がってきています…
+						ENDIF
+						PRINTFORMW %CALLNAME:TARGET%は悪戯好きな子供のスカートめくりに目を光らせつつ、いつもよりもドキドキしながら仕事をやり遂げました
+					ENDIF
+				ELSEIF TALENT:オトコ == 0 && TALENT:濡れやすい && COND("身嗜み：ノーパン") == 0 && RAND:2
+					PRINTFORM 愛液の出やすい体質のせいで
+					IF COND("制服：バニー")
+						PRINTFORMW 汗をかいたというのでは誤魔化しきれない程に淫靡な%TEXTS("匂い")%を通気性の悪い制服の股間から辺りに振りまいています…
+					ELSE
+						PRINTFORMW ぐしょぐしょになったパンツがちょっと不快そうです…
+					ENDIF
+				ELSE
+					PRINTFORMW 先程のプレイの余韻のおかげで滲み出る艶っぽい様子にお客はドキドキしています…
+				ENDIF
+			ELSE
+				PRINTFORM 急いで出てきたせいでうっかりパンツをはき忘れていたことに気づいた%CALLNAME:TARGET%は、
+				IF TALENT:恥じらい
+					PRINTFORMW 太腿を擦り合わせるようにぴったり閉じながら恥ずかしそうに急場を凌いだようです…
+				ELSEIF ABL:露出癖 >= 3
+					PRINTFORMW 「これはこれで楽しそう」と気にすることなく給仕を続けました…
+				ELSE
+					PRINTFORMW 自分のそそっかしさに反省しながらも股間がお客に見えないように注意しながら給仕を続けました…
+				ENDIF
+			ENDIF
+			EXP:自慰経験 += ABL:自慰中毒
+			PRINTFORMW 自慰経験＋{ABL:自慰中毒}
+		ELSE
+			LOCAL = LIMIT(RAND:(ABL:自慰中毒 + 1), 1, 5)
+			PRINTFORMW ……
+			PRINTFORMW …\@ LOCAL == 1 ? 気持ちよく # {LOCAL}回ほど \@絶頂を迎えてすっかり満足した%CALLNAME:TARGET%は、全身からほのかに汗ばんだエッチな%TEXTS("匂い")%を漂わせつつフロアに復帰しました…
+			IF TALENT:オトコ == 0
+				EXP:絶頂経験 += LOCAL
+				PRINTFORML 絶頂経験＋{LOCAL}
+			ENDIF
+			IF PENIS(TARGET)
+				EXP:射精経験 += LOCAL
+				PRINTFORML 射精経験＋{LOCAL}
+			ENDIF
+			EXP:自慰経験 += LOCAL + ABL:自慰中毒/2
+			PRINTFORMW 自慰経験＋{LOCAL + ABL:自慰中毒/2}
+		ENDIF
+	ELSEIF ABL:奉仕精神 >= 3 && RAND:2
+		PRINTFORMW 、良い機会だからと気合いを入れて掃除をすることにしたようです
+		IF FIND_COND("出演可能な店員", "吸血鬼") && RAND:4 == 0
+			WAITRESS = FIND_COND("出演可能な店員", "吸血鬼")
+			SETBIT CFLAG:WAITRESS:95, 1
+			PRINTFORMW 店中の銀食器を引っ張り出して曇りを落とし始めた%CALLNAME:TARGET%を、柱の影から様子を伺う%CALLNAME:WAITRESS%はなんとも複雑な顔で眺めています…
+		ELSE
+			WAITRESS = FIND_COND("出演可能な店員")
+			SETBIT CFLAG:WAITRESS:95, 1
+			IF MIN(ABL:奉仕精神, ABL:WAITRESS:奉仕精神) >= 4
+				PRINTFORMW 同様に店内の汚れが気になっていたという%CALLNAME:WAITRESS%と一緒に隅々に至るまで磨き上げた%CALLNAME:TARGET%は、清々しい表情で汗をぬぐっています…
+			ELSEIF ABL:WAITRESS:奉仕精神 >= 3
+				PRINTFORMW 掃除の補佐として%CALLNAME:WAITRESS%を誘った%CALLNAME:TARGET%は、いつもはあまり掃除できない部分を綺麗にできてなんだか楽しそうです…
+			ELSE
+				PRINTFORMW %CALLNAME:TARGET%の徹底振りを知っている%CALLNAME:WAITRESS%は、手伝うように言われる前にそそくさとフロアに身を隠しました…
+			ENDIF
+		ENDIF
+	ELSE
+		WAITRESS = FIND_COND("出演可能な店員")
+		SETBIT CFLAG:WAITRESS:95, 1
+		PRINTFORMW 、%CALLNAME:WAITRESS%を誘ってスタッフルームで時間をつぶす事にしたようです…
+		PRINTFORMW ……
+		;勝ち
+		IF RAND:(10 + TALENT:賢い*5 - TALENT:愚か*5) >= RAND:(10 + TALENT:WAITRESS:賢い*5 - TALENT:WAITRESS:愚か*5)
+			PRINTFORM …賭けトランプで大勝利した%CALLNAME:TARGET%は勝者の権利として%CALLNAME:WAITRESS%
+			IF RAND:3 == 0 && TALENT:好色 + TALENT:解放 + TALENT:小悪魔 + TALENT:快感に素直 && CHECK("性別による拒絶反応", TARGET, WAITRESS) == 0
+				IF TALENT:オンナ && COND("喫茶店：Ｖセックス") && PENIS(WAITRESS) && COND("喫茶店：インサート", WAITRESS) && RAND:2
+					PRINTFORMW にペニスでの奉仕を命じ、\@ COND("身嗜み：ノーパン") == 0 ? 目の前でパンツを下ろして # \@椅子に腰掛けて股を広げました
+					PRINTFORMW そして、勝負の掟に従う%CALLNAME:WAITRESS%の念入りな奉仕に身を委ねながら、爛れたひと時を楽しむのでした…
+					LOCAL:1 = 1 + RAND:(ABL:Ｖ感覚 + ABL:WAITRESS:技巧 + 1)/2
+					LOCAL:2 = 1 + RAND:(LIMIT(ABL:技巧 - ABL:WAITRESS:技巧, 1, 5) )
+					EXP:絶頂経験 += LOCAL:1/2 + 1
+					PRINTFORML 絶頂経験＋{LOCAL:1/2 + 1}
+					IF TALENT:おもらし癖 && LOCAL:1 >= 4
+						EXP:お漏らし経験 += 1
+						PRINTFORML お漏らし経験＋1
+					ENDIF
+					EXP:Ｖ経験 += LOCAL:1
+					PRINTFORML Ｖ経験＋{LOCAL:1}
+					EXP:Ｖ性交経験 += LOCAL:1
+					PRINTFORML Ｖ性交経験＋{LOCAL:1}
+					EXP:精液経験 += LOCAL:2*2
+					PRINTFORML 精液経験 += {LOCAL:2*2}
+
+					EXP:WAITRESS:射精経験 += LOCAL:2
+					PRINTFORML 射精経験＋{LOCAL:2}（%CALLNAME:WAITRESS%）
+					EXP:WAITRESS:Ｖ挿入経験 += LOCAL:1
+					PRINTFORML Ｖ挿入経験＋{LOCAL:1}（%CALLNAME:WAITRESS%）
+					EXP:WAITRESS:腰使い経験 += LOCAL:1
+					PRINTFORML 腰使い経験＋{LOCAL:1}（%CALLNAME:WAITRESS%）
+					EXP:WAITRESS:クンニ経験 += 1
+					PRINTFORML クンニ経験＋1（%CALLNAME:WAITRESS%）
+					EXP:WAITRESS:精液経験 += 1
+					PRINTFORMW 精液経験＋1（%CALLNAME:WAITRESS%）
+					PRINTFORMW 中に出した自分の精液を口で掃除させられながら、%CALLNAME:WAITRESS%は今度は自分のモノを掃除させてやるとリベンジに燃えています…
+				ELSE
+					PRINTFORMW に口での奉仕を命じ、\@ COND("身嗜み：ノーパン") == 0 ? 目の前でパンツを下ろして # \@椅子に腰掛けて股を広げました
+					PRINTFORMW そして、勝負の掟に従う%CALLNAME:WAITRESS%の念入りな奉仕に身を委ねながら、爛れたひと時を楽しむのでした…
+					LOCAL:1 = 1 + RAND:(ABL:Ｃ感覚 + ABL:WAITRESS:技巧 + 1)/2
+					IF PENIS(TARGET)
+						EXP:射精経験 += LOCAL:1/2 + 1
+						PRINTFORML 射精経験＋{LOCAL:1/2 + 1}
+						EXP:WAITRESS:フェラ経験 += LOCAL:1
+						PRINTFORML フェラ経験＋{LOCAL:1}（%CALLNAME:WAITRESS%）
+						CALL SETFLAG, "精飲経験", LOCAL:1/2 + 1, WAITRESS, -4
+						PRINTFORML 精飲経験＋{LOCAL:1/2 + 1}（%CALLNAME:WAITRESS%）
+						EXP:WAITRESS:精液経験 += LOCAL:1 + 2
+						PRINTFORMW 精液経験＋{LOCAL:1 + 2}（%CALLNAME:WAITRESS%）
+					ELSE
+						EXP:絶頂経験 += LOCAL:1/2 + 1
+						PRINTFORML 絶頂経験＋{LOCAL:1/2 + 1}
+						IF TALENT:おもらし癖 && LOCAL:1 >= 4
+							EXP:お漏らし経験 += 1
+							PRINTFORML お漏らし経験＋1
+						ENDIF
+						EXP:WAITRESS:クンニ経験 += LOCAL:1
+						PRINTFORMW クンニ経験＋{LOCAL:1}（%CALLNAME:WAITRESS%）
+					ENDIF
+				ENDIF
+			ELSEIF RAND:2 && TALENT:好色 + TALENT:意地悪 + TALENT:小悪魔 && TALENT:WAITRESS:好色 + TALENT:WAITRESS:意地悪 + TALENT:WAITRESS:小悪魔 + TALENT:WAITRESS:高慢
+				IF RAND:3 == 0 && COND("制服：スカート")
+					PRINTFORMW の大人しめなパンツを没収し、スカートのポケットから取り出したかなりＨなデザインのパンツを穿いてのバイトを命じました
+					PRINTFORMW %CALLNAME:WAITRESS%はノーパンよりはマシと割り切ったのか素直に従いましたが、今度は%CALLNAME:TARGET%を負かしてやるとリベンジに燃えているようです…
+				ELSE
+					IF COND("制服：バニー")
+						PRINTFORMW のパンツを没収し、バニースーツの下はアンダーをつけずにバイトするようにと命じました
+					ELSE
+						PRINTFORMW のパンツを没収し、ノーパンでのバイトを命じました
+					ENDIF
+					PRINTFORMW %CALLNAME:WAITRESS%はぐぬぬ…と悔しそうにうめきつつも素直に従い、今度は%CALLNAME:TARGET%にノーパンでバイトさせてやるとリベンジを誓っているようです…
+				ENDIF
+			ELSE
+				PRINTFORM にお茶の用意をさせると、負け惜しみを聞き流しながら
+				IF RAND:5 == 0
+					PRINTFORM チョコレートたっぷりの
+				ELSEIF RAND:4 == 0
+					PRINTFORM 季節の果物でいっぱいの
+				ELSEIF RAND:3 == 0
+					PRINTFORM 生クリームたっぷりの
+				ELSEIF RAND:2
+					PRINTFORM 新作の美味しそうな
+				ELSE
+					PRINTFORM デコレーションに凝った
+				ENDIF
+				PRINTFORMW ケーキを口に運んで楽しいひと時を過ごしました…
+			ENDIF
+		ELSE
+			PRINTFORM …が、賭けトランプであえなく大敗を喫した%CALLNAME:TARGET%は%CALLNAME:WAITRESS%に
+			IF RAND:2 && TALENT:WAITRESS:好色 + TALENT:WAITRESS:意地悪 + TALENT:WAITRESS:小悪魔 && COND("身嗜み：ノーパン") == 0
+				PRINTFORM 一日の給料はおろかパンツまで没収されることとなり、
+				IF COND("制服：スカート")
+					PRINTFORMW その後の仕事をスカートめくりや悪戯に警戒しながらこなす羽目になってしまいました…
+				ELSE
+					PRINTFORMW その後の仕事をエッチな悪戯に警戒しながらこなす羽目になってしまいました…
+				ENDIF
+			ELSE
+				PRINTFORMW ケーキセットを奢る羽目になり、どんよりと机に突っ伏して勝者の優雅なティータイムを眺めています…
+			ENDIF
+		ENDIF
+	ENDIF
+
+CASE "休憩"
+	PRINTFORMW ――時刻は丁度お昼時。
+	PRINTFORMW 夢魔たちは店内に溢れるお客を捌きながら、交代で休憩を取っています
+
+	IF COND("喫茶店：フェラ") && RAND:4 == 0
+		PRINTFORMW %CALLNAME:TARGET%は自分の番が来ると、お客の一人に声をかけ、言葉巧みに休憩室に連れ込みました！
+		PRINTFORMW ……少しして出てきた%CALLNAME:TARGET%の顔は、やけにツヤツヤしていました
+
+		CALL SETFLAG, "一般人相手の性行為初期設定"
+
+		CALL SIMULATE_TRAIN_COM, 91, RAND:(ABL:欲望 + ABL:奉仕精神 + 1)/3 + 1
+		;文章に齟齬が出ないように調整
+		EXP:精液経験 += 1
+		CALL SETFLAG, "精飲経験", 1, TARGET, -4
+
+		CALL SETFLAG, "一般人相手の性行為終了"
+		;つまみ食い人数+1
+		CFLAG:36 += 1
+	ELSEIF RAND:3 == 0
+		WAITRESS = FIND_COND("出演可能な店員")
+		SETBIT CFLAG:WAITRESS:95, 1
+		PRINTFORMW 順番が来た%CALLNAME:TARGET%と%CALLNAME:WAITRESS%は、一緒に休憩室に向かいました
+		PRINTFORMW ……休憩室の扉が閉まると、中からは二人の小さくも甘い声が聞こえ始めます！
+		PRINTFORMW …
+		PRINTFORMW …
+		PRINTFORMW しばらくして部屋から出てきた二人は、とても満足した表情をしていました……
+	ELSEIF RAND:2
+		WAITRESS = FIND_COND("出演可能な店員")
+		SETBIT CFLAG:WAITRESS:95, 1
+		PRINTFORMW 順番が来た%CALLNAME:TARGET%と%CALLNAME:WAITRESS%は、賄いのパンと少しのお菓子を手に休憩室に引っ込みました
+		PRINTFORMW 二人は昼食を摂りながら、%TEXTR("ガールズトーク", "さっきのイヤな客の事", "新メニューの評判")%で盛り上がりました……
+	ELSE
+		PRINTFORMW %CALLNAME:TARGET%は自分の番が来ると、賄いのサンドイッチを手に休憩室に引っ込みました
+		PRINTFORMW 忙しい店内をよそに、%CALLNAME:TARGET%はしばし羽を休めてリフレッシュしました……
+	ENDIF
+
+CASE "査察"
+	PRINTFORMW 夢魔たちが問題なく働いているか気になった%CALLNAME:MASTER%は、変装して査察してみることにしました
+	PRINTFORMW ……………
+	PRINTFORMW ………
+	PRINTFORMW …
+	IF ABL:MASTER:技巧 - ABL:技巧/2 - RAND:10 >= 0
+		PRINTFORMW 見事な変装で%CALLNAME:MASTER%は入店し、誰にもバレずにこっそりと店内の様子を伺いました
+		IF RAND:2 && (FIND_COND("出演可能な店員", "強気") || TALENT:相思相愛)
+			PRINTFORMW すると、%CALLNAME:TARGET%が迷惑な客につきまとわれ、セクハラまがいの行為を受けています！
+			IF FIND_COND("出演可能な店員", "強気") && RANDIF(1, TALENT:相思相愛)
+				WAITRESS = FIND_COND("出演可能な店員", "強気")
+				SETBIT CFLAG:WAITRESS:95, 1
+				PRINTFORMW これは助けた方がいいか……？と思った矢先、%CALLNAME:WAITRESS%が客の前に立って%TEXTR("一睨み", "微笑み一つ", "実力行使")%で追い返しました！
+				PRINTFORMW 彼女がいれば店の中でトラブルを起こそうという客は居なくなりそうだ…
+			ELSE
+				PRINTFORMW 見かねた%CALLNAME:MASTER%がさりげなく助け舟を出すと、惚れ直した%CALLNAME:TARGET%がどさくさ紛れに抱きついてきました…
+			ENDIF
+		ELSE
+			PRINTFORMW 店内は見事に繁盛しており、夢魔たちの働きぶりにも問題はなさそうです
+			PRINTFORMW ……会計を済ませて静かに店を出ようとしたとき、%CALLNAME:TARGET%だけがこっそりとウインクをしてきました
+		ENDIF
+	ELSEIF CFLAG:30 >= 50 && RAND:2
+		PRINTFORMW 夢魔たちは変装を一目で見破ると、何かと理由をつけて%CALLNAME:MASTER%のテーブルに近づこうとしてきます
+		PRINTFORMW しかし%CALLNAME:TARGET%の一声によって、皆どうにか各々の仕事に戻っていきました
+		PRINTFORMW %CALLNAME:TARGET%にはなかなかの発言力が備わっているようです……
+	ELSE
+		PRINTFORMW 変装した%CALLNAME:MASTER%は、こっそりと店内を観察していましたが……
+		PRINTFORMW 近寄ってきた%CALLNAME:TARGET%が不意に%CALLNAME:MASTER%の股間に触れてきました！
+		WAITRESS = FIND_COND("出演可能な店員")
+		SETBIT CFLAG:WAITRESS:95, 1
+		PRINTFORMW %CALLNAME:TARGET%がくすりと笑って離れていくと……今度は%CALLNAME:WAITRESS%が同じように近付いてきます
+		PRINTFORMW ……%CALLNAME:MASTER%のことはバレバレだったらしく、夢魔たちに代わる代わるイタズラされてしまいました
+		PRINTFORMW あまりに堂々と店員たちがベタベタしていたので、店内の客からの\@ TALENT:MASTER:オトコ ? 嫉妬 # 好奇 \@の目に晒されました……
+	ENDIF
+
+;以下は素質が必要なイベント群
+CASE "目立ちたがり"
+	SELECTCASE RAND:100
+	CASE IS > 75
+		PRINTFORMW %CALLNAME:TARGET%はあまりの忙しさに大変そうです。
+		PRINTFORMW それでも要所要所でポージングをキメて注目を浴びています。
+		IF RAND:2 == 0
+			WAITRESS = FIND_COND("出演可能な店員")
+			SETBIT CFLAG:WAITRESS:95, 1
+			PRINTFORMW 一緒に働いていた%CALLNAME:WAITRESS%が苦笑いを浮かべていたのは気のせいでしょう。
+		ELSE
+			PRINTFORMW 調子に乗り過ぎたらしく、%CALLNAME:TARGET%はスッ転びました。
+			IF COND("制服：バニー")
+				PRINTFORMW お客さんが注目していたので、ある意味大成功です。
+			ELSE
+				PRINTFORMW スカートの中をお客さんが注目していたので、ある意味大成功です。
+			ENDIF
+		ENDIF
+	 CASE 20 TO 75
+		PRINTFORMW %CALLNAME:TARGET%は、歌いながら接客をしています。
+		PRINTFORMW その歌声に、店内の雰囲気が良くなりました。
+		IF RAND:2 == 0
+			PRINTFORMW 注目を浴びて、%CALLNAME:TARGET%もご機嫌なようです。
+		ELSE
+			PRINTFORML お客さんはくつろいだ様子でしたが、演出だと思われたらしく
+			PRINTFORMW 普通に聞かれているだけなので少し残念そうな顔をしていました。
+		ENDIF
+	CASEELSE
+		PRINTFORMW 店内が結構空いているせいか、特にミスも少なく順調です。
+		PRINTFORMW 注目してくれるお客さんも少ないので、%CALLNAME:TARGET%は不満そうでした。
+		PRINTFORMW 同僚が尋ねると、%CALLNAME:TARGET%は苦笑を返しました。
+	ENDSELECT
+CASE "レズっ気"
+	SELECTCASE RAND:100
+	CASE IS > 75
+		PRINTFORMW %CALLNAME:TARGET%は美人のお客さんが気になったようです
+		PRINTFORMW ですが忙しさのせいで、なかなか声をかけられません。
+		IF RAND:5 < ABL:レズっ気
+			PRINTFORMW %CALLNAME:TARGET%は、そのお客さんに声をかけられました。
+			PRINTFORMW 嬉しそうにその場に向かっていきます。
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%は、隙を見つけては声をかけようとしています。
+			PRINTFORMW しかし上手くいかなかったみたいでした。
+		ENDIF
+	 CASE 20 TO 75
+		IF RAND:5 < ABL:レズっ気
+			PRINTFORMW %CALLNAME:TARGET%は、美人のお客を眺めたりしながら仕事をがんばっているようです
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%は、美人のお客さんに積極的にちょっかいを出しています
+			PRINTFORMW どうも、相手も%CALLNAME:TARGET%を気に入ったようでした
+		ENDIF
+	CASEELSE
+		IF RAND:5 < ABL:レズっ気
+			PRINTFORMW %CALLNAME:TARGET%は、美人のお客さんに声をかけようか迷っているようです。
+			PRINTFORMW 待ち合わせだったらしく、彼氏が来てがっかりしたようです。
+		ELSE
+			PRINTFORMW 暇なので%CALLNAME:TARGET%は、美人のお客さんを口説いています…
+		ENDIF
+	ENDSELECT
+CASE "不遜な接客"
+	PRINTFORM %CALLNAME:TARGET%は客に対して
+	IF TALENT:高慢 || RAND:2
+		PRINTFORM 高慢
+	ELSE
+		PRINTFORM 生意気
+	ENDIF
+	PRINTFORMW な態度をとってしまいました。
+	IF RAND:(1 + TALENT:魅惑 + TALENT:謎の魅力 + TALENT:魅力 + TALENT:人気)
+		PRINTFORMW …が、逆にお客に気に入られたようです。
+		PRINTFORMW それに気を良くしたのか、%CALLNAME:TARGET%は終始良い結果を出しました。
+	ELSE
+		WAITRESS = FIND_COND("出演可能な店員")
+		SETBIT CFLAG:WAITRESS:95, 1
+		PRINTFORMW その場は駆けつけた%CALLNAME:WAITRESS%にフォローして貰えましたが、その後は身が入らなかったようです…
+	ENDIF
+CASE "母乳"
+	PRINTFORMW %CALLNAME:TARGET%が働き出してからというもの、カフェオレやミルクティが今までの倍以上売れるようになりました。
+	IF TALENT:恥じらい && RAND:2 == 0
+		PRINTFORMW 決して作っているところを見せてくれませんが、キッチンから出てくる%CALLNAME:TARGET%は、決まって頬を上気させ満足げな表情をしています…
+	ELSE
+		PRINTFORMW お客さんの間では『普通の牛乳では味わえないコク』と評判になっていますが、おそらく……
+	ENDIF
+CASE "子供"
+	IF RAND:2 == 0
+		PRINTFORMW %CALLNAME:TARGET%は両手でトレイを頭上に捧げ持ち、トテトテとお客さんのテーブルに向かい、舌足らずな口調で注文を復唱しています。
+		PRINTFORMW お客さんは、孫を見るような顔で微笑んでいます…
+	ELSE
+		PRINTFORM %CALLNAME:TARGET%は元気いっぱいにオーダーを取ったところまでは良かったのですが、
+		IF RAND:3 == 0
+			PRINTFORM チュロス
+		ELSEIF RAND:2
+			PRINTFORM ハニービスケット
+		ELSE
+			PRINTFORM ベイクドアップル
+		ENDIF
+		PRINTFORM を頼んだお客さんのテーブルには、
+		IF RAND:3 == 0
+			PRINTFORM 木の実のサラダ
+		ELSEIF RAND:2
+			PRINTFORM スモークサーモン
+		ELSE
+			PRINTFORM シプリサンド
+		ENDIF
+		PRINTFORMW が配膳されていました。
+		PRINTFORMW どうやったら、ここまで見事に間違えることができるのだろうか…？
+	ENDIF
+CASE "爆乳"
+	PRINTFORMW 客に呼ばれてオーダーを取っている%CALLNAME:TARGET%は、どこか居心地悪そうにしています。
+	PRINTFORM それでも気を取り直して客に笑顔を向けた瞬間、ぱんっ！という音を立てて、
+	IF COND("制服：バニー")
+		PRINTFORM 胸元の留め具
+	ELSEIF COND("制服：ウェイトレス")
+		PRINTFORM ブラウスの胸元のボタン
+	ELSEIF COND("制服：メイド服")
+		PRINTFORM メイド服の胸元のボタン
+	ELSEIF COND("制服：巫女風")
+		PRINTFORM 巫女風の制服の胸元の留め具
+	ENDIF
+	PRINTFORMW が吹き飛びました。
+	PRINTFORMW どうやら、制服の胸元がきつかったようです…。
+	IF TALENT:恥じらい
+		PRINTFORMW %CALLNAME:TARGET%は一瞬の間を置いたあと、羞恥の叫び声をあげながら剥き出しの\@ COND("制服：バニー") ? 胸 # ブラジャー \@を両手で隠し、店の奥へと走って行きました…
+	ELSEIF TALENT:恥薄い
+		PRINTFORMW %CALLNAME:TARGET%は、店中の視線が自分の胸元に集中しているのを気にした様子もなく、客に代わりの店員を寄越す旨を伝えると、男性客の視線を集めながら店の奥へ引っ込んで行きました。
+	ELSE
+		PRINTFORMW %CALLNAME:TARGET%は、照れた様子で場をごまかしつつ、早足で店の奥へと引っ込みました…
+	ENDIF
+;食器の落ちた音に反応すると、そこには…！
+CASE "パンツ見せつけ"
+	IF RAND:10
+		LOCALS = 少年
+	ELSE
+		LOCALS = 青年
+	ENDIF
+	PRINTFORMW 落とした食器の束を拾おうと屈んだ%CALLNAME:TARGET%は、一人の%LOCALS%が音に反応して視線を自分へ向けている事に気づいたようです…
+	IF COND("制服：バニー") || COND("身嗜み：ノーパン")
+		LOCALS:1 = 股間
+	ELSE
+		LOCALS:1 = パンツ
+	ENDIF
+	IF RAND:2
+		PRINTFORM ピンときた%CALLNAME:TARGET%は、
+		IF RAND:2
+			PRINTFORMW わざわざ片膝を立てて%LOCALS%に%LOCALS:1%が見えやすい体勢で片づけを再開しました。
+		ELSE
+			PRINTFORMW わざと脚を大きく開いて%LOCALS%に%LOCALS:1%を見せながら片づけを再開しました。
+		ENDIF
+	ELSE
+		PRINTFORM %CALLNAME:TARGET%は
+		IF TALENT:強気 && RAND:3
+			PRINTFORM ニヤリとすると、
+		ELSE
+			PRINTFORM 妖艶に微笑むと、
+		ENDIF
+		PRINTFORMW ゆっくりと股を開いて、%LOCALS%に%LOCALS:1%を見せつけながら片づけを再開しました。
+	ENDIF
+	IF ABL:露出癖 >= 5
+		IF TALENT:濡れやすい && RAND:2
+			PRINTFORM 見られることに興奮しているのか、
+			IF RAND:2 || COND("制服：バニー") || COND("身嗜み：ノーパン")
+				PRINTFORMW 内股部分はわずかに紅潮して、\@ COND("身嗜み：ノーパン") ? 剥き出しの割れ目も # \@心なしかしっとりとしています…
+			ELSE
+				PRINTFORMW 大事なところに触れている部分には時間と共にうっすらと染みが浮かんできています…
+			ENDIF
+		ELSEIF COND("制服：スカート")
+			PRINTFORM 
+			IF COND("身嗜み：ノーパン")
+				PRINTFORM %CALLNAME:TARGET%は%CALLNAME:MASTER%の言いつけでパンツを穿いていないため、\@ TALENT:クリピアス + TALENT:ラビアピアス ? ピアスで装飾された # \@アソコが丸見えとなっています…
+			ELSE
+				PRINTFORM すっかり露出の楽しさに目覚めてしまった%CALLNAME:TARGET%のパンツは
+				IF RAND:3 == 0
+					PRINTFORM 非常に小さく、
+					SELECTCASE CONDS("陰毛")
+					CASE "ナチュラル", "生え放題"
+						PRINTFORMW 柔らかそうな陰毛がばっちり食み出て見えてしまっています…
+					CASE "お手入れ済"
+						PRINTFORMW 剃り整えられた陰毛が上から顔を出してしまっています…
+					CASEELSE
+						SELECTCASE CONDS("陰毛")
+						CASE "剃り跡"
+							PRINTFORM ジョリジョリの剃り跡
+						CASE "生えかけ"
+							PRINTFORM 淡い茂み
+						CASE "ツルツル"
+							PRINTFORM 剃毛済みの恥丘
+						CASEELSE
+							PRINTFORM ツルツルの恥丘
+						ENDSELECT
+						PRINTFORMW は勿論、\@ TALENT:クリピアス && RAND:2 ? 敏感な場所に付けられたピアス # 興奮で大きくなったクリトリス \@まで見えてしまいそうです…
+					ENDSELECT
+				ELSEIF RAND:2
+					PRINTFORMW 殆ど紐と言って良いような過激なデザインで、恥ずかしい所が隠し切れずに見えてしまっています…
+				ELSE
+					PRINTFORMW クロッチ部分だけがスケスケという大胆なもので、\@ TALENT:クリピアス + TALENT:ラビアピアス ? ピアスで装飾された # \@アソコがうっすらと見えてしまっています…
+				ENDIF
+			ENDIF
+		ENDIF
+	ENDIF
+	IF RAND:2
+		PRINTFORMW \@ COND("制服：スカート") ? ミニスカから覗く # 目の前の \@光景に夢中の%LOCALS%を横目で見ながら、%CALLNAME:TARGET%は楽しそうに作業を終えました…
+	ELSE
+		PRINTFORMW ………
+		PRINTFORMW ……
+
+		CALL SELF_KOJO_L, EVENT_NAMES
+
+		PRINTFORM …作業を終えた%CALLNAME:TARGET%が%LOCALS%に向けて
+		;小悪魔
+		IF TALENT:小悪魔 && RANDIF(1, TALENT:意地悪)
+			IF ABL:露出癖 >= 3 && TALENT:オンナ && COND("制服：スカート") && RAND:2
+				PRINTFORM 悪戯っぽい笑みを送りながら
+				IF COND("身嗜み：ノーパン")
+					PRINTFORM アソコを押し広げてあげる
+				ELSE
+					PRINTFORM パンツをずらしてアソコをチラ見させてあげる
+				ENDIF
+			ELSE
+				PRINTFORM 悪戯っぽい笑みを送る
+			ENDIF
+		ELSEIF TALENT:意地悪
+			PRINTFORM 意地悪く微笑む
+		ELSEIF TALENT:恥じらい && RAND:2
+			PRINTFORM 恥ずかしそうに微笑む
+		ELSE
+			PRINTFORM ニコリと微笑む
+		ENDIF
+		PRINTFORMW と、%LOCALS%は火がついたように真っ赤になりました。
+		PRINTFORMW もう、この%LOCALS%は%CALLNAME:TARGET%の虜でしょう…
+	ENDIF
+;内気（おどおどウェイトレスは萌える）
+CASE "内気"
+	SELECTCASE RAND:100
+	CASE IS > 60
+		PRINTFORMW %CALLNAME:TARGET%は人が多いせいで困惑しています…
+		PRINTFORMW 戸惑っている内に%CALLNAME:TARGET%はお客さんに呼ばれました。
+		IF RAND:2 == 0
+			PRINTFORMW %CALLNAME:TARGET%は緊張で涙目です…
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%は自分に強気だと言い聞かせてから行きました…
+		ENDIF
+	CASE 20 TO 60
+		PRINTFORMW %CALLNAME:TARGET%は涙目になりながらも頑張って働いています…
+		PRINTFORMW ただ生来の性格のせいか、未だ接客は慣れないようです。
+		IF RAND:2 == 0
+			WAITRESS = FIND_COND("出演可能な店員")
+			SETBIT CFLAG:WAITRESS:95, 1
+			PRINTFORMW その様子を見かねた%CALLNAME:WAITRESS%は%CALLNAME:TARGET%を励ましました…
+		ELSE
+			PRINTFORMW どうにか厨房の担当になれないかと悩んでいます…
+		ENDIF
+	CASEELSE
+		PRINTFORMW 今日はお客さんが少ないようです。
+		PRINTFORMW %CALLNAME:TARGET%は心なしか嬉しそうにしています…
+	ENDSELECT
+;陽気、愚か（おバカ）
+CASE "陽気"
+	SELECTCASE RAND:100
+	CASE IS > 70
+		PRINTFORMW  %CALLNAME:TARGET%は注文を間違えてしまったようです。
+		IF RAND:2 == 0
+			PRINTFORMW 「忙しいので仕方ない」とお客さんは笑って許してくれました…
+		ELSE
+			PRINTFORMW ……間違った注文は%CALLNAME:TARGET%が美味しく頂きました…
+		ENDIF
+	CASE 30 TO 70
+		PRINTFORMW 暇なので %CALLNAME:TARGET%は一発芸の練習をしています。
+		PRINTFORMW それを見ていたお客さんには大受けでした…
+	CASEELSE
+		PRINTFORMW いつもはミスの目立つ%CALLNAME:TARGET%も、忙しくないおかげでミスが少ないようです。
+		PRINTFORMW むしろ、ちょっとおバカな振る舞いが良い雰囲気を作っている気さえするから不思議です…
+	ENDSELECT
+;陰気(店内が妙に暗くなる感じで)
+CASE "陰気"
+	SELECTCASE RAND:100
+	CASE IS > 70
+		PRINTFORMW 今日は大分混雑しているようですが、%CALLNAME:TARGET%の周囲だけお客さんが居ません。
+		IF RAND:2 == 0 && COND("制服：スカート") && COND("身嗜み：ノーパン") == 0
+			PRINTFORMW …%CALLNAME:TARGET%はパンチラをしてみました
+			PRINTFORMW 誰も食いついてきませんでした…
+		ELSE
+			PRINTFORMW お客さんが店員を呼びましたが、他の店員が向かいました。
+			PRINTFORMW 暗さが濃くなったような気がします…
+		ENDIF
+	CASE 20 TO 70
+		PRINTFORMW %CALLNAME:TARGET%の持ってくるコーヒーにはコアな需要があるようです。
+		PRINTFORMW %CALLNAME:TARGET%は何だか複雑そうな顔をしていました…
+	CASEELSE
+		PRINTFORMW 今日はお客さんもあまり入ってきません。
+		PRINTFORMW お店の中が全体的にお通夜ムードです…
+	ENDSELECT
+;クール系（と見られてしまうイベント、ルリコンホイホイ）
+CASE "クール"
+	PRINTFORMW %CALLNAME:TARGET%は抑揚のない声でメニューを読み上げています。
+	IF RAND:(1 + TALENT:魅惑 + TALENT:謎の魅力 + TALENT:魅力 + TALENT:人気) >= 2
+		PRINTFORMW %CALLNAME:TARGET%の固定客だったらしく、うっとりとした表情を見せています…
+	ELSEIF RAND:(1 + TALENT:魅惑 + TALENT:謎の魅力 + TALENT:魅力 + TALENT:人気)
+		PRINTFORMW …そのお客さんには堪らなかったようです…
+	ELSE
+		PRINTFORMW %CALLNAME:TARGET%は愛想が無いと文句を言われました…
+	ENDIF
+;妖精さん
+CASE "妖精"
+	PRINTFORM %CALLNAME:TARGET%はケーキの皿を持って、
+	IF RAND:100 >= 70
+		PRINTFORM 大混雑の
+	ELSE
+		PRINTFORM 混みはじめた
+	ENDIF
+	PRINTFORMW 店内の天井付近をスイスイと鼻歌交じりに飛んでいます。
+	WAITRESS = FIND_COND("出演可能な店員")
+	SETBIT CFLAG:WAITRESS:95, 1
+	PRINTFORM 慌しく店内を動き回る%CALLNAME:WAITRESS%たちを尻目に%CALLNAME:TARGET%はお客の
+	IF RAND:2
+		PRINTFORM 前
+	ELSE
+		PRINTFORM 肩
+	ENDIF
+	PRINTFORM に優雅に降り立ち、ケーキを置いて
+	IF RAND:2
+		PRINTFORMW お辞儀しました。
+	ELSE
+		PRINTFORMW 微笑みました。
+	ENDIF
+	PRINTFORM お客が
+	IF RAND:2
+		PRINTFORM お礼を言って
+	ELSE
+		PRINTFORM 微笑み返して
+	ENDIF
+	PRINTFORM ケーキを食べようとすると、%CALLNAME:TARGET%が
+	IF RAND:3 == 0
+		PRINTFORM 指をくわえて
+	ELSEIF RAND:2
+		PRINTFORM 羨ましそうに
+	ELSE
+		PRINTFORM 瞳を潤ませて
+	ENDIF
+	IF RAND:2
+		PRINTFORMW お客の顔を見つめています…
+	ELSE
+		PRINTFORMW 口へ運ばれつつあるケーキに熱い視線を送っています…
+	ENDIF
+	PRINTFORMW お客は頬を綻ばせて、フォークに刺したケーキを%CALLNAME:TARGET%の目の前に差し出しました。
+	IF RAND:2
+		PRINTFORM %CALLNAME:TARGET%は
+		IF RAND:2
+			PRINTFORM 目を輝かせて
+		ELSE
+			PRINTFORM ケーキとお客の顔を交互に見て
+		ENDIF
+		PRINTFORMW 、ケーキにかぶりつきました。幸せそのものの笑顔に、お客の顔もつい綻んでいます…
+	ELSE
+		WAITRESS = FIND_COND("出演可能な店員")
+		SETBIT CFLAG:WAITRESS:95, 1
+		PRINTFORMW …が、嬉々として飛びつこうとした%CALLNAME:TARGET%の首根っこを、%CALLNAME:WAITRESS%が掴みました。
+		PRINTFORM %CALLNAME:WAITRESS%は苦笑いしているお客に頭を下げると、
+		IF RAND:2
+			PRINTFORM 泣きながら喰い下がる
+		ELSE
+			PRINTFORM じたばた暴れている
+		ENDIF
+		PRINTFORMW %CALLNAME:TARGET%を引っ張って店の奥に引っ込んでいきました…
+	ENDIF
+;ラミアさん
+CASE "ラミア"
+	IF RAND:2
+		PRINTFORM オーダーを取る
+	ELSE
+		PRINTFORM 食器を片付ける
+	ENDIF
+	IF RAND:2
+		PRINTFORMW %CALLNAME:TARGET%の蛇の身体が珍しいのか、お客の視線はついそちらを見てしまいます。
+		IF RAND:3 == 0
+			PRINTFORMW %CALLNAME:TARGET%が下半身を器用に動かして移動する光景は、なかなか迫力があります…
+		ELSEIF RAND:2
+			PRINTFORMW %CALLNAME:TARGET%はそれを気にした様子もなく、むしろ楽しんでいるように見えます…
+			;「ふふ♪蛇の身体が珍しいかしら」
+			;「じろじろ見ちゃって…。触ってみたい？」
+		ELSE
+			IF RAND:2
+				PRINTFORM 今日は機嫌が良いのか
+			ELSE
+				PRINTFORM 何か良いことがあったのか
+			ENDIF
+			PRINTFORMW 、尻尾の先がふりふりと振られています…
+		ENDIF
+	ELSE
+		PRINTFORMW %CALLNAME:TARGET%の大きな尻尾を、子供がぺたぺたと触っています。
+		IF (TALENT:妊娠 + TALENT:出産経験 || ABL:奉仕精神 >= 5) && RAND:2
+			PRINTFORMW キャッキャと喜ぶ子供を、%CALLNAME:TARGET%は慈愛に満ちた表情で撫でています…
+		ELSE
+			PRINTFORMW 慌ててやめさせようとした親を止めると、%CALLNAME:TARGET%は微笑み、尻尾の先を握らせてあげました…
+		ENDIF
+	ENDIF
+;マーメイドさん
+CASE "マーメイド"
+	PRINTFORM 制服のスカートの裾から人の足でなく瑞々しい魚の肌を覗かせている%CALLNAME:TARGET%が、
+	;今にも寝入りそうな(ペンとメモを握ったまま目を閉じてる)
+	IF RAND:2
+		PRINTFORM どこかぼんやりした様子で
+	ELSE
+		PRINTFORM 少し眠そうな表情で
+	ENDIF
+	PRINTFORMW キコキコ…と車椅子で店内を移動しています。
+	PRINTFORM お客がオーダーのために声をかけると、
+	IF RAND:2
+		PRINTFORMW ハッと目を開けた%CALLNAME:TARGET%はおもむろに懐から水筒を取り出し、キャップに注いだ水をコクコクと飲み始めました。
+		PRINTFORM おいしそうに水を飲み干した%CALLNAME:TARGET%は、
+		IF RAND:2
+			PRINTFORM 一転して溌剌とした様子で
+		ELSE
+			PRINTFORM 先ほどより二周りは潤った顔で
+		ENDIF
+		PRINTFORMW 元気にオーダーを取り、キュルキュルと先ほどより素早く車椅子を走らせ、キッチンに戻っていきました…
+	ELSE
+		PRINTFORM カッと目を見開いた%CALLNAME:TARGET%は、急に陸に打ち上げられた魚のように口をぱくぱくさせ始め、
+		PRINTFORMW お客の手元にあるお冷を引っ掴むと、グビグビと咽喉を鳴らして一気に飲み干しました。
+		PRINTFORM 一息ついた%CALLNAME:TARGET%は、
+		IF RAND:2
+			PRINTFORM 笑顔でのお礼のあと
+		ELSE
+			PRINTFORM 満面の笑みで
+		ENDIF
+		PRINTFORMW 、オーダーを取り始めました。
+		IF RAND:3 == 0
+			PRINTFORMW お客は、突然の展開にぽかんとしています…
+		ELSEIF RAND:2
+			PRINTFORMW お客は口をあんぐり開けています…
+		ELSE
+			PRINTFORMW お客は、あまりのことに呆然としています…
+		ENDIF
+	ENDIF
+;カオス料理
+CASE "カオス料理"
+	;一部の組み合わせ…「何かのようなもの」、「七色の悪魔風」などは料理の形をなしていないので、どっちかを選択肢から除外したりして、
+	;不自然な組み合わせが作られるのは避けた方がいいかもしれません。
+	;もっと食材などを足せばマトモな料理も増えるかもしれません。ガンガン足して下さい。
+
+	PRINTFORMW %CALLNAME:TARGET%が顔なじみのお客に自分の料理を試食してほしいと頼んでいる。
+	PRINTFORMW どうやらかなりの自信作のようだ。
+	VARSET LOCALS
+	SPLIT "リゾット、ショートケーキ、珈琲豆、紅茶葉、スモークサーモン、マトンジャーキー、夢魔の触手、虹色で光沢で七色ではらわたで流動体知られざるそーれーはーとーてーもエピキュリアン的なカブト虫、チュロス、ハニービスケット、ベイクドアップル、煎餅、ナタデココ、ゼリー、フリッター、おにぎり、ハンバーグ、あんかけ焼きそば、きのこ、カルボナーラ、マウンテンステーキ、シダーウッド、ペパーミント、ローズマリー、シプリサンド、ルイスブレッド、バナナ、チャーミングブーケ、ムーンドロップス、オムライス、黒こしょう、スイカ、アロエ、イモリ、漢方薬、冬虫夏草、七色、極彩色、何か", "、", LOCALS
+	LOCAL = RAND:39
+	PRINTFORM 快く了承したお客の前に出されたのは…%LOCALS:LOCAL%の
+	VARSET LOCALS
+	SPLIT "煮っ転がし、アイス、シャーベット、串焼き、ジュース、蜂蜜漬け、から揚げ、カルパッチョ、マリネ、天ぷら、フライ、チョコレート掛け、味噌煮、煮つけ、シロップ漬け、浅漬け、バター炒め、ジャム、ソテー、シチュー、カレー、スープ、悪魔風、キアズマ風、おでん、黒焼き、ようなもの", "、", LOCALS
+	LOCAL = RAND:27
+	PRINTFORMW %LOCALS:LOCAL%だ。
+
+	;反応
+	IF RAND:9 == 0
+		PRINTFORMW お客が本当に食べて大丈夫か悩んでいると、%CALLNAME:TARGET%は「味付けを忘れていた」と言ってたっぷりタバスコをかけた！
+		PRINTFORMW お客の動きは完全に止まっている……
+	ELSEIF RAND:8 == 0
+		PRINTFORMW 見た目こそ名前以上にまっとうなのだが、どういう訳か料理からは刺激臭が漂っている。
+		PRINTFORMW お客は立ち上る刺激にどうにか耐えつつ、涙を流しながら料理を食べきった！
+		PRINTFORMW だが%CALLNAME:TARGET%は無慈悲にもおかわりを持ってきた……
+	ELSEIF RAND:7 == 0
+		PRINTFORMW お客はソレを口に入れた瞬間、ピタリと動きを止めて固まってしまった。どうやら口に含んだソレを飲み込めないようだ。
+		PRINTFORMW だがそんな事などお構いなしに、%CALLNAME:TARGET%は二口目を勧めている………
+	ELSEIF RAND:6 == 0
+		PRINTFORMW お客は一口食べた途端みるみる顔色を変え、トイレに向かって走り出した。
+		PRINTFORMW %CALLNAME:TARGET%はしばらくの間、何がいけなかったのか悩み続けた。
+	ELSEIF RAND:5 == 0
+		PRINTFORMW お客は料理の半分ほどを口にした辺りで、突如気を失い倒れてしまった。
+		PRINTFORMW %CALLNAME:TARGET%はお客が目を覚ますまで、しばらくの間介抱しなければならなかった………
+	ELSEIF RAND:4
+		PRINTFORM 料理を口にした
+		IF RAND:2
+			PRINTFORMW 男性客は体を少しテーブルの側に…正確には下半身をテーブルの下へと潜り込ませた。
+			PRINTFORMW %CALLNAME:TARGET%が味の感想を求めようと近づくと、男性客は更にテーブルの方へと体を寄せる。
+		ELSE
+			PRINTFORMW 女性客はいきなり顔を赤く染め、もじもじと両足を動かし始めた。
+			PRINTFORMW %CALLNAME:TARGET%に料理の感想を伝えている間も、女性客は動きを止めようとしない。
+		ENDIF
+		PRINTFORMW お客の様子が変なことに気付いた%CALLNAME:TARGET%は「医務室に行こう」とお客の手を引っ張ったが、お客はブンブン首を振り『我慢が出来なくなる！』と言って必死に断った。
+	ELSEIF RAND:3
+		PRINTFORMW ゆっくりとソレを口に運んだお客は………突如背筋をピンと伸ばし、通路の床に倒れ込んだ！
+		PRINTFORMW ―が、その表情は恍惚に彩られており、何だか気持ち良さそうに身悶えている。
+		PRINTFORMW %CALLNAME:TARGET%は想像した通りの料理が出来たらしく、満足気に微笑んでいる…。
+	ELSEIF RAND:2
+		PRINTFORMW お客が恐る恐る料理を口にすると……すぐさま目の色を変え、一心不乱にそれを食べ始めた！
+		PRINTFORMW その様子を見た%CALLNAME:TARGET%は、自分の料理の腕に自信を持ったようだ………
+	ELSE
+		PRINTFORMW お客の前に出された料理はかなり異質な見た目ではあったが、お客は料理を一口食べると幸せそうな表情を見せて、とてもおいしいと言ってきた。
+		PRINTFORMW どうやら見た目に反してかなり美味のようだ。
+		PRINTFORMW %CALLNAME:TARGET%は、いつか%CALLNAME:PLAYER%にこの料理を作ってあげようと誓った………
+	ENDIF
+	;※一度作ったらDAILY LIFEの方で実際マスターに食べさせてもいいかも。
+;人気者が盗撮される
+CASE "盗撮"
+	IF COND("制服：バニー")
+		PRINTFORMW %CALLNAME:TARGET%は胸元や股間、お尻などの性的な部分を盗撮されたようです！
+	ELSE
+		PRINTFORMW %CALLNAME:TARGET%はスカートの中を盗撮されたようです！
+	ENDIF
+	IF ABL:露出癖 >= 3
+		IF TALENT:臆病 + TALENT:内気 + TALENT:恥じらい && RANDIF(2, TALENT:高慢, TALENT:陽気+TALENT:目立ちたがり)
+			IF RAND:2
+				PRINTFORM %CALLNAME:TARGET%は胸をドキドキさせながら、
+			ELSE
+				PRINTFORM それに気づいた%CALLNAME:TARGET%は恥ずかしさで身体を火照らせつつ、
+			ENDIF
+			IF COND("制服：バニー")
+				PRINTFORMW エッチな衣装を身につけた自分を記録される事を楽しみました…
+			ELSEIF CHECK_PANTIES("Ｈ") && TALENT:オトコ == 0
+				PRINTFORMW エッチなパンツに覆われた股間を記録される背徳感を楽しみました…
+			ELSEIF COND("身嗜み：ノーパン")
+				PRINTFORMW 勤労中の蒸れた性器を記録される事を楽しみました…
+			ELSE
+				PRINTFORMW パンチラを撮られるのを楽しみました…
+			ENDIF
+		ELSEIF TALENT:陽気 + TALENT:目立ちたがり && RANDIF(2, TALENT:高慢)
+			PRINTFORM  …が、それに気づいた%CALLNAME:TARGET%は客の耳元で止めるように囁きつつも、自分
+			SIF RAND:2 && (ABL:露出癖 >= 5 || TALENT:濡れやすい) && TALENT:オトコ == 0
+				PRINTFORM の\@ COND("制服：バニー") ? 恥ずかしい場所 # 露出の快楽で染みの浮いたパンツ \@
+			PRINTFORMW を写した写真だけは許してあげたようです…
+		ELSEIF TALENT:高慢 && RAND:2
+			PRINTFORMW …が、それに気づいた%CALLNAME:TARGET%は、\@ PENIS(TARGET) ? ペニスを撮られない様に注意しながら # \@積極的にシャッターチャンスを作ったようです…
+			PRINTFORMW どうも、他の店員に撮影数で負けるのが我慢ならないようだ…
+		ELSE
+			PRINTFORMW …が、それに気づいた%CALLNAME:TARGET%は、むしろ歩幅を広くして恥ずかしい部分を撮影される楽しみを味わいました…
+		ENDIF
+	ELSEIF TALENT:オモチャになっちゃえ
+		PRINTFORMW …が、それに気づいた%CALLNAME:TARGET%は撮影機器をオモチャにすることで事なきを得ました。
+		SIF NO:TARGET == 50
+			PRINTFORMW 「ここがお店じゃなかったら……オモチャになるのはお兄ちゃんだったかもしれないよ♪」
+	ELSEIF TALENT:高慢
+		WAITRESS = FIND_COND("出演可能な店員")
+		PRINTFORMW それを%CALLNAME:WAITRESS%に教えられた%CALLNAME:TARGET%は、見せるのと見られるのは相当違うらしく、憤慨しています…
+		IF TALENT:強気 && RAND:2
+			PRINTFORMW 我慢ならないのか、犯人の元へ足音高く向かって……あ。カメラを蹴り壊した……
+		ELSE
+			PRINTFORMW 犯人は既にいないようですが、次に来た時どうなってしまうのだろうか…
+		ENDIF
+	ELSEIF TALENT:臆病 || TALENT:内気 || TALENT:恥じらい
+		IF CHECK_PANTIES("Ｈ") && COND("制服：スカート")
+			PRINTFORMW %CALLNAME:TARGET%は\@ COND("男の娘") ? 、男なのに調子に乗って # \@エッチなパンツを穿いていたことを思い出して顔から火が出そうです…
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%は気にしない風を装っていますが、ちょっと悲しそうです…
+		ENDIF
+	ELSE
+		IF TALENT:倒錯的 && RAND:3
+			PRINTFORMW %CALLNAME:TARGET%は自分の写真がオカズに使われることを想像して、頬を上気させています…
+		ELSEIF ABL:自慰中毒 >= 3 && COND("制服：スカート") && COND("身嗜み：ノーパン") == 0 && TALENT:オトコ == 0 && TALENT:濡れやすい && TALENT:恥薄い == 0 && RAND:2
+			WAITRESS = FIND_COND("出演可能な店員")
+			PRINTFORMW それを%CALLNAME:WAITRESS%から教えられた%CALLNAME:TARGET%は、パンツが愛液でグショグショなのを思い出して頭を抱えています
+			PRINTFORMW …%CALLNAME:TARGET%はバイト中のオナニーの自制を誓いながら、更衣室にパンツを替えに向かいました……
+		ELSEIF COND("陰毛") >= 6 && TALENT:好色 && TALENT:幼稚 == 0 && TALENT:オトコ == 0 && RAND:3
+			PRINTFORMW %CALLNAME:TARGET%はアソコの毛を処理していなかった事を後悔しているようです…
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%はプンプンしつつも、自分の\@TALENT:魅力 ? 魅力 # 人気\@が証明されたみたいで満更でもなさそうです…
+		ENDIF
+	ENDIF
+;しっぽ
+CASE "しっぽ"
+
+;胸の谷間
+CASE "胸の谷間"
+	IF TALENT:陽気 && RAND:2
+		WAITRESS = FIND_COND("出演可能な店員", "!巨乳")
+		SETBIT CFLAG:WAITRESS:95, 1
+		PRINTFORMW %CALLNAME:TARGET%はなんだか元気がありません。
+		PRINTFORMW 心配した%CALLNAME:WAITRESS%が話しかけると、「話しかけた人がみんな目線を下に逸らしてしまう」とのことです。
+		PRINTFORM …それを聞いた%CALLNAME:WAITRESS%は疲れた顔で、%CALLNAME:TARGET%の
+		IF COND("制服：バニー")
+			PRINTFORMW  零れそうなほどの巨乳が作り出している見事な谷間 を見つめました…
+		ELSE
+			PRINTFORMW  胸元のボタンを外し過ぎていて丸見えの谷間 を見つめました…
+		ENDIF
+	ELSE
+		PRINTFORM %CALLNAME:TARGET%は
+		IF TALENT:陽気 && RAND:3 == 0
+			PRINTFORM 軽いサービスの気持ちで、
+		ELSEIF RAND:2
+ 			IF COND("制服：バニー")
+				PRINTFORM 動いても暑くならないようにと、
+			ELSE
+				PRINTFORM 動いて暑くなったので、
+			ENDIF
+		ELSE
+			PRINTFORM 熱が篭らないようにと、
+		ENDIF
+		IF COND("制服：バニー")
+			PRINTFORMW 胸が半分程度しか隠せていない際どいバニースーツを着用して働いています。
+		ELSE
+			PRINTFORMW 胸元のボタンを幾つか外して働いています。
+		ENDIF
+		IF RAND:3 == 0 && ABL:奉仕精神 >= 3
+			PRINTFORM …深々とお辞儀をした際などにばっちりと見える
+		ELSEIF RAND:2
+			PRINTFORM …注文を終えた時のおじぎの時など、何気なく見える
+		ELSE
+			PRINTFORM …本人は特に意識していないのでしょうが、ちらちら見える
+		ENDIF
+		IF RAND:2
+			IF RAND:3 == 0
+				PRINTFORM 素晴らしい光景
+			ELSEIF RAND:2
+				PRINTFORM 胸の谷間
+			ELSE
+				PRINTFORM 柔らかそうなふくらみ
+			ENDIF
+		ELSEIF COND("制服：バニー")
+			IF TALENT:ニプルピアス && RAND:3 == 0
+				PRINTFORM 乳首につけられた%TEXTS("ニプルピアス")%
+			ELSEIF ABL:Ｂ感覚 >= 3 && RAND:3 == 0
+				PRINTFORM 勃起して大きくなった乳首
+			ELSEIF RAND:2 && COND("巨乳輪")
+				PRINTFORM 淫靡さ漂う大きな乳輪
+			ELSEIF COND("陥没乳首")
+				PRINTFORM 陥没状態の珍しい乳首
+			ELSEIF COND("乳首肥大")
+				IF TALENT:淫乳 || COND("乳首肥大") >= 2
+					PRINTFORM 挑発的なほどに肥大した乳首
+				ELSE
+					PRINTFORM 摘まみたくなるほどの立派な乳首
+				ENDIF
+			ELSEIF RAND:2
+				PRINTFORM ピンクの乳首
+			ELSE
+				PRINTFORM 可愛らしい乳首
+			ENDIF
+		ELSE
+			IF TALENT:好色 && RAND:2
+				PRINTFORM きわどい
+			ELSEIF AGE(TARGET) >= 3 && RAND:2
+				PRINTFORM 大胆な
+			ELSEIF AGE(TARGET) >= 3 && RAND:2
+				PRINTFORM 大人っぽい
+			ELSEIF AGE(TARGET) >= 4
+				PRINTFORM 装飾の美しい
+			ELSEIF RAND:2
+				PRINTFORM カラフルな
+			ELSE
+				PRINTFORM 可愛らしい
+			ENDIF
+			PRINTFORM ブラ
+		ENDIF
+		IF RAND:3 == 0
+			PRINTFORMW を近くで見ようとするお客の指名争いで、店内はじわじわと熱狂度を高めています…
+		ELSEIF RAND:2
+			PRINTFORMW に、お客は頬が緩むのを必死で耐えています…
+		ELSE
+			PRINTFORMW に、席を立てなくなった男性客達は追加の注文を余儀なくされています……
+		ENDIF
+	ENDIF
+CASE "治療の名目でつまみ食い"
+	CALL SETFLAG, "一般人相手の性行為初期設定"
+	;相手は基本的に男
+	SIF RAND:2 && (ABL:レズっ気 > RAND:10 || (TALENT:オトコ && ABL:ＢＬっ気 < 3) )
+		CALL SETFLAG, "一般人相手の性行為設定：相手が女"
+
+	PRINTFORMW %CALLNAME:TARGET%は顔色を悪くしている\@ TALENT:PLAYER:オトコ ? 男 # 女\@性客を見かけたので、スタッフルームの隣の医務室での治療を促しました。
+	PRINTFORMW お客は大分つらそうな様子で、%CALLNAME:TARGET%に寄りかかりながら医務室へと向かいます…
+	PRINTL 
+	PRINTFORMW −医務室−
+	PRINTFORMW 椅子に腰を下ろしたお客に軽く問診した%CALLNAME:TARGET%は、戸棚の薬品を混ぜ合わせて作った即効性の薬を飲ませたようです。
+	PRINTFORMW その効果は凄いもので、半信半疑で飲んだお客の顔色は見る見る良くなっていき、たちまち元気になりました。
+	PRINTFORMW …が。
+	IF TALENT:PLAYER:オトコ
+		PRINTFORMW お客の股間は物凄い膨れ、ズボンを押し上げる力が凄すぎて歩けないほどの状態です！
+	ELSE
+		PRINTFORMW お客は顔を赤らめて、熱い吐息を漏らしながらスカート越しに股間を押さえています。
+		PRINTFORML その様子を見た%CALLNAME:TARGET%に言われてスカートをめくり上げたお客の股間は…
+		PRINTFORMW 溢れた愛液がパンツは勿論、膝まで濡らす凄い状態です…！
+	ENDIF
+	PRINTFORMW どうやら、薬の効き目が強すぎたようだ。
+	PRINTFORM この状態に責任を感じた%CALLNAME:TARGET%は、
+	IF TALENT:PLAYER:オトコ
+		IF COND("喫茶店：Ｖセックス") && COND("制服：スカート") && COND("身嗜み：ノーパン") == 0
+			IF RAND:3 == 0
+				PRINTFORM パンツをずらしてお客にアソコを見せながら、
+			ELSEIF RAND:2
+				PRINTFORM パンツをズリ下ろしながら、
+			ELSE
+				PRINTFORM スカートをたくし上げてパンツの食い込む股間をお客に見せながら、
+			ENDIF
+		ELSEIF RAND:2
+			PRINTFORM お客の股間を撫でさすりながら、
+		ELSE
+			PRINTFORM お客の股間の前に跪いて口でチャックを下ろしながら、
+		ENDIF
+	ELSE
+		PRINTFORM \@ RAND:2 ? ビショビショのパンツを脱がして露わにさせた秘所 # パンツ越しにアソコ\@を\@ RAND:2 ? 舐め # 指先で弄り \@ながら、
+	ENDIF
+	PRINTFORMW 性欲の処理を買って出ました。
+	PRINTFORM 激しい性欲に苛まれているお客はあまりに魅力的なその提案を断れないようで、
+
+	IF TALENT:PLAYER:オトコ
+		IF COND("喫茶店：Ｖセックス")
+			PRINTFORMW %CALLNAME:TARGET%をベッドに押し倒してガチガチの巨根で理性を失った獣の様に犯し始めました！！
+			SELECTCOM = 61
+			;文章に齟齬が出ないように調整
+			EXP:精液経験 += 10
+			CALL SETFLAG, "膣内精液経験", 5, TARGET, -4
+		ELSE
+			PRINTFORMW ペニスに頬擦りしてきた%CALLNAME:TARGET%に口でしてくれる様に懇願をはじめました…！
+			SELECTCOM = 91
+			;文章に齟齬が出ないように調整
+			EXP:精液経験 += 10
+			CALL SETFLAG, "精飲経験", 5, TARGET, -4
+		ENDIF
+	ELSE
+		PRINTFORMW %CALLNAME:TARGET%に向けてアソコを押し開いておねだりをしはじめました…！
+		SELECTCOM = 98
+	ENDIF
+
+	CALL SIMULATE_TRAIN_COM, SELECTCOM, RAND:7 + 4
+
+	PRINTL 
+	PRINTFORMW 医務室の中に、荒い息遣いと濃い性臭が充満していく…
+	PRINTL 
+	PRINTFORMW ………
+	PRINTFORMW ……
+	IF TALENT:PLAYER:オトコ
+		IF COND("喫茶店：Ｖセックス")
+			PRINTFORMW …%CALLNAME:TARGET%は子宮を押し潰されそうな容赦ない突きこみと、問答無用で繰り返される大量の膣内射精を存分に楽しんだようです。
+		ELSE
+			PRINTFORMW …%CALLNAME:TARGET%はお客の股間に顔を埋め、喉に絡みつくような濃厚精液をたっぷりと味わって満足したようです。
+		ENDIF
+	ELSE
+		PRINTFORMW …%CALLNAME:TARGET%はお客の股間に顔を埋めて膣に挿し込んだ指でＧスポットを刺激し続けながらクンニを続け、潮吹きどころか失禁までさせて楽しんだようです。
+	ENDIF
+	PRINTL 
+	PRINTFORM その後、正気に戻ったお客の
+	IF TALENT:PLAYER:オトコ
+		PRINTFORM 身なりを整えてあげると、
+	ELSE
+		PRINTFORM 股間を拭き清めて自分の予備のパンツを穿かせてあげると、
+	ENDIF
+	PRINTFORMW 今起こった事を秘密にする旨等を口にしながら、上機嫌でお客を帰して…
+	PRINTFORMW 先ほど使った薬の効能と改善点のデータを真剣な表情でメモし始めました…
+
+	CALL SETFLAG, "一般人相手の性行為終了"
+	;つまみ食い人数+1
+	CFLAG:36 += 1
+
+CASE "ハーブティー"
+	PRINTFORMW %CALLNAME:TARGET%が働き出してからというもの、ハーブティーなど薬効が期待される飲み物が倍以上売れるようになりました。
+	WAITRESS = FIND_COND("出演可能な店員", "薬毒耐性")
+	IF WAITRESS && RAND:4 == 0
+		SETBIT CFLAG:WAITRESS:95, 1
+		PRINTFORMW 効果が強そうなものについては%CALLNAME:WAITRESS%に試飲してもらったりしながら、今日も%CALLNAME:TARGET%は新商品の開発に勤しんでいるようです…
+	ELSEIF RAND:3 == 0
+		PRINTFORMW 特別な手当などは特に支給していないのですが、%CALLNAME:TARGET%は「色々試せるから」と楽しそうに作っているようです…
+	ELSEIF RAND:2 == 0
+		PRINTFORMW たまに肉体疲労に効果があるドリンクを飲んだ男性客が席から立てなくなったりもしていますが、評判は上々のようです…
+	ELSE
+		PRINTFORMW 作っている場面を見た同僚の間では飲む気が大分失せるとのことですが、効果の程についてはさすが本職、疑う余地は有りません…
+	ENDIF
+CASE "主人がトイレで"
+	PRINTFORMW %CALLNAME:MASTER%が喫茶店の様子を見に行くと、どうやら%CALLNAME:TARGET%がトイレから戻っていないらしい。
+	PRINTFORMW 仕方がないので見に行くと、明らかに艶の入った声がトイレの個室から響いてくる…
+	PRINTFORMW まさか、と思い扉を思い切ってあけると、なんと%CALLNAME:TARGET%が女性客の股間に顔を埋めていた！
+	PRINTFORMW 淫核を舌で弄びながらＧスポットを虐める%CALLNAME:TARGET%の技に、女性客は声を抑えることも出来ずに身体を震わせながら絶頂を連続で迎えており、
+	PRINTFORMW しかも、%CALLNAME:TARGET%はそれに飽き足らず、蕩けた表情を浮かべて失禁すらしているお客のお尻の穴にまで手を伸ばして楽しもうとしているようだ…
+	PRINTL 
+	PRINTFORMW …さて。この後始末をどうしたものか……
+	PRINTL 
+	WAITRESS = FIND_COND("出演可能な店員", "調合知識")
+	SETBIT CFLAG:WAITRESS:95, 1
+	PRINTFORMW 惨状に眩暈を覚えた%CALLNAME:MASTER%でしたが、流石に一般人に手を出すのはマズいので%CALLNAME:WAITRESS%の薬で女性客の記憶をあやふやにして帰す事としました。
+	PRINTFORMW %CALLNAME:TARGET%はきつーく叱っておきましたが、果たして反省しているのかは疑問な所です…
+	PRINTL 
+	PRINTFORML ちなみに、その女性客の記憶は無くなった筈なのですが、喫茶店の常連となって店を訪れては、
+	PRINTFORMW 熱っぽい視線を%CALLNAME:TARGET%に送っているそうです……
+
+	PRINTFORML %EXPNAME:23%＋{(ABL:レズっ気 + 1)/2}
+	EXP:手淫経験 += (ABL:レズっ気 + 1)/2
+	PRINTFORML %EXPNAME:28%＋{ABL:レズっ気}
+	EXP:クンニ経験 += ABL:レズっ気
+	PRINTFORML %EXPNAME:40%＋{ABL:レズっ気 * 5}
+	EXP:レズ経験 += ABL:レズっ気 * 5
+	WAIT
+
+	;MASTERに出演フラグ
+	SETBIT CFLAG:MASTER:95, 1
+CASE "お茶を淹れる"
+	PRINTFORM %CALLNAME:TARGET%は手ずから淹れた紅茶を
+	IF TALENT:気品
+		IF RAND:2
+			PRINTFORM 優雅な物腰で
+		ELSE
+			PRINTFORM 気品溢れる所作で
+		ENDIF
+	ELSEIF TALENT:献身
+		IF RAND:2
+			PRINTFORM 甲斐々々しく
+		ELSE
+			PRINTFORM 頃合を見計らいつつ
+		ENDIF
+	ELSE
+		PRINTFORM テキパキと
+	ENDIF
+	PRINTFORMW お客にサービスしています。
+	PRINTFORM お客に味を褒められた%CALLNAME:TARGET%は
+	IF TALENT:調合知識 && RAND:5 == 0
+		PRINTFORMW 楽しそうに受け答えしながら、一滴だけ垂らした媚薬の効果が何時出るかなー、とお客の様子を伺っています…
+	ELSEIF TALENT:賢い + TALENT:調合知識 && RAND:2
+		PRINTFORMW 薀蓄をここぞとばかりに披露できて楽しそうです…
+	ELSEIF RAND:2
+		PRINTFORMW 自分独自のブレンド比率を教えてあげたりと楽しそうです…
+	ELSE
+		PRINTFORMW 茶葉の種類や淹れる時のコツなどを楽しそうに話しています…
+	ENDIF
+
+CASE "コスプレ"
+	PRINTFORMW 今日はコスプレデーです
+	PRINTFORMW 春らしく店員皆で着物を纏い、店内も桜に合わせた華やかな色合いで飾られています
+	IF TALENT:貧乳
+		PRINTFORMW 着物は胸が小さい方が綺麗に見えるので、髪を結い上げた%CALLNAME:TARGET%は嬉しそうに接客しています…
+	ELSEIF BASE:種族思考 == 16 || BASE:種族思考 == 22
+		PRINTFORMW 流石に和装に慣れているのか、%CALLNAME:TARGET%の所作の美しさは群を抜いています…
+	ELSE
+		PRINTFORMW %CALLNAME:TARGET%は慣れない着物姿に、少し動き辛そうにしています…
+	ENDIF
+
+;一定確率イベント
+CASEELSE
+	;経営、季節イベント、コスプレデーなど
+
+	;PRINTFORMW 花見など、季節感のあるものを入れます
+
+	;PRINTFORMW 季節によってコスプレを決定が優先で、
+	;PRINTFORMW その後にナースとかを入れることにします
+
+	;PRINTFORMW 経営について店長がお悩みな感じです
+	;PRINTFORMW 忙しさによって嬉しがらせたりと分岐も……
+ENDSELECT
+
+
+;バイトでの人気度の上下計算
+LOCAL = RAND:6 - RAND:6
+SIF ABL:奉仕精神 >= 3
+	LOCAL += RAND:(ABL:奉仕精神 - 2) + 1
+IF ABL:露出癖 >= 3
+	IF ABL:奉仕精神 >= ABL:欲望
+		LOCAL += RAND:(ABL:露出癖 - 2) + 1
+	ELSE
+		LOCAL -= RAND:(ABL:露出癖 - 2) + 1
+	ENDIF
+ENDIF
+SIF ABL:自慰中毒
+	LOCAL -= RAND:(ABL:自慰中毒)
+SIF TALENT:魅惑
+	LOCAL += 1
+SIF TALENT:謎の魅力
+	LOCAL += 1
+SIF TALENT:魅力
+	LOCAL += 1
+SIF TALENT:高慢
+	LOCAL += 2 - RAND:5
+SIF TALENT:生意気
+	LOCAL -= 1
+
+CFLAG:30 += LOCAL
+
+;出演者同士が仲良くなる
+CALL CHANGE_RELATION, 2, TARGET, WAITRESS
+
+WAITRESS = 0
+
+SELECTCASE LOCAL
+CASE IS >= 3
+	PRINTL 
+	IF LOCAL >= 4
+		PRINTFORMW 今回は大成功でした
+	ELSEIF LOCAL == 3
+		PRINTFORMW %CALLNAME:TARGET%は固定ファンが出来たみたいです
+	ENDIF
+	;素直
+	IF TALENT:素直 && RANDIF(2, TALENT:内気, TALENT:陽気)
+		PRINTFORM %CALLNAME:TARGET%は鼻歌交じりに
+		IF RAND:2
+			PRINTFORMW 掃除をしています…
+		ELSE
+			PRINTFORMW 食器を片付けています…
+		ENDIF
+	;内気
+	ELSEIF TALENT:内気 && RANDIF(2, TALENT:陽気)
+		IF LOCAL >= 4
+			WAITRESS = FIND_COND("出演可能な店員")
+			SETBIT CFLAG:WAITRESS:95, 1
+			PRINTFORMW %CALLNAME:WAITRESS%に褒められ、%CALLNAME:TARGET%は照れ照れしています…
+		ELSE
+			PRINTFORMW 本日のお勤めも終わり、%CALLNAME:TARGET%はホッと胸をなでおろしています…
+		ENDIF
+	;陽気
+	ELSEIF TALENT:陽気 && RAND:2 == 0
+		IF TALENT:愚か && RAND:2
+			PRINTFORM %CALLNAME:TARGET%は
+			IF TALENT:貧乳
+				PRINTFORM 小さな
+			ELSEIF TALENT:巨乳
+				PRINTFORM 大きい
+			ENDIF
+			PRINTFORM 胸を張って
+			IF RAND:2
+				PRINTFORMW 得意げです…
+			ELSE
+				PRINTFORMW ふんぞり返っています…
+			ENDIF
+		ELSE
+			WAITRESS = FIND_COND("出演可能な店員")
+			SETBIT CFLAG:WAITRESS:95, 1
+			PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:WAITRESS%とお疲れ様のハイタッチを交わしています…
+		ENDIF
+	ELSEIF LOCAL >= 4
+		IF RAND:2
+			PRINTFORMW %CALLNAME:TARGET%の表情も晴れやかです…
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%は同僚からの評判も良いようです…
+		ENDIF
+	ELSE
+		PRINTFORMW どことなく嬉しそうな表情をしています…
+	ENDIF
+
+	;人気を得る
+	IF GETBIT(TALENT:人気, 2) == 0 && COND("人気：喫茶店")
+		PRINTL 
+		SETCOLOR DEF_COLOR("黄色")
+		PRINTFORMW %CALLNAME:TARGET%は喫茶店%NAMES("喫茶店")%の看板娘\@ TALENT:オトコ ? (？) # \@となりました
+		SETBIT TALENT:人気, 2
+		RESETCOLOR
+	ENDIF
+CASE 0
+	PRINTL 
+	PRINTFORMW 今回は何事もなく終わりました
+	PRINTFORMW ただ刺激が少なく、%CALLNAME:TARGET%は少し不満そうです…
+CASE IS < 0
+	PRINTL 
+	PRINTFORMW %CALLNAME:TARGET%は\@ LOCAL <= -2 ? 最後に大ポカをやらかしました # ミスが多かったみたいです \@
+	IF LOCAL <= -3 && COND("脚が無い") == 0 && PENIS(TARGET) == 0 && TALENT:臆病 + TALENT:冷静 + TALENT:感情乏しい + TALENT:陰気 == 0 && TALENT:高慢 + TALENT:生意気 + TALENT:強気 + TALENT:陽気
+		PRINTFORMW あまりに酷いミスだったので……%CALLNAME:TARGET%は椅子にＭ字開脚拘束された挙句に羽箒でのくすぐりの刑に処されました！
+		IF TALENT:おもらし癖 || ABL:尿道拡張 >= 0
+			PRINTFORMW 笑わされ過ぎた%CALLNAME:TARGET%は、軽い尿失禁でパンツに点々と染みを増やしながら必死で息を整えている…
+		ELSE
+			PRINTFORMW 笑わされ過ぎた%CALLNAME:TARGET%は、痛くなった腹筋に苦しみながら必死で息を整えている…
+		ENDIF
+	ELSE
+		PRINTFORMW 思い出しているのか、浮かない表情をしています…
+	ENDIF
+ENDSELECT
+
+;出演者同士が仲良くなる
+CALL CHANGE_RELATION, 2, TARGET, WAITRESS
+
+WAITRESS = 0
+
+;LOCAL = RAND:5 - RAND:5
+;乱交イベントフラグ(まずは5人まで)
+;IF COND("喫茶店：乱交") && LOCAL > 0 && NUM("喫茶店：乱交予定人数") < 5
+;	LOCAL = MIN(5 - NUM("喫茶店：乱交予定人数"), LOCAL)
+;	IF LOCAL == 1
+;		PRINTFORMW （%CALLNAME:TARGET%は自分に気がありそうなお客の一人に秘密のお誘いをしたようです…）
+;	ELSE
+;		PRINTFORMW （%CALLNAME:TARGET%は{LOCAL}人の自分に気がありそうなお客に秘密のお誘いをしたようです…）
+;	ENDIF
+;	CFLAG:32 += LOCAL
+;ENDIF
+;$EVENT_AFTER_CAFE
+
+;喫茶店で乱交プレイ（これは条件満たしているなら発生しやすい）
+;作成中
+
+;閉店後イベント（たまにしか発生しないようにしよう）
+SIF RAND:5
+	RETURN 0
+
+CALL CALC, "ランダム選択"
+;更衣室で巨乳をうらやまれる
+SIF TALENT:巨乳 && FIND_COND("出演可能な店員", "!巨乳")
+	CALL CALC, "ランダム選択", 1
+;疲れて眠っている同僚に、ちょっと優しくする
+SIF ABL:奉仕精神 >= 3 || TALENT:献身
+	CALL CALC, "ランダム選択", 2
+;モップでオナニー
+SIF ABL:欲望 >= 5 && ABL:自慰中毒 >= 3
+	CALL CALC, "ランダム選択", 3
+;お店の雰囲気がエロエロでエロイベント可の場合。かつ、それなりに忙しめで人気あり。人気度は未設定
+SIF COND("喫茶店：セックス") && TALENT:処女 + TALENT:オトコ == 0 && RAND:4 == 0
+	CALL CALC, "ランダム選択", 4
+;忙しい日の後でMASTERがマッサージ
+SIF COND("喫茶店出演済み", MASTER) == 0 && COND("脚が無い") == 0
+	CALL CALC, "ランダム選択", 5
+;業務日誌
+SIF COND("喫茶店出演済み", MASTER) == 0 && TALENT:惚れっぽい + TALENT:好色 + TALENT:狂気
+	CALL CALC, "ランダム選択", 6
+;ケーキじゃんけん
+SIF TALENT:冷静 + TALENT:無関心 + TALENT:感情乏しい == 0
+	CALL CALC, "ランダム選択", 7
+;寝落ちした夢魔をMASTERが背負って帰る
+SIF COND("喫茶店出演済み", MASTER) == 0
+	CALL CALC, "ランダム選択", 8
+
+PRINTL 
+SELECTCASE RESULT
+CASE 1
+	PRINTFORMW 閉店後の更衣室で、%CALLNAME:TARGET%達が着替えをしています。
+	PRINTFORM %CALLNAME:TARGET%が制服を脱ぐと、
+	IF TALENT:巨乳 >= 2 && RAND:3
+		PRINTFORM 大艦巨砲主義な
+	ELSEIF RAND:4 == 0
+		PRINTFORM 胸元の豊かな
+	ELSEIF RAND:3 == 0
+		PRINTFORM ボリュームのある
+	ELSEIF RAND:2
+		PRINTFORM 母性溢れる
+	ELSE
+		PRINTFORM 夢がたくさん詰まった
+	ENDIF
+	WAITRESS = FIND_COND("出演可能な店員", "!巨乳")
+	SETBIT CFLAG:WAITRESS:95, 1
+	PRINTFORM バストに%CALLNAME:WAITRESS%達の
+	IF TALENT:嫉妬 && RAND:3
+		PRINTFORM 嫉妬交じりの
+	ELSEIF RAND:5 == 0
+		PRINTFORM 舐めるような
+	ELSEIF RAND:4 == 0
+		PRINTFORM 熱い
+	ELSEIF RAND:3 == 0
+		PRINTFORM 憧れの
+	ELSEIF RAND:2
+		PRINTFORM 羨望の
+	ELSE
+		PRINTFORM ショーウィンドウのウェディングドレスを見るような
+	ENDIF
+	PRINTFORMW 視線が集まりました。
+	IF TALENT:恥じらい == 0
+		IF (ABL:レズっ気 >= 3 || TALENT:両刀) && RAND:3 == 0
+			PRINTFORMW 見事に獲物を捕らえた表情の%CALLNAME:TARGET%は、『揉むと大きくなる説』を振りかざしながら、%CALLNAME:WAITRESS%の胸を揉みしだきはじめました…
+		;賢い
+		ELSEIF TALENT:賢い && RANDIF(1, TALENT:陽気, TALENT:冷静, TALENT:意地悪, TALENT:強気, TALENT:高慢, TALENT:好色)
+			PRINTFORMW 表情ですべてを察した%CALLNAME:TARGET%は、素早く話題を変えて場を切り抜けました…
+		;陽気
+		ELSEIF TALENT:陽気 && RANDIF(1, TALENT:冷静, TALENT:意地悪, TALENT:強気, TALENT:高慢, TALENT:好色)
+			PRINTFORMW %CALLNAME:TARGET%は陽気に笑いながら、ぷるぷる揺れる胸を%CALLNAME:WAITRESS%に当てたりしてはしゃいでいます…
+		;冷静
+		ELSEIF TALENT:冷静 && RANDIF(1, TALENT:意地悪, TALENT:強気, TALENT:高慢, TALENT:好色)
+			PRINTFORMW %CALLNAME:TARGET%は特に気にすることもなく、ぱぱっと着替えました…
+		;意地悪
+		ELSEIF TALENT:意地悪 && RANDIF(1, TALENT:強気, TALENT:高慢, TALENT:好色)
+			PRINTFORMW %CALLNAME:TARGET%はニヤニヤしながら、これ見よがしに柔らかな双球を%CALLNAME:WAITRESS%に見せ付けています…
+		;強気
+		ELSEIF TALENT:強気 && RANDIF(1, TALENT:高慢, TALENT:好色)
+			PRINTFORMW %CALLNAME:TARGET%は豊満な胸を視線から隠すことなく、悠然と着替えています…
+		;高慢
+		ELSEIF TALENT:高慢 && RANDIF(1, TALENT:好色)
+			PRINTFORMW %CALLNAME:TARGET%は胸を強調したポーズをとって、満更でもなさそうです…
+		;好色+その他
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%は興味津々の%CALLNAME:WAITRESS%に、胸を触らせてあげたりしています…
+		ENDIF
+	ELSE
+		PRINTFORM %CALLNAME:TARGET%は、
+		;強気
+		IF TALENT:強気 && RANDIF(1, TALENT:素直, TALENT:内気)
+			IF RAND:3 == 0
+				PRINTFORM 普段より幾分慌てた様子で
+			ELSEIF RAND:2
+				PRINTFORM いつもの余裕を感じさせない表情で
+			ELSE
+				PRINTFORM 涙目の真っ赤な顔で
+			ENDIF
+			IF RAND:2
+				PRINTFORMW 胸元を制服で隠しました…
+			ELSE
+				PRINTFORMW ロッカーの戸の影に隠れてしまいました…
+			ENDIF
+		;内気
+		ELSEIF TALENT:内気 && RANDIF(1, TALENT:素直)
+			IF RAND:2
+				PRINTFORMW 顔を真っ赤に染めて両手で胸を隠してしまいました…
+			ELSE
+				PRINTFORMW 涙目でこちらに背を向けてしまいました…
+			ENDIF
+		;素直(その他もアリとします)
+		ELSE
+			IF RAND:3 == 0
+				PRINTFORM 少し居心地悪そうに
+			ELSEIF RAND:2
+				PRINTFORM 頬をほんのり染めて
+			ELSE
+				PRINTFORM ちょっと困った様子で
+			ENDIF
+			IF RAND:3 == 0
+				PRINTFORMW 微笑んでいます…
+			ELSEIF RAND:2
+				PRINTFORMW そっと胸を隠しました…
+			ELSE
+				PRINTFORMW はにかんでいます…
+			ENDIF
+		ENDIF
+	ENDIF
+CASE 2
+	PRINTFORM 閉店後、着替え終わった%CALLNAME:TARGET%が更衣室から出ると、
+	IF RAND:2
+		PRINTFORM 店内の片づけ
+	ELSE
+		PRINTFORM 掃除
+	ENDIF
+	WAITRESS = FIND_COND("出演可能な店員")
+	SETBIT CFLAG:WAITRESS:95, 1
+	PRINTFORM をしていた%CALLNAME:WAITRESS%が制服姿のまま机に突っ伏して
+	IF RAND:2
+		PRINTFORM 浅く
+	ELSE
+		PRINTFORM 静かに
+	ENDIF
+	PRINTFORMW 寝息を立てていました。
+	PRINTFORM %CALLNAME:TARGET%は
+	IF RAND:2
+		PRINTFORM 小さく微笑むと
+	ELSE
+		PRINTFORM 肩をすくめると
+	ENDIF
+	IF RAND:2
+		PRINTFORMW 、労いの紅茶とケーキを出すために照明の落ちたキッチンへ入っていきました…
+	ELSE
+		PRINTFORMW 、肩からそっと上着をかけてやりました…
+	ENDIF
+CASE 3
+	PRINTFORMW 営業時間も終わり、照明が半分落とされた店内で、%CALLNAME:TARGET%がモップがけをしています。
+	PRINTFORML ふと、何かを思い出したようにそわそわと周りを気にし始めた%CALLNAME:TARGET%は、
+	IF PENIS(TARGET) && RANDIF(1, TALENT:ふたなり)
+		WAITRESS = FIND_COND("出演可能な店員")
+		PRINTFORMW 更衣室から拝借してきた%CALLNAME:WAITRESS%のパンツの%TEXTS("匂い")%を嗅ぎながら、露出させたペニスを扱き始めました…
+	ELSE
+		PRINTFORMW テーブルに立てかけたモップの柄に、秘所を押し当ててゆっくりと身体をゆすり始めました…
+	ENDIF
+	PRINTFORMW 店の奥から聞こえてくる従業員の雑談に、%CALLNAME:TARGET%の押し殺した声がかき消される…
+CASE 4
+	PRINTFORML 今日のお店はとても忙しかったようです。
+	PRINTFORMW %CALLNAME:TARGET%は誰もいなくなった店内で一人遅い帰り仕度をしています。
+	PRINTFORMW 更衣室で、%CALLNAME:TARGET%が一人で着替えをしていると、突然ファンの一人が顔を真っ赤にして入って来ました。
+	PRINTFORMW どうやら%CALLNAME:TARGET%の色気とお店の雰囲気に我慢できなくなったようです。
+
+	;相愛か恋慕か淫乱かそれ以外で分岐　31
+	;嫁はさすがに手を出すとマズイよね
+	IF TALENT:相思相愛
+		PRINTFORMW %CALLNAME:TARGET%は落ち着いて愛する人がいることを伝えて丁重にお帰り頂いたようです。
+	;恋慕は淫乱かつ精液中毒なら我慢できずにお口で　36
+	ELSEIF TALENT:恋慕
+		PRINTFORM %CALLNAME:TARGET%はテントを張ったファンの股間あたりを見ながら顔をほころばせ
+		IF TALENT:淫乱 && ABL:精液中毒 >= 3
+			PRINTFORMW 、
+			PRINTFORMW %CALLNAME:MASTER%のペニスを思い出しながらしゃぶりついて奉仕してあげたようです。
+		ELSE
+			PRINTFORMW ながらも、
+			PRINTFORMW 脳裏をよぎった%CALLNAME:MASTER%の顔を消せず、丁重にお帰り頂いたようです。
+		ENDIF
+	;淫乱なら大サービス！　45
+	ELSEIF TALENT:淫乱
+		PRINTFORMW %CALLNAME:TARGET%は妖しい微笑みを浮かべると下着のままの格好でファンに近づき、
+		PRINTFORMW ズボンの上からでもわかるほどいきり立った股間を擦りながら耳に熱い息を吹きかけると
+		PRINTFORMW 興奮の限界に達したファンに押し倒されてしまいました。
+		PRINTL
+		IF TALENT:処女 == 0 && TALENT:Ａ処女 == 0
+			PRINTFORMW 体中のあらゆるところに精を注ぎ込まれて、%CALLNAME:TARGET%は大満足のようです。
+		ELSE 
+			PRINTFORMW ファンの精を搾りつくして、%CALLNAME:TARGET%は大満足のようです。
+		ENDIF
+		;つまみ食い人数+1
+		CFLAG:36 += 1
+	;その他　ちょっとカワイソス？
+	ELSE
+		PRINTFORMW %CALLNAME:TARGET%は突然の闖入者に驚きつつも、その目的を察すると夢魔としての本能か
+		PRINTFORMW %CALLNAME:MASTER%の調教の成果か、体が熱くなるのを感じました。
+		PRINTFORMW %CALLNAME:TARGET%が自分の体の異変に戸惑ってるうちにファンに押し倒されてしまい、
+		PRINTFORM 碌に抵抗もできぬまま
+		IF TALENT:処女 == 0
+			PRINTFORMW 精を注がれてしまったようです…
+		ELSE
+			PRINTFORMW 口で奉仕させられてしまったようです…
+		ENDIF
+	ENDIF
+CASE 5
+	PRINTFORMW %CALLNAME:MASTER%が閉店後の更衣室を訪れると、%CALLNAME:TARGET%がソファーの上でぐったりしています…
+	PRINTFORMW その様子を見かねた%CALLNAME:MASTER%は、疲れた脚のマッサージをしてあげる事にしました。
+	PRINTFORM %CALLNAME:TARGET%は
+	;素直
+	IF TALENT:素直 && RANDIF(1, TALENT:陽気, TALENT:恥じらい, TALENT:小悪魔, TALENT:好色, TALENT:高慢, TALENT:強気)
+		PRINTFORMW 今日あった出来事を話したりして寛いだ様子で、気持ち良さそうに脚揉みを堪能しました…
+	;強気
+	ELSEIF TALENT:強気 && RANDIF(1, TALENT:陽気, TALENT:恥じらい, TALENT:小悪魔, TALENT:好色, TALENT:高慢)
+		PRINTFORMW 一度は断りましたが、結局は%CALLNAME:MASTER%の足揉みを気持ちよさに悶えながら楽しみました…
+	;高慢
+	ELSEIF TALENT:高慢 && RANDIF(1, TALENT:陽気, TALENT:恥じらい, TALENT:小悪魔, TALENT:好色)
+		PRINTFORMW 疲れを隠すことなく脚を差し出すと、色々と注文をつけながら脚揉みを楽しみました…
+	;好色
+	ELSEIF TALENT:好色 && RANDIF(1, TALENT:陽気, TALENT:恥じらい, TALENT:小悪魔)
+		IF RAND:2 && TALENT:恥じらい == 0 && COND("身嗜み：ノーパン") == 0
+			IF RAND:2 && COND("制服：スカート")
+				PRINTFORMW 「汗かいちゃった」と言いながらパンツを脱いで脇に置くと、胸元を緩めてパタパタしながら気持ち良さそうに脚揉みを堪能しました…
+			ELSE
+				PRINTFORMW 「こっちの方がリラックスできる」と下着姿になって、気持ち良さそうに脚揉みを堪能しました…
+			ENDIF
+		ELSEIF COND("制服：バニー")
+			PRINTFORMW 汗で肌に張り付いた衣装を脱いで下着姿になると、%CALLNAME:MASTER%に団扇で扇がせたりしながら気持ち良さそうにしています…
+		ELSE
+			PRINTFORMW スカートをパタパタと動かして篭った熱気を%CALLNAME:MASTER%に送りながら、微笑んでいます…
+		ENDIF
+	;陽気
+	ELSEIF TALENT:陽気 && RANDIF(1, TALENT:恥じらい, TALENT:小悪魔)
+		PRINTFORMW %CALLNAME:MASTER%の指の刺激にくすぐったそうな声をあげながら、暫しの休憩を楽しみました…
+	;小悪魔
+	ELSEIF TALENT:小悪魔 && RANDIF(1, TALENT:恥じらい)
+		IF COND("制服：バニー")
+			PRINTFORMW 、さりげなく脚を動かしたりして%CALLNAME:MASTER%の視線を熱の篭った股間に誘導したりして楽しみました…
+		ELSEIF RAND:2
+			PRINTFORMW 、さりげなくスカートの奥が見えるように脚を動かしたりしながら楽しみました…
+		ELSE
+			PRINTFORMW 、胸元を緩めてリラックスしながら%CALLNAME:MASTER%の指使いを堪能しました…
+		ENDIF
+	ELSEIF TALENT:恥じらい
+		IF COND("制服：バニー")
+			PRINTFORMW 腰の辺りにタオルをかけて、%CALLNAME:MASTER%の足揉みに身を委ねました…
+		ELSE
+			PRINTFORMW 頬を赤らめてスカートの裾を手で押さえながら、%CALLNAME:MASTER%の足揉みに身を委ねました…
+		ENDIF
+	ELSE
+		IF COND("制服：バニー") || RAND:2
+			PRINTFORMW 制服の胸元を緩めてリラックスしながら、%CALLNAME:MASTER%の足揉みに身を委ねました…
+		ELSE
+			PRINTFORMW スカートの裾を手で押さえながら、%CALLNAME:MASTER%の足揉みに身を委ねました…
+		ENDIF
+	ENDIF
+	;MASTERに出演フラグ
+	SETBIT CFLAG:MASTER:95, 1
+CASE 6
+	PRINTFORMW 閉店後に%CALLNAME:MASTER%が店内の様子を伺いに訪れると、ノートにペンを走らせている%CALLNAME:TARGET%を発見しました。
+	PRINTFORMW 気になって覗き込んでみたところ、これは………
+	IF TALENT:惚れっぽい && RANDIF(2, TALENT:好色, TALENT:狂気)
+		PRINTFORMW 妄想溢れた恋愛小説です…
+		PRINTFORMW 覗かれてるのに気づいた%CALLNAME:TARGET%が物凄い勢いで隠したので被害は少なかったものの……甘い！
+	ELSEIF TALENT:狂気 && RANDIF(2, TALENT:好色)
+		IF TALENT:妄信
+			PRINTFORMW %CALLNAME:TARGET%の「殺すリスト」でした！！！
+			PRINTFORMW 接客業ってやっぱり大変……いや、それにしてもリストの名前が……直球過ぎる！！
+		ELSE
+			PRINTFORMW なにやら抽象画のようです
+			PRINTFORMW %CALLNAME:TARGET%が見られても全然気にしていないので暫し眺めていましたが…
+			PRINTFORMW この絵は、深く踏み込まないほうが良い類のものな気がします…
+		ENDIF
+	ELSEIF TALENT:好色 && RAND:2
+		IF COND("喫茶店：セックス") && RAND:2
+			PRINTFORMW %CALLNAME:TARGET%が今までにつまみ食いしたお客のリストでした
+			PRINTFORMW これはうっかりお客の目に触れる前に止めさせるべきかどうか……
+		ELSE
+			PRINTFORMW バイト中に思いついたプレイ内容のようです
+			PRINTFORMW 忘れる前に書いておかないと、というのは正論ですが…うーむ
+		ENDIF
+	ELSE
+		PRINTFORMW ただの業務日誌でした
+		PRINTFORMW なんだか普通すぎて拍子抜けしてしまった…
+	ENDIF
+
+CASE 7
+	PRINTFORMW 閉店後の店内では、夢魔たちが真剣な表情で%TEXTR("じゃんけん", "交渉", "くじ引き")%をしていました。
+	PRINTFORMW テーブルの上には……売れ残ったケーキが並んでいます。
+	PRINTFORMW そう！ 彼女たちは残ったケーキの優先権を賭けているのです！！
+	IF RAND:CHARA_NUM("フロア店員") == 0
+		PRINTFORMW ……目当てのケーキを手に入れたらしい%CALLNAME:TARGET%が、大きな歓声を上げました！！！
+		PRINTL 
+
+		SETCOLOR DEF_COLOR("黄色")
+		PRINTFORMW %CALLNAME:TARGET%の欲求不満が大幅に解消されました。
+		RESETCOLOR
+		CALL CALC, "欲求不満解消", TARGET, 10
+	ELSE
+		WAITRESS = FIND_COND("出演可能な店員")
+		PRINTFORMW 振り分けが終わった%CALLNAME:TARGET%と%CALLNAME:WAITRESS%は、お互いのケーキを上手いこと交換しようと働いている時よりも真剣な表情で話し合っています……
+	ENDIF
+
+CASE 8
+	PRINTFORMW もう店の明かりを消し、館に帰る時間になりましたが……%CALLNAME:TARGET%は椅子に座って眠りこけています…
+	PRINTFORMW このまま放っておく訳にもいかないので、%CALLNAME:MASTER%が背負って帰ることになりました！
+	PRINTFORMW ………
+	PRINTFORMW ……
+	IF RAND:2 && FIND_COND("出演可能な店員", "恋慕")
+		WAITRESS = FIND_COND("出演可能な店員", "恋慕")
+		PRINTFORMW …横で歩いている%CALLNAME:WAITRESS%達は羨ましがり、「次は%CNAMET(WAITRESS, "一人称")%が！」『いえ私が……』と牽制しあっています…
+	ELSEIF TALENT:臆病 || TALENT:内気 || TALENT:恥じらい
+		PRINTFORMW …途中で目を覚ました%CALLNAME:TARGET%は顔を真っ赤にすると、%CALLNAME:MASTER%の背中に顔を沈めました…
+	ELSE
+		PRINTFORMW …%CALLNAME:TARGET%は帰り道の途中で目を覚ましたものの、館に着くまで特等席を満喫しました。
+	ENDIF
+
+ENDSELECT
+
+;出演者同士が仲良くなる
+CALL CHANGE_RELATION, 2, TARGET, WAITRESS
+
+WAITRESS = 0
+
+;閉店後イベント
+;(不真面目か真面目でテキスト分岐？)
+;疲れて掃除の途中で(or片付けの途中で)制服のまま居眠りしている夢魔に同僚(or夢魔or店長)が上着をかけてあげる(or少しだけ寝かせておいてあげるか、と微笑むor紅茶とケーキを持って起こしてあげる)
+
+
+
+;(好色/淫乱/両刀/恥じらい等でテキスト分岐？)
+;業務終了後、同僚と一緒に着替え。

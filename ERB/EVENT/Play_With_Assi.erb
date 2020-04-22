@@ -1,0 +1,325 @@
+﻿;-------------------------------------------------------------------------------------------------
+;助手に性欲処理を頼む
+;台詞については TRYCALLFORM GUEST_KOJO_K{NO:ASSI}_{CFLAG:ASSI:209}, LOCALS, ASSI で呼び、無い場合には地の文で補填
+;おおまかなフラグについてはCEVENTの"助手で性処理："グループを使用しても良い。これは毎ターン初期化される
+;得た経験などについてはEXP_GAINで参照できる
+;ただし、主人の経験を参照する場合には他の助手相手のプレイで経験が増えていることがあるため注意が必要
+;一回に付き助手経験が+1されるため、EXP_GAIN(4, ASSI)でこのターンに何回相手したかが分かる（現在は１回で終了）
+;同様にEXP_GAINで増えた経験を参照可能
+;前回やったことについてはPREVCOMで参照可能。
+;ペニスが汚れてるかどうかは CHECK_STAIN(STAIN:PLAYER:Ｐ, "Ｐ恥垢")
+;-------------------------------------------------------------------------------------------------
+@PLAY_WITH_ASSI
+#DIM LCOUNT
+#DIM MEMO, 10
+#DIM MEMO_LINECOUNT
+#DIM MEMO_TARGET
+#DIM MEMO_ASSI
+#DIMS EVENTNAME
+#DIMS MEMO_CLO
+
+;おあずけフラグがたっている？
+IF CEVENT("助手で性処理：おあずけ", ASSI)
+	;口上があるかどうかを行数でチェック
+	MEMO_LINECOUNT = LINECOUNT
+
+	TRYCALLFORM GUEST_KOJO_K{NO:ASSI}_{CFLAG:ASSI:209}, "助手で性処理：おあずけ", ASSI
+
+	;台詞が無いなら汎用イベント（台詞は極力無しで地の文のみとする）
+	SIF LINECOUNT == MEMO_LINECOUNT
+		PRINTFORMW 続きは%CALLNAME:ASSI%の部屋でしましょう
+	RETURN 0
+ENDIF
+
+;SIMULATE_TRAINを使うためにASSIをTARGETにする
+;-------------------------------------------------------------------------------------------------
+MEMO_TARGET = TARGET
+MEMO_ASSI = ASSI
+TARGET = ASSI
+
+CALL SIMULATE_TRAIN_FIRST
+
+TARGET = MEMO_TARGET
+ASSI = MEMO_ASSI
+;-------------------------------------------------------------------------------------------------
+
+;選択回数によるローテーションにはRANDF(10, EXP_GAIN(4, ASSI) )を用いる：保留
+;前回と違う人or時間帯ごとの初回なら各種フラグ初期化
+IF ASSI != COND("前Ｔ対象") || EXP_GAIN(4, ASSI) == 0
+	PREVCOM = -1
+	VARSET TEQUIP:ASSI:0, 0, 0, 100
+	VARSET TEQUIP:MASTER:0, 0, 0, 100
+	CALL DEL_CEVENT_GROUP, "助手で性処理", ASSI
+ENDIF
+
+;着ている服を記憶
+MEMO_CLO = 
+FOR LCOUNT, 40, 50
+	MEMO_CLO = %MEMO_CLO%{EQUIP:ASSI:LCOUNT},%CSTR:ASSI:LCOUNT%,
+NEXT
+;確認用
+;PRINTFORMW %MEMO_CLO%
+
+;１ターン限定のフラグを消去
+CALL DEL_CEVENT_GROUP, "助手で性処理", ASSI
+SELECTCOM:5 = -1
+
+;指定が無いなら、やることはフェラorクンニ
+IF PENIS(MASTER) && RANDIF(1, TALENT:MASTER:オトコ == 0)
+	SELECTCOM = 91
+ELSE
+	SELECTCOM = 98
+ENDIF
+
+PRINTL 
+
+;口上があるかどうかを行数でチェック
+MEMO_LINECOUNT = LINECOUNT
+
+;内部で好きにイベントとSELECTCOMを決定
+TRYCALLFORM GUEST_KOJO_K{NO:ASSI}_{CFLAG:ASSI:209}, "助手で性処理", ASSI
+
+;台詞が無いなら汎用イベント（台詞は極力無しで地の文のみとする）
+IF LINECOUNT == MEMO_LINECOUNT
+	SELECTCASE SELECTCOM
+	;フェラ
+	CASE 91
+		;シックスナイン
+		IF ABL:ASSI:サドっ気 && ABL:MASTER:マゾっ気 && CHECK_CLO("パンツ露出", ASSI) + CHECK_CLO("Ｖ露出", ASSI) && RAND:3 == 0
+			;顔面騎乗
+			IF MAX(ABL:ASSI:サドっ気, ABL:MASTER:マゾっ気) >= 3 && RAND:2
+				IF CHECK_CLO("Ｖ露出", ASSI)
+					PRINTFORMW 言われた通りに%CALLNAME:MASTER%が寝そべると、%CALLNAME:ASSI%は顔に腰を下ろして剥き出しのアソコを押し付けてきた！
+				ELSEIF RAND:2
+					PRINTFORMW 言われた通りに%CALLNAME:MASTER%が寝そべると、%CALLNAME:ASSI%は顔に腰を下ろしてきた！
+				ELSE
+					IF RAND:2
+						PRINTFORMW %CALLNAME:ASSI%は下着を脱ぎ捨てると、寝そべった%CALLNAME:MASTER%の顔に腰を下ろしてきた！
+					ELSE
+						PRINTFORMW 言われた通りに%CALLNAME:MASTER%が寝そべると、%CALLNAME:ASSI%は下着を脱ぎながら顔に腰を下ろしてきた！
+					ENDIF
+					CALL SET_PANTIES, ASSI
+					CALL SET_CEVENT, "助手で性処理：パンツ下ろし", ASSI
+				ENDIF
+				TEQUIP:ASSI:顔面騎乗 = 1
+				TEQUIP:ASSI:シックスナイン = 91
+				TEQUIP:MASTER:シックスナイン = 1
+			ELSE
+				PRINTFORMW %CALLNAME:ASSI%は%CALLNAME:MASTER%に６９の体勢で四つん這いに覆い被さると、無防備に股間を晒しながらペニスに舌を這わせてきた！
+				TEQUIP:ASSI:シックスナイン = 91
+				;悪戯の内容を決める
+				IF CHECK_CLO("Ｖ露出", ASSI) == 0
+					IF RAND:2
+						TEQUIP:MASTER:シックスナイン = 7
+					ELSE
+						TEQUIP:MASTER:シックスナイン = 1
+					ENDIF
+				ELSEIF RAND:7 == 0 && CALCF("尿道径", ASSI) > SIZE("指の直径", MASTER)
+					TEQUIP:MASTER:シックスナイン = 15
+				ELSEIF RAND:6 == 0
+					TEQUIP:MASTER:シックスナイン = 14
+				ELSEIF RAND:5 == 0
+					TEQUIP:MASTER:シックスナイン = 13
+				ELSEIF RAND:4 == 0
+					TEQUIP:MASTER:シックスナイン = 8
+				ELSEIF RAND:3 == 0
+					TEQUIP:MASTER:シックスナイン = 7
+				ELSEIF RAND:2
+					TEQUIP:MASTER:シックスナイン = 2
+				ELSE
+					TEQUIP:MASTER:シックスナイン = 1
+				ENDIF
+			ENDIF
+
+			SELECTCOM = 99
+		ELSE
+			;服を脱いでの奉仕。パンツを脱ぐor全裸
+			IF ABL:ASSI:露出癖 >= 3 && CHECK_CLO("ハダカ", ASSI) == 0 && EQUIP:ASSI:パンツ && RAND:3 == 0
+				IF EQUIP:ASSI:パンツ == 0 || (ABL:ASSI:露出癖 >= 5 && RAND:2)
+					PRINTFORMW %CALLNAME:ASSI%はその場で服を全て脱ぐと、きちんと畳んで脇に置いた後に%CALLNAME:MASTER%の前に跪いてペニスに舌を這わせてきた
+					CALL SETFLAG, "ハダカにする", ASSI
+					CALL SET_CEVENT, "助手で性処理：ハダカ", ASSI
+				ELSE
+					PRINTFORMW パンツから片足を抜いた%CALLNAME:ASSI%は、%TEXTR("手早い", "自然な")%動作で%CALLNAME:MASTER%のペニスを取り出して口を付けてきた
+					CALL SET_PANTIES, ASSI
+					CALL SET_CEVENT, "助手で性処理：パンツ下ろし", ASSI
+				ENDIF
+			;ディープスロート
+			ELSEIF CHECK("喉姦", ASSI) >= 2 && SIZE("ペニス", MASTER) && RAND:2
+				PRINTFORMW %CALLNAME:ASSI%は%CALLNAME:MASTER%の股間の前に跪くと、硬く屹立したペニスを根元まで%TEXTR("一息に", "吸い込むように", "難なく")%飲み込んできた
+				TEQUIP:ASSI:ディープスロート = MASTER
+			ELSE
+				PRINTFORM %CALLNAME:ASSI%は
+				IF RAND:3 == 0
+					PRINTFORM %CALLNAME:MASTER%の股間の前に跪いて
+				ELSEIF RAND:2
+					PRINTFORM 自然な動作で%CALLNAME:MASTER%の
+				ELSE
+					PRINTFORM 舌なめずりしながら%CALLNAME:MASTER%の
+				ENDIF
+				PRINTFORM ペニスを取り出すと、
+				;包茎
+				IF COND("包茎", MASTER) && RAND:3 == 0
+					;真性包茎
+					IF COND("真性包茎", MASTER)
+						PRINTFORMW 皮被りのソレを咥えて%TEXTR("先端を舌で転がして", "僅かに開いた穴から尿道を舌でほじって")%きた
+					;仮性包茎
+					ELSE
+						PRINTFORMW 余った皮を引き降ろして剥き出しになった亀頭%TEXTR("を口に含んで", "に舌を這わせて", "にキスをして")%きた
+					ENDIF
+				ELSEIF TALENT:ASSI:恋慕 && RAND:2
+					PRINTFORMW 愛おしそうに%TEXTR("キスした", "頬擦りした")%後に口に迎え入れた
+				ELSE
+					PRINTFORMW %TEXTR("舌で舐めまわし", "舐めしゃぶり")%つつ上目遣いで様子を伺ってきた
+				ENDIF
+			ENDIF
+		ENDIF
+	CASEELSE
+		SWAP TARGET, ASSI
+		TRYCALLFORM TRAIN_MESSAGE_COM{SELECTCOM}
+		SWAP TARGET, ASSI
+	ENDSELECT
+ENDIF
+
+
+;SIMULATE_TRAINを使うためにASSIをTARGETにする
+;-------------------------------------------------------------------------------------------------
+MEMO_TARGET = TARGET
+MEMO_ASSI = ASSI
+TARGET = ASSI
+
+	;主人の射精や助手の絶頂のカウントに使用
+	MEMO:0 = EXP:MASTER:射精経験
+	MEMO:1 = EXP:絶頂経験
+
+	;回数はまだ調整していない
+	FOR LCOUNT, 0, 10
+		CALL SIMULATE_TRAIN_COM, SELECTCOM, 1
+		SIF SELECTCOM:5 >= 0
+			CALL SIMULATE_TRAIN_COM, SELECTCOM:5, 1
+		;基本はMASTERが射精するまで
+		SIF EXP:MASTER:射精経験 > MEMO:0
+			BREAK
+	NEXT
+
+	;経験や珠などの獲得量計算
+	CALL SIMULATE_TRAIN_CALC
+
+	;結果発表
+	CALL SIMULATE_TRAIN_SHOW
+
+TARGET = MEMO_TARGET
+ASSI = MEMO_ASSI
+;-------------------------------------------------------------------------------------------------
+
+SIF CEVENT("助手で性処理：地の文スキップ", ASSI)
+	GOTO AFTER_TEXT_1
+
+IF TEQUIP:ASSI:顔面騎乗
+	IF RANDF(4) == 0 && ABL:ASSI:サドっ気 >= 3
+		PRINTFORMW %CALLNAME:MASTER%は%CALLNAME:ASSI%の顔面騎乗で酸欠気味にされながら、しゃぶられるままに射精してしまった…
+	ELSEIF CHECK_CLO("パンツ露出", ASSI)
+		IF RANDF(2) == 0
+			PRINTFORMW %CALLNAME:MASTER%はパンツ越しに%CALLNAME:ASSI%のアソコの%TEXTS("匂い")%を嫌と言うほど味わわされながら、しゃぶられるままに射精してしまった…
+		ELSE
+			PRINTFORMW %CALLNAME:MASTER%は%CALLNAME:ASSI%の%TEXTS("匂い")%の染み付いたパンツで顔をゴシゴシされながら、しゃぶられるままに射精してしまった…
+		ENDIF
+	ELSE
+		IF RANDF(3) == 0
+			PRINTFORMW %CALLNAME:MASTER%は%CALLNAME:ASSI%のアソコで鼻と口を塞がれながら、しゃぶられるままに射精してしまった…
+		ELSEIF RANDF(3) == 1
+			PRINTFORMW %CALLNAME:MASTER%は顔中に%CALLNAME:ASSI%のアソコを擦り付けられながら、しゃぶられるままに射精してしまった…
+		ELSE
+			PRINTFORMW %CALLNAME:MASTER%は%CALLNAME:ASSI%の股間で顔を犯されながら、しゃぶられるままに射精してしまった…
+		ENDIF
+	ENDIF
+ELSEIF TEQUIP:ASSI:ディープスロート
+	PRINTFORMW %CALLNAME:MASTER%は正に性器と化した%CALLNAME:ASSI%の口にペニスを捕食され、為す術なく精液を搾り取られてしまった…
+;以下はSELECTCOMのみの分岐
+ELSE
+	SELECTCASE SELECTCOM
+	CASE 91
+		PRINTFORMW %CALLNAME:MASTER%は跪いて口で処理をしてきた%CALLNAME:ASSI%の喉奥に、たっぷりと射精した…
+	CASE 92
+		PRINTFORMW %CALLNAME:MASTER%は亀頭を口で咥えた状態で胸でペニスを扱いている%CALLNAME:ASSI%の口に、たっぷりと射精した…
+	CASE 99
+		PRINTFORM %CALLNAME:MASTER%は
+		SELECTCASE TEQUIP:MASTER:シックスナイン
+		CASE 1
+			IF CHECK_CLO("Ｖ露出", ASSI)
+				PRINTFORM %CALLNAME:ASSI%の%TEXTR("アソコを隅々まで舐め回し", "アソコに顔を押し付け", "淫核を口で弄び")%ながら
+			ELSE
+				PRINTFORM %CALLNAME:ASSI%の%TEXTR("アソコを下着越しに思う存分味わい", "パンツに顔を押し付け深呼吸し", "淫核を重点的に攻めて下着に染みを作らせ")%ながら
+			ENDIF
+		CASE 2
+			PRINTFORM %CALLNAME:ASSI%のアナル%TEXTR("を指で揉み解し", "に指で悪戯し")%ながら
+		CASE 7
+			IF CHECK_CLO("Ｖ露出", ASSI)
+				LOCALS = て%TEXTS("匂い")%を嗅ぎ
+				PRINTFORM %CALLNAME:ASSI%のアソコを押し広げ%TEXTR("たり閉じたりして遊び", "て隅々まで観察し", "てお手入れ具合を確かめ", "て実況し", LOCALS)%ながら
+			ELSE
+				PRINTFORM %CALLNAME:ASSI%の%TEXTR("アソコを下着越しに弄り倒し", "パンツを引っ張ったりずらしたりして楽しみ", "淫核を重点的に攻めて下着に染みを作らせ")%ながら
+			ENDIF
+		CASE 8
+			PRINTFORM %CALLNAME:ASSI%の膣に指を差し込んで%TEXTR("グニグニと動かし", "開いたり閉じたりし", "膣壁を執拗に擦りあげ")%ながら
+		CASE 13
+			LOCALS = て蒸れた性器の%TEXTS("匂い")%を堪能し
+			PRINTFORM %CALLNAME:ASSI%のアソコを押し広げ%TEXTR("たり閉じたりして遊び", "て隅々まで観察し", "てお手入れ具合を確かめ", "て実況し", LOCALS)%ながら
+		CASE 14
+			PRINTFORM %CALLNAME:ASSI%のアナルをグッと押し広げて%TEXTR("隅々まで観察し", "色素の沈着具合を確かめ", "実況し")%ながら
+		CASE 15
+			PRINTFORM %CALLNAME:ASSI%の尿道に指を出し入れして遊びながら
+		ENDSELECT
+		PRINTFORMW 、しゃぶられるのに任せて精液を吐き出した…
+	CASE 140
+		PRINTFORMW %CALLNAME:MASTER%は%CALLNAME:ASSI%の頭を掴んで勢いよく腰を前後させ、腰を突き出して咽頭を擦りあげながら喉奥にたっぷりと射精した…
+	CASEELSE
+		CALL SAMEN_SHOOT_MESSAGE, ASSI
+	ENDSELECT
+ENDIF
+
+$AFTER_TEXT_1
+CALL DEL_CEVENT, "助手で性処理：地の文スキップ", ASSI
+
+;口上があるかどうかを行数でチェック
+MEMO_LINECOUNT = LINECOUNT
+
+TRYCALLFORM GUEST_KOJO_K{NO:ASSI}_{CFLAG:ASSI:209}, "助手で性処理：事後", ASSI
+
+;台詞が無いなら汎用台詞
+IF LINECOUNT == MEMO_LINECOUNT
+	;特に口上が用意されていないならおあずけフラグＯＮ
+	CALL SET_CEVENT, "助手で性処理：おあずけ", ASSI
+ENDIF
+
+SIF CEVENT("助手で性処理：地の文スキップ", ASSI)
+	GOTO AFTER_TEXT_2
+
+
+
+
+$AFTER_TEXT_2
+CALL DEL_CEVENT, "助手で性処理：地の文スキップ", ASSI
+
+EXP:ASSI:助手経験 += 1
+;欲求も少々満たされます
+CALL CALC, "欲求不満解消", ASSI, 3
+
+;今回の相手を記録
+TFLAG:49 = ASSI
+
+;着衣の乱れを直す
+CALL SETFLAG, "衣装全脱ぎ", ASSI
+
+VARSET LOCALS
+SPLIT MEMO_CLO, ",", LOCALS
+
+FOR LCOUNT, 0, 10
+	EQUIP:ASSI:(LCOUNT + 40) = TOINT(LOCALS:(LCOUNT*2) )
+	CSTR:ASSI:(LCOUNT + 40) = %LOCALS:(LCOUNT*2 + 1)%
+NEXT
+
+RETURN 1
+
+
+

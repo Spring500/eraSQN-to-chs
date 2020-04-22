@@ -1,0 +1,1889 @@
+﻿@EVENTFIRST
+;Verを最新にする
+FLAG:29 = VER_ERASQN()
+
+ASSI = 0
+DAY = 1
+
+CALL SETFLAG, "アイテムフラグ調整"
+
+FLAG:6 = 1
+;口上の表示フラグ
+FLAG:7 = 1
+;実行値の表示/非表示(0で非表示、1で表示)
+FLAG:8 = 1
+;リセット不可な変数フラグ…1bit 主人の外見年齢再設定, 2bit 乳首の詳細再設定
+SETBIT FLAG:11, 1
+SETBIT FLAG:11, 2
+;表示はスリム
+SETBIT FLAG:98, 1
+
+DELCHARA 0
+;[0]番はドッペルあなた
+ADDCHARA 93
+ADDCHARA 0
+MASTER = 1
+
+;グローバル変数の読み込み
+LOADGLOBAL
+
+VARSET LOCAL
+$SELECT_MOOD
+PRINTL 
+;モード選択
+PRINTL ★★モードや設定を選択してください★★
+PRINTFORML  [ 0] NORMAL （通常モード　　目標金額%TEXT_RJ(MONEY_C(NUM("目標金額：ＮＯＲＭＡＬ") ), 10)%）
+PRINTFORML  [ 1] EASY    (簡単モード　　目標金額%TEXT_RJ(MONEY_C(NUM("目標金額：ＥＡＳＹ") ), 10)%) 
+PRINTFORML  [10] コンフィグ
+SIF GLOBAL:99 > 0 && LOCAL == 0
+	PRINTFORML  [11] コンフィグ設定（記録日:{GLOBAL:99/10000}年{(GLOBAL:99%10000)/100}月{GLOBAL:99%100}日）のロード
+PRINTFORML [100] 戻る
+
+$INPUT_LOOP
+INPUT
+IF RESULT == 100
+	BEGIN TITLE
+ELSEIF RESULT == 11 && GLOBAL:99 > 0 && LOCAL == 0
+	CALL LOAD_CONFIGURE
+	IF CONFIG("自動購入")
+		PRINTFORMW 消耗品の自動購入についてはジャスミンを除き解除します
+		IF GETBIT(FLAG:9, 6)
+			FLAG:9 = 1p6
+		ELSE
+			FLAG:9 = 0
+		ENDIF
+	ENDIF
+	LOCAL = 1
+	GOTO SELECT_MOOD
+ELSEIF RESULT == 10
+	CALL SET_CONFIGURE
+	GOTO SELECT_MOOD
+ELSEIF RESULT == 1
+	FLAG:220 = 1
+	PRINTW 能力のLVUPと恋慕の条件は勿論、他にも色々と簡単になります
+ELSEIF RESULT == 0
+ELSE
+	GOTO INPUT_LOOP
+ENDIF
+
+CALL START_CHARA_SELECT
+
+CALL SET_NEWNAME, MASTER
+
+PLAYER = MASTER
+TARGET = 0
+
+IF NO:MASTER == 0
+	;オープニングのはじまりはじまり
+	PRINTL 
+	PRINTFORMW 「夢魔」
+	PRINTFORMW 夢の魔物。夢に現れ、人と交わる。
+	PRINTFORMW その姿は常に美しく、決して夢魔の誘惑から逃れることはできない。
+	PRINTFORMW 夢魔に魅入られその快楽の虜となったならば彼もまた、永遠に夢に棲まう。
+	PRINTFORMW 
+	PRINTFORMW ここはどこだろうか。上も下もわからぬ朦朧とした場所に%CALLNAME:PLAYER%は居た。
+	PRINTFORMW そのおぼろげな場所に、ひと際目を引く妖艶な女が確かにたたずんでいた。
+	PRINTFORMW 女はその濡れた唇から、まるで歌を歌うかのように言葉を紡ぎだした。
+	PRINTFORMW 「あなたは『調教師』、これからあなたは『夢魔』を『調教』するの」
+	PRINTFORMW 「もうぐちゃぐちゃに犯して…。どう？ぞくぞくしない？」
+	PRINTFORMW 「あなたの、場所を、人を、歴史を、ここにつくって…」
+	PRINTFORMW 『夢魔』？『調教』？なんのことだろうか。
+	PRINTFORMW %CALLNAME:PLAYER%が口を開くよりも早く、その意識は遠のいていった。
+	PRINTFORMW 「それじゃ、ガンバってね♪」
+	PRINTFORMW ………
+	PRINTFORMW ……
+	PRINTFORMW …
+	PRINTFORMW 目を開くと見知らぬ場所にいた。いや違う。ここは「%CALLNAME:PLAYER%の書斎」だ。
+	PRINTFORMW 今日ここから%CALLNAME:PLAYER%の調教師としての輝かしい日々が始まるのだ。
+	PRINTFORMW のどが焼けつくように渇く…。
+	PRINTFORMW %CALLNAME:PLAYER%は目の前に置かれたミョッズを手に取りグラスになみなみと注ぐと
+	PRINTFORMW 脳裏に焼けつく違和感とともに喉へと流し込んだ。
+	PRINTFORMW 
+	PRINTFORMW 「メェ～～ッ、ようこそeraSQの世界へ」
+	PRINTFORMW 「今日から君は夢魔とよばれる女の子たちを調教する調教師として日々を過ごしてゆくことになるんだ」
+	PRINTFORMW 「どのように調教するか、その後何をするか、どうやって過ごしてゆくかは君の自由さ」
+	PRINTFORMW 「だってここは…」
+	DRAWLINE
+ELSEIF NO:MASTER == 34
+	PRINTFORMW SQ本編のアナザーストーリとしてお読みください。
+	PRINTFORMW 『チッ…　エストのヤロウいい加減なこと言いやがって…』
+	PRINTFORMW 誰も居ない洞窟内でストゥーナは一人ごちた。
+	PRINTFORMW 魔王の欠片をもった勇者がここを通ると言われ張り付いているが一向にその気配がないので無理もないが…
+	PRINTFORMW （エモノは通るからな…その辺りは不満はないんだが…）
+	PRINTFORMW 世間ではストゥーナはSだと言われているし事実その通りだ。
+	PRINTFORMW Sだから身動き取れない相手をいたぶるのが好きだ。まさにSだ。
+	PRINTFORMW しかしこの辺りを通る"エモノ"にはお世辞にも彼女にとって十分な"エモノ"とは言えなかった。
+	PRINTFORMW はっきり言うならいたぶりがいがなかった。
+	PRINTFORMW （物足りないぜ…クソッ…もっと活きの良いエモノは…んっ？）
+	PRINTFORMW 何か人影が見えた気がした…赤い髪の男だ…
+	PRINTFORMW （勇者の野郎は赤い髪だって言ってたな…ビンゴ！）
+	PRINTFORMW ストゥーナはその人影の前に躍り出た。今なら邪魔なサラマンダーも居ない。
+	PRINTFORMW そしてストゥーナは、
+	PRINTFORMW 固まってしまった…
+	PRINTFORMW 
+	PRINTFORMW ストゥーナと目の前には泣き喚く少年が一人。
+	PRINTFORMW （赤い髪じゃあるがコイツはないよな…）
+	PRINTFORMW 実際はその彼が勇者なのだが。
+	PRINTFORMW （あのアホに見つかったらまずいな…）
+	PRINTFORMW とりあえずストゥーナはその少年を保護することにした…
+ELSEIF NO:MASTER == 35
+	PRINTFORMW SQ本編のアナザーストーリとしてお読みください。
+	PRINTFORMW 『はぁ～　退屈～』
+	PRINTFORMW ダンジョン内を徘徊しながら誰に聞かせるともなくメローナが呟いた。
+	PRINTFORMW 親友のストゥーナとともにこのダンジョンにこもってしばらく、何人かの冒険者やら魔物やらを干からびさせ精気を奪い取ってきた彼女らだったが、
+	PRINTFORMW （どうにも物足りないのよね～）
+	PRINTFORMW 夢魔としての本能を満たせるほどの"エモノ"にはなかなか出会えずに居た。
+	PRINTFORMW メローナが向かっているのは洞窟の入り口の方向。
+	PRINTFORMW 彼女らが居る洞窟の奥深くまでくることが出来る冒険者ですら相手にならないのだ。
+	PRINTFORMW 入り口付近で力尽きる冒険者など物の数にも入らない、と思うのが普通だろう。
+	PRINTFORMW しかし彼女には骨の有る"エモノ"と犯りたいというほかに困った性癖があった。
+	PRINTFORMW （キョロ…キョロ…）
+	PRINTFORMW メローナがダンジョン内部を見回す。
+	PRINTFORMW （クン…クン…）
+	PRINTFORMW ついに鼻まで使い始めた…
+	PRINTFORMW （！）
+	PRINTFORMW その時、メローナの視界に一人の少年が映った。
+	PRINTFORMW あどけない顔をした赤い髪の可愛らしい男の子だ…
+	PRINTFORMW （ナウ、ゲッタ、チャーンッス！）
+	PRINTFORMW メローナは少年が身構えるより早く襲い掛かり、
+	PRINTFORMW あっさりと少年を捕獲した。
+ENDIF
+IF NO:MASTER == 34 || NO:MASTER == 35
+	ADDCHARA 94
+	FLAG:1093 = 1
+	TALENT:MASTER:汚れ無視 = 1
+	TALENT:MASTER:てかげん = 1
+	TARGET = CHARANUM-1
+	CALL SET_NEWNAME
+ENDIF
+
+MONEY = 10000
+
+IF FLAG:4 == 0
+	PRINTFORML （%MONEY_C(MONEY)%で相手したいキャラを召喚してください）
+	PRINTFORML （お金が余れば他のアイテムも買いましょう）
+	PRINTFORMW （また、ＳＨＯＰ画面で色が暗くなっているコマンドは選択する事で実行条件のヒントが表示されます）
+ENDIF
+
+;IF GLOBAL:99 == 0
+	PRINTL 
+	PRINTL 作者が特におすすめするコンフィグ設定を使用しますか？
+	PRINTL [0] はい
+	PRINTL [1] いいえ
+	CALL INPUT_SELECT, 2
+	IF RESULT == 0
+		PRINTL 
+		PRINTL 調教時に、MASTERが中出しすると妊娠可能　　　　　　　　ON
+		FLAG:211 = 1p0 + 1p1
+		PRINTL 実行値フィルタ＆脱処女フィルタ　　　　　　　　　　　　ON
+		FLAG:209 |= 1p4 + 1p6
+		PRINTL 恍惚状態の時には夢魔の好きにさせる　　　　　　　　　　ON
+		FLAG:223 = 1
+		PRINTL 能力の表示で、得ていない経験を表示しない　　　　　　　ON
+		FLAG:250 = 1
+		PRINTL ３サイズと身長の表示　　　　　　　　　　　　　　　　　ON
+		FLAG:239 = 1p0 + 1p1
+		PRINTL 夢魔達の日常イベントを時間経過ごとに発生　　　　　　　ON
+		FLAG:205 = 1
+		PRINTL 調教時のパラメータの４列表示＆ゲージバー：カラフルＡ　ON
+		FLAG:98 = 1p0 + 1p2 + 1p5
+
+		PRINTL 
+		PRINTW 以上のコンフィグを使用します
+	ENDIF
+;ENDIF
+
+;経験値などの設定
+CALL LVUPCHECK_MASTER
+
+BASE:MASTER:ストック = MAXBASE:MASTER:ストック
+
+BEGIN SHOP
+
+@MASTER_FAMALE_A
+IF NO:MASTER
+	ADDCHARA 0
+	SWAPCHARA CHARANUM-1, MASTER
+	DELCHARA CHARANUM-1
+ENDIF
+
+CALL RENEWAL_ABL, MASTER
+
+PRINTL 
+PRINTL 性別を教えてください
+PRINTL [ 0] ♂
+PRINTL [ 1] ♀
+PRINTL [ 2] ふたなり
+PRINTL [ 3] 男の娘(女にしか見えない可愛い容姿で、女性的な振る舞いも好む少年)
+
+CALL INPUT_SELECT, 4
+
+TALENT:MASTER:外見年齢 = 2
+SELECTCASE RESULT
+CASE 1, 2
+	TALENT:MASTER:オトコ = 0
+	IF RESULT == 1
+		TALENT:MASTER:オンナ = 1
+	ELSEIF RESULT == 2
+		TALENT:MASTER:ふたなり = 1
+	ENDIF
+CASE 3
+	TALENT:MASTER:男の娘 = 1
+ENDSELECT
+
+;MASTERの感度は全て2LV
+ABL:MASTER:Ｃ感覚 = 2
+ABL:MASTER:Ｖ感覚 = 2
+ABL:MASTER:Ａ感覚 = 2
+ABL:MASTER:Ｂ感覚 = 2
+ABL:MASTER:Ｍ感覚 = 2
+
+CALL SET_DETAIL, MASTER
+
+;調教知識の選択
+CALL SETFLAG, "調教知識の選択", MASTER
+
+CALL CREATE_CHARA, MASTER
+SIF RESULT == 1
+	RESTART
+
+@SET_DETAIL, ARG
+#DIM LCOUNT
+#DIM MEMO_LINECOUNT
+#DIM CHOICE
+
+MEMO_LINECOUNT = LINECOUNT
+REDRAW 0
+
+;色々設定
+EXP:ARG:Ｖ経験 = MAX(EXP:ARG:Ｖ経験, EXP:ARG:Ｖ性交経験, EXP:ARG:Ｖ拡張経験)
+IF EXP:ARG:Ｖ経験
+	TALENT:ARG:処女 = 0
+ELSEIF TALENT:ARG:オトコ == 0
+	TALENT:ARG:処女 = 1
+ENDIF
+
+EXP:ARG:Ａ経験 = MAX(EXP:ARG:Ａ経験, EXP:ARG:Ａ性交経験, EXP:ARG:Ａ拡張経験)
+IF EXP:ARG:Ａ性交経験
+	TALENT:ARG:Ａ処女 = 0
+ELSE
+	TALENT:ARG:Ａ処女 = 1
+ENDIF
+
+IF EXP:ARG:Ｖ挿入経験
+	TALENT:ARG:童貞 = 0
+ELSEIF TALENT:ARG:オトコ
+	TALENT:ARG:童貞 = 1
+ENDIF
+
+IF ABL:ARG:サドっ気 >= 5
+	TALENT:ARG:サド = 1
+ELSE
+	TALENT:ARG:サド = 0
+ENDIF
+IF ABL:ARG:マゾっ気 >= 5
+	TALENT:ARG:マゾ = 1
+ELSE
+	TALENT:ARG:マゾ = 0
+ENDIF
+IF ABL:ARG:ＢＬっ気
+	EXP:ARG:ＢＬ経験 = EXP_LV(ABL:ARG:ＢＬっ気) + RAND:50
+ELSE
+	EXP:ARG:ＢＬ経験 = 0
+ENDIF
+IF ABL:ARG:レズっ気
+	EXP:ARG:レズ経験 = EXP_LV(ABL:ARG:レズっ気) + RAND:50
+ELSE
+	EXP:ARG:レズ経験 = 0
+ENDIF
+
+SIF ABL:ARG:技巧 || EXP:ARG:Ｖ経験 || EXP:ARG:Ａ経験 || EXP:ARG:Ｖ挿入経験 || EXP:ARG:Ａ挿入経験
+	TALENT:ARG:性経験皆無 = 0
+
+IF TALENT:ARG:性経験皆無
+	EXP:ARG:フェラ経験 = 0
+	EXP:ARG:手淫経験 = 0
+	EXP:ARG:足コキ経験 = 0
+	EXP:ARG:腰使い経験 = 0
+	EXP:ARG:パイズリ経験 = 0
+	EXP:ARG:Ａ責め経験 = 0
+	EXP:ARG:クンニ経験 = 0
+	EXP:ARG:キス経験 = 0
+ELSE
+	SIF ABL:ARG:ＢＬっ気 || TALENT:ARG:オトコ == 0
+		EXP:ARG:フェラ経験 = RAND:(EXP_LV(ABL:ARG:技巧) + 1) / MAX(ABL:ARG:レズっ気, 1) + ABL:ARG:技巧*20 + MAX(RAND:10 - RAND:10, 0)
+	EXP:ARG:手淫経験 = RAND:(EXP_LV(ABL:ARG:技巧) + 1) + ABL:ARG:技巧*20
+	SIF TALENT:ARG:オトコ == 0
+		EXP:ARG:足コキ経験 = RAND:(EXP_LV(ABL:ARG:技巧) + 1) / MAX(ABL:ARG:レズっ気, 1) + ABL:ARG:技巧*20 + MAX(RAND:10 - RAND:10, 0)
+	SIF ABL:ARG:レズっ気 || EXP:ARG:Ｖ挿入経験 + EXP:ARG:Ａ挿入経験
+		EXP:ARG:腰使い経験 = RAND:(EXP_LV(ABL:ARG:技巧) + 1) + EXP:ARG:Ｖ挿入経験 + EXP:ARG:Ａ挿入経験 + ABL:ARG:技巧*20 + MAX(RAND:10 - RAND:10, 0)
+	SIF TALENT:ARG:オトコ == 0
+		EXP:ARG:パイズリ経験 = RAND:(EXP_LV(ABL:ARG:技巧) + 1) / MAX(ABL:ARG:レズっ気, 1) + ABL:ARG:技巧*20 + MAX(RAND:10 - RAND:10, 0)
+	SIF EXP:ARG:Ａ挿入経験 || ABL:ARG:サドっ気 || ABL:ARG:ＢＬっ気
+		EXP:ARG:Ａ責め経験 = RAND:(EXP_LV(ABL:ARG:技巧) + 1) + EXP:ARG:Ａ挿入経験 + ABL:ARG:技巧*10 + MAX(RAND:10 - RAND:10, 0)
+	SIF ABL:ARG:レズっ気 || TALENT:ARG:オトコ
+		EXP:ARG:クンニ経験 = RAND:(EXP_LV(ABL:ARG:技巧) + 1) / MAX(ABL:ARG:ＢＬっ気, 1) + ABL:ARG:技巧*20 + MAX(RAND:10 - RAND:10, 0)
+	EXP:ARG:キス経験 = RAND:(EXP_LV(ABL:ARG:技巧) + 1) + ABL:ARG:技巧*20 + MAX(RAND:10 - RAND:10, 0)
+ENDIF
+
+SIF PENIS(ARG) && CONFIG("ペニス詳細設定") && TALENT:ARG:ペニス == 0
+	CALL SETFLAG, "ペニス詳細設定"
+SIF CONFIG("陰毛") && COND("陰毛", ARG) == 0
+	CALL SETFLAG, "陰毛と腋毛", ARG
+
+CFLAG:ARG:368 = 0
+
+SELECTCASE COND("陰毛", ARG)
+CASE 3
+	SETBIT CFLAG:ARG:368, 1
+CASE 5
+	SETBIT CFLAG:ARG:368, 2
+CASE 7
+	SETBIT CFLAG:ARG:368, 3
+ENDSELECT
+
+SELECTCASE COND("腋毛", ARG)
+CASE 3
+	SETBIT CFLAG:ARG:368, 6
+CASE 7
+	SETBIT CFLAG:ARG:368, 7
+ENDSELECT
+
+VARSET LOCAL
+PRINTL 
+PRINTL 素質や経験などを決定してください
+IF TALENT:ARG:オトコ == 0
+	PRINT Ｖ経験　　　…
+	SETCOLOR DEF_COLOR("暗黄色")
+	SELECTCASE EXP:ARG:Ｖ経験
+	CASE IS >= 300
+		PRINT 豊富
+	CASE IS >= 150
+		PRINT 多め
+	CASE IS >= 20
+		PRINT 有り
+	CASEELSE
+		PRINT 処女
+	ENDSELECT
+	RESETCOLOR
+	PRINTL 　　[  0]処女　[  1]有り　[  2]多め　[  3]豊富
+	LOCAL:0 = 1
+	IF EXP:ARG:Ｖ経験
+		PRINT Ｖ性交経験　…
+		SETCOLOR DEF_COLOR("暗黄色")
+		SELECTCASE EXP:ARG:Ｖ性交経験
+		CASE IS >= 150
+			PRINT 豊富
+		CASE IS >= 50
+			PRINT 多め
+		CASE IS >= 20
+			PRINT 有り
+		CASEELSE
+			PRINT 無し
+		ENDSELECT
+		RESETCOLOR
+		PRINTL 　　[  5]無し　[  6]有り　[  7]多め　[  8]豊富
+		LOCAL:5 = 1
+		PRINT Ｖ拡張経験　…
+		SETCOLOR DEF_COLOR("暗黄色")
+		SELECTCASE EXP:ARG:Ｖ拡張経験
+		CASE IS >= 50
+			PRINT 豊富
+		CASE IS >= 20
+			PRINT 多め
+		CASE IS >= 3
+			PRINT 有り
+		CASEELSE
+			PRINT 無し
+		ENDSELECT
+		RESETCOLOR
+		PRINTL 　　[ 10]無し　[ 11]有り　[ 12]多め　[ 13]豊富
+		LOCAL:10 = 1
+	ENDIF
+ENDIF
+PRINT Ａ経験　　　…
+SETCOLOR DEF_COLOR("暗黄色")
+SELECTCASE EXP:ARG:Ａ経験
+CASE IS >= 300
+	PRINT 豊富
+CASE IS >= 150
+	PRINT 多め
+CASE IS >= 20
+	PRINT 有り
+CASEELSE
+	PRINT 無し
+ENDSELECT
+RESETCOLOR
+PRINTL 　　[ 15]無し　[ 16]有り　[ 17]多め　[ 18]豊富
+LOCAL:15 = 1
+IF EXP:ARG:Ａ経験
+	PRINT Ａ性交経験　…
+	SETCOLOR DEF_COLOR("暗黄色")
+	SELECTCASE EXP:ARG:Ａ性交経験
+	CASE IS >= 150
+		PRINT 豊富
+	CASE IS >= 50
+		PRINT 多め
+	CASE IS >= 20
+		PRINT 有り
+	CASEELSE
+		PRINT 無し
+	ENDSELECT
+	RESETCOLOR
+	PRINTL 　　[ 20]無し　[ 21]有り　[ 22]多め　[ 23]豊富
+	LOCAL:20 = 1
+	PRINT Ａ拡張経験　…
+	SETCOLOR DEF_COLOR("暗黄色")
+	SELECTCASE EXP:ARG:Ａ拡張経験
+	CASE IS >= 50
+		PRINT 豊富
+	CASE IS >= 20
+		PRINT 多め
+	CASE IS >= 3
+		PRINT 有り
+	CASEELSE
+		PRINT 無し
+	ENDSELECT
+	RESETCOLOR
+	PRINTL 　　[ 25]無し　[ 26]有り　[ 27]多め　[ 28]豊富
+	LOCAL:25 = 1
+ENDIF
+IF PENIS(ARG)
+	PRINT Ｖ挿入経験　…
+	SETCOLOR DEF_COLOR("暗黄色")
+	SELECTCASE EXP:ARG:Ｖ挿入経験
+	CASE IS >= 150
+		PRINT 豊富
+	CASE IS >= 50
+		PRINT 多め
+	CASE IS >= 20
+		PRINT 有り
+	CASEELSE
+		PRINT 童貞
+	ENDSELECT
+	RESETCOLOR
+	PRINTL 　　[ 30]童貞　[ 31]有り　[ 32]多め　[ 33]豊富
+	LOCAL:30 = 1
+	PRINT Ａ挿入経験　…
+	SETCOLOR DEF_COLOR("暗黄色")
+	SELECTCASE EXP:ARG:Ａ挿入経験
+	CASE IS >= 150
+		PRINT 豊富
+	CASE IS >= 50
+		PRINT 多め
+	CASE IS >= 20
+		PRINT 有り
+	CASEELSE
+		PRINT 無し
+	ENDSELECT
+	RESETCOLOR
+	PRINTL 　　[ 35]無し　[ 36]有り　[ 37]多め　[ 38]豊富
+	LOCAL:35 = 1
+ENDIF
+
+PRINT 体つき　　　…
+SETCOLOR DEF_COLOR("暗黄色")
+IF TALENT:ARG:長身
+	PRINT 長身
+ELSEIF TALENT:ARG:小柄体型
+	PRINT 小柄
+ELSE
+	PRINT 普通
+ENDIF
+RESETCOLOR
+PRINTFORML 　　[100]小柄　[101]普通　\@ TALENT:ARG:男の娘 == 0 ? [102]長身 # \@
+LOCAL:100 = 1
+IF TALENT:ARG:オトコ == 0
+	PRINT 胸の大きさ　…
+	SETCOLOR DEF_COLOR("暗黄色")
+	IF TALENT:ARG:巨乳 == 2
+		PRINT 爆乳
+	ELSEIF TALENT:ARG:巨乳
+		PRINT 巨乳
+	ELSEIF TALENT:ARG:貧乳
+		PRINT 貧乳
+	ELSE
+		PRINT 普通
+	ENDIF
+	RESETCOLOR
+	PRINTL 　　[105]貧乳　[106]普通　[107]巨乳　[108]爆乳
+	LOCAL:105 = 1
+ENDIF
+IF PENIS(ARG) && CONFIG("ペニス詳細設定")
+	PRINT ペニスサイズ…
+	SETCOLOR DEF_COLOR("暗黄色")
+	IF GETBIT(TALENT:ARG:ペニス, 3)
+		PRINT 馬並
+	ELSEIF GETBIT(TALENT:ARG:ペニス, 2)
+		PRINT 巨根
+	ELSEIF GETBIT(TALENT:ARG:ペニス, 1)
+		PRINT 短小
+	ELSEIF GETBIT(TALENT:ARG:ペニス, 0)
+		PRINT 普通
+	ENDIF
+	RESETCOLOR
+	PRINTFORML 　　[110]短小　[111]普通　[112]巨根　[113]馬並
+	LOCAL:110 = 1
+	PRINTFORM 皮被り　　　…
+	SETCOLOR DEF_COLOR("暗黄色")
+	IF GETBIT(TALENT:ARG:ペニス, 12)
+		PRINT 真性
+	ELSEIF GETBIT(TALENT:ARG:ペニス, 11)
+		PRINT 仮性
+	ELSE
+		PRINT 無し
+	ENDIF
+	RESETCOLOR
+	PRINTFORML 　　[115]真性　[116]仮性　[117]無し
+	LOCAL:115 = 1
+ENDIF
+IF CONFIG("陰毛")
+	PRINT 陰毛　　　　…
+	SETCOLOR DEF_COLOR("暗黄色")
+	SELECTCASE COND("陰毛", ARG)
+	CASE 1
+		PRINT 無毛
+	CASE 2, 3
+		PRINT 剃毛
+	CASE 4, 6
+		PRINT 有り
+	CASE 5
+		PRINT 剃整
+	CASE 7
+		PRINT 密林
+	ENDSELECT
+	RESETCOLOR
+	PRINTL 　　[120]無毛　[121]剃毛　[122]有り　[123]剃整　[124]密林
+	LOCAL:120 = 1
+ENDIF
+IF CONFIG("腋毛")
+	PRINTFORM %TEXTS("腋")%毛　　　　…
+	SETCOLOR DEF_COLOR("暗黄色")
+	SELECTCASE COND("腋毛", ARG)
+	CASE 1
+		PRINT 無毛
+	CASE 2
+		PRINT 脱毛
+	CASE 3
+		PRINT 剃毛
+	CASE 4
+		PRINT 有り
+	CASE 7
+		PRINT 密林
+	ENDSELECT
+	RESETCOLOR
+	PRINTL 　　[125]無毛　[126]剃毛　[127]有り　[128]密林
+	LOCAL:125 = 1
+ENDIF
+PRINT 肌の色　　　…
+SETCOLOR DEF_COLOR("暗黄色")
+SELECTCASE TALENT:ARG:肌の色
+CASE 0
+	PRINT 普通
+CASE 1
+	PRINT 褐色
+CASE 2
+	PRINT 色白
+CASE 3
+	PRINT 青肌
+ENDSELECT
+RESETCOLOR
+PRINTL 　　[130]普通　[131]褐色　[132]色白　[133]青肌
+LOCAL:130 = 1
+
+PRINT 外見年齢　　…
+SETCOLOR DEF_COLOR("暗黄色")
+SELECTCASE AGE(ARG)
+CASE 1
+	PRINTFORM 子供
+CASE 2
+	PRINTFORM \@ TALENT:ARG:オトコ ? 少年 # 少女 \@
+CASE 3
+	PRINTFORM 青年
+CASE 4
+	PRINTFORM 大人
+ENDSELECT
+RESETCOLOR
+IF TALENT:ARG:男の娘
+	PRINTFORML 　　[135]子供　[136]少年
+ELSE
+	PRINTFORML 　　[135]子供　[136]\@ TALENT:ARG:オトコ ? 少年 # 少女 \@　[137]青年　[138]大人
+ENDIF
+LOCAL:135 = 1
+
+IF TALENT:ARG:オトコ == 0 && CONFIG("乳首肥大")
+	PRINT 乳首肥大　　…
+	SETCOLOR DEF_COLOR("暗黄色")
+	SELECTCASE COND("乳首肥大", ARG)
+	CASE IS >= 3
+		PRINT LV３
+	CASE 2
+		PRINT LV２
+	CASE 1
+		PRINT LV１
+	CASEELSE
+		PRINT 無し
+	ENDSELECT
+	RESETCOLOR
+	PRINTL 　　[140]無し　[141]LV１　[142]LV２　[143]LV３
+	LOCAL:140 = 1
+ENDIF
+IF TALENT:ARG:オトコ == 0 && CONFIG("陥没乳首")
+	PRINT 陥没乳首　　…
+	SETCOLOR DEF_COLOR("暗黄色")
+	SELECTCASE COND("陥没乳首", ARG)
+	CASE 2
+		PRINT 真性
+	CASE 1
+		PRINT 仮性
+	CASEELSE
+		PRINT 無し
+	ENDSELECT
+	RESETCOLOR
+	PRINTL 　　[145]無し　[146]仮性　[147]真性
+	LOCAL:145 = 1
+ENDIF
+IF TALENT:ARG:オトコ == 0 && CONFIG("巨乳輪")
+	PRINT 巨乳輪　　　…
+	SETCOLOR DEF_COLOR("暗黄色")
+	SELECTCASE COND("巨乳輪", ARG)
+	CASE IS >= 3
+		PRINT LV３
+	CASE 2
+		PRINT LV２
+	CASE 1
+		PRINT LV１
+	CASEELSE
+		PRINT 無し
+	ENDSELECT
+	RESETCOLOR
+	PRINTL 　　[150]無し　[151]LV１　[152]LV２　[153]LV３
+	LOCAL:150 = 1
+ENDIF
+
+
+IF TALENT:ARG:オトコ == 0
+	PRINT Ｃ感覚　　　…
+	SETCOLOR DEF_COLOR("暗黄色")
+	IF TALENT:ARG:Ｃ敏感
+		PRINT 敏感
+	ELSEIF TALENT:ARG:Ｃ鈍感
+		PRINT 鈍感
+	ELSE
+		PRINT 普通
+	ENDIF
+	RESETCOLOR
+	PRINTL 　　[200]鈍感　[201]普通　[202]敏感
+	LOCAL:200 = 1
+	PRINT Ｖ感覚　　　…
+	SETCOLOR DEF_COLOR("暗黄色")
+	IF TALENT:ARG:Ｖ敏感
+		PRINT 敏感
+	ELSEIF TALENT:ARG:Ｖ鈍感
+		PRINT 鈍感
+	ELSE
+		PRINT 普通
+	ENDIF
+	RESETCOLOR
+	PRINTL 　　[205]鈍感　[206]普通　[207]敏感
+	LOCAL:205 = 1
+ENDIF
+PRINT Ａ感覚　　　…
+SETCOLOR DEF_COLOR("暗黄色")
+IF TALENT:ARG:Ａ敏感
+	PRINT 敏感
+ELSEIF TALENT:ARG:Ａ鈍感
+	PRINT 鈍感
+ELSE
+	PRINT 普通
+ENDIF
+RESETCOLOR
+PRINTL 　　[210]鈍感　[211]普通　[212]敏感
+LOCAL:210 = 1
+IF TALENT:ARG:オトコ == 0
+	PRINT Ｂ感覚　　　…
+	SETCOLOR DEF_COLOR("暗黄色")
+	IF TALENT:ARG:Ｂ敏感
+		PRINT 敏感
+	ELSEIF TALENT:ARG:Ｂ鈍感
+		PRINT 鈍感
+	ELSE
+		PRINT 普通
+	ENDIF
+	RESETCOLOR
+	PRINTL 　　[215]鈍感　[216]普通　[217]敏感
+	LOCAL:215 = 1
+	PRINT Ｍ感覚　　　…
+	SETCOLOR DEF_COLOR("暗黄色")
+	IF TALENT:ARG:Ｍ敏感
+		PRINT 敏感
+	ELSEIF TALENT:ARG:Ｍ鈍感
+		PRINT 鈍感
+	ELSE
+		PRINT 普通
+	ENDIF
+	RESETCOLOR
+	PRINTL 　　[220]鈍感　[221]普通　[222]敏感
+	LOCAL:220 = 1
+ENDIF
+
+PRINT サドっ気　　…
+SETCOLOR DEF_COLOR("暗黄色")
+IF TALENT:ARG:サド
+	PRINT サド
+ELSEIF ABL:ARG:サドっ気 >= 3
+	PRINT 強め
+ELSEIF ABL:ARG:サドっ気 >= 1
+	PRINT 有り
+ELSE
+	PRINT 無し
+ENDIF
+RESETCOLOR
+PRINTL 　　[225]無し　[226]有り　[227]強め　[228]サド
+LOCAL:225 = 1
+PRINT マゾっ気　　…
+SETCOLOR DEF_COLOR("暗黄色")
+IF TALENT:ARG:マゾ
+	PRINT マゾ
+ELSEIF ABL:ARG:マゾっ気 >= 3
+	PRINT 強め
+ELSEIF ABL:ARG:マゾっ気 >= 1
+	PRINT 有り
+ELSE
+	PRINT 無し
+ENDIF
+RESETCOLOR
+PRINTL 　　[230]無し　[231]有り　[232]強め　[233]マゾ
+LOCAL:230 = 1
+IF TALENT:ARG:オトコ
+	PRINT ＢＬっ気　　…
+	SETCOLOR DEF_COLOR("暗黄色")
+	SELECTCASE ABL:ARG:ＢＬっ気
+	CASE IS >= 5
+		PRINT ガチ
+	CASE IS >= 3
+		PRINT 強め
+	CASE IS >= 1
+		PRINT 有り
+	CASEELSE
+		PRINT 無し
+	ENDSELECT
+	RESETCOLOR
+	PRINTL 　　[235]無し　[236]有り　[237]強め　[238]ガチ
+	LOCAL:235 = 1
+ELSE
+	PRINT レズっ気　　…
+	SETCOLOR DEF_COLOR("暗黄色")
+	SELECTCASE ABL:ARG:レズっ気
+	CASE IS >= 5
+		PRINT ガチ
+	CASE IS >= 3
+		PRINT 強め
+	CASE IS >= 1
+		PRINT 有り
+	CASEELSE
+		PRINT 無し
+	ENDSELECT
+	RESETCOLOR
+	PRINTL 　　[240]無し　[241]有り　[242]強め　[243]ガチ
+	LOCAL:240 = 1
+ENDIF
+PRINT 性技術　　　…
+SETCOLOR DEF_COLOR("暗黄色")
+SELECTCASE ABL:ARG:技巧
+CASE IS >= 5
+	PRINT 巧み
+CASE IS >= 3
+	PRINT 上手
+CASE IS >= 1
+	PRINT 有り
+CASEELSE
+	PRINTFORM \@ TALENT:ARG:性経験皆無 ? 皆無 # 無し \@
+ENDSELECT
+RESETCOLOR
+;技巧で巧みを選択できるのは２週目以降
+PRINTFORML 　　[245]無し　[246]有り　[247]上手　\@ FLAG:4 ? [248]巧み # \@
+LOCAL:245 = 1
+PRINTFORML [999] 決定
+
+$INPUT_LOOP
+INPUT
+
+CHOICE = RESULT
+
+IF CHOICE != 999 && LOCAL:(CHOICE/5*5) == 0
+	PRINTL 無効な値です
+	GOTO INPUT_LOOP
+ENDIF
+
+SELECTCASE CHOICE
+CASE 999
+	CALL SET_NEWNAME, MASTER
+	REDRAW 1
+	RETURN 1
+CASE 0
+	EXP:ARG:Ｖ経験 = 0
+	EXP:ARG:Ｖ性交経験 = 0
+CASE 1
+	EXP:ARG:Ｖ経験 = 20 + RAND:50
+CASE 2
+	EXP:ARG:Ｖ経験 = 150 + RAND:50
+CASE 3
+	EXP:ARG:Ｖ経験 = 300 + RAND:300
+CASE 5
+	EXP:ARG:Ｖ性交経験 = 0
+CASE 6
+	EXP:ARG:Ｖ性交経験 = 20 + RAND:20
+CASE 7
+	EXP:ARG:Ｖ性交経験 = 50 + RAND:50
+CASE 8
+	EXP:ARG:Ｖ性交経験 = 150 + RAND:50
+CASE 10
+	EXP:ARG:Ｖ拡張経験 = 0
+CASE 11
+	EXP:ARG:Ｖ拡張経験 = 3 + RAND:5
+CASE 12
+	EXP:ARG:Ｖ拡張経験 = 20 + RAND:10
+CASE 13
+	EXP:ARG:Ｖ拡張経験 = 50 + RAND:50
+
+CASE 15
+	EXP:ARG:Ａ経験 = 0
+	EXP:ARG:Ａ性交経験 = 0
+CASE 16
+	EXP:ARG:Ａ経験 = 20 + RAND:50
+CASE 17
+	EXP:ARG:Ａ経験 = 150 + RAND:50
+CASE 18
+	EXP:ARG:Ａ経験 = 300 + RAND:300
+CASE 20
+	EXP:ARG:Ａ性交経験 = 0
+CASE 21
+	EXP:ARG:Ａ性交経験 = 20 + RAND:20
+CASE 22
+	EXP:ARG:Ａ性交経験 = 50 + RAND:50
+CASE 23
+	EXP:ARG:Ａ性交経験 = 150 + RAND:50
+CASE 25
+	EXP:ARG:Ａ拡張経験 = 0
+CASE 26
+	EXP:ARG:Ａ拡張経験 = 3 + RAND:5
+CASE 27
+	EXP:ARG:Ａ拡張経験 = 20 + RAND:10
+CASE 28
+	EXP:ARG:Ａ拡張経験 = 50 + RAND:50
+CASE 30
+	EXP:ARG:Ｖ挿入経験 = 0
+CASE 31
+	EXP:ARG:Ｖ挿入経験 = 20 + RAND:20
+CASE 32
+	EXP:ARG:Ｖ挿入経験 = 50 + RAND:50
+CASE 33
+	EXP:ARG:Ｖ挿入経験 = 150 + RAND:50
+CASE 35
+	EXP:ARG:Ａ挿入経験 = 0
+CASE 36
+	EXP:ARG:Ａ挿入経験 = 20 + RAND:20
+CASE 37
+	EXP:ARG:Ａ挿入経験 = 50 + RAND:50
+CASE 38
+	EXP:ARG:Ａ挿入経験 = 150 + RAND:50
+
+CASE 100
+	TALENT:ARG:小柄体型 = 1
+	TALENT:ARG:長身 = 0
+CASE 101
+	TALENT:ARG:小柄体型 = 0
+	TALENT:ARG:長身 = 0
+CASE 102
+	IF TALENT:ARG:男の娘 == 0
+		TALENT:ARG:小柄体型 = 0
+		TALENT:ARG:長身 = 1
+	ENDIF
+CASE 105
+	TALENT:ARG:貧乳 = 1
+	TALENT:ARG:巨乳 = 0
+CASE 106
+	TALENT:ARG:貧乳 = 0
+	TALENT:ARG:巨乳 = 0
+CASE 107
+	TALENT:ARG:貧乳 = 0
+	TALENT:ARG:巨乳 = 1
+CASE 108
+	TALENT:ARG:貧乳 = 0
+	TALENT:ARG:巨乳 = 2
+CASE 110
+	TALENT:ARG:ペニス = CLEARBITS(TALENT:ARG:ペニス, 0, 3)
+	SETBIT TALENT:ARG:ペニス, 1
+CASE 111
+	TALENT:ARG:ペニス = CLEARBITS(TALENT:ARG:ペニス, 0, 3)
+	SETBIT TALENT:ARG:ペニス, 0
+CASE 112
+	TALENT:ARG:ペニス = CLEARBITS(TALENT:ARG:ペニス, 0, 3)
+	SETBIT TALENT:ARG:ペニス, 2
+CASE 113
+	TALENT:ARG:ペニス = CLEARBITS(TALENT:ARG:ペニス, 0, 3)
+	SETBIT TALENT:ARG:ペニス, 3
+CASE 115
+	TALENT:ARG:ペニス = CLEARBITS(TALENT:ARG:ペニス, 11, 12)
+	SETBIT TALENT:ARG:ペニス, 12
+CASE 116
+	TALENT:ARG:ペニス = CLEARBITS(TALENT:ARG:ペニス, 11, 12)
+	SETBIT TALENT:ARG:ペニス, 11
+CASE 117
+	TALENT:ARG:ペニス = CLEARBITS(TALENT:ARG:ペニス, 11, 12)
+CASE 120
+	BASE:ARG:陰毛 = 100
+CASE 121
+	BASE:ARG:陰毛 = 300
+CASE 122
+	BASE:ARG:陰毛 = 600
+CASE 123
+	BASE:ARG:陰毛 = 500
+CASE 124
+	BASE:ARG:陰毛 = 700
+CASE 125
+	BASE:ARG:腋毛 = 100
+CASE 126
+	BASE:ARG:腋毛 = 300
+CASE 127
+	BASE:ARG:腋毛 = 400
+CASE 128
+	BASE:ARG:腋毛 = 700
+CASE 130 TO 133
+	TALENT:ARG:肌の色 = CHOICE - 130
+;男の娘はこっちだけ
+CASE 135 TO 136
+	TALENT:ARG:外見年齢 = CHOICE - 134
+CASE 137 TO 138
+	IF TALENT:ARG:男の娘
+		GOTO INPUT_LOOP
+	ELSE
+		TALENT:ARG:外見年齢 = CHOICE - 134
+	ENDIF
+CASE 140 TO 143
+	TALENT:ARG:乳首 = CLEARBITS(TALENT:ARG:乳首, 0, 9)
+	SETBIT TALENT:ARG:乳首, CHOICE - 140
+CASE 145 TO 147
+	TALENT:ARG:乳首 = CLEARBITS(TALENT:ARG:乳首, 10, 19)
+	SETBIT TALENT:ARG:乳首, CHOICE - 135
+CASE 150 TO 153
+	TALENT:ARG:乳首 = CLEARBITS(TALENT:ARG:乳首, 20, 29)
+	SETBIT TALENT:ARG:乳首, CHOICE - 130
+
+CASE 200
+	TALENT:ARG:Ｃ敏感 = 0
+	TALENT:ARG:Ｃ鈍感 = 1
+CASE 201
+	TALENT:ARG:Ｃ敏感 = 0
+	TALENT:ARG:Ｃ鈍感 = 0
+CASE 202
+	TALENT:ARG:Ｃ敏感 = 1
+	TALENT:ARG:Ｃ鈍感 = 0
+CASE 205
+	TALENT:ARG:Ｖ敏感 = 0
+	TALENT:ARG:Ｖ鈍感 = 1
+CASE 206
+	TALENT:ARG:Ｖ敏感 = 0
+	TALENT:ARG:Ｖ鈍感 = 0
+CASE 207
+	TALENT:ARG:Ｖ敏感 = 1
+	TALENT:ARG:Ｖ鈍感 = 0
+CASE 210
+	TALENT:ARG:Ａ敏感 = 0
+	TALENT:ARG:Ａ鈍感 = 1
+CASE 211
+	TALENT:ARG:Ａ敏感 = 0
+	TALENT:ARG:Ａ鈍感 = 0
+CASE 212
+	TALENT:ARG:Ａ敏感 = 1
+	TALENT:ARG:Ａ鈍感 = 0
+CASE 215
+	TALENT:ARG:Ｂ敏感 = 0
+	TALENT:ARG:Ｂ鈍感 = 1
+CASE 216
+	TALENT:ARG:Ｂ敏感 = 0
+	TALENT:ARG:Ｂ鈍感 = 0
+CASE 217
+	TALENT:ARG:Ｂ敏感 = 1
+	TALENT:ARG:Ｂ鈍感 = 0
+CASE 220
+	TALENT:ARG:Ｍ敏感 = 0
+	TALENT:ARG:Ｍ鈍感 = 1
+CASE 221
+	TALENT:ARG:Ｍ敏感 = 0
+	TALENT:ARG:Ｍ鈍感 = 0
+CASE 222
+	TALENT:ARG:Ｍ敏感 = 1
+	TALENT:ARG:Ｍ鈍感 = 0
+CASE 225
+	ABL:ARG:サドっ気 = 0
+CASE 226
+	ABL:ARG:サドっ気 = 1 + RAND:2
+CASE 227
+	ABL:ARG:サドっ気 = 3 + RAND:2
+CASE 228
+	ABL:ARG:サドっ気 = 5
+CASE 230
+	ABL:ARG:マゾっ気 = 0
+CASE 231
+	ABL:ARG:マゾっ気 = 1 + RAND:2
+CASE 232
+	ABL:ARG:マゾっ気 = 3 + RAND:2
+CASE 233
+	ABL:ARG:マゾっ気 = 5
+CASE 235
+	ABL:ARG:ＢＬっ気 = 0
+CASE 236
+	ABL:ARG:ＢＬっ気 = 1 + RAND:2
+CASE 237
+	ABL:ARG:ＢＬっ気 = 3 + RAND:2
+CASE 238
+	ABL:ARG:ＢＬっ気 = 5
+CASE 240
+	ABL:ARG:レズっ気 = 0
+CASE 241
+	ABL:ARG:レズっ気 = 1 + RAND:2
+CASE 242
+	ABL:ARG:レズっ気 = 3 + RAND:2
+CASE 243
+	ABL:ARG:レズっ気 = 5
+CASE 245
+	ABL:ARG:技巧 = 0
+	PRINTFORML 性経験を皆無にしますか？（自動的に処女、童貞となります）
+	PRINTFORML [ 0] はい
+	PRINTFORML [ 1] いいえ
+	CALL INPUT_SELECT, 2
+	IF RESULT == 0
+		TALENT:ARG:性経験皆無 = 1
+		EXP:ARG:Ｖ経験 = 0
+		EXP:ARG:Ｖ性交経験 = 0
+		EXP:ARG:Ｖ拡張経験 = 0
+		EXP:ARG:Ａ経験 = 0
+		EXP:ARG:Ａ性交経験 = 0
+		EXP:ARG:Ａ拡張経験 = 0
+		EXP:ARG:Ｖ挿入経験 = 0
+		EXP:ARG:Ａ挿入経験 = 0
+	ENDIF
+CASE 246
+	ABL:ARG:技巧 = 1 + RAND:2
+CASE 247
+	ABL:ARG:技巧 = 3 + RAND:2
+CASE 248
+	ABL:ARG:技巧 = 5
+CASEELSE
+	GOTO INPUT_LOOP
+ENDSELECT
+
+CLEARLINE LINECOUNT - MEMO_LINECOUNT
+RESTART
+
+@CREATE_CHARA, ARG
+#DIM LCOUNT
+#DIM MEMO_LINECOUNT
+
+REDRAW 0
+
+MEMO_LINECOUNT = LINECOUNT
+PRINTL 
+
+;MASTERの複製作成
+ADDCOPYCHARA ARG
+
+CALL SETFLAG, "識別番号", ARG
+
+;ボーナス素質の獲得など
+IF RAND:3 == 0
+	IF RAND:2
+		TALENT:ARG:痛みに弱い = 1
+	ELSE
+		TALENT:ARG:痛みに強い = 1
+	ENDIF
+ENDIF
+;男にも濡れやすさの変化をつける試み
+IF RAND:3 == 0
+	IF RAND:2
+		TALENT:ARG:濡れやすい = 1
+	ELSE
+		TALENT:ARG:濡れにくい = 1
+	ENDIF
+ENDIF
+;IF RAND:3 == 0
+;	IF RAND:2
+;		TALENT:ARG:賢い = 1
+;	ELSE
+;		TALENT:ARG:愚か = 1
+;	ENDIF
+;ENDIF
+IF RAND:3 == 0 && TALENT:ARG:オトコ
+	IF RAND:2
+		TALENT:ARG:早漏 = 1
+	ELSE
+		TALENT:ARG:遅漏 = 1
+	ENDIF
+ENDIF
+;SIF RAND:3 == 0 && ABL:ARG:マゾっ気 + ABL:ARG:サドっ気
+;	TALENT:ARG:倒錯的 = 1
+;IF RAND:3 == 0 && ABL:ARG:レズっ気 + ABL:ARG:ＢＬっ気
+;	IF ABL:ARG:レズっ気 >= 5 && RAND:3 == 0
+;		TALENT:ARG:男嫌い = 1
+;	ELSE
+;		TALENT:ARG:両刀 = 1
+;	ENDIF
+;ENDIF
+SIF RAND:4 == 0
+	TALENT:ARG:力持ち = 1
+
+IF ABL:ARG:技巧
+	FOR LCOUNT, 0, 5
+		SELECTCASE RAND:10
+		CASE 0 TO 5
+			LOCAL = 0
+		CASE 6 TO 7
+			LOCAL = 1
+		CASE 8
+			LOCAL = 2
+		CASE 9
+			LOCAL = 3
+		ENDSELECT
+
+		SELECTCASE LCOUNT
+		CASE 0
+			TALENT:ARG:舌使い = LOCAL
+		CASE 1
+			TALENT:ARG:指使い = LOCAL
+		CASE 2
+			SIF COND("脚が無い", ARG) == 0
+				TALENT:ARG:足使い = LOCAL
+		CASE 3
+			TALENT:ARG:腰使い = LOCAL
+		CASE 4
+			SIF TALENT:ARG:オトコ == 0
+				TALENT:ARG:魔乳 = LOCAL
+		ENDSELECT
+	NEXT
+ELSE
+	SIF RAND:3 == 0
+		EXP:ARG:フェラ経験 = 0
+	SIF RAND:3 == 0
+		EXP:ARG:手淫経験 = 0
+	SIF RAND:3 == 0
+		EXP:ARG:足コキ経験 = 0
+	SIF RAND:3 == 0
+		EXP:ARG:腰使い経験 = 0
+	SIF RAND:3 == 0
+		EXP:ARG:パイズリ経験 = 0
+	SIF RAND:3 == 0
+		EXP:ARG:Ａ責め経験 = 0
+	SIF RAND:3 == 0
+		EXP:ARG:クンニ経験 = 0
+	SIF RAND:3 == 0
+		EXP:ARG:キス経験 = 0
+ENDIF
+
+FOR LCOUNT, 0, 100
+	SIF EXP:ARG:LCOUNT
+		EXP:ARG:LCOUNT = MAX(MULTIPLY(EXP:ARG:LCOUNT, 50 + (RAND:6 + RAND:6)*10), 1)
+NEXT
+
+;ＬＶの初期化
+SIF ARG == MASTER && FLAG:255 == 0
+	ABL:ARG:ＬＶ = 0
+
+CALL RESET_EXP_GAIN, ARG
+CALL SET_3SIZE, ARG
+CALL GET_EXABL, ARG
+CALL GET_EXTALENT, ARG
+CALL SETFLAG, "乳首の詳細設定", ARG
+CALL SETFLAG, "属性", ARG
+CALL CALC, "好きな体位", ARG
+
+;素質の性経験皆無はデバッグスキル扱いなのでここで消去
+TALENT:ARG:性経験皆無 = 0
+
+CALL NEW_PRINT_STATE, ARG, "キャラメイク"
+PRINTL 
+PRINTFORML これでよろしいですか？
+PRINTFORML [ 0] はい
+PRINTFORML [ 1] 設定をしなおす
+;IF CONFIG("３サイズ") && (COND("男の娘", ARG) || TALENT:ARG:オトコ == 0)
+	PRINTFORML [ 2] リロード
+	CALL INPUT_SELECT, 3
+;ELSE
+;	CALL INPUT_SELECT, 2
+;ENDIF
+SELECTCASE RESULT
+CASE 0, 1
+	REDRAW 1
+	DELCHARA CHARANUM-1
+	RETURN RESULT
+CASE 2
+	COPYCHARA CHARANUM-1, ARG
+	DELCHARA CHARANUM-1
+
+	CLEARLINE LINECOUNT - MEMO_LINECOUNT
+	RESTART
+ENDSELECT
+
+@GAME_RENEWAL
+#DIM LCOUNT
+#DIM MEMO_MASTER
+
+;所持金は100万引いたものか1万かの大きな方とする
+MONEY = MAX(MONEY - 1000000, 10000)
+
+;相思相愛を失う
+TALENT:MASTER:相思相愛 = 0
+ITEM:誓約の指輪 = 0
+
+CALL SETFLAG, "アイテムフラグ調整"
+;ユニークキャラの購入フラグリセット
+VARSET FLAG, 0, 1000, 1100
+;探索のクリアフラグリセット
+VARSET FLAG, 0, 50, 60
+
+FLAG:6 = 1
+;リセット不可な変数フラグ…1bit 主人の外見年齢再設定, 2bit 乳首の詳細再設定
+SETBIT FLAG:11, 1
+SETBIT FLAG:11, 2
+;日付などリセット…はしない
+;DAY = 1
+TIME = 0
+FLAG:872 = 0
+FLAG:873 = 0
+
+;前回ボーナスの終了
+SIF GETBIT(FLAG:33, 0)
+	TALENT:MASTER:調合知識 = 0
+SIF GETBIT(FLAG:33, 1)
+	TALENT:MASTER:治療 = 0
+IF GETBIT(FLAG:33, 2)
+	TALENT:MASTER:魔法使い = 0
+	;魔法忘れるのはやめた
+	;FOR LCOUNT, 230, 260
+	;	TALENT:MASTER:LCOUNT = 0
+	;NEXT
+ENDIF
+SIF GETBIT(FLAG:33, 3)
+	TALENT:MASTER:ドラグーン = 0
+SIF GETBIT(FLAG:33, 4)
+	TALENT:MASTER:歌唱技能 = 0
+SIF GETBIT(FLAG:33, 5)
+	TALENT:MASTER:魅惑 = 0
+SIF GETBIT(FLAG:33, 6)
+	TALENT:MASTER:魅力 = 0
+SIF GETBIT(FLAG:33, 7)
+	TALENT:MASTER:早漏 = 0
+SIF GETBIT(FLAG:33, 8)
+	TALENT:MASTER:遅漏 = 0
+SIF GETBIT(FLAG:33, 9)
+	TALENT:MASTER:百発百中 = 0
+SIF GETBIT(FLAG:33, 10)
+	TALENT:MASTER:針さばき = 0
+SIF GETBIT(FLAG:33, 11)
+	TALENT:MASTER:召喚の天才 = 0
+SIF GETBIT(FLAG:33, 12)
+	TALENT:MASTER:召喚の天災 = 0
+SIF GETBIT(FLAG:33, 13)
+	TALENT:MASTER:竜の血 = 0
+SIF GETBIT(FLAG:33, 14)
+	TALENT:MASTER:具現 = 0
+SIF GETBIT(FLAG:33, 15)
+	TALENT:MASTER:賢い = 0
+
+SIF GETBIT(FLAG:33, 30)
+	TALENT:MASTER:舌使い = CSVTALENT(NO:MASTER, 180, 0)
+SIF GETBIT(FLAG:33, 31)
+	TALENT:MASTER:指使い = CSVTALENT(NO:MASTER, 181, 0)
+SIF GETBIT(FLAG:33, 32)
+	TALENT:MASTER:足使い = CSVTALENT(NO:MASTER, 182, 0)
+SIF GETBIT(FLAG:33, 33)
+	TALENT:MASTER:腰使い = CSVTALENT(NO:MASTER, 183, 0)
+SIF GETBIT(FLAG:33, 34)
+	TALENT:MASTER:魔乳 = CSVTALENT(NO:MASTER, 184, 0)
+
+FLAG:33 = 0
+;レベルリミッター解除
+FLAG:247 = 0
+
+;キャラメイク中フラグON
+SETBIT FLAG:99, 13
+
+;MASTERが別人になったかを識別する
+MEMO_MASTER = BASE:MASTER:識別番号
+
+CALL START_CHARA_SELECT
+
+;別人？
+IF MEMO_MASTER != BASE:MASTER:識別番号
+	;前の主人限定のフラグの消去
+	FOR LCOUNT, 1, CHARANUM
+		MARK:LCOUNT:主人屈服刻印 = 0
+	NEXT
+ENDIF
+
+;TFLAGを持ち越す夢魔の数の記録に使用
+VARSET TFLAG
+;ボーナス
+CALL CLEAR_BONUS
+
+;お気に入りの夢魔の持ち越し
+LOCAL = 0
+FOR LCOUNT, 1, CHARANUM
+	;繰り越し判定で使用
+	CFLAG:LCOUNT:6 = 0
+	SIF TALENT:LCOUNT:淫乱 + TALENT:LCOUNT:恋慕
+		LOCAL += 1
+NEXT
+SIF LOCAL
+	CALL KURIKOSI_MUMA
+
+;選択しなかった夢魔をメンバーから外す
+FOR LCOUNT, 0, 100
+	SIF CHARANUM <= LCOUNT
+		BREAK
+	SIF LCOUNT <= MASTER || CFLAG:LCOUNT:6
+		CONTINUE
+	CALL DELETE_CHARA, LCOUNT
+	LCOUNT -= 1
+NEXT
+
+;攻略人数リセット
+FLAG:30 = 0
+;喫茶店の収入等リセット
+MONEY:7 = 0
+
+FOR LCOUNT, 1, CHARANUM
+	;体力とか回復
+	BASE:LCOUNT:体力 = MAXBASE:LCOUNT:体力
+	BASE:LCOUNT:気力 = MAXBASE:LCOUNT:気力
+	BASE:LCOUNT:精力 = MAXBASE:LCOUNT:精力
+	BASE:LCOUNT:ストック = MAXBASE:LCOUNT:ストック
+
+	SIF LCOUNT == MASTER
+		CONTINUE
+
+	CFLAG:LCOUNT:97 = 0
+	;好感度を2500に。
+	CFLAG:LCOUNT:2 = MIN(CFLAG:LCOUNT:2, 2500)
+	;強制的に誓約
+	TALENT:LCOUNT:誓約 = 1
+	;相思相愛は失う
+	TALENT:LCOUNT:相思相愛 = 0
+NEXT
+
+IF CHARA_NUM("繰り越しキャラ")
+	TARGET = MASTER + 1
+	PRINTFORMW %CALLNAME:TARGET%\@CHARA_NUM("繰り越しキャラ") >= 2 ? 達 # \@と一緒に{FLAG:4 + 1}周目をお楽しみください。
+ELSE
+	TARGET = 0
+	PRINTFORMW それでは{FLAG:4 + 1}周目をお楽しみください。
+ENDIF
+;繰越フラグ初期化
+CVARSET CFLAG, 6, 0
+
+ASSI = 0
+
+@RENEWAL_ABL, ARG
+#DIM LCOUNT
+FOR LCOUNT, 0, 300
+	;謎の魅力、甘い言葉、てかげんは残す
+	SELECTCASE TALENTNAME:LCOUNT
+	CASE "謎の魅力", "甘い言葉", "てかげん"
+		CONTINUE
+	ENDSELECT
+
+	TALENT:ARG:LCOUNT = 0
+NEXT
+FOR LCOUNT, 0, 999
+	CFLAG:ARG:LCOUNT = 0
+NEXT
+;レベル以外初期化
+FOR LCOUNT, 0, 50
+	ABL:ARG:LCOUNT = 0
+NEXT
+;経験値以外初期化
+FOR LCOUNT, 0, 100
+	SIF LCOUNT != 5
+		EXP:ARG:LCOUNT = 0
+NEXT
+FOR LCOUNT, 0, 11
+	MARK:ARG:LCOUNT = 0
+NEXT
+FOR LCOUNT, 0, 16
+	JUEL:ARG:LCOUNT = 0
+NEXT
+
+ABL:ARG:技巧 = 2
+TALENT:ARG:オトコ = 1
+;妊娠イベントなど、ベースフラグのリセット
+VARSET BASE:ARG:体力, 0, 20, 60
+VARSET TCVAR:ARG:0
+
+;-------------------------------------------------
+;PCを選択式にしてみる
+;-------------------------------------------------
+@START_CHARA_SELECT
+PRINTL プレイヤーを選択してください
+;周回フラグがある場合
+IF FLAG:4
+	PRINTL 
+	PRINTL [ 0]通常の主人……いわゆる"あなた"。選択後にキャラメイクに移ります
+	PRINTL [ 1]夢魔の一覧から選ぶ
+	PRINTL [ 2]この周回での主人を引き続き選択
+	CALL INPUT_SELECT, 3
+ELSE
+	PRINTL 基本的には[ 0]がおすすめです
+	PRINTL 
+	PRINTL [ 0]通常の主人……いわゆる"あなた"。選択後にキャラメイクに移ります
+	PRINTL [ 1]夢魔の一覧から選ぶ
+	CALL INPUT_SELECT, 2
+ENDIF
+
+SELECTCASE RESULT
+CASE 0
+	PRINTFORMW プレイヤーは"あなた"とします
+	CALL MASTER_FAMALE_A
+	RETURN 1
+CASE 2
+	PRINTFORMW 引き続き、%CALLNAME:MASTER%をプレイヤーとします
+	RETURN 1
+ENDSELECT
+
+VARSET LOCAL
+
+CALL START_CHARA_SHOW
+
+$INPUT_LOOP
+INPUT
+
+IF RESULT == 0
+	PRINTFORMW プレイヤーは"あなた"とします
+	CALL MASTER_FAMALE_A
+	RETURN 0
+;数値はキャラのアイテム番号の最小値と最大値依存。
+ELSEIF RESULT < 0 || RESULT > 98
+	GOTO INPUT_LOOP
+;売値の設定がないなら再入力
+ELSEIF ITEMSALES:(RESULT + 100) == 0
+	GOTO INPUT_LOOP
+ENDIF
+
+;C = キャラ番号、E = 上位種チェック(@CHARA_MANUAL)
+C = RESULT
+;最初のページは基本種
+E = 0
+;キャラ解説を入れる
+CALL CHARA_MANUAL, C, "主人"
+;いいえを選ぶと再入力
+IF RESULT == 0
+	;表示されていたキャラを白紙に戻す
+	DELCHARA CHARANUM-1
+	CALL START_CHARA_SHOW
+	GOTO INPUT_LOOP
+ENDIF
+
+SWAPCHARA CHARANUM-1, MASTER
+DELCHARA CHARANUM-1
+
+CALL SET_NEWNAME, MASTER
+;魔法使い持ちは、魔法を持っている可能性アリ
+SIF TALENT:MASTER:魔法使い == 1
+	CALL GET_MAGIC, MASTER
+
+PRINTFORMW プレイヤーを「%CALLNAME:MASTER%」に設定します
+;最大レベルを合わせる
+FLAG:255 = ABL:MASTER:ＬＶ
+
+@START_CHARA_SHOW
+PRINTL ★★プレイヤーキャラを選んでください★★
+DRAWLINE
+
+CALL SET_CHARA_BUY_SHOW
+
+;"あなた"は禁止
+ITEMSALES:あなた = 0
+
+DRAWLINE
+PRINTFORML [ 0]変更しない　　　　
+
+
+@KURIKOSI_MUMA
+#DIM LCOUNT
+#DIM MEMO_LINECOUNT
+
+MEMO_LINECOUNT = LINECOUNT
+REDRAW 0
+PRINTFORML 
+PRINTFORML 攻略済みの夢魔を{1 + TFLAG:0}人だけ手元に残すことも出来ます。
+PRINTFORML （選ばれたキャラの好感度は最大で2500となり\@ TALENT:MASTER:相思相愛 ? 、素質：%TALENTNAME:211%等は失われ # \@ます）
+PRINTFORML （また、自動的に誓約状態となり次の周では売却できません）
+PRINT 以下から選択してください。選択されたキャラは、名前の右に
+CALL HEARTMARK
+PRINTL が現れます
+FOR LCOUNT, 1, CHARANUM
+	SIF TALENT:LCOUNT:恋慕 + TALENT:LCOUNT:淫乱 == 0
+		CONTINUE
+
+	CALL PRINT_NUM_NAME, "繰越キャラ", LCOUNT
+NEXT
+
+IF CHARA_NUM("繰り越しキャラ")
+	PRINTL  [100]これで良い
+ELSE
+	PRINTL  [100]誰も残さない
+ENDIF
+
+$INPUT_LOOP
+INPUT
+IF RESULT == 100
+	REDRAW 1
+	RETURN 0
+ELSEIF RESULT < MASTER || RESULT >= CHARANUM
+	GOTO INPUT_LOOP
+ELSEIF TALENT:RESULT:淫乱 + TALENT:RESULT:恋慕 == 0
+	GOTO INPUT_LOOP
+ELSEIF CFLAG:RESULT:6 == 0 && CHARA_NUM("繰り越しキャラ") > TFLAG:0
+	GOTO INPUT_LOOP
+ENDIF
+
+INVERTBIT CFLAG:RESULT:6, 0
+
+CLEARLINE LINECOUNT - MEMO_LINECOUNT
+RESTART
+
+@CLEAR_BONUS
+;FLAG:31（クリアしたキャラの種類）でボーナスゲット…開発中
+SIF FLAG:4 == 0
+	RETURN 0
+
+CALL CLEAR_BONUS_SELECT, FLAG:4 + FLAG:31, FLAG:255
+
+ABL:MASTER:ＬＶ = MIN(ABL:MASTER:ＬＶ, FLAG:255)
+;経験値を、LVに見合ったものに変更
+EXP:MASTER:経験値 = EXP_NEXTLV(MASTER, ABL:MASTER:ＬＶ - 1)
+
+
+;ARGに特典ポイント、ARG:1に特典Ｐでどうこうする前のあなたのLVが入っている
+;TFLAG:0は次週に連れていくキャラ枠の増分
+@CLEAR_BONUS_SELECT, ARG, ARG:1
+#DIM LCOUNT
+#DIM MEMO_LINECOUNT
+#DIM IS_SELECT, 100
+#DIM CHOICE
+
+MEMO_LINECOUNT = LINECOUNT
+REDRAW 0
+
+;選択肢[ X]を選択できるならばIS_SELECT:X > 0 となる。値は関連する特典Ｐ
+VARSET IS_SELECT
+
+PRINTFORML 
+PRINTFORML クリアしたキャラの種類と周回数に応じて、特典を得ることが出来ます。
+PRINTFORML 以下から選択してください：あと{ARG}ポイント
+PRINTFORML 
+IF TALENT:MASTER:調合知識 == 0
+	PRINTFORML  [ 0] \@ GETBIT(FLAG:33, 0) ? ○ # －\@ 調合知識　（特殊アイテム、媚薬強化等）　　　３Ｐ
+	IS_SELECT:0 = 3
+ENDIF
+IF TALENT:MASTER:治療 == 0
+	PRINTFORML  [ 1] \@ GETBIT(FLAG:33, 1) ? ○ # －\@ 治療　　　（時間ごとの体力回復ＵＰ）　　　　３Ｐ
+	IS_SELECT:1 = 3
+ENDIF
+IF TALENT:MASTER:魔法使い == 0
+	PRINTFORML  [ 2] \@ GETBIT(FLAG:33, 2) ? ○ # －\@ 魔法使い　　　　　　　　　　　　　　　　　　６Ｐ
+	IS_SELECT:2 = 6
+ENDIF
+IF TALENT:MASTER:ドラグーン == 0
+	PRINTFORML  [ 3] \@ GETBIT(FLAG:33, 3) ? ○ # －\@ 竜の僕　　（ドラ姦使用可能）　　　　　　　　５Ｐ
+	IS_SELECT:3 = 5
+ENDIF
+IF TALENT:MASTER:歌唱技能 == 0
+	PRINTFORML  [ 4] \@ GETBIT(FLAG:33, 4) ? ○ # －\@ 歌唱技能　　　　　　　　　　　　　　　　　　４Ｐ
+	IS_SELECT:4 = 4
+ENDIF
+;魅力のほぼ上位
+IF TALENT:MASTER:魅惑 == 0
+	PRINTFORML  [ 5] \@ GETBIT(FLAG:33, 5) ? ○ # －\@ 魅惑　　　（好感度ＵＰ、反感減少等）　　　　４Ｐ
+	IS_SELECT:5 = 4
+ENDIF
+IF TALENT:MASTER:魅力 == 0
+	PRINTFORML  [ 6] \@ GETBIT(FLAG:33, 6) ? ○ # －\@ 魅力　　　（好感度ＵＰ）　　　　　　　　　　３Ｐ
+	IS_SELECT:6 = 3
+ENDIF
+IF TALENT:MASTER:早漏 == 0 && PENIS(MASTER)
+	PRINTFORML  [ 7] \@ GETBIT(FLAG:33, 7) ? ○ # －\@ 早漏　　　　　　　　　　　　　　　　　　　　２Ｐ
+	IS_SELECT:7 = 2
+ENDIF
+IF TALENT:MASTER:遅漏 == 0 && PENIS(MASTER)
+	PRINTFORML  [ 8] \@ GETBIT(FLAG:33, 8) ? ○ # －\@ 遅漏　　　　　　　　　　　　　　　　　　　　２Ｐ
+	IS_SELECT:8 = 2
+ENDIF
+IF TALENT:MASTER:百発百中 == 0 && PENIS(MASTER) && CONFIG("妊娠パッチ")
+	PRINTFORML  [ 9] \@ GETBIT(FLAG:33, 9) ? ○ # －\@ 百発百中　（確実に妊娠させます）　　　　　　３Ｐ
+	IS_SELECT:9 = 3
+ENDIF
+IF TALENT:MASTER:針さばき == 0
+	PRINTFORML  [10] \@ GETBIT(FLAG:33, 10) ? ○ # －\@ 針さばき　（針の効果ＵＰ）　　　　　　　　　２Ｐ
+	IS_SELECT:10 = 2
+ENDIF
+IF TALENT:MASTER:召喚の天才 == 0
+	PRINTFORML  [11] \@ GETBIT(FLAG:33, 11) ? ○ # －\@ 召喚の天才（召喚事故が操作可能）　　　　　　10Ｐ
+	IS_SELECT:11 = 10
+ENDIF
+IF TALENT:MASTER:召喚の天災 == 0
+	PRINTFORML  [12] \@ GETBIT(FLAG:33, 12) ? ○ # －\@ 召喚の天災（召喚事故率100％！） 　　　　　　５Ｐ
+	IS_SELECT:12 = 5
+ENDIF
+IF TALENT:MASTER:竜の血 == 0
+	PRINTFORML  [13] \@ GETBIT(FLAG:33, 13) ? ○ # －\@ 竜の血　　（精力ＵＰ等）　　　　　　　　　　６Ｐ
+	IS_SELECT:13 = 6
+ENDIF
+IF TALENT:MASTER:具現 == 0
+	PRINTFORML  [14] \@ GETBIT(FLAG:33, 14) ? ○ # －\@ 具現　　　（ペニスの具現化）　　　　　　　　６Ｐ
+	IS_SELECT:14 = 6
+ENDIF
+IF TALENT:MASTER:賢い == 0
+	PRINTFORML  [15] \@ GETBIT(FLAG:33, 15) ? ○ # －\@ 賢い　　　　　　　　　　　　　　　　　　　　３Ｐ
+	IS_SELECT:15 = 3
+ENDIF
+
+IF TALENT:MASTER:舌使い < 3
+	PRINTFORML  [30] \@ GETBIT(FLAG:33, 30) ? ○ # －\@ 舌使い　　（クンニ等の効果ＵＰ）　　　　　　４Ｐ
+	IS_SELECT:30 = 4
+ENDIF
+IF TALENT:MASTER:指使い < 3
+	PRINTFORML  [31] \@ GETBIT(FLAG:33, 31) ? ○ # －\@ 指使い　　（愛撫等の効果ＵＰ）　　　　　　　４Ｐ
+	IS_SELECT:31 = 4
+ENDIF
+IF TALENT:MASTER:足使い < 3
+	PRINTFORML  [32] \@ GETBIT(FLAG:33, 32) ? ○ # －\@ 足使い　　（足コキするの効果ＵＰ）　　　　　４Ｐ
+	IS_SELECT:32 = 4
+ENDIF
+IF TALENT:MASTER:腰使い < 3
+	PRINTFORML  [33] \@ GETBIT(FLAG:33, 33) ? ○ # －\@ 腰使い　　（セックス系の効果ＵＰ）　　　　　４Ｐ
+	IS_SELECT:33 = 4
+ENDIF
+IF TALENT:MASTER:魔乳 < 3 && TALENT:MASTER:オトコ == 0
+	PRINTFORML  [34] \@ GETBIT(FLAG:33, 34) ? ○ # －\@ 乳房使い　（パイズリするの効果ＵＰ）　　　　４Ｐ
+	IS_SELECT:34 = 4
+ENDIF
+
+IF TALENT:MASTER:サド
+	PRINTFORML  [40] \@ GETBIT(FLAG:33, 40) ? ○ # －\@ サドを失う　　　　　　　　　　　　　　　　　１Ｐ
+	IS_SELECT:40 = 1
+ENDIF
+IF TALENT:MASTER:マゾ
+	PRINTFORML  [41] \@ GETBIT(FLAG:33, 41) ? ○ # －\@ マゾを失う　　　　　　　　　　　　　　　　　１Ｐ
+	IS_SELECT:41 = 1
+ENDIF
+IF TALENT:MASTER:夢魔 || TALENT:MASTER:上位夢魔
+	PRINTFORML  [42] \@ GETBIT(FLAG:33, 42) ? ○ # －\@ 夢魔を失う　　　　　　　　　　　　　　　　　１Ｐ
+	IS_SELECT:42 = 1
+ENDIF
+
+IF CHARA_NUM("恋慕淫乱") >= 2
+	PRINTL 
+	PRINTFORML  [50] \@ TFLAG:0 ? +{TFLAG:0} # －\@ 次の周に連れて行くキャラを増やす（複数可能）５Ｐ
+	IS_SELECT:50 = 5
+ENDIF
+
+PRINTL 
+PRINTFORML %NAME:MASTER%のLV:{ARG:1} \@ FLAG:255 != ARG:1 ? → {FLAG:255} # \@
+
+PRINTFORML  [\@ FLAG:255 > 2 || GETBIT(FLAG:33, 50) ? 90 # × \@] \@ GETBIT(FLAG:33, 50) ? ○ # －\@ MASTERが２LVを失う代わりに１Ｐを得る　　　 +１Ｐ
+SIF FLAG:255 > 2 || GETBIT(FLAG:33, 50)
+	IS_SELECT:90 = 1
+
+PRINTFORML  [\@ FLAG:255 > 4 || GETBIT(FLAG:33, 51) ? 91 # × \@] \@ GETBIT(FLAG:33, 51) ? ○ # －\@ MASTERが４LVを失う代わりに２Ｐを得る　　　 +２Ｐ
+SIF FLAG:255 > 4 || GETBIT(FLAG:33, 51)
+	IS_SELECT:91 = 2
+
+PRINTFORML  [\@ FLAG:255 > 8 || GETBIT(FLAG:33, 52) ? 92 # × \@] \@ GETBIT(FLAG:33, 52) ? ○ # －\@ MASTERが８LVを失う代わりに４Ｐを得る　　　 +４Ｐ
+SIF FLAG:255 > 8 || GETBIT(FLAG:33, 52)
+	IS_SELECT:92 = 4
+
+PRINTFORML  [\@ FLAG:255 > 16 || GETBIT(FLAG:33, 53) ? 93 # × \@] \@ GETBIT(FLAG:33, 53) ? ○ # －\@ MASTERが16LVを失う代わりに８Ｐを得る　　　 +８Ｐ
+SIF FLAG:255 > 16 || GETBIT(FLAG:33, 53)
+	IS_SELECT:93 = 8
+
+PRINTFORML  [\@ FLAG:255 > 32 || GETBIT(FLAG:33, 54) ? 94 # × \@] \@ GETBIT(FLAG:33, 54) ? ○ # －\@ MASTERが32LVを失う代わりに16Ｐを得る　　　 +16Ｐ
+SIF FLAG:255 > 32 || GETBIT(FLAG:33, 54)
+	IS_SELECT:94 = 16
+
+PRINTL 
+PRINTFORML [100] ポイント振り分け終了\@ ARG ? （あと{ARG}ポイント余っています） # \@
+
+$INPUT_LOOP
+INPUT
+
+CHOICE = RESULT
+
+SELECTCASE CHOICE
+CASE 100
+	;実際の処理
+	SIF GETBIT(FLAG:33, 0)
+		TALENT:MASTER:調合知識 = 1
+	SIF GETBIT(FLAG:33, 1)
+		TALENT:MASTER:治療 = 1
+	IF GETBIT(FLAG:33, 2)
+		TALENT:MASTER:魔法使い = 1
+		TALENT:MASTER:ミニマム = 1
+		TALENT:MASTER:センシブ = 1
+		TALENT:MASTER:ウルズグン = 1
+		TALENT:MASTER:イーサグン = 1
+	ENDIF
+	SIF GETBIT(FLAG:33, 3)
+		TALENT:MASTER:ドラグーン = 1
+	SIF GETBIT(FLAG:33, 4)
+		TALENT:MASTER:歌唱技能 = 1
+	SIF GETBIT(FLAG:33, 5)
+		TALENT:MASTER:魅惑 = 1
+	SIF GETBIT(FLAG:33, 6)
+		TALENT:MASTER:魅力 = 1
+	IF GETBIT(FLAG:33, 7)
+		TALENT:MASTER:早漏 = 1
+		TALENT:MASTER:遅漏 = 0
+	ENDIF
+	IF GETBIT(FLAG:33, 8)
+		TALENT:MASTER:早漏 = 0
+		TALENT:MASTER:遅漏 = 1
+	ENDIF
+	SIF GETBIT(FLAG:33, 9)
+		TALENT:MASTER:百発百中 = 1
+	SIF GETBIT(FLAG:33, 10)
+		TALENT:MASTER:針さばき = 1
+	SIF GETBIT(FLAG:33, 11)
+		TALENT:MASTER:召喚の天才 = 1
+	SIF GETBIT(FLAG:33, 12)
+		TALENT:MASTER:召喚の天災 = 1
+	SIF GETBIT(FLAG:33, 13)
+		TALENT:MASTER:竜の血 = 2
+	SIF GETBIT(FLAG:33, 14)
+		TALENT:MASTER:具現 = 1
+	IF GETBIT(FLAG:33, 15)
+		TALENT:MASTER:賢い = 1
+		TALENT:MASTER:愚か = 0
+	ENDIF
+
+	SIF GETBIT(FLAG:33, 30)
+		TALENT:MASTER:舌使い = 3
+	SIF GETBIT(FLAG:33, 31)
+		TALENT:MASTER:指使い = 3
+	SIF GETBIT(FLAG:33, 32)
+		TALENT:MASTER:足使い = 3
+	SIF GETBIT(FLAG:33, 33)
+		TALENT:MASTER:腰使い = 3
+	SIF GETBIT(FLAG:33, 34)
+		TALENT:MASTER:魔乳 = 3
+
+	SIF GETBIT(FLAG:33, 40)
+		TALENT:MASTER:サド = 0
+	SIF GETBIT(FLAG:33, 41)
+		TALENT:MASTER:マゾ = 0
+	IF GETBIT(FLAG:33, 42)
+		TALENT:MASTER:夢魔 = 0
+		TALENT:MASTER:上位夢魔 = 0
+	ENDIF
+
+	REDRAW 1
+	RETURN 0
+CASE 0 TO 49
+	IF IS_SELECT:CHOICE
+		;ボーナスを取り消す
+		IF GETBIT(FLAG:33, CHOICE)
+			CLEARBIT FLAG:33, CHOICE
+			ARG += IS_SELECT:CHOICE
+		;ボーナス獲得処理
+		ELSEIF ARG >= IS_SELECT:CHOICE
+			SETBIT FLAG:33, CHOICE
+			ARG -= IS_SELECT:CHOICE
+
+			;相反する素質を獲得した場合の処理
+			SELECTCASE CHOICE
+			;早漏と遅漏
+			CASE 7
+				IF GETBIT(FLAG:33, 8)
+					CLEARBIT FLAG:33, 8
+					ARG += IS_SELECT:8
+				ENDIF
+			CASE 8
+				IF GETBIT(FLAG:33, 7)
+					CLEARBIT FLAG:33, 7
+					ARG += IS_SELECT:7
+				ENDIF
+			CASE 11
+				IF GETBIT(FLAG:33, 12)
+					CLEARBIT FLAG:33, 12
+					ARG += IS_SELECT:12
+				ENDIF
+			;召喚の天才と天災
+			CASE 12
+				IF GETBIT(FLAG:33, 11)
+					CLEARBIT FLAG:33, 11
+					ARG += IS_SELECT:11
+				ENDIF
+			ENDSELECT
+		ENDIF
+	ENDIF
+
+CASE 50
+	IF IS_SELECT:CHOICE
+		IF ARG < 5 && TFLAG:0 == 0
+			PRINTFORMW ポイントが足りません
+		ELSEIF CHARA_NUM("恋慕淫乱") == 2 
+			IF TFLAG:0 == 0 && ARG >= 5
+				PRINTW 枠を一人分追加しました
+				ARG -= 5
+				TFLAG:0 = 1
+			ELSE
+				ARG += 5
+				TFLAG:0 = 0
+			ENDIF
+		ELSE
+			ARG += TFLAG:0 * 5
+			TFLAG:0 = 0
+			PRINTFORML ～手元に残せるキャラ一覧～
+			FOR LCOUNT, 1, CHARANUM
+				SIF TALENT:LCOUNT:恋慕 + TALENT:LCOUNT:淫乱 == 0
+					CONTINUE
+				CALL PRINT_NUM_NAME, "体力", LCOUNT
+			NEXT
+			PRINTFORML 次の周に連れて行くキャラを一人増やすにつき、５Ｐ必要です。
+			PRINTFORML ここでポイントを払わなくとも一人は連れていけますが、何人追加で連れて行きますか？
+			PRINTL 
+			PRINTFORML [ 0] 追加しない
+			FOR LCOUNT, 1, MIN(ARG/5, CHARA_NUM("恋慕淫乱") - 1) + 1
+				PRINTFORML [{LCOUNT, 2}] {LCOUNT}人追加
+			NEXT
+			SIF MIN(ARG/5, CHARA_NUM("恋慕淫乱") - 1) >= 6
+				PRINTFORML [6～{MIN(ARG/5, CHARA_NUM("恋慕淫乱") - 1)}] 入力した人数分追加
+
+			CALL INPUT_SELECT, MIN(ARG/5, CHARA_NUM("恋慕淫乱") - 1) + 1
+
+			IF RESULT
+				ARG -= 5*RESULT
+				TFLAG:0 = RESULT
+			ENDIF
+		ENDIF
+	ENDIF
+CASE 90 TO 99
+	IF IS_SELECT:CHOICE
+		;ポイントに変えたLVを戻す
+		IF GETBIT(FLAG:33, CHOICE - 40)
+			CLEARBIT FLAG:33, CHOICE - 40
+			ARG -= IS_SELECT:CHOICE
+			FLAG:255 += IS_SELECT:CHOICE * 2
+		;LVをポイントに変換
+		ELSE
+			SETBIT FLAG:33, CHOICE - 40
+			ARG += IS_SELECT:CHOICE
+			FLAG:255 -= IS_SELECT:CHOICE * 2
+		ENDIF
+	ENDIF
+
+ENDSELECT
+
+CLEARLINE LINECOUNT - MEMO_LINECOUNT
+RESTART
+

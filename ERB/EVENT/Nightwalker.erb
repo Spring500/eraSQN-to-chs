@@ -1,0 +1,1257 @@
+﻿@NIGHTWALKER
+#DIM LCOUNT
+#DIM ACTOR
+#DIM LIMIT_ACTOR
+#DIM MEMO_TARGET
+#DIM MEMO_FLAG8
+
+MEMO_TARGET = TARGET
+TARGET = -1
+MEMO_FLAG8 = FLAG:8
+FLAG:8 = 0
+;一晩開放中フラグON
+SETBIT FLAG:99, 12
+
+;文章が表示されるキャラを選出
+ACTOR = FIND_COND("一晩開放実行予定")
+;人数に制限をかける
+LIMIT_ACTOR = MAX(CHARA_NUM("一晩開放実行予定")/20, 1)
+
+FOR LCOUNT, 2, CHARANUM
+	SELECTCASE COND("一晩開放実行予定", LCOUNT)
+	CASE 0
+		CONTINUE
+	CASEELSE
+		SELECTCASE LCOUNT
+		CASE ACTOR
+			;文章表示フラグ。文章出すのは一人だけ。
+			FLAG:8 = 1
+		CASEELSE
+			SIF RAND:LIMIT_ACTOR
+				CONTINUE
+		ENDSELECT
+	ENDSELECT
+
+	SIF CONFIG("一晩開放のイベント全表示")
+		FLAG:8 = 1
+
+	TARGET = LCOUNT
+
+	CALL EVENT_NIGHTWALKER
+	;イベント描写フラグON
+	SETBIT CFLAG:95, 2
+	FLAG:8 = 0
+NEXT
+
+TARGET = MEMO_TARGET
+FLAG:8 = MEMO_FLAG8
+
+SIF CHARA_NUM("一晩開放実行済み") < 2 || CONFIG("一晩開放のイベント全表示")
+	RETURN 0
+
+PRINTFORM %CALLNAME:ACTOR%以外にも
+FOR LCOUNT, 2, CHARANUM
+	SIF COND("一晩開放実行済み", LCOUNT) == 0 || LCOUNT == ACTOR
+		CONTINUE
+	PRINTFORM 、[{LCOUNT, 2}]%CALLNAME:LCOUNT%
+NEXT
+PRINTFORMW \@ CHARA_NUM("一晩開放実行済み") >= 3 ? 達 # \@が館の外で楽しんで来たようだ…
+
+;一晩開放中フラグOFF
+CLEARBIT FLAG:99, 12
+
+;夢魔が集団の精を搾取するイベント
+;未完成。とりあえず間に合わせ
+;ヴィレッジャのような集団搾精を好き好んで行わないようなキャラについての分岐はまだなし
+@EVENT_NIGHTWALKER
+;外出しない変数。0なら外出する
+#DIM DYNAMIC DONTGO
+#DIM MEMO, 2
+
+;経験の記録を初期化
+CALL RESET_EXP_GAIN, TARGET
+
+;スキンシップするかどうかに使用するので初期化
+VARSET TFLAG
+
+IF FLAG:8
+	DRAWLINE
+	PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:MASTER%に「朝までに戻る」と約束して、夜の闇に消えていった…
+
+	CALL SELF_KOJO, "一晩解放の動向"
+ENDIF
+
+;妖精は今のところなし
+;SIF TALENT:妖精
+;	DONTGO = 1
+
+;行かなかった
+IF FLAG:8 && (DONTGO || RAND:6 <= TALENT:臆病 + TALENT:恥じらい - TALENT:淫乱 + TALENT:恋慕 + TALENT:相思相愛 || (ABL:欲望 < 3 || ABL:精液中毒 < 1) || TFLAG:14)
+	IF TALENT:恋慕 + TALENT:淫乱 + TALENT:相思相愛 > RAND:2 || TFLAG:14 == 2
+		PRINTFORML ……が、%CALLNAME:TARGET%は%CALLNAME:MASTER%の部屋に侵入し、
+		PRINTFORMW これ幸いと%CALLNAME:MASTER%とのスキンシップを楽しんでいる
+
+		CALL SELF_KOJO, "一晩開放スキンシップ"
+		CALL PLAY_AT_EVENING
+		LOCAL:100 = RESULT
+		IF RAND:3 == 0 && (LOCAL:100 == NUM_EV("夜這い騎乗位") || LOCAL:100 == NUM_EV("夜這いＡ騎乗位") )
+			PRINTFORMW ･･･%CALLNAME:TARGET%はスイッチが入ったのか、ついにはいつものように身体を重ねる羽目になってしまった
+			IF LOCAL:100 == NUM_EV("夜這い騎乗位")
+				LOCAL = MAX(ABL:Ｖ感覚/3 + TALENT:淫乱*2 + TALENT:恋慕 + RAND:4, 1)
+				CALL SIMULATE_TRAIN, 65, LOCAL
+			ELSE
+				LOCAL = MAX(ABL:Ａ感覚/3 + TALENT:淫乱*2 + TALENT:恋慕 + RAND:4, 1)
+				CALL SIMULATE_TRAIN, 75, LOCAL
+			ENDIF
+			LOCAL = LOCAL*2 + RAND:10
+		ELSE
+			PRINTL 
+			LOCAL = ABL:従順 * 2 + RAND:20
+			FLAG:0 = 1
+		ENDIF
+		CFLAG:2 += LOCAL
+		PRINTFORML 好感度上昇:{LOCAL}
+		PRINTFORMW 好感度合計:{CFLAG:2}
+	ELSE
+		PRINTFORMW ……が、どうやら%CALLNAME:TARGET%は部屋でのんびり過ごしたようだ
+		CALL SELF_KOJO, "一晩開放スキンシップ"
+		FLAG:0 = 1
+	ENDIF
+	CALL CALC, "欲求不満解消", TARGET, 3
+	RETURN 0
+ELSEIF DONTGO
+	RETURN 0
+ENDIF
+
+;-------------------------------------------------
+;一晩開放の諸設定
+;-------------------------------------------------
+;CALL SET_NIGHTWALK
+;-------------------------------------------------
+;一晩開放イベント
+;-------------------------------------------------
+;PRINTL 〜王都グルッペン〜
+;PRINTL 
+
+
+;所要時間を計ってみる
+;MEMO:0 = GETMILLISECOND()
+
+CALL EVENT_NIGHTWALK
+
+;MEMO:1 = GETMILLISECOND()
+;PRINTFORML [{TARGET, 2}]%CALLNAME:TARGET% 所要時間：{MEMO:1 - MEMO:0}ms
+
+;-------------------------------------------------
+;帰還後イベント
+;-------------------------------------------------
+IF CONFIG("蓄精") && FLAG:8 && ITEM:魔法瓶 && EXP_GAIN(17) > 0 && ABL:従順 == 5 && MARK:反発刻印 == 0
+	PRINTL 
+	PRINTFORML %CALLNAME:TARGET%の膣に出された精液を魔法瓶に移させますか？
+	PRINTL [ 0] はい
+	PRINTL [ 1] いいえ
+	CALL INPUT_SELECT, 2
+	IF RESULT == 0
+		PRINTFORML %CALLNAME:TARGET%は広げたアソコに魔法瓶の口を当てて、中に出された精液を吐き出した…
+		ITEM:精液貯蓄量 += EXP_GAIN(17)
+		PRINTFORMW 精液貯蓄量＋{EXP_GAIN(17)}
+		CALL EQ_EXP_GAIN, 17, TARGET
+	ENDIF
+ENDIF
+
+;妊娠判定
+SIF EXP_GAIN(17) > 0 && TALENT:処女 == 0 && TALENT:オトコ == 0
+	CALL CHECK_PREGNANT, TARGET, EXP_GAIN(17), "一般人相手"
+
+@EVENT_NIGHTWALK
+#DIM LCOUNT
+#DIM MEMO_LINECOUNT
+;被害者の種別名
+#DIMS NPC_NAME
+;NPC_NAMEの複数形。一人の場合にはNPC_NAMEと同じ
+#DIMS NPC_NAMES
+;被害者ごとのペニスの呼び名
+#DIMS NPC_PENIS
+;襲った場所
+#DIMS NPC_HOME
+;どこで何人襲ったか
+#DIMS TEXT_INTRO, 3
+;プレイ内容の地の文
+#DIMS TEXT_PLAY, 3
+;プレイの種類の記録
+#DIMS PLAY_NIGHTWALK
+;参加者の末路
+#DIMS TEXT_LAST, 3
+;夢魔たちの台詞
+#DIMS SELF_KOJOS
+;被害者の人数
+#DIM NUM_NPC
+;被害人数総数
+#DIM DYNAMIC NUM_NPC_TOTAL
+;襲撃回数
+#DIM DYNAMIC NUM_PLAY
+;襲撃場所でのＶ性交の実行回数の判定に使用
+#DIM EXP_V_SEX
+;襲撃場所でのＶ挿入の実行回数の判定に使用
+#DIM EXP_V_INS
+;童貞狩り人数
+#DIM NUM_DOUTEI
+;処女狩り人数
+#DIM NUM_SYOJYO
+
+VARSET LOCAL
+
+;まずは相手の雛形をセットする
+CALL SETFLAG, "一般人相手の性行為初期設定"
+
+$START
+
+MAXBASE:PLAYER:精力 = 10
+BASE:PLAYER:精力 = MAXBASE:PLAYER:精力
+BASE:PLAYER:絶頂 = 0
+ABL:PLAYER:ＬＶ = 1
+
+VARSET TEXT_INTRO
+VARSET TEXT_PLAY
+VARSET TEXT_LAST
+
+;襲撃場所での童貞狩り経験と処女簒奪経験の判定に使用
+EXP_V_SEX = EXP:Ｖ性交経験
+EXP_V_INS = EXP:Ｖ挿入経験
+
+TALENT:PLAYER:オトコ = 1
+TALENT:PLAYER:オンナ = 0
+
+;ここでの童貞はグループ内での童貞の存在率のようなもので、実際に何人が童貞かというわけではない（デフォは10％が童貞）
+SELECTCASE RAND:10
+CASE IS >= 7
+	NPC_NAME = 冒険者
+	ABL:PLAYER:技巧 = 2 + RAND:4
+	ABL:PLAYER:ＬＶ = 1 +ABL:PLAYER:技巧*2 + RAND:5
+	SIF RAND:10
+		TALENT:PLAYER:童貞 = 0
+CASE IS >= 2
+	NPC_NAME = 青年
+	ABL:PLAYER:技巧 = 1 + RAND:3
+	ABL:PLAYER:ＬＶ = 1 + ABL:PLAYER:技巧 + RAND:5
+CASEELSE
+	NPC_NAME = 少年
+	ABL:PLAYER:技巧 = RAND:2
+	ABL:PLAYER:ＬＶ = 1
+	SIF RAND:10
+		TALENT:PLAYER:童貞 = 1
+ENDSELECT
+
+;女性を標的にする？
+IF COND("一晩開放：女相手") >= 2 || COND("ベテラン：セックス") == 0 || (COND("一晩開放：女相手") && RAND:5 == 0)
+	TALENT:PLAYER:オトコ = 0
+	TALENT:PLAYER:オンナ = 1
+
+	SELECTCASE RAND:10
+	CASE IS >= 3
+		NPC_NAME = 女性
+		ABL:PLAYER:技巧 = 2 + RAND:3
+		ABL:PLAYER:ＬＶ = 1 + ABL:PLAYER:技巧/2 + RAND:6
+	CASEELSE
+		NPC_NAME = 少女
+		ABL:PLAYER:技巧 = RAND:2
+		ABL:PLAYER:ＬＶ = 1
+		SIF RAND:10
+			TALENT:PLAYER:処女 = 1
+	ENDSELECT
+ENDIF
+
+
+;襲う人数の決定
+SELECTCASE NPC_NAME
+CASE "女性", "少女"
+	NUM_NPC = 1 + RAND:3
+CASEELSE
+	;男相手の最大人数はレベル依存だが、強姦が好みの場合には少ない人数を相手することが多い
+	SELECTCASE RAND:(MIN(ABL:ＬＶ, 30) + 10)
+	CASE IS <= 9
+		NUM_NPC = 1 + RAND:3
+	CASE IS <= 19
+		NUM_NPC = 4 + RAND:3
+	CASE IS <= 29
+		NUM_NPC = 7 + RAND:3
+	CASEELSE
+		NUM_NPC = 10 + RAND:3
+	ENDSELECT
+
+	;前の穴で処理できない場合には男の参加者が少ない傾向がある
+	SIF COND("ベテラン：Ｖセックス") == 0 && NUM_NPC >= 3
+		NUM_NPC = MAX(NUM_NPC - RAND:6, 2)
+ENDSELECT
+
+;強姦好きの場合には少数を好む
+;SELECTCASE CONDS("一晩開放での襲撃傾向")
+;CASE "強姦"
+;	SIF RAND:3
+;		NUM_NPC = MIN(NUM_NPC, 3)
+;ENDSELECT
+
+;-------------------------------------------------
+;襲撃予定の人数が４人以上なら建物に向かう
+;-------------------------------------------------
+NPC_HOME = 
+IF NUM_NPC >= 4
+	IF COND("ベテラン：セックス")
+		SELECTCASE NPC_NAME
+		CASE "冒険者", "青年"
+			IF RAND:2 == 0
+				NPC_HOME = 酒場
+			ELSE
+				NPC_HOME = \@ NPC_NAME == "冒険者" ? 宿屋 # 集会所 \@
+			ENDIF
+		CASE "少年"
+			NPC_HOME = 秘密の遊び場
+		ENDSELECT
+	ENDIF
+	;特殊な場所
+	SELECTCASE RAND:4
+	CASE 0
+		IF COND("ベテラン：セックス") && COND("指の使用") && ABL:露出癖 >= 3 && TALENT:オンナ
+			NPC_HOME = ストリップ劇場
+			NUM_NPC += RAND:(ABL:露出癖 + ABL:欲望) + ABL:露出癖
+			NUM_NPC += TALENT:目立ちたがり + TALENT:気品 + TALENT:好色 + TALENT:淫乱 + TALENT:魅惑 + TALENT:魅力 + TALENT:謎の魅力
+			NPC_NAME = 観客
+			ABL:PLAYER:技巧 = 2 + RAND:4
+			ABL:PLAYER:ＬＶ = ABL:PLAYER:技巧 + RAND:6
+		ENDIF
+	CASE 1
+		IF ABL:喉拡張 && ABL:マゾっ気 + ABL:精液中毒 >= 5 && EXP:フェラ経験 >= 150
+			NPC_HOME = グローリーホール屋
+			NUM_NPC += (RAND:(ABL:マゾっ気 + ABL:精液中毒) + ABL:マゾっ気 + ABL:精液中毒)/2
+			NPC_NAME = 客
+			ABL:PLAYER:技巧 = RAND:4
+			ABL:PLAYER:ＬＶ = ABL:PLAYER:技巧 + RAND:6
+		ENDIF
+	ENDSELECT
+
+	;SIF COND("人気：ＡＶ")
+
+	;SIF COND("人気：喫茶店")
+ENDIF
+
+;NPC_NAMEの複数形
+NPC_NAMES = %NPC_NAME%\@ NUM_NPC >= 2 ? たち # \@
+
+;-------------------------------------------------
+;獲物たちのデータが出揃ったので精力などを決定（純粋に人数倍するとも言う…）
+;-------------------------------------------------
+MAXBASE:PLAYER:精力 = BASE:PLAYER:精力 * NUM_NPC
+BASE:PLAYER:精力 = MAXBASE:PLAYER:精力
+CALL SETFLAG, "射精ゲージ", PLAYER
+
+;まずは建物で分岐
+SELECTCASE NPC_HOME
+CASE "ストリップ劇場"
+	TEXT_INTRO = …\@ COND("人外度") ? 人の姿に化けた # \@%CALLNAME:TARGET%は飛び入りでストリップショーに出演して獲物を物色したようだ
+
+	;ポールダンス
+	IF TALENT:陽気 + TALENT:目立ちたがり && ABL:腰使い >= 5 && RANDIF(2, ABL:自慰中毒 >= 3)
+		TEXT_PLAY = 情熱的なポールダンスを披露しつつ
+		NUM_NPC += RAND:3
+	;オナニーショー
+	ELSEIF ABL:自慰中毒 >= 3 && RAND:2
+		TEXT_PLAY = 合間にオナニーショーを挟みつつ
+		NUM_NPC += RAND:5
+	ELSE
+		IF TALENT:魅力 && RANDIF(2, TALENT:賢い)
+			TEXT_PLAY = 類稀な美貌で視線を独り占めにしつつ
+			NUM_NPC += RAND:5
+		ELSEIF TALENT:賢い && RAND:2
+			TEXT_PLAY = ゆっくりと焦らしつつ
+			NUM_NPC += RAND:3
+		ENDIF
+	ENDIF
+	IF TALENT:高慢 + TALENT:生意気 && RANDIF(2, TALENT:強気, TALENT:恥じらい, TALENT:小悪魔, TALENT:好色 + TALENT:淫乱)
+		TEXT_PLAY = %TEXT_PLAY%挑発的な態度で
+	ELSEIF TALENT:好色 + TALENT:淫乱 && RANDIF(2, TALENT:強気, TALENT:恥じらい, TALENT:小悪魔)
+		TEXT_PLAY = %TEXT_PLAY%扇情的に
+	ELSEIF TALENT:小悪魔 && RANDIF(2, TALENT:強気, TALENT:恥じらい)
+		TEXT_PLAY = %TEXT_PLAY%小悪魔チックに
+	ELSEIF TALENT:恥じらい && RANDIF(2, TALENT:強気)
+		TEXT_PLAY = %TEXT_PLAY%恥ずかしそうに
+	ELSEIF TALENT:強気 && RAND:2
+		TEXT_PLAY = %TEXT_PLAY%勝気な笑顔を浮かべて
+	ELSE
+		TEXT_PLAY = %TEXT_PLAY%楽しそうに
+	ENDIF
+
+	TEXT_PLAY = %TEXT_PLAY%%TEXTR("着衣", "衣装")%を
+
+	IF MAX(ABL:奉仕精神, ABL:露出癖) >= 5
+		TEXT_PLAY = %TEXT_PLAY%観客席へ放り投げながら
+		NUM_NPC += RAND:5
+	ELSE
+		TEXT_PLAY = %TEXT_PLAY%脱ぎ捨てながら
+	ENDIF
+	IF RAND:2
+		TEXT_PLAY = %TEXT_PLAY%舞台で踊り終えた
+	ELSE
+		TEXT_PLAY = %TEXT_PLAY%踊り終えて舞台を降りた
+	ENDIF
+	TEXT_PLAY = %TEXT_PLAY%%CALLNAME:TARGET%のお誘いに、{NUM_NPC}人の観客達が餌食となりました
+
+	TEXT_PLAY:1 = \@ COND("人外度") ? 本性を現した # \@%CALLNAME:TARGET%は%TEXTR("突き込まれる", "膨張しきった", "熱く硬い")%肉棒を
+	IF COND("ベテラン：Ｖセックス") && COND("ベテラン：Ａセックス") && RAND:2
+		TEXT_PLAY:1 = %TEXT_PLAY:1%%TEXTR("両方の穴", "前後の穴", "膣とアナルの両方")%で
+		CALL SIMULATE_TRAIN_COM, 65, MAX(RAND:NUM_NPC, 1)*(6 + RAND:NUM_NPC)/3
+		CALL SIMULATE_TRAIN_COM, 71, MAX(RAND:NUM_NPC, 1)*(6 + RAND:NUM_NPC)/3
+	ELSEIF COND("ベテラン：Ｖセックス") && RANDIF(1, COND("ベテラン：Ａセックス") )
+		IF COND("危険日")
+			TEXT_PLAY:1 = %TEXT_PLAY:1%危険日にも拘らず%TEXTR("アソコ", "前の穴", "膣")%で
+		ELSEIF ABL:Ｖ名器度 >= 70 && RAND:2
+			TEXT_PLAY:1 = %TEXT_PLAY:1%%TEXTR("自慢の", "締め付けの良い")%%TEXTR("アソコ", "膣穴")%で
+		ELSE
+			TEXT_PLAY:1 = %TEXT_PLAY:1%経験豊富な%TEXTR("前の穴", "膣")%で
+		ENDIF
+		CALL SIMULATE_TRAIN_COM, 60, MAX(RAND:NUM_NPC, 1)*(6 + RAND:NUM_NPC)/3
+		CALL SIMULATE_TRAIN_COM, 65, MAX(RAND:NUM_NPC, 1)*(6 + RAND:NUM_NPC)/3
+	ELSE
+		IF TALENT:処女 == 1 && RAND:2
+			TEXT_PLAY:1 = %TEXT_PLAY:1%処女とは思えない程にこなれた%TEXTR("アナル", "後ろの穴")%で
+		ELSEIF ABL:Ａ名器度 >= 70 && RAND:2
+			TEXT_PLAY:1 = %TEXT_PLAY:1%%TEXTR("自慢の", "吸い付くような")%アナルで
+		ELSE
+			TEXT_PLAY:1 = %TEXT_PLAY:1%経験豊富な%TEXTR("アナル", "後ろの穴", "肛門")%で
+		ENDIF
+		CALL SIMULATE_TRAIN_COM, 71, MAX(RAND:NUM_NPC, 1)*(6 + RAND:NUM_NPC)/3
+		CALL SIMULATE_TRAIN_COM, 75, MAX(RAND:NUM_NPC, 1)*(6 + RAND:NUM_NPC)/3
+	ENDIF
+	IF COND("危険日")
+		TEXT_PLAY:1 = %TEXT_PLAY:1%%TEXTR("深々と", "嬉々として")%受け入れ、順番待ちしている客のモノを
+	ELSE
+		TEXT_PLAY:1 = %TEXT_PLAY:1%%TEXTR("深々と", "易々と", "嬉々として")%受け入れ、順番待ちしている客のモノを
+	ENDIF
+	IF TALENT:感情乏しい || (TALENT:冷静 && RAND:2)
+		TEXT_PLAY:1 = %TEXT_PLAY:1%%TEXTR("涼しい顔で", "余裕たっぷりに", "顔色も変えずに", "美味しそうに")%しゃぶりながら
+	ELSE
+		TEXT_PLAY:1 = %TEXT_PLAY:1%%TEXTR("美味しそうに", "うっとりと", "上気した顔で", "だらしない顔で", "蕩けた表情で")%しゃぶりながら
+	ENDIF
+	TEXT_PLAY:1 = %TEXT_PLAY:1%次々に叩き込まれる容赦の無い中出しを愉しんでいる…
+
+	CALL SIMULATE_TRAIN_COM, 90, MAX(RAND:NUM_NPC, 1)*(3 + RAND:NUM_NPC)/3
+	CALL SIMULATE_TRAIN_COM, 91, MAX(RAND:NUM_NPC, 1)*(3 + RAND:NUM_NPC)/3
+
+	TEXT_LAST = 男たちは熱狂に身を任せながら、%CALLNAME:TARGET%に望まれるがままに何度も精を吐き出してしまった……
+CASE "グローリーホール屋"
+	TEXT_INTRO = …%CALLNAME:TARGET%はグローリーホール屋でペニスを{NUM_NPC}本ほど口にし\@ RAND:2 ? て喉を潤し # \@たようだ
+
+	CALL SIMULATE_TRAIN_COM, 91, MAX(RAND:NUM_NPC, 1)*(3 + RAND:NUM_NPC)/2
+	IF ABL:奉仕精神 >= 3 && RANDIF(2, ABL:サドっ気 >= 3)
+		TEXT_PLAY = %TEXT_PLAY%溜まった恥垢を舌で舐め取ってやったり
+	ELSEIF ABL:サドっ気 >= 3 && RAND:2
+		TEXT_PLAY = %TEXT_PLAY%尿道を舌で責めてやったり
+	ELSEIF RAND:2
+		TEXT_PLAY = %TEXT_PLAY%余った皮を甘噛みしてあげたり
+	ENDIF
+
+	IF ABL:喉拡張 >= 2 && RANDIF(2, ABL:足使い >= 3, ABL:魔乳 >= 3, ABL:指使い >= 3)
+		TEXT_PLAY = %TEXT_PLAY%%TEXTR("喉奥まで咥えて", "ディープスロートして")%あげたり
+	ELSEIF ABL:指使い >= 3 && RANDIF(2, ABL:足使い >= 3, ABL:魔乳 >= 3)
+		IF EQUIP:パンツ && RAND:2
+			TEXT_PLAY = %TEXT_PLAY%パンツで扱いてやったり
+			CALL SIMULATE_TRAIN_COM, 97, MAX(RAND:NUM_NPC, 1)
+		ELSE
+			TEXT_PLAY = %TEXT_PLAY%手でしてあげたり
+			CALL SIMULATE_TRAIN_COM, 90, MAX(RAND:NUM_NPC, 1)
+		ENDIF
+	ELSEIF ABL:魔乳 >= 3 && RANDIF(2, ABL:足使い >= 3)
+		TEXT_PLAY = %TEXT_PLAY%胸でしてあげたり
+		CALL SIMULATE_TRAIN_COM, 92, MAX(RAND:NUM_NPC, 1)
+	ELSEIF ABL:足使い >= 3 && RAND:2
+		TEXT_PLAY = %TEXT_PLAY%脚でしてやったり
+		CALL SIMULATE_TRAIN_COM, 95, MAX(RAND:NUM_NPC, 1)
+	ENDIF
+
+	IF COND("ベテラン：Ｖセックス") && RANDIF(3, COND("ベテラン：Ａセックス") )
+		TEXT_PLAY = %TEXT_PLAY%アソコで抜いてあげたり
+		CALL SIMULATE_TRAIN_COM, 60, MAX(RAND:NUM_NPC, 1)
+	ELSEIF COND("ベテラン：Ａセックス") && RAND:3 == 0
+		TEXT_PLAY = %TEXT_PLAY%アナルで抜いてあげたり
+		CALL SIMULATE_TRAIN_COM, 71, MAX(RAND:NUM_NPC, 1)
+	ENDIF
+
+	IF ABL:奉仕精神 >= 3 && RANDIF(2, ABL:サドっ気 >= 3)
+		TEXT_PLAY = %TEXT_PLAY%念入りなお掃除フェラをしてあげたり
+		EXP:お掃除フェラ経験 += MAX(RAND:NUM_NPC, 1)
+	ELSEIF ABL:サドっ気 >= 3 && RAND:2
+		TEXT_PLAY = %TEXT_PLAY%言葉責めしてあげたり
+	ENDIF
+
+	IF TEXT_PLAY == "" || RAND:5 == 0
+		TEXT_PLAY = %CALLNAME:TARGET%は壁の穴から突き出る誰のものとも知れないペニスを熱心にしゃぶり
+	ELSEIF COND("和姦Ｐ") >= COND("強姦Ｐ")
+		TEXT_PLAY = %CALLNAME:TARGET%はリクエストに応えて%TEXT_PLAY%して
+	ELSE
+		TEXT_PLAY = %CALLNAME:TARGET%は欲望の赴くままに%TEXT_PLAY%して
+	ENDIF
+
+	TEXT_PLAY = %TEXT_PLAY%、たっぷりと精液を搾り取ろうとしている……
+
+
+	SELECTCASE CONDS("一晩開放での襲撃傾向")
+	CASE "強姦"
+		IF ABL:技巧 >= 4 && RAND:2
+			TEXT_LAST = 客たちは、%CALLNAME:TARGET%の貪欲な口淫に耐え切れず何度も精を吐き出してしまった……
+		ELSE
+			TEXT_LAST = 客たちは、%CALLNAME:TARGET%に弄ばれながら何度も精を吐き出してしまった……
+		ENDIF
+	CASEELSE
+		TEXT_LAST = 客たちは、%CALLNAME:TARGET%の熱心な奉仕に応えて限界まで精を吐き出してしまった……
+	ENDSELECT
+
+CASE "酒場", "宿屋", "集会所", "秘密の遊び場"
+
+	SELECTCASE NPC_NAME
+	CASE "冒険者"
+		NPC_PENIS = 大人の肉棒
+	CASE "青年"
+		NPC_PENIS = %TEXTR("肉棒", "ペニス")%
+	CASE "少年"
+		NPC_PENIS = 若いペニス
+	ENDSELECT
+
+	SELECTCASE CONDS("一晩開放での襲撃傾向")
+	;CASE "強姦"
+	;	TEXT_INTRO = …%CALLNAME:TARGET%は%NPC_HOME%で{NUM_NPC}人の%NPC_NAME%を襲ったようだ
+	;	TEXT_PLAY = %CALLNAME:TARGET%は巨根から順番に獰猛な騎乗位で犯しながら、突き出された順番待ちのペニスを両手と口で弄んでいる…
+	CASEELSE
+		TEXT_INTRO = …%CALLNAME:TARGET%は%NPC_HOME%で{NUM_NPC}人の%NPC_NAME%%TEXTR("を誘った", "と楽しんだ")%ようだ
+
+		;まずはどの穴を優先的に使うかで大きな分岐
+		;二穴挿入。尻穴狂いと淫壷必須
+		IF COND("ベテラン：Ｖセックス") >= 2 && COND("ベテラン：Ａセックス") >= 2 && RAND:4 == 0
+			PLAY_NIGHTWALK = 二穴挿入
+			CALL SIMULATE_TRAIN_COM, 65, MAX(RAND:NUM_NPC, 1)*(6 + RAND:NUM_NPC)/4
+			CALL SIMULATE_TRAIN_COM, 71, MAX(RAND:NUM_NPC, 1)*(6 + RAND:NUM_NPC)/4
+		;アナルのみ。前の穴でのセックスが不得意でないならば、尻穴狂いは必須で前の穴よりも好きなことが条件
+		ELSEIF COND("ベテラン：Ｖセックス") == 0 || (COND("ベテラン：Ａセックス") >= 3 && RAND:3 == 0)
+			PLAY_NIGHTWALK = Ａのみ
+			CALL SIMULATE_TRAIN_COM, 71, MAX(RAND:NUM_NPC, 1)*(6 + RAND:NUM_NPC)/4
+			CALL SIMULATE_TRAIN_COM, 75, MAX(RAND:NUM_NPC, 1)*(6 + RAND:NUM_NPC)/4
+		;前の穴で処理しつつもアナルでも受け入れる
+		;ELSEIF COND("ベテラン：Ａセックス") && RAND:2
+		;	PLAY_NIGHTWALK = Ｖ時々Ａ
+		;基本は前の穴のみ
+		ELSE
+			PLAY_NIGHTWALK = Ｖのみ
+			CALL SIMULATE_TRAIN_COM, 60, MAX(RAND:NUM_NPC, 1)*(6 + RAND:NUM_NPC)/4
+			CALL SIMULATE_TRAIN_COM, 65, MAX(RAND:NUM_NPC, 1)*(6 + RAND:NUM_NPC)/4
+		ENDIF
+
+
+		SELECTCASE PLAY_NIGHTWALK
+		CASE "二穴挿入"
+			SELECTCASE NPC_NAME
+			CASE "冒険者"
+				TEXT_PLAY = %CALLNAME:TARGET%は%TEXTR("力自慢の荒くれ者", "屈強な冒険者", "群がる男", "性欲で暴走気味の男")%たちに
+			CASE "青年"
+				TEXT_PLAY = %CALLNAME:TARGET%は%TEXTR("性欲旺盛な青年者", "飢えた獣と化した青年", "やりたい盛りの男")%たちに
+			CASE "少年"
+				TEXT_PLAY = %CALLNAME:TARGET%は%TEXTR("好奇心旺盛な少年", "女体に興味津々な少年", "興奮のあまり口数の少なくなっている少年")%たちに
+			ENDSELECT
+			IF RAND:5 == 0
+				TEXT_PLAY = %TEXT_PLAY%前後の穴を埋められながら、
+			ELSEIF RAND:4 == 0
+				TEXT_PLAY = %TEXT_PLAY%前後の穴を滅茶苦茶にされながら、
+			ELSEIF RAND:3 == 0
+				TEXT_PLAY = %TEXT_PLAY%前後の穴を身勝手に犯されながら、
+			ELSEIF RAND:2
+				TEXT_PLAY = %TEXT_PLAY%前後の穴を使われながら
+			ELSE
+				TEXT_PLAY = %TEXT_PLAY%前後の穴を同時に犯されながら、
+			ENDIF
+		CASE "Ａのみ"
+			;アナルの描写
+			IF COND("身嗜み：Ａ準備") >= 3 && RANDIF(3, TALENT:腸液分泌体質, EXP:Ａ性交経験 >= 200, ABL:Ａ感覚 >= 5, COND("身嗜み：Ａ拡張") )
+				LOCALS = 洗浄済みのアナル
+ 			ELSEIF COND("身嗜み：Ａ拡張") && RANDIF(3, TALENT:腸液分泌体質, EXP:Ａ性交経験 >= 200, ABL:Ａ感覚 >= 5)
+				LOCALS = アナルプラグを引き抜かれて大口を開けた後ろの穴
+			ELSEIF ABL:Ａ感覚 >= 5 && RANDIF(3, TALENT:腸液分泌体質, EXP:Ａ性交経験 >= 200)
+				LOCALS = 開発されきったアナル
+			ELSEIF EXP:Ａ性交経験 >= 200 && RANDIF(3, TALENT:腸液分泌体質)
+				LOCALS = %TEXTR("男に飢えた", "精液に飢えた", "経験豊富な")%アナル
+			ELSEIF TALENT:腸液分泌体質 && RAND:3 == 0
+				LOCALS = 汚い潤滑液を溢れさせるアナル
+			;このルートはアナル好きしか来ない
+			ELSE
+				LOCALS = 大好きなお尻の穴
+			ENDIF
+
+			TEXT_PLAY = %CALLNAME:TARGET%は%LOCALS%%TEXTR("を休む間もなく犯され続け", "で次々と肉棒を受け入れ", "を滅茶苦茶にされ")%ながら、
+		CASEELSE
+			IF RAND:3 == 0
+				TEXT_PLAY = %CALLNAME:TARGET%は膣奥めがけて叩き込まれる%NPC_PENIS%を
+			ELSEIF RAND:2
+				TEXT_PLAY = %CALLNAME:TARGET%は膣内を貪るように突き捏ねて来る%NPC_PENIS%を
+			ELSE
+				TEXT_PLAY = %CALLNAME:TARGET%は膣内を貪るように突き捏ねて来る%NPC_PENIS%を
+			ENDIF
+
+			IF ABL:Ｖ拡張 >= 3
+				IF TALENT:好色 && COND("脚の使用") && RAND:2
+					TEXT_PLAY = %TEXT_PLAY%大股を開いた体勢で呑み込みながら、
+				ELSE
+					TEXT_PLAY = %TEXT_PLAY%余裕を持って呑み込みながら、
+				ENDIF
+			ELSEIF RAND:2
+				TEXT_PLAY = %TEXT_PLAY%締め付けながら、
+			ELSE
+				IF TALENT:濡れやすい && RANDIF(2, TALENT:冷静)
+					TEXT_PLAY = %TEXT_PLAY%受け止めて股の間に濁った水溜りを作りながら、
+				ELSEIF TALENT:冷静 && RAND:2
+					TEXT_PLAY = %TEXT_PLAY%顔色一つ変えずに受け止めながら、
+				ELSE
+					TEXT_PLAY = %TEXT_PLAY%受け止めながら、
+				ENDIF
+			ENDIF
+
+			;特殊な文型（確率低め）
+			IF RAND:3 == 0
+				IF TALENT:高慢 && RAND:2
+					TEXT_PLAY = %CALLNAME:TARGET%は男達が自分を激しく求めてくる様子で自尊心を満たしながら、
+				;名器度が高い
+				ELSEIF ABL:Ｖ名器度 >= 70 && RAND:2
+					IF TALENT:強気
+						TEXT_PLAY = %CALLNAME:TARGET%は性格同様に締りの強い膣で%NPC_PENIS%に悲鳴を上げさせながら、
+					ELSEIF TALENT:陽気
+						TEXT_PLAY = %CALLNAME:TARGET%は緩い性格に反して締りの強い膣で%NPC_PENIS%に悲鳴を上げさせながら、
+					ENDIF
+				;名器度が低いが余裕あり
+				ELSEIF (ABL:Ｖ名器度 < 20 || TALENT:小柄体型) && ABL:Ｖ拡張 > 2 && NPC_NAME == "冒険者" && RAND:2
+					IF TALENT:小柄体型
+						TEXT_PLAY = %CALLNAME:TARGET%は太い大人のペニスでお臍の上までいっぱいにしてもらいながら、
+					ELSEIF TALENT:強気
+						TEXT_PLAY = %CALLNAME:TARGET%は性格とは裏腹にユルめな膣で%NPC_PENIS%を余裕を持って呑み込みながら、
+					ELSEIF TALENT:陽気
+						TEXT_PLAY = %CALLNAME:TARGET%は性格同様に緩い膣で%NPC_PENIS%を余裕を持って呑み込みながら、
+					ENDIF
+				;穴が小さめ
+				ELSEIF ABL:Ｖ名器度 >= 20 && ABL:Ｖ拡張 < 2 && RAND:2
+					IF TALENT:強気 && RANDIF(1, TALENT:小柄体型)
+						TEXT_PLAY = %CALLNAME:TARGET%は性格同様にキツめな膣を%NPC_PENIS%でほぐしてもらいながら、
+					ELSEIF TALENT:小柄体型 && TALENT:幼稚
+						TEXT_PLAY = %CALLNAME:TARGET%は股を限界まで開いて%NPC_PENIS%を小さな膣で頑張って受け入れながら、
+					ELSEIF TALENT:小柄体型
+						TEXT_PLAY = %CALLNAME:TARGET%は身体同様に小さめな膣を%NPC_PENIS%で一杯にしてもらいながら、
+					ENDIF
+				ENDIF
+			ENDIF
+		ENDSELECT
+
+
+		IF COND("ベテラン：Ａセックス") && PLAY_NIGHTWALK != "Ａのみ" && RAND:5 == 0
+			TEXT_PLAY = %TEXT_PLAY%アナルに興味のある相手には尻の穴すら使わせている…
+			CALL SIMULATE_TRAIN_COM, 71, MAX(RAND:NUM_NPC, 1)*(6 + RAND:NUM_NPC)/4
+		ELSEIF (TALENT:倒錯的 || TALENT:マゾ) && RANDIF(4, TALENT:蕩唇, TALENT:好色, (TALENT:快感に素直 && TALENT:陽気) )
+			TEXT_PLAY = %TEXT_PLAY%性欲処理のための穴として使われる幸せに浸っている…
+		ELSEIF TALENT:快感に素直 && TALENT:陽気 && RANDIF(4, TALENT:蕩唇, TALENT:好色)
+			TEXT_PLAY = %TEXT_PLAY%順番待ちの%NPC_NAMES%一人一人のペニスにキスをして、いっぱい気持ちよくしてくれるようにとおねだりしている…
+		ELSEIF TALENT:好色 && RANDIF(4, TALENT:蕩唇)
+			IF RAND:2
+				TEXT_PLAY = %TEXT_PLAY%順番待ちの%NPC_NAMES%のペニスを吟味して次の相手を物色している…
+			ELSE
+				TEXT_PLAY = %TEXT_PLAY%順番待ちの%NPC_NAMES%のモノを撫で擦ったり口で味わったりして充実した時を過ごしている…
+			ENDIF
+			CALL SIMULATE_TRAIN_COM, 90, MAX(RAND:NUM_NPC, 1)*(3 + RAND:NUM_NPC)/3
+			CALL SIMULATE_TRAIN_COM, 91, MAX(RAND:NUM_NPC, 1)*(3 + RAND:NUM_NPC)/3
+		ELSEIF TALENT:蕩唇 && RAND:4 == 0
+			TEXT_PLAY = %TEXT_PLAY%手隙の%NPC_NAMES%と%TEXTR("鼻息荒く", "濃厚な")%キスをして%TEXTR("唾液の交換を楽しんで", "舌を絡ませあって")%いる…
+			CALL SIMULATE_TRAIN_COM, 6, MAX(RAND:NUM_NPC, 1)*(3 + RAND:NUM_NPC)/3
+		ELSEIF COND("膣内射精に弱い") && PLAY_NIGHTWALK == "Ｖのみ" && RAND:4 == 0
+			TEXT_PLAY = %TEXT_PLAY%膣内を精液で満たされる快感に顔を蕩けさせている…
+		ELSEIF COND("肛内射精に弱い") && PLAY_NIGHTWALK == "Ａのみ" && RAND:4 == 0
+			TEXT_PLAY = %TEXT_PLAY%排泄器官に精液を注がれる感覚に顔を蕩けさせている…
+		ELSEIF ABL:精液中毒 >= 5 && RANDIF(2, ABL:奉仕精神 >= 5)
+			IF TALENT:陽気 && RAND:3 == 0
+				TEXT_PLAY = %TEXT_PLAY%口に排泄された大量の精液を舌で転がしつつ満面の笑みで味わっている…
+			ELSEIF RAND:2
+				TEXT_PLAY = %TEXT_PLAY%取り囲んでいる%NPC_NAMES%に全身を精液まみれにされて妖艶に微笑んでいる…
+			ELSE
+				TEXT_PLAY = %TEXT_PLAY%むせ返るような精の臭いと熱気に酔い痴れている…
+			ENDIF
+		ELSEIF ABL:奉仕精神 >= 5 && RAND:2
+			IF TALENT:陽気 && RAND:3 == 0
+				TEXT_PLAY = %TEXT_PLAY%ペニスに付いた自分の汚れを舐め取りながら具合がどうだったかを談笑している…
+			ELSEIF RAND:3 == 0
+				TEXT_PLAY = %TEXT_PLAY%鼻先に突き出されたペニスの恥垢を舌で舐め取りつつ熟成された臭いに酔い痴れている…
+			ELSEIF RAND:2
+				TEXT_PLAY = %TEXT_PLAY%次の相手のペニスに念入りに唾液をまぶして準備している…
+			ELSE
+				TEXT_PLAY = %TEXT_PLAY%鼻先に突き出された使用済みのペニスをお掃除している…
+			ENDIF
+			CALL SIMULATE_TRAIN_COM, 91, MAX(RAND:NUM_NPC, 1)*(3 + RAND:NUM_NPC)/2
+		ELSE
+			TEXT_PLAY = %TEXT_PLAY%全身あらゆるところで%NPC_NAMES%のモノから精を搾り取ろうとしている……
+			CALL SIMULATE_TRAIN_COM, 90, MAX(RAND:NUM_NPC, 1)*(3 + RAND:NUM_NPC)/3
+			CALL SIMULATE_TRAIN_COM, 91, MAX(RAND:NUM_NPC, 1)*(3 + RAND:NUM_NPC)/3
+			CALL SIMULATE_TRAIN_COM, 95, MAX(RAND:NUM_NPC, 1)*(3 + RAND:NUM_NPC)/4
+		ENDIF
+	ENDSELECT
+
+	SELECTCASE NPC_NAME
+	CASE "冒険者"
+		TEXT_LAST = %NPC_NAMES%は、何度もその精力を絞られてしまった……
+	CASE "青年"
+		TEXT_LAST = %NPC_NAMES%は、何度もその精を吐き出してしまった……
+	CASEELSE
+		TEXT_LAST = %NPC_NAMES%は、何度もその若い性を発散してしまった……
+	ENDSELECT
+CASEELSE
+	TEXT_INTRO = %CALLNAME:TARGET%は\@ NUM_PLAY ? 今度は # \@
+	SELECTCASE NPC_NAME
+	CASE "女性", "少女"
+
+	CASE "冒険者"
+		IF RAND:8 == 0
+			TEXT_INTRO = %TEXT_INTRO%屈強な
+		ELSEIF RAND:7 == 0
+			TEXT_INTRO = %TEXT_INTRO%自分の事を娼婦と勘違いしている
+		ELSEIF RAND:6 == 0
+			TEXT_INTRO = %TEXT_INTRO%街娼を物色していた
+		ELSEIF RAND:5 == 0
+			TEXT_INTRO = %TEXT_INTRO%性欲旺盛そうな
+		ELSEIF RAND:4 == 0
+			TEXT_INTRO = %TEXT_INTRO%熱烈に口説いてきた
+		ELSEIF RAND:3 == 0
+			TEXT_INTRO = %TEXT_INTRO%嘗め回すように身体を眺めていた
+		ELSEIF RAND:2
+			TEXT_INTRO = %TEXT_INTRO%チラチラと様子を伺っていた
+		ELSE
+			TEXT_INTRO = %TEXT_INTRO%荒っぽそうな
+		ENDIF
+
+	CASE "青年"
+		IF RAND:9 == 0
+			TEXT_INTRO = %TEXT_INTRO%娼館前でたたらを踏んでいた
+		ELSEIF RAND:8 == 0
+			TEXT_INTRO = %TEXT_INTRO%屈強な
+		ELSEIF RAND:7 == 0
+			TEXT_INTRO = %TEXT_INTRO%自分の事を娼婦と勘違いしている
+		ELSEIF RAND:6 == 0
+			TEXT_INTRO = %TEXT_INTRO%街娼を物色していた
+		ELSEIF RAND:5 == 0
+			TEXT_INTRO = %TEXT_INTRO%性欲旺盛そうな
+		ELSEIF RAND:4 == 0
+			TEXT_INTRO = %TEXT_INTRO%熱烈に口説いてきた
+		ELSEIF RAND:3 == 0
+			TEXT_INTRO = %TEXT_INTRO%経験少なそうな
+		ELSEIF RAND:2
+			TEXT_INTRO = %TEXT_INTRO%チラチラと様子を伺っていた
+		ELSE
+			TEXT_INTRO = %TEXT_INTRO%荒っぽそうな
+		ENDIF
+
+	CASE "少年"
+		IF RAND:5 == 0
+			TEXT_INTRO = %TEXT_INTRO%チラチラと様子を伺っていた
+		ELSEIF RAND:4 == 0
+			TEXT_INTRO = %TEXT_INTRO%経験少なそうな
+		ELSEIF RAND:3 == 0
+			TEXT_INTRO = %TEXT_INTRO%自分好みの
+		ELSEIF RAND:2
+			TEXT_INTRO = %TEXT_INTRO%如何にも女を知らなさそうな
+		ELSE
+			TEXT_INTRO = %TEXT_INTRO%整った容姿の
+		ENDIF
+	ENDSELECT
+	TEXT_INTRO = %TEXT_INTRO%{NUM_NPC}人の%NPC_NAME%を襲ったようだ
+
+
+	SELECTCASE NPC_NAME
+	CASE "女性", "少女"
+		IF NPC_NAME == "女性" && RAND:2
+			TEXT_LAST = %NPC_NAMES%は、何度も気をやってしまった……
+		ELSE
+			TEXT_LAST = %NPC_NAMES%は、何度も絶頂に追いやられてしてしまった……
+		ENDIF
+		IF (PENIS(TARGET) && TALENT:童貞 == 0) || (ABL:レズっ気 >= 3 && ABL:サドっ気 >= 3 && RAND:3 == 0)
+			CALL SIMULATE_TRAIN_COM, 120, MAX(RAND:NUM_NPC, 1)*(3 + RAND:NUM_NPC)/2
+			SIF TALENT_NAME(185, TALENT:調教知識, TARGET) == "調教知識(アナル)" && RAND:2
+				CALL SIMULATE_TRAIN_COM, 126, MAX(RAND:NUM_NPC, 1)*(3 + RAND:NUM_NPC)/2
+		ENDIF
+		CALL SIMULATE_TRAIN_COM, 0, MAX(RAND:NUM_NPC, 1)*(3 + RAND:NUM_NPC)/2
+		CALL SIMULATE_TRAIN_COM, 98, MAX(RAND:NUM_NPC, 1)*(3 + RAND:NUM_NPC)/2
+		SIF PENIS(TARGET)
+			CALL SIMULATE_TRAIN_COM, 4, MAX(RAND:NUM_NPC, 1)*(3 + RAND:NUM_NPC)/2
+		SIF TALENT:オトコ == 0
+			CALL SIMULATE_TRAIN_COM, 1, MAX(RAND:NUM_NPC, 1)*(3 + RAND:NUM_NPC)/2
+	CASEELSE
+		;TFLAG:13でプレイ内容を管理
+		TFLAG:13 = 0
+		;一人につき１〜５回行動する
+		FOR LCOUNT, 0, NUM_NPC
+			IF COND("ベテラン：Ｖセックス") && RANDIF(2, COND("ベテラン：Ａセックス") )
+				IF RAND:2
+					CALL SIMULATE_TRAIN_COM, 65, 1 + RAND:5
+				ELSE
+					CALL SIMULATE_TRAIN_COM, 60, 1 + RAND:5
+				ENDIF
+				SETBIT TFLAG:13, 0
+			ELSEIF COND("ベテラン：Ａセックス") && RAND:2
+				IF RAND:2
+					CALL SIMULATE_TRAIN_COM, 75, 1 + RAND:5
+				ELSE
+					CALL SIMULATE_TRAIN_COM, 71, 1 + RAND:5
+				ENDIF
+				SETBIT TFLAG:13, 1
+			ELSE
+				IF ABL:魔乳 >= 3 && RANDIF(3, ABL:足使い >= 3)
+					IF TALENT:巨乳 && RAND:3 == 0
+						CALL SIMULATE_TRAIN_COM, 104, 1 + RAND:5
+					ELSE
+						CALL SIMULATE_TRAIN_COM, 92, 1 + RAND:5
+					ENDIF
+				ELSEIF ABL:足使い >= 3 && RAND:3 == 0
+					CALL SIMULATE_TRAIN_COM, 95, 1 + RAND:5
+				ELSEIF RAND:2
+					CALL SIMULATE_TRAIN_COM, 90, 1 + RAND:5
+				ELSE
+					CALL SIMULATE_TRAIN_COM, 91, 1 + RAND:5
+				ENDIF
+			ENDIF
+		NEXT
+
+		TEXT_LAST = %NPC_NAMES%は%CALLNAME:TARGET%
+		IF GETBIT(TFLAG:13, 0) && GETBIT(TFLAG:13, 1) && RAND:3 == 0
+			TEXT_LAST = %TEXT_LAST%の%TEXTR("前後の穴", "膣とアナル", "全身至る所")%に
+		ELSEIF GETBIT(TFLAG:13, 0) && RANDIF(2, GETBIT(TFLAG:13, 1) )
+			IF ABL:腰使い >= 3 
+				IF TALENT:粗野 && RAND:2
+					TEXT_LAST = %TEXT_LAST%の獰猛な腰使いに
+				ELSE
+					TEXT_LAST = %TEXT_LAST%の巧みな腰使いに
+				ENDIF
+			ELSEIF ABL:Ｖ名器度 >= 80
+				IF ABL:Ｖ拡張 >= 3 && RAND:2
+					TEXT_LAST = %TEXT_LAST%の%TEXTR("伸縮自在な", "鍛え上げられた")%蜜壷に
+				ELSE
+					TEXT_LAST = %TEXT_LAST%の%TEXTR("吸い付いてくるような", "この世のものとは思えない気持ちよさの")%蜜壷に
+				ENDIF
+			ELSE
+				SELECTCASE AGE(TARGET)
+				CASE 1
+					TEXT_LAST = %TEXT_LAST%の%TEXTR("幼い膣", "幼いアソコ", "生意気なアソコ")%に
+				CASE 2
+					TEXT_LAST = %TEXT_LAST%の%TEXTR("瑞々しいアソコ", "発展途上な膣穴")%に
+				CASE 3
+					TEXT_LAST = %TEXT_LAST%の%TEXTR("成熟した性器", "貪欲な膣穴")%に
+				CASEELSE
+					TEXT_LAST = %TEXT_LAST%の%TEXTR("熟れた蜜穴", "オトナな膣穴")%に
+				ENDSELECT
+			ENDIF
+		ELSEIF GETBIT(TFLAG:13, 1) && RAND:2
+			IF ABL:腰使い >= 3 
+				IF TALENT:粗野 && RAND:2
+					TEXT_LAST = %TEXT_LAST%の獰猛な腰使いに
+				ELSE
+					TEXT_LAST = %TEXT_LAST%の巧みな腰使いに
+				ENDIF
+			ELSEIF ABL:Ａ名器度 >= 80
+				IF ABL:Ａ拡張 >= 3 && RAND:2
+					TEXT_LAST = %TEXT_LAST%の%TEXTR("伸縮自在な", "鍛え上げられた", "すっかり性器となった")%アナルに
+				ELSE
+					TEXT_LAST = %TEXT_LAST%の%TEXTR("隙間無く密着してくる", "この世のものとは思えない気持ちよさの")%アナルに
+				ENDIF
+			ELSE
+				SELECTCASE AGE(TARGET)
+				CASE 1
+					TEXT_LAST = %TEXT_LAST%の%TEXTR("幼いアナル", "小さなお尻の穴")%に
+				CASE 2
+					TEXT_LAST = %TEXT_LAST%の%TEXTR("背徳的なアナル", "綺麗なお尻の穴")%に
+				CASE 3
+					TEXT_LAST = %TEXT_LAST%の%TEXTR("成熟した性器", "膣ではなくアナル")%に
+				CASEELSE
+					TEXT_LAST = %TEXT_LAST%の%TEXTR("大きく広がったアナル", "貪欲に引きずり込んでくる肛門")%に
+				ENDSELECT
+			ENDIF
+		ELSE
+			IF TALENT:陽気 && RANDIF(1, TALENT:強気)
+				IF NPC_NAME == "少年" && GETBIT(TFLAG:13, 0) && RAND:2
+					TEXT_LAST = %TEXT_LAST%に優しく筆下ろしされ、
+				ELSE
+					TEXT_LAST = %TEXT_LAST%におねだりされるがまま、
+				ENDIF
+			ELSEIF TALENT:強気
+				IF TALENT:力持ち && RAND:2
+					TEXT_LAST = %TEXT_LAST%に抗う事もろくに出来ずに、
+				ELSE
+					TEXT_LAST = %TEXT_LAST%に押し倒されて、
+				ENDIF
+			ELSE
+				TEXT_LAST = %TEXT_LAST%に求められるがまま、
+			ENDIF
+		ENDIF
+		TEXT_LAST = %TEXT_LAST%%TEXTR("たっぷりと", "何度も", "限界を超えて", "足腰立たなくなるまで", "フニャフニャになるまで")%
+		TEXT_LAST = %TEXT_LAST%%TEXTR("精液を搾り取られて", "精を吐き出して")%しまった……
+
+		;汎用
+		IF RAND:4 == 0
+			SELECTCASE NPC_NAME
+			CASE "冒険者"
+				TEXT_LAST = %NPC_NAMES%は、何度もその精力を絞られてしまった……
+			CASE "青年"
+				TEXT_LAST = %NPC_NAMES%は、何度もその精を吐き出してしまった……
+			CASEELSE
+				TEXT_LAST = %NPC_NAMES%は、何度もその若い性を発散してしまった……
+			ENDSELECT
+		ENDIF
+	ENDSELECT
+ENDSELECT
+
+;被害人数加算
+NUM_NPC_TOTAL += NUM_NPC
+
+;童貞狩り経験
+IF TALENT:PLAYER:童貞 && TALENT:PLAYER:オンナ == 0 && EXP:Ｖ性交経験 > EXP_V_SEX
+	SELECTCASE NPC_NAME
+	CASE "冒険者"
+		NUM_DOUTEI = LIMIT(NUM_NPC*(1 + RAND:2)/10, 1, EXP:Ｖ性交経験 - EXP_V_SEX)
+	CASE "少年"
+		NUM_DOUTEI = LIMIT(NUM_NPC*(6 + RAND:5)/10, 1, EXP:Ｖ性交経験 - EXP_V_SEX)
+	CASEELSE
+		NUM_DOUTEI = LIMIT(NUM_NPC*(1 + RAND:4)/10, 1, EXP:Ｖ性交経験 - EXP_V_SEX)
+	ENDSELECT
+	EXP:童貞狩り経験 += NUM_DOUTEI
+	EXP:経験値 += NUM_DOUTEI * 50
+;処女簒奪経験
+ELSEIF TALENT:PLAYER:処女 && TALENT:PLAYER:オトコ == 0 && EXP:Ｖ挿入経験 > EXP_V_INS
+	SELECTCASE NPC_NAME
+	CASE "少女"
+		NUM_SYOJYO = LIMIT(NUM_NPC*(2 + RAND:4)/10, 1, EXP:Ｖ挿入経験 > EXP_V_INS)
+	CASEELSE
+		NUM_SYOJYO = LIMIT(NUM_NPC*(1 + RAND:2)/10, 1, EXP:Ｖ挿入経験 > EXP_V_INS)
+	ENDSELECT
+	EXP:処女簒奪経験 += NUM_SYOJYO
+	EXP:経験値 += NUM_SYOJYO * 50
+ENDIF
+;満足したか？
+CALL CALC, "欲求不満解消", TARGET, NUM_NPC
+CALL SETFLAG, "性欲ゲージ", TARGET
+CALL SETFLAG, "精液欲ゲージ", TARGET
+
+IF FLAG:8
+	PRINTL 
+	SIF NPC_HOME != ""
+		PRINTFORML ………ざわ……ざわ……
+	SETCOLOR DEF_COLOR("黄色")
+
+	;どこで何人襲ったか
+	FOR LCOUNT, 0, 3
+		SIF STRLENS(TEXT_INTRO:LCOUNT) == 0
+			CONTINUE
+		PRINTFORMW %TEXT_INTRO:LCOUNT%
+	NEXT
+
+	RESETCOLOR
+	PRINTL 
+
+	;プレイ内容
+	FOR LCOUNT, 0, 3
+		SIF STRLENS(TEXT_PLAY:LCOUNT) == 0
+			CONTINUE
+		PRINTFORMW %TEXT_PLAY:LCOUNT%
+	NEXT
+
+	;台詞
+	RESETCOLOR
+	SELECTCASE STRLENS(NPC_HOME)
+	CASE IS > 0
+		SELF_KOJOS = 一晩開放：%NPC_HOME%
+	CASEELSE
+		SELF_KOJOS = 一晩開放：%NPC_NAME%相手
+	ENDSELECT
+
+	;LINECOUNTを記録して、キャラが喋ったかを判別させる
+	MEMO_LINECOUNT = LINECOUNT
+	CALL SELF_KOJO, SELF_KOJOS
+
+	;キャラが喋らない場合は断末魔
+	SIF LINECOUNT == MEMO_LINECOUNT
+		CALL NPC_SHOUT, NPC_HOME, NPC_NAME
+
+	;参加者の末路
+	FOR LCOUNT, 0, 3
+		SIF STRLENS(TEXT_LAST:LCOUNT) == 0
+			CONTINUE
+		PRINTFORMW %TEXT_LAST:LCOUNT%
+	NEXT
+
+	;受精確率
+	CALL CHECK_NINSHIN
+
+	SELECTCASE NPC_HOME
+	CASE "ストリップ劇場"
+		;IF COND("絶頂") == 0 && NUM_PLAY < ABL:欲望 && (RAND:3 || (RAND:5 && EXP_GAIN(20) < BASE:欲求不満 + (MAXBASE:性欲 + MAXBASE:精液欲)*2 - BASE:性欲 - BASE:精液欲) )
+		;	IF FLAG:8
+		;		PRINTFORMW 客達をすっかり満足させた%CALLNAME:TARGET%はストリップ劇場を後にした
+		;		PRINTL 
+		;		PRINTFORMW ……が、どうやらまだ物足りなかったらしい
+		;	ENDIF
+		;	NUM_PLAY += 1
+		;	GOTO START
+		;ELSEIF FLAG:8
+		PRINTL 
+		PRINTFORMW 客達をすっかり満足させた%CALLNAME:TARGET%は、たんまりと稼いだおひねりを手にストリップ劇場から帰途に着いた…
+	CASE "グローリーホール屋"
+		IF COND("絶頂") == 0 && NUM_PLAY < ABL:欲望 && (RAND:3 || (RAND:5 && EXP_GAIN(20) < (MAXBASE:性欲 + MAXBASE:精液欲)*2 - BASE:性欲 - BASE:精液欲) )
+			PRINTFORMW 一区切りついたところで%CALLNAME:TARGET%はグローリーホール屋を後にした
+			PRINTL 
+			PRINTFORMW ……が、どうやらまだ物足りなかったらしい
+			NUM_PLAY += 1
+			GOTO START
+		ELSE
+			PRINTL 
+			PRINTFORMW 一区切りついたところで%CALLNAME:TARGET%はグローリーホール屋を後にし、帰途に着いた…
+		ENDIF
+	CASEELSE
+		IF COND("絶頂") == 0 && NUM_PLAY < ABL:欲望 && (RAND:3 || (RAND:5 && EXP_GAIN(20) < (MAXBASE:性欲 + MAXBASE:精液欲)*2 - BASE:性欲 - BASE:精液欲) )
+			PRINTFORMW 一区切りついたところで%CALLNAME:TARGET%は憐れな犠牲者を解放した
+			PRINTL 
+			PRINTFORMW ……が、どうやらまだ物足りなかったらしい
+			NUM_PLAY += 1
+			GOTO START
+		ELSE
+			PRINTL 
+			PRINTFORMW 一区切りついたところで%CALLNAME:TARGET%は憐れな犠牲者を解放して帰途に着いた…
+		ENDIF
+	ENDSELECT
+ENDIF
+
+CALL SETFLAG, "一般人相手の性行為終了"
+
+;各種フラグの保存
+;一晩開放の実行回数
+CFLAG:50 += 1
+;総被害者数
+CFLAG:51 += NUM_NPC_TOTAL
+;連続して実行した日数＆"連続して実行した日数"で襲った総人数
+IF CFLAG:52 >= 1 && CFLAG:52 == DAY
+	CFLAG:53 += 1
+	CFLAG:54 += NUM_NPC_TOTAL
+ELSE
+	CFLAG:53 = 1
+	CFLAG:54 = NUM_NPC_TOTAL
+ENDIF
+;名声…というか悪名？
+CFLAG:55 += CFLAG:53 * CFLAG:54 * (NUM_NPC_TOTAL/5 + 1)
+
+IF FLAG:8
+	PRINTFORM 今夜の被害数：{NUM_NPC_TOTAL}人　
+	SIF NUM_NPC_TOTAL >= 10
+		PRINTFORM \@ NUM_NPC_TOTAL >= 100 ? ☆ # \@一晩%TEXTS("漢数字概数", NUM_NPC_TOTAL)%人斬り達成\@ NUM_NPC_TOTAL >= 100 ? ☆ # \@
+	PRINTL 
+
+	PRINTFORM のべ被害人数：{CFLAG:51}人　
+	SIF CFLAG:51 >= 10
+		PRINTFORM \@ CFLAG:51 >= 100 ? ☆ # \@累計%TEXTS("漢数字概数", CFLAG:51)%人斬り達成\@ CFLAG:51 >= 100 ? ☆ # \@　
+
+	;連続して実行した日数＆"連続して実行した日数"で襲った総人数
+	SIF CFLAG:52 >= 1 && CFLAG:52 == DAY
+		PRINTFORM {CFLAG:53}NIGHT　{CFLAG:54}HIT COMBO!
+	PRINTFORM 名声？:{CFLAG:55}　
+	WAIT
+	PRINTL 
+ENDIF
+
+;前回実行した日付
+CFLAG:52 = DAY
+
+;-------------------------------------------------
+;犠牲者の断末魔(死んでないけど)
+;ARGSには場所、ARGS:1には被害者の種別が代入されている
+;-------------------------------------------------
+@NPC_SHOUT, ARGS, ARGS:1
+LOCALS = 
+SELECTCASE ARGS
+CASE "ストリップ劇場"
+	IF (TALENT:クリピアス || TALENT:ラビアピアス) && RANDIF(3, ABL:Ｖ拡張 > 2, AGE(TARGET) == 1)
+		PRINTFORML 『こんなとこにピアスなんか付けやがってこの変態が！ オラッ！ 孕め！！』
+	ELSEIF AGE(TARGET) == 1 && RANDIF(3, ABL:Ｖ拡張 > 2)
+		PRINTFORML 『ガキの癖にこんな仕事しやがってッ！ オラっ、たっぷりお仕置きしてやる！！』
+	ELSEIF ABL:Ｖ拡張 > 2 && RAND:3 == 0
+		PRINTFORML 『な、なんだ、この\@ AGE(TARGET) >= 3 ? 女 # ガキ \@ッ！ 俺の自慢の奴を余裕たっぷりに根元まで…！ ぐあぁぁっ！！』
+	ELSEIF RAND:7 == 0
+		PRINTFORML 『ぐぅっ…こ、こいつ、底なしか、し、…搾り取られるぅッ！うぁ…』
+	ELSEIF RAND:6 == 0
+		PRINTFORML 『ぁああッ！も、もう…出るっ！出るうっ！！！』
+	ELSEIF RAND:5 == 0
+		PRINTFORML 『す、凄え！ 絡み付くみてぇだ！！く……』
+	ELSEIF RAND:4 == 0
+		PRINTFORML 『…で、出ます！精液出しますぅ！ああぁぁぁああ……』
+	ELSEIF RAND:3 == 0
+		PRINTFORML 『出すぞ！しっかり受け止めろ！ ………おおぉ！』
+	ELSEIF RAND:2 == 0
+		PRINTFORML 『こ、腰が…止まらん！……ううッ！！』
+	ELSE
+		PRINTFORML 『くそッ、エロい腰使いしやがって！さっきからぶち込みたかったぞ、オラァ！』
+	ENDIF
+CASE "グローリーホール屋"
+	IF RAND:5 == 0 && ABL:喉拡張 > 2
+		PRINTFORML 『な、なんだ、この\@ AGE(TARGET) >= 3 ? 女 # ガキ \@ッ！ 俺の自慢の奴を余裕たっぷりに根元まで…！ ぐあぁぁっ！！』
+	ELSEIF RAND:5 == 0 && AGE(TARGET) <= 2 && TALENT:オトコ == 0
+		PRINTFORML 『いいよ…お、お嬢ちゃん、もっと僕のをぺろぺろして……うぅっ！」
+	ELSEIF RAND:5 == 0
+		PRINTFORML 『ううッ！さ、最高だな、この便器は……ぉおおっ！ で、出るっ！！！』
+	ELSEIF RAND:4 == 0
+		PRINTFORML 『ぁああッ！も、もう…出るっ！出るうっ！！！』
+	ELSEIF RAND:3 == 0
+		PRINTFORML 『す、凄え！ 絡み付くみてぇだ！！く……』
+	ELSEIF RAND:2
+		PRINTFORML 『…で、出ます！精液出しますぅ！ああぁぁぁああ……』
+	ELSE
+		PRINTFORML 『こ、腰が…止まらん！……ううッ！！』
+	ENDIF
+CASEELSE
+	SELECTCASE ARGS:1
+	CASE "女性"
+		IF RAND:7 == 0 && TALENT:オトコ == 0
+			PRINTFORML 『お、男の人より、いいのぉ…』
+		ELSEIF RAND:6 == 0 && PENIS(TARGET) == 0
+			PRINTFORML 『あぁん…女同士なのに…』
+		ELSEIF RAND:5 == 0
+			PRINTFORML 『ひっぐ…うっぐ…こんなの、いやぁ』
+		ELSEIF RAND:4 == 0
+			PRINTFORML 『わ、私には、心に決めた人が……いるのにぃ』
+		ELSEIF RAND:3 == 0
+			PRINTFORML 『ふふ…この感じ久しぶり…ん……』
+		ELSEIF RAND:2 == 0
+			PRINTFORML 『む、夢魔…？こ、来ないでぇ…ッ！』
+		ELSE
+			PRINTFORML 『い、いっちゃ…イっちゃうぅ！！イクのぉ…イくぅ！！』
+		ENDIF
+	CASE "少女"
+		IF RAND:7 == 0 && PENIS(TARGET) == 0
+			PRINTFORML 『あはぁ…いいよぉ…きもちいいよ…おねえちゃん』
+		ELSEIF RAND:6 == 0
+			PRINTFORML 『な、なにするの…』
+		ELSEIF RAND:5 == 0
+			PRINTFORML 『お、おまたむずむずするのぉ…なんとかしてぇ』
+		ELSEIF RAND:4 == 0
+			PRINTFORML 『あ…これ、せっくす、っていうんだよね…』
+		ELSEIF RAND:3 == 0
+			PRINTFORML 『こ、こないでぇ！なにかきちゃう…きちゃうのぉッ！！』
+		ELSEIF RAND:2 == 0
+			PRINTFORML 『や…わたし、はじめてなのに…』
+		ELSE
+			PRINTFORML 『…くせになりそう？』
+		ENDIF
+	CASE "青年", "冒険者"
+		SELECTCASE CONDS("一晩開放での襲撃傾向")
+		CASE "強姦"
+			IF RAND:3 == 0
+				LOCALS = 『む、夢魔にし、搾り取られるぅッ！うぁ…』
+			ELSEIF RAND:2
+				LOCALS = 『…で、出ます！精液出しますぅ！ああぁぁぁああ……』
+			ELSE
+				LOCALS = 『止めろ！夢魔なんぞに………ぐぅぅ』
+			ENDIF
+		CASE "和姦"
+			IF RAND:3 == 0
+				IF AGE(TARGET) >= 3
+					LOCALS = 『ぐうぅ……！ 良い穴してるな、ねえちゃん！ 中に出すぞ！！』
+				ELSE
+					LOCALS = 『ぐうぅ……！ こ、こんな子供に、…クソ！ 中に出すぞ！！』
+				ENDIF
+			ELSEIF RAND:2
+				LOCALS = 『…で、出る！ もうだめだぁっ！ ……ウゥッ！！』
+			ELSE
+				LOCALS = 『も、もちろん中に出して良いんだよな？！ ……出るっ！』
+			ENDIF
+		CASE "肉便器"
+
+		ENDSELECT
+
+		IF RAND:2 && LOCALS != ""
+			PRINTFORML %LOCALS%
+		ELSE
+			IF RAND:5 == 0 && ABL:Ｖ拡張 > 2
+				PRINTFORML 『な、なんだ、この\@ AGE(TARGET) >= 3 ? 女 # ガキ \@ッ！ 俺の自慢の奴を余裕たっぷりに根元まで…！ ぐあぁぁっ！！』
+			ELSEIF RAND:4 == 0
+				PRINTFORML 『ぁああッ！も、もう…出るっ！出るうっ！！！』
+			ELSEIF RAND:3 == 0
+				PRINTFORML 『す、凄え！ 絡み付くみてぇだ！！く……』
+			ELSEIF RAND:2 == 0
+				PRINTFORML 『こ、腰が…止まらん！……ううッ！！』
+			ELSE
+				PRINTFORML 『ぐ…ッうぅッ！ お、おおぉっ……出る！！』
+			ENDIF
+		ENDIF
+	CASE "少年"
+		SELECTCASE CONDS("一晩開放での襲撃傾向")
+		CASE "強姦"
+			IF RAND:2
+				LOCALS = 『あぅぅ…おちんちん食べられちゃってるぅ』
+			ELSE
+				LOCALS = 『…た、たすけ…て………おかしく…なっちゃ…うぅ』
+			ENDIF
+		CASE "和姦"
+
+		CASE "肉便器"
+
+		ENDSELECT
+		IF RAND:2 && LOCALS != ""
+			PRINTFORML %LOCALS%
+		ELSE
+			IF RAND:6 == 0 && PENIS(TARGET) == 0
+				PRINTFORML 『き、きもちいいよぉ…おねぇさん』
+			ELSEIF RAND:5 == 0 && PENIS(TARGET) == 0
+				PRINTFORML 『お、おねぇさん…それ、だめぇ……！』
+			ELSEIF RAND:4 == 0
+				PRINTFORML 『ぁああ……！で、で、でるうっ！！』
+			ELSEIF RAND:3 == 0
+				PRINTFORML 『あふぅ…な、なにか……なにかでちゃうよぉ！！』
+			ELSEIF RAND:2 == 0
+				PRINTFORML 『こ、こんなのお……よ、よすぎるよお……っ！』
+			ELSE
+				PRINTFORML 『と、とけちゃぅう…おちんちんとけちゃ…！』
+			ENDIF
+		ENDIF
+	ENDSELECT
+ENDSELECT
+
+
+
+;まだ作りかけ
+@SET_NIGHTWALK
+RETURN 0
+
+PRINTFORMW %CALLNAME:TARGET%は\@ TALENT:夢魔+TALENT:上位夢魔 ? 夢魔と判らぬように姿を変え、 # \@狩りを始めた…
+;王都である大都市グルッペンを訪れた。
+
+PRINTFORML 〜今宵の%CALLNAME:TARGET%の襲撃計画〜
+PRINTL 
+IF COND("人外度")
+	PRINTFORM  [ 0] 人間に化ける：
+	SELECTCASE CFLAG:57
+	CASE 0
+		PRINT ＹＥＳ
+	CASEELSE
+		PRINT ＮＯ
+	ENDSELECT
+	PRINTL 
+ELSE
+	CFLAG:57 = 2
+ENDIF
+PRINTFORM  [ 1] 狩り場：
+SELECTCASE CFLAG:58
+CASE 0
+	PRINTFORM 村
+CASE 1
+	PRINTFORM 都市
+ENDSELECT
+PRINTL 
+PRINTFORML [100] これで良い
+CALL INPUT_SELECT, 2, 100
+IF RESULT == 100
+	RETURN 1
+ELSEIF RESULT == 0 && COND("人外度")
+	INVERTBIT CFLAG:57, 0
+ELSEIF RESULT == 1
+	PRINTL どこを襲いますか？
+ENDIF
+RESTART

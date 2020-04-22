@@ -1,0 +1,523 @@
+﻿@COM170
+;ビデオカメラ
+;恥じらいや清楚、貞操観念持ちだと凄い反発。
+
+PRINTL ビデオカメラ
+
+CALL TRAIN_MESSAGE_B
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+IF TEQUIP:ビデオカメラ
+	STR:0 = ビデオカメラ(撮影開始)
+ELSE
+	STR:0 = ビデオカメラ(撮影終了)
+ENDIF
+
+RETURN 1
+
+@TRAIN_MESSAGE_COM170
+IF TEQUIP:ビデオカメラ
+	;ビデオ撮影がされていれば終了させる
+	TEQUIP:ビデオカメラ = 0
+	PRINTW ★★★ビデオ撮影を終了します★★★
+	;尺が短いor助手が居ない
+	IF GETBITS(CFLAG:69, 2) || ASSI <= 0 || ASSIPLAY
+
+	ELSEIF TEQUIP:ビデオカメラ >= 8 && ABL:ASSI:自慰中毒 >= RAND:6 && RAND:2
+		IF TALENT:ASSI:冷静 + TALENT:ASSI:無関心 + TALENT:ASSI:感情乏しい && RAND:2
+			PRINTFORMW 撮影を終えた%CALLNAME:ASSI%は冷静を装っているが、熱を持った自らの股間を触りたい様子で内腿に手を這わせている…
+		ELSE
+			PRINTFORMW たっぷりと見せつけられた%CALLNAME:ASSI%は我慢できなかったのか、片手を股間に伸ばしている…
+		ENDIF
+	;減点要素無し、かつ尺が超短編ではない
+	ELSEIF GETBITS(CFLAG:69, 1, 2) == 0
+		IF TALENT:ASSI:濡れやすい && ABL:ASSI:欲望 >= RAND:6 && RAND:2
+			PRINTFORMW %CALLNAME:ASSI%は%TEXTS("助手の名称")%としてしっかり仕事をこなしたが、その脚には淫液が一筋伝っている…
+		ELSE
+			PRINTFORMW %CALLNAME:ASSI%は良い映像が撮れたと嬉しそうにしている…
+		ENDIF
+	ENDIF
+ELSE
+	;ビデオ撮影してなければ初期化して開始
+	;TODO 起動条件を作成する
+	;テープは開始時に数を減らす
+	;カウントは10回とします
+	ITEM:ビデオテープ -= 1
+	TEQUIP:ビデオカメラ = 1
+	PRINTFORML ★★★ビデオ撮影を開始します★★★
+
+	IF TALENT:無関心
+		PRINT ぼーっとこちらの一挙手一投足を見ている
+	ELSEIF EXP:撮影経験 == 0
+		IF TALENT:好奇心
+			PRINT 初めて見たものに興味津々の
+		ELSE
+			PRINT 不思議なものを見るかのように撮影機材を眺める
+		ENDIF
+	ELSEIF ABL:露出癖 >= 3 || TALENT:恥薄い
+		IF TALENT:相思相愛 && TALENT:淫乱 && RAND:2
+			PRINT 自分たちの愛を他人に見せつけてやろうと盛り上がっている
+		ELSEIF COND("人気：ＡＶ") && RAND:2
+			IF TALENT:強気 || TALENT:高慢
+				PRINT 自分の人気の有り様を受けて満更でもない様子で準備をしている
+			ELSE
+				PRINT 作品作りにも慣れてレンズ越しのお客からの受けを思案している
+			ENDIF
+		ELSE
+			PRINT ビデオカメラが視界に入った途端に目を輝かせる
+		ENDIF
+	ELSEIF TEQUIP:野外プレイ
+		PRINT 周囲を不安そうに伺っている
+	ELSEIF TALENT:恥じらい
+		PRINT 顔を真っ赤にしてこちらの様子を窺っている
+	ELSE
+		PRINT どんなプレイをしようかと考えを巡らせている
+	ENDIF
+	PRINTFORM %CALLNAME:TARGET%を尻目に、
+	IF ASSI <= 0
+		PRINTFORMW %CALLNAME:PLAYER%はビデオカメラを手ごろな高さの台に置いて調教を再開した。
+		PRINTFORMW （%TEXTS("助手の名称")%がいないため少々質が落ちますが仕方ありません…）
+	ELSEIF ASSIPLAY
+		PRINTFORMW %CALLNAME:PLAYER%は撮影を%CALLNAME:MASTER%に任せて調教を再開した。
+	ELSE
+		LOCALS = 
+		IF TEQUIP:野外プレイ || TEQUIP:館内露出プレイ
+			IF CHARA_NUM("館内露出観客数")
+				LOCALS = ギャラリーたちと一緒にくすくすと笑いながら、
+			ELSEIF ABL:ASSI:サドっ気 >= 3
+				LOCALS = ギャラリーがいないことを惜しがりつつ、
+			ELSE
+				LOCALS = 周囲に人がいないことを確認しつつ、
+			ENDIF
+		ELSEIF (COND("母親") == ASSI || COND("父親") == ASSI || COND("母親", ASSI) == TARGET || COND("父親", ASSI) == TARGET) && RAND:3 == 0
+			IF COND("母親") == ASSI || COND("父親") == ASSI
+				LOCALS = 我が子の性的な成長記録をしっかり残そうと胸の内で思いながら、
+			ELSE
+				LOCALS = 自分の親の情事を記録することに興奮しつつ、
+			ENDIF
+		ELSEIF (TALENT:ASSI:淫乱 || TALENT:ASSI:相思相愛) && RAND:4 == 0
+			IF TALENT:ASSI:淫乱 && RANDIF(1, TALENT:ASSI:相思相愛)
+				IF TALENT:ASSI:高慢
+					LOCALS = 過激なシーンを見せるようにと指示を出して、
+				ELSE
+					LOCALS = これから見せられる情事に期待をしながら、
+				ENDIF
+			ELSE
+				IF TALENT:ASSI:淫乱
+					LOCALS = 「今は%CALLNAME:TARGET%の番」と自分に言い聞かせ、
+				ELSE
+					LOCALS = 寂しげな表情を浮かべていたが、しぶしぶ
+				ENDIF
+			ENDIF
+		ELSEIF ABL:ASSI:自慰中毒 >= 3 && RAND:3 == 0
+			LOCALS = 片手を\@ TALENT:ASSI:オトコ ? 股間 # 秘所 \@に伸ばしそうになるのを我慢しながら、
+
+		ELSEIF TALENT:ASSI:サド && RANDIF(1, TALENT:ASSI:幼稚, TALENT:ASSI:素直, TALENT:ASSI:好奇心, TALENT:ASSI:鼓舞, TALENT:ASSI:粗野, TALENT:ASSI:嫉妬)
+			LOCALS = 直接調教出来ないのを悔しがりつつも、しっかり仕事をこなそうと
+		ELSEIF TALENT:ASSI:嫉妬 && RANDIF(1, TALENT:ASSI:幼稚, TALENT:ASSI:素直, TALENT:ASSI:好奇心, TALENT:ASSI:鼓舞, TALENT:ASSI:粗野)
+			LOCALS = 行為に加われない事に焼きもちを妬きながら、%CALLNAME:MASTER%の為だと自分に言い聞かせつつ
+		ELSEIF TALENT:ASSI:粗野 && RANDIF(1, TALENT:ASSI:幼稚, TALENT:ASSI:素直, TALENT:ASSI:好奇心, TALENT:ASSI:鼓舞)
+			LOCALS = 自分に任せるようにと胸を張り、
+		ELSEIF TALENT:ASSI:鼓舞 && RANDIF(1, TALENT:ASSI:幼稚, TALENT:ASSI:素直, TALENT:ASSI:好奇心)
+			LOCALS = %CALLNAME:TARGET%をやんややんやと応援しながら、
+		ELSEIF TALENT:ASSI:好奇心 && RANDIF(1, TALENT:ASSI:幼稚, TALENT:ASSI:素直)
+			IF RELATION:ASSI:TARGET >= 150
+				LOCALS = %CALLNAME:TARGET%の痴態を逃さず記録しようと、はりきって
+			ELSE
+				LOCALS = %CALLNAME:MASTER%達の痴態を逃さず記録しようと、はりきって
+			ENDIF
+		ELSEIF TALENT:ASSI:素直 && RANDIF(1, TALENT:ASSI:幼稚)
+			LOCALS = %CALLNAME:MASTER%に言われた通りに
+		ELSEIF TALENT:ASSI:幼稚
+			LOCALS = %CALLNAME:MASTER%の言葉に元気良く返事すると、楽しそうに
+		ELSEIF ABL:ASSI:自慰中毒 >= 3 && RAND:3 == 0
+			LOCALS = 片手を\@ TALENT:ASSI:オトコ ? 股間 # 秘所 \@に伸ばしそうになるのを我慢しながら、
+		ENDIF
+
+		IF LOCALS == ""
+			PRINTFORMW %CALLNAME:PLAYER%はビデオカメラを%CALLNAME:ASSI%に手渡して撮影を始めさせた…
+		ELSE
+			PRINTFORMW %CALLNAME:PLAYER%はビデオカメラを%CALLNAME:ASSI%に手渡した。
+			PRINTFORMW %CALLNAME:ASSI%は%LOCALS%撮影を開始した…
+		ENDIF
+		TRYCALLFORM GUEST_KOJO_K{NO:ASSI}_{CFLAG:ASSI:209}, "助手：撮影開始", ASSI
+	ENDIF
+ENDIF
+
+@EQUIP_COM53_1
+;初回はコマンド自体で呼ばれる
+SIF SELECTCOM == 170
+	RETURN 0
+
+CALL SOURCE_COM170, 10
+
+RETURN 1
+
+@FLAG_COM170, ARG
+
+@SOURCE_COM170, ARG
+SIF TEQUIP:ビデオカメラ == 0
+	RETURN 0
+
+VARSET LOCAL
+
+LOCAL:20 += 10
+SELECTCASE EXP:撮影経験
+CASE IS < 50
+	LOCAL:21 += 50
+CASE IS < 150
+	LOCAL:21 += 40
+CASE IS < 300
+	LOCAL:21 += 30
+CASE IS < 600
+	LOCAL:21 += 20
+CASEELSE
+	LOCAL:21 += 10
+ENDSELECT
+
+;欲情など
+LOCAL:11 = 100
+;露出など
+LOCAL:12 = 3000
+;逸脱など
+LOCAL:14 = 5000
+
+;ハダカ
+IF CHECK_CLO("ハダカ")
+	;種族衣装がハダカでない
+	IF CLO_ORI(TARGET, "服", "スーツ", "アウター", "下着")
+		LOCAL:12 += 3000
+		LOCAL:14 += 1000
+	ENDIF
+;パンツのみ
+ELSEIF CHECK_CLO("下着姿")
+	;種族衣装が服orボディスーツorアウターを含む
+	IF CLO_ORI(TARGET, "服", "スーツ", "アウター")
+		LOCAL:12 += 2000
+		LOCAL:14 += 500
+	ENDIF
+;ノーパン
+ELSEIF CHECK_CLO("ノーパン")
+	;種族衣装に下着あり
+	IF CLO_ORI(TARGET, "下着")
+		LOCAL:12 += 1000
+		LOCAL:14 += 300
+	ENDIF
+ENDIF
+
+;拘束の状態により露出を追加
+IF GETBIT(TEQUIP:拘束, 5)
+	LOCAL:12 += 1000
+ELSEIF GETBIT(TEQUIP:拘束, 4)
+	LOCAL:12 += 500
+ELSEIF GETBIT(TEQUIP:拘束, 3)
+	LOCAL:12 += 200
+ENDIF
+;PALAM:欲情をみる
+SELECTCASE PALAM:欲情
+CASE IS < PALAMLV:1
+	TIMES LOCAL:11, 0.80
+CASE IS < PALAMLV:2
+	TIMES LOCAL:11, 0.90
+CASE IS < PALAMLV:3
+	TIMES LOCAL:11, 1.00
+CASE IS < PALAMLV:4
+	TIMES LOCAL:11, 1.10
+CASE IS >= PALAMLV:4
+	TIMES LOCAL:11, 1.20
+ENDSELECT
+
+;ABL:露出癖をみる
+SELECTCASE ABL:露出癖
+CASE 0
+	TIMES LOCAL:11, 0.80
+	TIMES LOCAL:14, 1.00
+CASE 1
+	TIMES LOCAL:11, 1.00
+	TIMES LOCAL:14, 0.90
+CASE 2
+	TIMES LOCAL:11, 1.30
+	TIMES LOCAL:14, 0.70
+CASE 3
+	TIMES LOCAL:11, 1.60
+	TIMES LOCAL:14, 0.50
+CASE 4
+	TIMES LOCAL:11, 2.00
+	TIMES LOCAL:14, 0.30
+CASEELSE
+	TIMES LOCAL:11, 3.00
+	TIMES LOCAL:14, 0.10
+ENDSELECT
+
+;露出はTRACHECKで補正がかかるので、逸脱に恥じらいなどで補正
+IF TALENT:恥じらい
+	TIMES LOCAL:11, 0.20
+	TIMES LOCAL:14, 2.00
+ENDIF
+;清楚
+IF TALENT:清楚
+	TIMES LOCAL:11, 0.50
+	TIMES LOCAL:14, 1.50
+ENDIF
+
+;倒錯的
+SIF TALENT:倒錯的
+	TIMES LOCAL:11, 2.00
+;目立ちたがり
+IF TALENT:目立ちたがり
+	TIMES LOCAL:11, 1.50
+	TIMES LOCAL:14, 0.50
+ENDIF
+;臆病
+IF TALENT:臆病
+	TIMES LOCAL:14, 1.70
+	SIF LOCAL:14 >= 1200
+		LOCAL:21 += 70
+ENDIF
+;習得早い
+SIF TALENT:賢い
+	TIMES LOCAL:12, 1.50
+;習得遅い
+SIF TALENT:愚か
+	TIMES LOCAL:12, 0.70
+;淫乱
+IF TALENT:目立ちたがり
+	TIMES LOCAL:11, 1.50
+	TIMES LOCAL:14, 0.50
+ENDIF
+
+LOCAL:11 += LOCAL:11
+LOCAL:9 += LOCAL:14 / 10
+
+CALL CALC, "調教ソース", LOCAL:0, LOCAL:1, LOCAL:2, LOCAL:3, LOCAL:4, LOCAL:5, LOCAL:6, LOCAL:7, LOCAL:8, LOCAL:9, LOCAL:10, LOCAL:11, LOCAL:12, LOCAL:13, LOCAL:14, LOCAL:15, LOCAL:16, LOCAL:17, LOCAL:18, LOCAL:19, LOCAL:20, LOCAL:21, ARG
+
+
+@EQUIP_COM53_1_2
+SIF SELECTCOM == 170
+	RETURN 0
+
+PRINTFORML ＜ビデオ撮影中{TEQUIP:ビデオカメラ}/10＞
+EXP:露出経験 += 1
+EXP:撮影経験 += 1
+PRINTFORML %EXPNAME:34%＋１
+PRINTFORML %EXPNAME:59%＋１
+
+;ターン終了時の色々なチェック
+@EQUIP_COM53_2
+;ここでは主にジャンルのチェックをする
+;1 疲れてるのに撮影継続, 2 短すぎる（１〜３コマ）, 3 短い（４〜６コマ）
+;10 処女喪失, 11 母乳, 12 放尿, 13 排泄, 14 多重絶頂, 15 お掃除フェラ, 16 Ａお掃除フェラ, 17 拘束, 18 童貞喪失, 19 童貞狩り
+;20 自慰, 21, 中出し見せつけ, 22 本番, 23 Ａ本番, 24 Ｖフィスト, 25 Ａフィスト, 26 Ｗフィスト, 27 Ｖ竜姦, 28 Ａ竜姦, 29 イラマチオ
+;30 ＢＬ, 31 レズ, 32 ふたなり, 33 野外, 34 野外全裸, 35 野外露出, 36 Ｖ拡張, 37 Ａ拡張, 38 聖水, 39 飲尿, 40 近親
+;41 尿道, 42 尿道本番
+;50〜 コスプレ
+
+;撮影開始時
+IF TEQUIP:ビデオカメラ == 1
+	CFLAG:69 = 0
+
+	IF CHECK_SHIRT("女教師")
+		SETBIT CFLAG:69, 50
+	ELSEIF CHECK_SHIRT("メイド服")
+		SETBIT CFLAG:69, 51
+	ELSEIF CHECK_SHIRT("体操服")
+		SETBIT CFLAG:69, 52
+	ELSEIF CHECK_SHIRT("看護婦")
+		SETBIT CFLAG:69, 53
+	ELSEIF CHECK_SHIRT("セーラー服")
+		SETBIT CFLAG:69, 54
+	ELSEIF CHECK_SHIRT("巫女")
+		SETBIT CFLAG:69, 55
+	ELSEIF CHECK_CLO("水着姿")
+		SETBIT CFLAG:69, 56
+	ELSEIF CHECK_BODYS("ボンデージ")
+		SETBIT CFLAG:69, 57
+	ELSEIF CHECK_BODYS("バニースーツ")
+		SETBIT CFLAG:69, 58
+	ELSEIF CHECK_SHIRT("ゴスロリドレス")
+		SETBIT CFLAG:69, 59
+	ELSEIF CHECK_SHIRT("チアリーダー")
+		SETBIT CFLAG:69, 60
+	ENDIF
+	SIF TALENT:オトコ && TALENT:PLAYER:オトコ
+		SETBIT CFLAG:69, 30
+	SIF TALENT:オンナ && TALENT:PLAYER:オンナ
+		SETBIT CFLAG:69, 31
+	SIF TALENT:ふたなり && TALENT:PLAYER:ふたなり
+		SETBIT CFLAG:69, 32
+	SIF TEQUIP:野外プレイ
+		SETBIT CFLAG:69, 33
+	SIF TEQUIP:アイマスク + TEQUIP:拘束 + TEQUIP:口枷
+		SETBIT CFLAG:69, 17
+ENDIF
+SIF SELECTCOM == 170
+	RETURN 0
+
+;このターンのプレイを記録
+SIF SELECTCOM >= 0
+	CSTR:81 = %CSTR:81%%TRAINNAME:SELECTCOM%\/
+
+;気力０なのに撮影したら減点
+SIF BASE:気力 <= 0 && GETBIT(CFLAG:69, 0)
+	SETBIT CFLAG:69, 1
+
+;処女喪失撮影フラグ
+SIF NOWEX:処女喪失
+	SETBIT CFLAG:69, 10
+;噴乳撮影フラグ
+SIF NOWEX:噴乳 || COND("母乳飲みフラグ", PLAYER)
+	SETBIT CFLAG:69, 11
+;放尿撮影フラグ
+SIF NOWEX:絶頂お漏らし
+	SETBIT CFLAG:69, 12
+;排泄フラグ
+SIF NOWEX:排泄
+	SETBIT CFLAG:69, 13
+;四重絶頂
+SIF CHECK_ECST(TARGET) >= 4
+	SETBIT CFLAG:69, 14
+SIF COND("お掃除フェラフラグ")
+	SETBIT CFLAG:69, 15
+SIF COND("Ａお掃除フェラフラグ")
+	SETBIT CFLAG:69, 16
+SIF TEQUIP:アイマスク + TEQUIP:拘束 + TEQUIP:口枷
+	SETBIT CFLAG:69, 17
+;童貞喪失撮影フラグ
+SIF COND("童貞喪失フラグ")
+	SETBIT CFLAG:69, 18
+;童貞狩り撮影フラグ
+SIF COND("童貞喪失フラグ", PLAYER)
+	SETBIT CFLAG:69, 19
+
+;コマンド依存
+SELECTCASE SELECTCOM
+;使用前と使用後の比較
+CASE 3
+	IF TEQUIP:尿道ブジー
+		SETBIT CFLAG:69,41
+	ELSE
+		SETBIT CFLAG:69, 20
+	ENDIF
+CASE 13
+	SIF PREVEX("Ｖ中出し")
+		SETBIT CFLAG:69, 21
+CASE 15, 151
+	SETBIT CFLAG:69, 41
+CASE 31
+	SIF SIZE("バイブ") >= 3
+		SETBIT CFLAG:69, 36
+CASE 33
+	SIF SIZE("Ａバイブ") >= 3
+		SETBIT CFLAG:69, 37
+CASE 60 TO 69, 177
+	SETBIT CFLAG:69, 22
+CASE 70 TO 79
+	SETBIT CFLAG:69, 22
+	SETBIT CFLAG:69, 23
+CASE 83 TO 88
+	SETBIT CFLAG:69, 42
+CASE 140
+	SETBIT CFLAG:69, 29
+CASE 141
+	IF CHECK("フィスト") && SIZE("フィスト") >= 3
+		SETBIT CFLAG:69, 24
+		SETBIT CFLAG:69, 36
+	ENDIF
+CASE 142
+	IF CHECK("フィスト") && SIZE("フィスト") >= 3
+		SETBIT CFLAG:69, 25
+		SETBIT CFLAG:69, 37
+	ENDIF
+CASE 143
+	IF CHECK("フィスト") && SIZE("フィスト") >= 3
+		SETBIT CFLAG:69, 26
+		SETBIT CFLAG:69, 36
+		SETBIT CFLAG:69, 37
+	ENDIF
+CASE 304
+	SIF TEQUIP:押し倒し == 0
+		SETBIT CFLAG:69, 27
+CASE 305
+	SIF TEQUIP:押し倒し == 0
+		SETBIT CFLAG:69, 28
+ENDSELECT
+
+IF TALENT:オトコ && TALENT:PLAYER:オトコ
+ELSEIF TALENT:オンナ && TALENT:PLAYER:オンナ
+ELSEIF TALENT:ふたなり && TALENT:PLAYER:ふたなり
+	CFLAG:69 = CLEARBITS(CFLAG:69, 30, 32)
+ENDIF
+IF TEQUIP:野外プレイ == 0
+	CLEARBIT CFLAG:69, 33
+ELSEIF CHECK_CLO("ハダカ")
+	SETBIT CFLAG:69, 34
+ELSEIF CHECK_CLO("Ｖ露出") || CHECK_CLO("Ａ露出")
+	SETBIT CFLAG:69, 35
+ENDIF
+
+;聖水プレイ
+SIF COND("飲尿フラグ", PLAYER)
+	SETBIT CFLAG:69, 38
+;飲尿もの
+SIF COND("飲尿フラグ", TARGET)
+	SETBIT CFLAG:69, 39
+;近親もの
+SIF COND("近親")
+	SETBIT CFLAG:69, 40
+
+;脱いだらコスプレではない！
+IF GETBIT(CFLAG:69, 50) && CHECK_SHIRT("女教師") == 0
+	CLEARBIT CFLAG:69, 50
+ELSEIF GETBIT(CFLAG:69, 51) && CHECK_SHIRT("メイド服") == 0
+	CLEARBIT CFLAG:69, 51
+ELSEIF GETBIT(CFLAG:69, 52) && CHECK_SHIRT("体操服") == 0
+	CLEARBIT CFLAG:69, 52
+ELSEIF GETBIT(CFLAG:69, 53) && CHECK_SHIRT("看護婦") == 0
+	CLEARBIT CFLAG:69, 53
+ELSEIF GETBIT(CFLAG:69, 54) && CHECK_SHIRT("セーラー服") == 0
+	CLEARBIT CFLAG:69, 54
+ELSEIF GETBIT(CFLAG:69, 55) && CHECK_SHIRT("巫女") == 0
+	CLEARBIT CFLAG:69, 55
+ELSEIF GETBIT(CFLAG:69, 56) && CHECK_CLO("水着姿") == 0
+	CLEARBIT CFLAG:69, 56
+ELSEIF GETBIT(CFLAG:69, 57) && CHECK_BODYS("ボンデージ") == 0
+	CLEARBIT CFLAG:69, 57
+ELSEIF GETBIT(CFLAG:69, 58) && CHECK_BODYS("バニースーツ") == 0
+	CLEARBIT CFLAG:69, 58
+ELSEIF GETBIT(CFLAG:69, 59) && CHECK_SHIRT("ゴスロリドレス") == 0
+	CLEARBIT CFLAG:69, 59
+ELSEIF GETBIT(CFLAG:69, 60) && CHECK_SHIRT("チアリーダー") == 0
+	CLEARBIT CFLAG:69, 60
+ENDIF
+
+;作品の長さフラグ
+SELECTCASE TEQUIP:ビデオカメラ
+;超短編
+CASE IS <= 4
+	SETBIT CFLAG:69, 2
+;短編
+CASE IS <= 7
+	CLEARBIT CFLAG:69, 2
+	SETBIT CFLAG:69, 3
+;通常
+CASEELSE
+	CLEARBIT CFLAG:69, 3
+ENDSELECT
+
+;テープ残量がなくなると強制的にEQUIPフラグを外す
+IF TEQUIP:ビデオカメラ >= 10
+	TEQUIP:ビデオカメラ = 0
+	PRINTL ＜テープの残量がなくなりました。ビデオ撮影を終了します＞
+	RETURN 1
+ELSEIF BASE:気力 <= 0 && GETBIT(CFLAG:69, 0) == 0
+	PRINTFORML 
+	PRINTFORML %CALLNAME:TARGET%からは気だるげな雰囲気が漂ってきている。
+	PRINTFORML これ以上の撮影はよした方が良いかもしれない…
+	SETBIT CFLAG:69, 0
+ENDIF
+
+TEQUIP:ビデオカメラ += 1
+
+RETURN 1

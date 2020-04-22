@@ -1,0 +1,1354 @@
+﻿;SOURCEとUPの違いを軽く確認。
+;例えば、SOURCE:快Ｃは快Ｃから恭順などが発生する等、”快感を得て望ましいか？”を含んだ要素。
+;CUP:快Ｃは純粋に快Ｃのみに影響する。
+;-------------------------------------------------
+;SOURCEの計算
+;あらかじめターンの開始と終了時に計算されている補正値TCVAR:600〜649を用いて計算する
+;１：ここの計算前に獲得していたCUPをUPに退避してCUPを初期化
+;２：SOURCEからCUPを算出してSOURCEを初期化
+;３：UPに退避させていたCUPを２で計算したCUPに追加
+;-------------------------------------------------
+@CALC_SOURCE, ARGS
+#DIM LCOUNT
+;ARGSには試算と調教コマンド、その他がある。調教コマンドだとその調教独自の補正が入ったりする
+;-------------------------------------------------
+;SOURCEとCUPにかかる補正を再計算
+;-------------------------------------------------
+CALL CALC, "調教補正値", TARGET
+
+IF ARGS != "試算"
+	;補正を二度かけないように、CUPをUPに移す
+	FOR LOCAL, 0, 20
+		UP:LOCAL = CUP:LOCAL
+	NEXT
+ENDIF
+VARSET CUP
+
+;-------------------------------------------------
+;SOURCEに補正を加える
+;-------------------------------------------------
+;SOURCE:快Ｃ(快Ｃ)〜SOURCE:快Ｍ(快Ｍ)
+FOR LCOUNT, 0, 20
+	SIF SOURCE:LCOUNT <= 0
+		CONTINUE
+	SELECTCASE LCOUNT
+	CASE 0 TO 2, 17, 18
+		;快楽のSOURCEには、補正値に応じたボーナスを加える
+		SELECTCASE TCVAR:(600 + LCOUNT)
+		CASE IS > 0
+			SOURCE:LCOUNT += TCVAR:(600 + LCOUNT)*10
+		ENDSELECT
+	ENDSELECT
+	SOURCE:LCOUNT = MULTIPLY(SOURCE:LCOUNT, 100 + TCVAR:(600 + LCOUNT) )
+
+	;素質による補正の最終値がプラスならば、最低上昇値となる。
+	SIF SOURCE:LCOUNT < TCVAR:(600 + LCOUNT)
+		SOURCE:LCOUNT = TCVAR:(600 + LCOUNT)
+NEXT
+
+;-------------------------------------------------
+;同じコマンドの連続実行による上下の処理（快楽と消費体力気力は1.5倍）
+;-------------------------------------------------
+IF COND("連続実行")
+	TIMES SOURCE:快Ｃ, 1.50
+	TIMES SOURCE:快Ｖ, 1.50
+	TIMES SOURCE:快Ａ, 1.50
+	TIMES SOURCE:快Ｂ, 1.50
+	TIMES SOURCE:快Ｍ, 1.50
+ENDIF
+;手加減
+IF TEQUIP:てかげん
+	TIMES SOURCE:快Ｃ, 0.50
+	TIMES SOURCE:快Ｖ, 0.50
+	TIMES SOURCE:快Ａ, 0.50
+	TIMES SOURCE:快Ｂ, 0.50
+	TIMES SOURCE:快Ｍ, 0.50
+ENDIF
+;トワイス（体力気力については@CALCのCASE "体力気力減少"にて）
+IF STATE("トワイス", PLAYER) && TEQUIP:押し倒し == 0
+	SELECTCASE SELECTCOM
+	CASE 3, 13, 90 TO 129, 139, IS >= 170
+	CASEELSE
+		FOR LCOUNT, 0, 20
+			TIMES SOURCE:LCOUNT, 2.00
+		NEXT
+	ENDSELECT
+ENDIF
+;-------------------------------------------------
+;SOURCEからCUPを算出
+;-------------------------------------------------
+CALL SOURCE_CVABM
+CALL SOURCE_NOTCVABM
+
+;-------------------------------------------------
+;素質などによるCUPの上下の処理
+;-------------------------------------------------
+;CUP:快Ｃ(快Ｃ) 〜 CUP:快Ｍ(快Ｍ)
+FOR LCOUNT, 0, 16
+	SIF CUP:LCOUNT <= 0
+		CONTINUE
+
+	CUP:LCOUNT = MULTIPLY(CUP:LCOUNT, 100 + TCVAR:(620 + LCOUNT) )
+
+	;マイナス要素はある程度より低いなら０になる
+	SELECTCASE LCOUNT
+	CASE 10, 11, 13
+		SIF CUP:LCOUNT < 10
+			CUP:LCOUNT = 0
+	ENDSELECT
+
+	;素質による補正の最終値がプラスならば、最低上昇値となる。
+	SIF CUP:LCOUNT > 0 && CUP:LCOUNT < TCVAR:(620 + LCOUNT)
+		CUP:LCOUNT = TCVAR:(620 + LCOUNT)
+NEXT
+
+;調教知識による補正
+SELECTCASE TALENT_NAME(185, TALENT:PLAYER:調教知識, PLAYER)
+CASE "調教知識(愛撫・奉仕)"
+	SELECTCASE ARGS
+	CASE "調教コマンド", "試算"
+		SELECTCASE SELECTCOM
+		;プレイヤーが愛撫
+		CASE 0 TO 2, 4 TO 12
+			TIMES CUP:快Ｃ, 1.50
+			TIMES CUP:快Ｖ, 1.50
+			TIMES CUP:快Ａ, 1.50
+			TIMES CUP:Ｖ潤, 1.50
+			TIMES CUP:恭順, 1.50
+			TIMES CUP:欲情, 1.50
+			TIMES CUP:屈服, 1.50
+			TIMES CUP:恥情, 0.50
+			TIMES CUP:苦痛, 0.50
+			TIMES CUP:恐怖, 0.50
+			TIMES CUP:反感, 0.50
+			TIMES CUP:抑鬱, 0.50
+			TIMES CUP:快Ｂ, 1.50
+			TIMES CUP:快Ｍ, 1.50
+		ENDSELECT
+	ENDSELECT
+CASE "調教知識(教え上手)"
+	SELECTCASE ARGS
+	CASE "調教コマンド", "試算"
+		IF TEQUIP:押し倒し == 0
+			SELECTCASE SELECTCOM
+			;相手がプレイヤーに奉仕
+			CASE 24, 65, 75, 90 TO 119, 120, 121, 125, 126
+				TIMES CUP:習得, 1.50
+				TIMES CUP:恐怖, 0.50
+				TIMES CUP:反感, 0.50
+				TIMES CUP:抑鬱, 0.50
+			ENDSELECT
+		ENDIF
+	ENDSELECT
+CASE "調教知識(ＳＭ)"
+	SELECTCASE ARGS
+	CASE "調教コマンド", "試算"
+		SELECTCASE SELECTCOM
+		;ＳＭプレイ
+		CASE 130 TO 159
+			TIMES CUP:Ｖ潤, 1.50
+			TIMES CUP:恭順, 1.50
+			TIMES CUP:欲情, 1.50
+			TIMES CUP:屈服, 1.50
+			TIMES CUP:恐怖, 0.50
+			TIMES CUP:反感, 0.50
+			TIMES CUP:抑鬱, 0.50
+		ENDSELECT
+	ENDSELECT
+CASE "調教知識(アナル)"
+	SELECTCASE ARGS
+	CASE "調教コマンド", "試算"
+		SELECTCASE SELECTCOM
+		;プレイヤーが相手のアナルを弄る
+		CASE 2, 9, 33, 70 TO 79, 136, 137, 142, 202, 308
+			TIMES CUP:快Ａ, 1.50
+			TIMES CUP:Ｖ潤, 1.50
+			TIMES CUP:恭順, 1.50
+			TIMES CUP:欲情, 1.50
+			TIMES CUP:屈服, 1.50
+			TIMES CUP:苦痛, 0.50
+			TIMES CUP:恐怖, 0.50
+			TIMES CUP:反感, 0.50
+			TIMES CUP:抑鬱, 0.50
+		ENDSELECT
+	ENDSELECT
+;これについては@SOURCE_INSERTION等で増減
+CASE "調教知識(性器拡張)"
+
+CASE "調教知識(道具)"
+	SELECTCASE ARGS
+	CASE "調教コマンド", "試算"
+		SELECTCASE SELECTCOM
+		;道具全般
+		CASE 2
+			IF TEQUIP:アナルバイブ
+				TIMES CUP:快Ｃ, 1.50
+				TIMES CUP:快Ｖ, 1.50
+				TIMES CUP:快Ａ, 1.50
+				TIMES CUP:Ｖ潤, 1.50
+				TIMES CUP:恭順, 1.50
+				TIMES CUP:欲情, 1.50
+				TIMES CUP:屈服, 1.50
+				TIMES CUP:苦痛, 0.50
+				TIMES CUP:恐怖, 0.50
+				TIMES CUP:反感, 0.50
+				TIMES CUP:抑鬱, 0.50
+				TIMES CUP:快Ｂ, 1.50
+				TIMES CUP:快Ｍ, 1.50
+			ENDIF
+		CASE 8
+			IF TEQUIP:バイブ
+				TIMES CUP:快Ｃ, 1.50
+				TIMES CUP:快Ｖ, 1.50
+				TIMES CUP:快Ａ, 1.50
+				TIMES CUP:Ｖ潤, 1.50
+				TIMES CUP:恭順, 1.50
+				TIMES CUP:欲情, 1.50
+				TIMES CUP:屈服, 1.50
+				TIMES CUP:苦痛, 0.50
+				TIMES CUP:恐怖, 0.50
+				TIMES CUP:反感, 0.50
+				TIMES CUP:抑鬱, 0.50
+				TIMES CUP:快Ｂ, 1.50
+				TIMES CUP:快Ｍ, 1.50
+			ENDIF
+		CASE 15
+			IF TEQUIP:尿道バイブ
+				TIMES CUP:快Ｃ, 1.50
+				TIMES CUP:快Ｖ, 1.50
+				TIMES CUP:快Ａ, 1.50
+				TIMES CUP:Ｖ潤, 1.50
+				TIMES CUP:恭順, 1.50
+				TIMES CUP:欲情, 1.50
+				TIMES CUP:屈服, 1.50
+				TIMES CUP:苦痛, 0.50
+				TIMES CUP:恐怖, 0.50
+				TIMES CUP:反感, 0.50
+				TIMES CUP:抑鬱, 0.50
+				TIMES CUP:快Ｂ, 1.50
+				TIMES CUP:快Ｍ, 1.50
+			ENDIF
+		CASE 30 TO 59
+			TIMES CUP:快Ｃ, 1.50
+			TIMES CUP:快Ｖ, 1.50
+			TIMES CUP:快Ａ, 1.50
+			TIMES CUP:Ｖ潤, 1.50
+			TIMES CUP:恭順, 1.50
+			TIMES CUP:欲情, 1.50
+			TIMES CUP:屈服, 1.50
+			TIMES CUP:苦痛, 0.50
+			TIMES CUP:恐怖, 0.50
+			TIMES CUP:反感, 0.50
+			TIMES CUP:抑鬱, 0.50
+			TIMES CUP:快Ｂ, 1.50
+			TIMES CUP:快Ｍ, 1.50
+		;ＳＭ関連の道具
+		CASE 131 TO 137, 148, 149, 152
+			TIMES CUP:Ｖ潤, 1.20
+			TIMES CUP:恭順, 1.20
+			TIMES CUP:欲情, 1.20
+			TIMES CUP:屈服, 1.20
+			TIMES CUP:苦痛, 0.80
+			TIMES CUP:恐怖, 0.80
+			TIMES CUP:反感, 0.80
+			TIMES CUP:抑鬱, 0.80
+		ENDSELECT
+	ENDSELECT
+;これについては常時効果を発揮
+CASE "調教知識(露出プレイ)"
+	TIMES CUP:恥情, 1.50
+	IF CUP:恥情 >= 3000
+		TIMES CUP:Ｖ潤, 1.50
+		TIMES CUP:欲情, 1.50
+		TIMES CUP:屈服, 1.50
+		TIMES CUP:恐怖, 0.50
+		TIMES CUP:反感, 0.50
+		TIMES CUP:抑鬱, 0.50
+	ENDIF
+ENDSELECT
+
+;助手の調教知識による補正
+IF ASSI && PLAYER == MASTER
+	SELECTCASE TALENT_NAME(185, TALENT:ASSI:調教知識, ASSI)
+	;これについては常時効果を発揮
+	CASE "調教知識(露出プレイ)"
+		TIMES CUP:恥情, 1.50
+		IF CUP:恥情 >= 3000
+			TIMES CUP:Ｖ潤, 1.50
+			TIMES CUP:欲情, 1.50
+			TIMES CUP:屈服, 1.50
+			TIMES CUP:恐怖, 0.50
+			TIMES CUP:反感, 0.50
+			TIMES CUP:抑鬱, 0.50
+		ENDIF
+	ENDSELECT
+ENDIF
+
+;感度ＬＶによる快感上昇の上限措置
+IF CUP:快Ｃ
+	;PRINTFORM 本来のＣ快感 = {CUP:快Ｃ}　→　
+	CUP:快Ｃ = CALCF("快感上昇の上限措置", CUP:快Ｃ, ABL:Ｃ感覚, PENIS(TARGET) + TALENT:淫核 + TALENT:Ｃ敏感 - TALENT:Ｃ鈍感)
+	;PRINTFORML 修正後のＣ快感 = {CUP:快Ｃ}
+ENDIF
+IF CUP:快Ｖ
+	;PRINTFORM 本来のＶ快感 = {CUP:快Ｖ}　→　
+	CUP:快Ｖ = CALCF("快感上昇の上限措置", CUP:快Ｖ, ABL:Ｖ感覚, TALENT:淫壷 + TALENT:Ｖ敏感 - TALENT:Ｖ鈍感)
+	;PRINTFORML 修正後のＶ快感 = {CUP:快Ｖ}
+ENDIF
+IF CUP:快Ａ
+	;PRINTFORM 本来のＡ快感 = {CUP:快Ａ}　→　
+	CUP:快Ａ = CALCF("快感上昇の上限措置", CUP:快Ａ, ABL:Ａ感覚, TALENT:尻穴狂い + TALENT:Ａ敏感 - TALENT:Ａ鈍感)
+	;PRINTFORML 修正後のＡ快感 = {CUP:快Ａ}
+ENDIF
+IF CUP:快Ｂ
+	;PRINTFORM 本来のＢ快感 = {CUP:快Ｂ}　→　
+	CUP:快Ｂ = CALCF("快感上昇の上限措置", CUP:快Ｂ, ABL:Ｂ感覚, TALENT:淫乳 + TALENT:Ｂ敏感 - TALENT:Ｂ鈍感)
+	;PRINTFORML 修正後のＢ快感 = {CUP:快Ｂ}
+ENDIF
+IF CUP:快Ｍ
+	;PRINTFORM 本来のＭ快感 = {CUP:快Ｍ}　→　
+	CUP:快Ｍ = CALCF("快感上昇の上限措置", CUP:快Ｍ, ABL:Ｍ感覚, TALENT:蕩唇 + TALENT:Ｍ敏感 - TALENT:Ｍ鈍感)
+	;PRINTFORML 修正後のＭ快感 = {CUP:快Ｍ}
+ENDIF
+
+;痛覚による快感補正（ペナルティだが、マゾな人にはちょっとだけご褒美）
+IF CUP:苦痛 >= 100
+	LOCAL = LIMIT(100 - GET_PALAMLV(CUP:苦痛)*20 + ABL:マゾっ気*20, 10, 110)
+	CUP:快Ｃ = MULTIPLY(CUP:快Ｃ, LOCAL)
+	CUP:快Ｖ = MULTIPLY(CUP:快Ｖ, LOCAL)
+	CUP:快Ａ = MULTIPLY(CUP:快Ａ, LOCAL)
+	CUP:快Ｂ = MULTIPLY(CUP:快Ｂ, LOCAL)
+	CUP:快Ｍ = MULTIPLY(CUP:快Ｍ, LOCAL)
+ENDIF
+
+
+;-------------------------------------------------
+;愛液処理(欲情)
+;-------------------------------------------------
+;欲情の値に応じてＶ潤増加
+IF TALENT:オトコ == 0 && CUP:欲情 > 0 && PALAM:Ｖ潤 < 30000
+	;MAX500
+	LOCAL = MIN(DOWN_PALAMLV(CUP:欲情, 2), 500)
+
+	LOCAL += MARK:淫紋*30
+
+	IF TALENT:濡れやすい
+		LOCAL = UP_PALAMLV(LOCAL)
+	ELSEIF TALENT:濡れにくい
+		LOCAL = DOWN_PALAMLV(LOCAL)
+	ENDIF
+
+	SELECTCASE PALAM:Ｖ潤
+	CASE IS <= 3000
+		CUP:Ｖ潤 += LOCAL
+	CASE IS <= 10000
+		CUP:Ｖ潤 += LOCAL / 3
+	CASE IS <= 30000
+		CUP:Ｖ潤 += LOCAL / 5
+	CASEELSE
+		CUP:Ｖ潤 += LOCAL / 10
+	ENDSELECT
+ENDIF
+
+
+IF ARGS != "試算"
+	;-------------------------------------------------
+	;ムード処理（恭順と欲情）
+	;-------------------------------------------------
+	SELECTCASE CUP:恭順 + CUP:欲情
+	CASE IS >= 60000
+		TFLAG:33 += 1 + RAND:5
+	CASE IS >= 30000
+		TFLAG:33 += 1 + RAND:4
+	CASE IS >= 10000
+		TFLAG:33 += 1 + RAND:3
+	CASE IS >= 3000
+		TFLAG:33 += RAND:3
+	CASE IS >= 500
+		TFLAG:33 += RAND:2
+	ENDSELECT
+	;弱点突きのムードを追加
+	IF MARK:反発刻印 < 3 && CUP:恐怖 + CUP:反感 + CUP:抑鬱 < 500
+		IF CUP:快Ｃ && TALENT:淫核 + TALENT:Ｃ敏感
+			TFLAG:33 += 1
+		ELSEIF CUP:快Ｖ && TALENT:淫壷 + TALENT:Ｖ敏感
+			TFLAG:33 += 1
+		ELSEIF CUP:快Ａ && TALENT:尻穴狂い + TALENT:Ａ敏感
+			TFLAG:33 += 1
+		ELSEIF CUP:快Ｂ && TALENT:淫乳 + TALENT:Ｂ敏感
+			TFLAG:33 += 1
+		ELSEIF CUP:快Ｍ && TALENT:蕩唇 + TALENT:Ｍ敏感
+			TFLAG:33 += 1
+		ENDIF
+	ENDIF
+	;SOURCEをTCVAR:120〜に記録＆CUPにUP追加
+	FOR LOCAL, 0, 20
+		TCVAR:(LOCAL + 120) += SOURCE:LOCAL
+		CUP:LOCAL += UP:LOCAL
+	NEXT
+ENDIF
+
+VARSET SOURCE
+
+;-------------------------------------------------
+;快楽のソース
+;-------------------------------------------------
+@SOURCE_CVABM
+;CUP:恭順,欲情,屈服にかかる補正
+#DIM CUP_ELSE
+;部位特化素質がある場合のボーナス
+#DIM CUP_SP
+
+CUP:快Ｃ += SOURCE:快Ｃ
+CUP:快Ｖ += SOURCE:快Ｖ
+CUP:快Ａ += SOURCE:快Ａ
+CUP:快Ｂ += SOURCE:快Ｂ
+CUP:快Ｍ += SOURCE:快Ｍ
+
+;快楽以外は副次効果なので獲得量を抑える
+CUP_ELSE = DOWN_PALAMLV(SOURCE:快Ｃ + SOURCE:快Ｖ + SOURCE:快Ａ + SOURCE:快Ｂ + SOURCE:快Ｍ)
+
+;欲望が大きいほど、快楽により得る恭順,欲情,屈服が増える
+CUP:恭順 += CUP_ELSE * (ABL:欲望 + 2) * 5 / 150
+CUP:欲情 += CUP_ELSE * (ABL:欲望 + 2) * 5 / 100
+CUP:屈服 += CUP_ELSE * (ABL:欲望 + 10) * 5 / 400
+;快感により抑鬱を得るか？
+SIF TALENT:抑圧 || TALENT:抵抗 || TALENT:快感の否定
+	CUP:抑鬱 += CUP_ELSE * MAX(1, 100 - ABL:欲望 * 15) / 300
+
+;部位特化素質がある場合には中毒充足とＶ潤にボーナス
+CUP_SP = GET_PALAMLV(SOURCE:快Ｃ*TALENT:淫核 + SOURCE:快Ｖ*TALENT:淫壷 + SOURCE:快Ａ*TALENT:尻穴狂い + SOURCE:快Ｂ*TALENT:淫乳 + SOURCE:快Ｍ*TALENT:蕩唇) * 500
+;中毒のソース：CUP:恭順,欲情,屈服に影響
+SOURCE:中毒充足 += CUP_SP * (ABL:欲望 + 2) * 5 / 100
+;アソコがあるならＶ潤も上昇
+IF TALENT:オトコ == 0
+	IF TALENT:濡れやすい
+		CUP:Ｖ潤 += UP_PALAMLV(CUP_SP * (ABL:欲望 + 2) * 5 / 300)
+	ELSEIF TALENT:濡れにくい
+		CUP:Ｖ潤 += DOWN_PALAMLV(CUP_SP * (ABL:欲望 + 2) * 5 / 300)
+	ELSE
+		CUP:Ｖ潤 += CUP_SP * (ABL:欲望 + 2) * 5 / 300
+	ENDIF
+ENDIF
+;-------------------------------------------------
+;快楽以外のソースの計算
+;-------------------------------------------------
+@SOURCE_NOTCVABM
+;-------------------------------------------------
+;情愛のソース
+;-------------------------------------------------
+A = SOURCE:情愛
+
+B = SOURCE:情愛
+
+;ABL:従順をみる
+SELECTCASE ABL:従順
+CASE 0
+	TIMES A, 0.40
+CASE 1
+	TIMES A, 0.50
+CASE 2
+	TIMES A, 0.60
+CASE 3
+	TIMES A, 0.70
+CASE 4
+	TIMES A, 0.80
+CASE 5
+	TIMES A, 1.00
+ENDSELECT
+
+SELECTCASE ABL:欲望
+CASE 0
+	TIMES B, 0.00
+CASE 1
+	TIMES B, 0.05
+CASE 2
+	TIMES B, 0.10
+CASE 3
+	TIMES B, 0.20
+CASE 4
+	TIMES B, 0.30
+CASE 5
+	TIMES B, 0.40
+ENDSELECT
+
+CUP:恭順 += A
+CUP:欲情 += B
+
+;-------------------------------------------------
+;性行動のソース
+;-------------------------------------------------
+SIF COND("絶頂", PLAYER) && TCVAR:28
+	TIMES SOURCE:性行動, 2.00
+
+A = SOURCE:性行動
+
+;抑圧か抵抗がある場合はPALAM:抑鬱が上がる
+IF TALENT:抑圧 || TALENT:抵抗
+	B = SOURCE:性行動 / 5
+ELSE
+	B = 0
+ENDIF
+
+;ABL:奉仕精神をみる
+SELECTCASE ABL:奉仕精神
+CASE 0
+	TIMES A, 0.60
+	TIMES B, 1.80
+CASE 1
+	TIMES A, 0.80
+	TIMES B, 1.30
+CASE 2
+	TIMES A, 1.00
+	TIMES B, 0.90
+CASE 3
+	TIMES A, 1.20
+	TIMES B, 0.70
+CASE 4
+	TIMES A, 1.40
+	TIMES B, 0.50
+CASE 5
+	TIMES A, 1.70
+	TIMES B, 0.30
+ENDSELECT
+
+CUP:習得 += A
+CUP:抑鬱 += B
+
+;-------------------------------------------------
+;達成のソース
+;-------------------------------------------------
+A = SOURCE:達成感
+
+;ABL:従順をみる
+SELECTCASE ABL:従順
+CASE 0
+	TIMES A, 0.20
+CASE 1
+	TIMES A, 0.40
+CASE 2
+	TIMES A, 0.60
+CASE 3
+	TIMES A, 0.80
+CASE 4
+	TIMES A, 1.00
+CASE 5
+	TIMES A, 1.20
+ENDSELECT
+;ABL:奉仕精神をみる
+SELECTCASE ABL:奉仕精神
+CASE 0
+	TIMES A, 0.40
+CASE 1
+	TIMES A, 0.60
+CASE 2
+	TIMES A, 0.80
+CASE 3
+	TIMES A, 1.20
+CASE 4
+	TIMES A, 1.60
+CASE 5
+	TIMES A, 2.00
+ENDSELECT
+
+CUP:恭順 += A
+
+;-------------------------------------------------
+;痛覚のソース
+;-------------------------------------------------
+;Aは苦痛、Bは恐怖、Cは反感、Dは苦痛による欲情増加。被虐快楽経験取得でも使う。
+A = SOURCE:痛み
+B = SOURCE:痛み
+C = SOURCE:痛み
+D = SOURCE:痛み
+
+;ABL:従順をみる
+SELECTCASE ABL:従順
+CASE 0
+	TIMES B, 0.80
+	TIMES C, 0.80
+CASE 1
+	TIMES B, 0.70
+	TIMES C, 0.60
+CASE 2
+	TIMES B, 0.55
+	TIMES C, 0.50
+CASE 3
+	TIMES B, 0.45
+	TIMES C, 0.40
+CASE 4
+	TIMES B, 0.35
+	TIMES C, 0.20
+CASE 5
+	TIMES B, 0.25
+	TIMES C, 0.05
+ENDSELECT
+
+;マゾッ気＆マゾ
+IF TALENT:マゾ
+	TIMES B, 0.50
+	TIMES C, 0.01
+	TIMES D, 4.00
+ELSE
+	SELECTCASE ABL:マゾっ気
+	CASE 0
+		D = 0
+	CASE 1
+		TIMES C, 0.80
+		TIMES D, 0.20
+	CASE 2
+		TIMES C, 0.50
+		TIMES D, 0.40
+	CASE 3
+		TIMES C, 0.30
+		TIMES D, 0.70
+	CASE 4
+		TIMES C, 0.10
+	CASE 5
+		TIMES C, 0.05
+		TIMES D, 1.20
+	ENDSELECT
+ENDIF
+
+;倒錯的
+IF TALENT:倒錯的
+	TIMES B, 0.50
+	TIMES C, 0.50
+	TIMES D, 2.00
+ENDIF
+
+SELECTCASE ABL:PLAYER:サドっ気
+CASE 1
+	TIMES C, 1.20
+CASE 2
+	TIMES C, 1.40
+CASE 3
+	TIMES C, 1.60
+	TIMES D, 1.10
+CASE 4
+	TIMES C, 1.80
+	TIMES D, 1.20
+CASE 5
+	TIMES C, 2.00
+	TIMES D, 1.30
+ENDSELECT
+
+;拘束の状態によりソースを変更
+IF GETBIT(TEQUIP:拘束, 8)
+	TIMES B, 2.50
+ELSEIF GETBIT(TEQUIP:拘束, 7)
+	TIMES B, 2.00
+ELSEIF GETBIT(TEQUIP:拘束, 6)
+	TIMES B, 1.50
+ENDIF
+
+;痛みに弱いと恐怖、反感があがりやすい（それにつれて屈服もあがる）
+;強いとその逆
+IF TALENT:痛みに弱い
+	TIMES B, 2.00
+	TIMES C, 2.00
+ELSEIF TALENT:痛みに強い
+	TIMES B, 0.50
+	TIMES C, 0.50
+ENDIF
+
+CUP:屈服 += A + B/2 + D
+CUP:苦痛 += A
+CUP:恐怖 += B
+CUP:反感 += C
+;マゾっ気があるとPALAM:欲情も上がる
+;そのとき調教者が【サド】だと効果的
+CUP:欲情 += D
+
+;-------------------------------------------------
+;中毒充足のソース
+;-------------------------------------------------
+A = SOURCE:中毒充足
+B = SOURCE:中毒充足
+
+SELECTCASE ABL:欲望
+CASE 0
+	TIMES A, 0.20
+	TIMES B, 0.30
+CASE 1
+	TIMES A, 0.30
+	TIMES B, 0.40
+CASE 2
+	TIMES A, 0.40
+	TIMES B, 0.50
+CASE 3
+	TIMES A, 0.50
+	TIMES B, 0.60
+CASE 4
+	TIMES A, 0.60
+	TIMES B, 0.70
+CASE 5
+	TIMES A, 0.70
+	TIMES B, 0.80
+ENDSELECT
+
+CUP:恭順 += A
+CUP:欲情 += B
+CUP:屈服 += A + B
+;-------------------------------------------------
+;不潔のソース
+;-------------------------------------------------
+A = SOURCE:不潔
+B = SOURCE:不潔
+
+SELECTCASE MAX(ABL:従順 + TALENT:恋慕, ABL:欲望 + TALENT:淫乱)
+CASE 0
+
+CASE 1
+	TIMES A, 0.90
+CASE 2
+	TIMES A, 0.75
+CASE 3
+	TIMES A, 0.50
+CASE 4
+	TIMES A, 0.30
+CASEELSE
+	TIMES A, 0.10
+ENDSELECT
+
+SELECTCASE ABL:マゾっ気 + TALENT:マゾ
+CASE 0
+
+CASE 1
+	TIMES A, 0.90
+CASE 2
+	TIMES A, 0.80
+CASE 3
+	TIMES A, 0.70
+CASE 4
+	TIMES A, 0.60
+CASE 5
+	TIMES A, 0.50
+CASEELSE
+	TIMES A, 0.40
+ENDSELECT
+
+;倒錯的
+SIF TALENT:倒錯的
+	TIMES A, 0.50
+
+;ある程度反感が低い場合には欲情のスパイスになる
+SELECTCASE A
+CASE IS < 100
+	A = 0
+	B /= 10
+CASE IS < 500
+	B /= 20
+CASEELSE
+	B = 0
+ENDSELECT
+
+CUP:反感 += A
+CUP:欲情 += B
+
+;-------------------------------------------------
+;恐怖追加のソース
+;-------------------------------------------------
+A = SOURCE:恐怖追加
+
+CUP:恐怖 += A
+;-------------------------------------------------
+;液体追加のソース
+;-------------------------------------------------
+A = SOURCE:液体追加
+
+CUP:Ｖ潤 += A
+;-------------------------------------------------
+;Ａ液体追加のソース
+;-------------------------------------------------
+A = SOURCE:Ａ液体追加
+
+CUP:Ａ潤 += A
+
+;-------------------------------------------------
+;欲情追加のソース
+;-------------------------------------------------
+A = SOURCE:欲情追加
+
+CUP:欲情 += A
+
+;-------------------------------------------------
+;露出のソース
+;-------------------------------------------------
+A = SOURCE:露出
+B = SOURCE:露出
+C = SOURCE:露出
+
+;ABL:露出癖をみる
+SELECTCASE ABL:露出癖
+CASE 0
+	TIMES A, 0.05
+CASE 1
+	TIMES A, 0.20
+CASE 2
+	TIMES A, 0.40
+CASE 3
+	TIMES A, 0.60
+CASE 4
+	TIMES A, 0.80
+CASE 5
+	TIMES A, 1.00
+ENDSELECT
+
+;ABL:従順とABL:欲望と露出癖をみる
+SELECTCASE MAX(ABL:従順 + TALENT:恋慕, ABL:欲望 + TALENT:淫乱) + ABL:露出癖
+CASE 0
+	TIMES C, 0.30
+CASE 1, 2
+	TIMES C, 0.20
+CASE 3, 4
+	TIMES C, 0.15
+CASE 5, 6
+	TIMES C, 0.10
+CASE 7, 8
+	TIMES C, 0.05
+CASEELSE
+	TIMES C, 0.00
+ENDSELECT
+
+;倒錯的
+IF TALENT:倒錯的
+	TIMES A, 1.50
+	TIMES C, 0.50
+ENDIF
+;マゾ
+IF TALENT:マゾ
+	TIMES A, 1.50
+	TIMES B, 1.50
+	TIMES C, 0.50
+ENDIF
+
+CUP:欲情 += DOWN_PALAMLV(A)
+CUP:恥情 += B
+CUP:反感 += C
+
+;-------------------------------------------------
+;屈従のソース
+;-------------------------------------------------
+A = SOURCE:屈従
+B = SOURCE:屈従
+
+;ABL:従順をみる
+SELECTCASE ABL:従順
+CASE 0
+	TIMES A, 0.12
+CASE 1
+	TIMES A, 0.10
+CASE 2
+	TIMES A, 0.05
+CASE 3
+	TIMES A, 0.02
+CASE 4
+	TIMES A, 0.00
+CASE 5
+	TIMES A, 0.00
+ENDSELECT
+
+CUP:抑鬱 += A
+CUP:屈服 += B
+
+;-------------------------------------------------
+;逸脱のソース
+;-------------------------------------------------
+A = SOURCE:逸脱
+B = SOURCE:逸脱
+
+;ABL:従順をみる
+SELECTCASE ABL:従順
+CASE 1
+	TIMES A, 0.80
+CASE 2
+	TIMES A, 0.70
+CASE 3
+	TIMES A, 0.60
+CASE 4
+	TIMES A, 0.40
+CASE 5
+	TIMES A, 0.20
+ENDSELECT
+;ABL:欲望をみる
+SELECTCASE ABL:欲望
+CASE 1
+	TIMES A, 0.90
+CASE 2
+	TIMES A, 0.80
+CASE 3
+	TIMES A, 0.70
+CASE 4
+	TIMES A, 0.60
+CASE 5
+	TIMES A, 0.50
+ENDSELECT
+
+;倒錯的
+SIF TALENT:倒錯的
+	TIMES A, 0.50
+;マゾ
+SIF TALENT:マゾ
+	TIMES A, 0.50
+
+IF TALENT:倒錯的 && TALENT:マゾ
+	TIMES B, 0.50
+ELSEIF TALENT:倒錯的 || TALENT:マゾ
+	TIMES B, 0.20
+ELSE
+	B = 0
+ENDIF
+
+CUP:欲情 += B
+CUP:反感 += A
+
+;-------------------------------------------------
+;反感追加のソース
+;-------------------------------------------------
+A = SOURCE:反感追加
+
+;ABL:従順をみる
+SELECTCASE ABL:従順
+CASE 0
+	TIMES A, 2.00
+CASE 1
+	TIMES A, 1.50
+CASE 2
+	TIMES A, 1.00
+CASE 3
+	TIMES A, 0.80
+CASE 4
+	TIMES A, 0.60
+CASEELSE
+	TIMES A, 0.30
+ENDSELECT
+
+CUP:反感 += A
+;-------------------------------------------------
+;恭順追加のソース
+;-------------------------------------------------
+A = SOURCE:恭順追加
+
+CUP:恭順 += A
+
+
+;-------------------------------------------------
+;刻印取得のチェック
+;-------------------------------------------------
+@MARK_GOT_CHECK
+#DIM MEMO_MARK, 4
+
+MEMO_MARK:0 = MARK:快楽刻印
+MEMO_MARK:1 = MARK:苦痛刻印
+MEMO_MARK:2 = MARK:反発刻印
+
+VARSET LOCALS
+
+;-------------------------------------------------
+;快楽刻印
+;-------------------------------------------------
+SELECTCASE MAX(CUP:快Ｃ, CUP:快Ｖ, CUP:快Ａ, CUP:快Ｂ, CUP:快Ｍ, (CUP:快Ｃ + CUP:快Ｖ + CUP:快Ａ + CUP:快Ｂ + CUP:快Ｍ)/2)
+CASE IS >= 30000
+	SIF MARK:快楽刻印 <= 2
+		LOCALS = 快楽刻印Lv3取得
+	MARK:快楽刻印 = 3
+CASE IS >= 10000
+	SIF MARK:快楽刻印 <= 1
+		MARK:快楽刻印 = 2
+CASE IS >= 3000
+	SIF MARK:快楽刻印 == 0
+		MARK:快楽刻印 = 1
+ENDSELECT
+
+IF MARK:快楽刻印 > MEMO_MARK:0
+	SETCOLOR DEF_COLOR("イエロー")
+	PRINTFORML 
+	PRINTFORML 快楽刻印LV{MARK:快楽刻印}を取得
+	;自制心・感情乏しいの場合は快楽刻印による従順アップはなし
+	IF ABL:従順 < MARK:快楽刻印 - 1 && TALENT:冷静 == 0 && TALENT:感情乏しい == 0
+		ABL:従順 += 1
+		PRINTFORML そして従順がLV{ABL:従順}になった
+	ENDIF
+	RESETCOLOR
+ENDIF
+
+;-------------------------------------------------
+;苦痛刻印（押し倒している時には獲得しない）
+;-------------------------------------------------
+SELECTCASE CALCF("苦痛刻印獲得", TARGET)
+CASE 1
+	MARK:苦痛刻印 = 1
+CASE 2
+	MARK:苦痛刻印 = 2
+CASE 3
+	LOCALS = 苦痛刻印Lv3取得
+	MARK:苦痛刻印 = 3
+ENDSELECT
+
+IF MARK:苦痛刻印 > MEMO_MARK:1
+	SETCOLOR DEF_COLOR("イエロー")
+	PRINTFORML 
+	PRINTFORML 苦痛刻印LV{MARK:苦痛刻印}を取得
+	;気丈・感情乏しいの場合は苦痛刻印による従順アップはなし
+	IF ABL:従順 < MARK:苦痛刻印 - 1 && TALENT:気丈 == 0 && TALENT:感情乏しい == 0
+		ABL:従順 += 1
+		PRINTFORML そして従順がLV{ABL:従順}になった
+	ENDIF
+	RESETCOLOR
+ENDIF
+;-------------------------------------------------
+;反発刻印（押し倒している時や奉仕フラグがあるときには獲得しない）
+;MARK:反発刻印の取得履歴は反発刻印の取得履歴　NOWEX:処女喪失 & 2は恋慕状態の普通のセックスでMASTERに処女を捧げたフラグ
+;他の刻印の取得状況によって、取得しにくくなる
+;------------------------------------------------- 
+SELECTCASE CALCF("反発刻印獲得", TARGET)
+CASE 1
+	MARK:反発刻印 = 1
+CASE 2
+	MARK:反発刻印 = 2
+CASE 3
+	LOCALS = 反発刻印Lv3取得
+	MARK:反発刻印 = 3
+ENDSELECT
+
+IF MARK:反発刻印 > MEMO_MARK:2
+	SETCOLOR DEF_COLOR("イエロー")
+	PRINTFORML 
+	PRINTFORML 反発刻印LV{MARK:反発刻印}を取得
+	;感情乏しいの場合は反発刻印による従順ダウンはなし
+	IF ABL:従順 > 0 && ABL:従順 <= 3 && TALENT:感情乏しい == 0
+		ABL:従順 = MAX(ABL:従順 - MARK:反発刻印, 0)
+		PRINTFORML そして従順がLV{ABL:従順}に下がった
+	ENDIF
+	RESETCOLOR
+	;ムードダウン
+	TFLAG:33 -= 30 * MARK:反発刻印
+	MARK:反発刻印の取得履歴 = MARK:反発刻印
+ENDIF
+
+SIF MARK:快楽刻印 > MEMO_MARK:0 || MARK:苦痛刻印 > MEMO_MARK:1 || MARK:反発刻印 > MEMO_MARK:2
+	FORCEWAIT
+
+;いずれかの刻印の3LVを得た時には喋る
+SIF LOCALS != ""
+	CALL KOJO_MESSAGE_MARKCNG, LOCALS
+
+
+;-------------------------------------------------
+;欲望や従順の上昇による[抑圧][抵抗]の消滅をチェック
+;-------------------------------------------------
+@YOKUBO_UP_CHECK, ARGS
+SIF TALENT:抑圧 == 0 && TALENT:抵抗 == 0
+	RETURN 0
+
+SELECTCASE ARGS
+CASE "従順", "恋慕"
+	SIF ABL:従順 < 4 && TALENT:恋慕 == 0
+		RETURN 0
+CASE "欲望", "淫乱"
+	SIF ABL:欲望 < 3 && TALENT:淫乱 == 0
+		RETURN 0
+CASE "屈服刻印"
+	SIF TALENT:抵抗 == 0
+		RETURN 0
+	SIF MARK:屈服刻印 < 3
+		RETURN 0
+ENDSELECT
+
+SETCOLOR DEF_COLOR("黄色")
+PRINTFORM %CALLNAME:TARGET%は
+SIF TALENT:抑圧
+	PRINTFORM [抑圧]
+SIF TALENT:抵抗
+	PRINTFORM [抵抗]
+PRINTL を失った
+
+TALENT:抑圧 = 0
+TALENT:抵抗 = 0
+
+SIF JUEL:反感 > 0
+	PRINTL 反感の珠が半分になった
+JUEL:反感 /= 2
+RESETCOLOR
+FORCEWAIT
+
+;-------------------------------------------------
+;奉仕快楽経験、嗜虐快楽経験、羞恥快楽経験、被虐快楽経験のチェック
+;LOCALを計算に使い、LOCAL:1〜LOCAL:4がそれぞれに対応している
+;-------------------------------------------------
+@EXP_GOT_CHECK
+VARSET LOCAL
+LOCAL = CUP:快Ｃ + CUP:快Ｖ + CUP:快Ａ + CUP:Ｖ潤 + CUP:欲情 + CUP:快Ｂ + CUP:快Ｍ
+
+SELECTCASE CUP:習得
+CASE IS < 100
+	TIMES LOCAL, 0.20
+CASE IS < 500
+	TIMES LOCAL, 0.50
+CASE IS < 1000
+	TIMES LOCAL, 1.00
+CASE IS < 3000
+	TIMES LOCAL, 1.50
+CASEELSE
+	TIMES LOCAL, 2.00
+ENDSELECT
+
+;奉仕系である、奉仕快楽のチェック
+SELECTCASE LOCAL
+CASE IS >= 20000
+	LOCAL = 4
+	TIMES CUP:反感, 0.80
+CASE IS >= 5000
+	LOCAL = 2
+	TIMES CUP:反感, 0.85
+CASE IS >= 1000
+	LOCAL = 1
+	TIMES CUP:反感, 0.90
+CASEELSE
+	LOCAL = 0
+ENDSELECT
+
+;実行値との差
+SELECTCASE TCVAR:28
+CASE IS > 60
+	LOCAL += 5
+CASE IS > 44
+	LOCAL += 4
+CASE IS > 28
+	LOCAL += 3
+CASE IS > 12
+	LOCAL += 2
+CASE IS > 4
+	LOCAL += 1
+ENDSELECT
+
+IF GETBIT(TCVAR:29, 0) || GETBIT(TCVAR:29, 1)
+	LOCAL:1 = LOCAL
+	;献身的
+	SIF TALENT:献身
+		LOCAL:1 += 1
+	;奉仕精神
+	SIF ABL:奉仕精神 == 5
+		LOCAL:1 += 1
+	SIF ABL:奉仕精神 >= 3
+		LOCAL:1 += 1
+
+	;飲尿プレイ
+	SIF COND("飲尿フラグ")
+		LOCAL:1 += 10
+
+	;媚薬
+	SIF TEQUIP:媚薬
+		LOCAL:1 -= TEQUIP:媚薬/50
+
+	;射精させたか
+	IF COND("絶頂", PLAYER)
+		LOCAL:1 += 2
+		;大量射精なら、さらに+2
+		SIF COND("絶頂", PLAYER) > 1
+			LOCAL:1 += 2
+		;精液中毒Lv1以上
+		SIF ABL:精液中毒 >= 1
+			LOCAL:1 += 1
+		;精液中毒Lv3以上なら、さらに+1
+		SIF ABL:精液中毒 >= 3
+			LOCAL:1 += 1
+	ENDIF
+
+	;幾つかのコマンドでは、少し軽減
+	SIF GETBIT(TCVAR:29, 1) == 0
+		TIMES LOCAL:1, 0.30
+	SIF GETBIT(TCVAR:29, 3)
+		TIMES LOCAL:1, 0.80
+ENDIF
+
+IF GETBIT(TCVAR:29, 2) || GETBIT(TCVAR:29, 3)
+	;嗜虐快楽はLOCAL:2
+	LOCAL:2 = LOCAL
+
+	;サドっ気
+	SIF ABL:サドっ気 >= 3
+		LOCAL:2 += 1
+
+	;媚薬
+	SIF TEQUIP:媚薬
+		LOCAL:2 -= TEQUIP:媚薬/50
+	;女王様プレイ
+	SIF TEQUIP:女王様プレイ
+		LOCAL:2 += 1
+
+	;射精させたか
+	IF COND("絶頂", PLAYER)
+		LOCAL:2 += 2
+		;大量射精なら、さらに+2
+		SIF COND("絶頂", PLAYER) > 1
+			LOCAL:2 += 2
+		;精液中毒Lv1以上
+		SIF ABL:精液中毒 >= 1
+			LOCAL:2 += 1
+		;精液中毒Lv3以上なら、さらに+1
+		SIF ABL:精液中毒 >= 3
+			LOCAL:2 += 1
+	ENDIF
+
+	;幾つかのコマンド(現状では足コキ以外の奉仕)では、少し軽減
+	SIF GETBIT(TCVAR:29, 3) == 0
+		TIMES LOCAL:2, 0.30
+	SIF GETBIT(TCVAR:29, 1)
+		TIMES LOCAL:2, 0.80
+	;もがくが成功したときは０
+	SIF SELECTCOM == 280
+		LOCAL:2 = 0
+ENDIF
+
+;PLAYERがMASTERでないと半減
+IF PLAYER != MASTER
+	LOCAL:1 /= 2
+	LOCAL:2 /= 2
+ENDIF
+
+;羞恥快楽のチェック
+LOCAL += (CUP:快Ｃ + CUP:快Ｖ + CUP:快Ａ + CUP:快Ｂ + CUP:快Ｍ)/20 + CUP:欲情/2
+SELECTCASE ABL:露出癖
+CASE 0
+	TIMES LOCAL, 0.20
+CASE 1
+	TIMES LOCAL, 0.50
+CASE 2
+	TIMES LOCAL, 0.70
+CASE 4
+	TIMES LOCAL, 1.20
+CASE 5
+	TIMES LOCAL, 1.50
+ENDSELECT
+
+IF LOCAL >= 30000 && CUP:恥情 >= 30000
+	LOCAL:3 = 16
+	TIMES CUP:反感, 0.65
+ELSEIF LOCAL >= 10000 && CUP:恥情 >= 10000
+	LOCAL:3 = 12
+	TIMES CUP:反感, 0.70
+ELSEIF LOCAL >= 6000 && CUP:恥情 >= 6000
+	LOCAL:3 = 8
+	TIMES CUP:反感, 0.75
+ELSEIF LOCAL >= 3000 && CUP:恥情 >= 3000
+	LOCAL:3 = 4
+	TIMES CUP:反感, 0.80
+ELSEIF LOCAL >= 1500 && CUP:恥情 >= 1500
+	LOCAL:3 = 2
+	TIMES CUP:反感, 0.85
+ELSEIF LOCAL >= 500 && CUP:恥情 >= 500
+	LOCAL:3 = 1
+	TIMES CUP:反感, 0.90
+ELSE
+	LOCAL:3 = 0
+ENDIF
+
+
+;被虐快楽のチェック
+LOCAL += (CUP:快Ｃ + CUP:快Ｖ + CUP:快Ａ + CUP:快Ｂ + CUP:快Ｍ)/20 + CUP:欲情/10
+
+SELECTCASE ABL:マゾっ気
+CASE 0
+	TIMES LOCAL, 0.20
+CASE 1
+	TIMES LOCAL, 0.40
+CASE 2
+	TIMES LOCAL, 0.60
+CASE 4
+	TIMES LOCAL, 1.20
+CASE 5
+	TIMES LOCAL, 1.50
+ENDSELECT
+
+SIF TALENT:倒錯的
+	TIMES LOCAL, 1.50
+SIF TALENT:マゾ
+	TIMES LOCAL, 1.50
+
+IF LOCAL >= 3200 && CUP:苦痛 >= 3000
+	LOCAL:4 = 16
+	TIMES CUP:反感, 0.65
+ELSEIF LOCAL >= 1600 && CUP:苦痛 >= 2000
+	LOCAL:4 = 12
+	TIMES CUP:反感, 0.70
+ELSEIF LOCAL >= 800 && CUP:苦痛 >= 1000
+	LOCAL:4 = 8
+	TIMES CUP:反感, 0.75
+ELSEIF LOCAL >= 400 && CUP:苦痛 >= 500
+	LOCAL:4 = 4
+	TIMES CUP:反感, 0.80
+ELSEIF LOCAL >= 200 && CUP:苦痛 >= 300
+	LOCAL:4 = 2
+	TIMES CUP:反感, 0.85
+ELSEIF LOCAL >= 100 && CUP:苦痛 >= 100
+	LOCAL:4 = 1
+	TIMES CUP:反感, 0.90
+ELSE
+	LOCAL:4 = 0
+ENDIF
+
+
+;調教知識によるボーナス
+SELECTCASE TALENT_NAME(185, TALENT:PLAYER:調教知識, PLAYER)
+CASE "調教知識(教え上手)"
+	TIMES LOCAL:1, 1.50
+CASE "調教知識(ＳＭ)"
+	TIMES LOCAL:2, 1.50
+	TIMES LOCAL:4, 1.50
+CASE "調教知識(露出プレイ)"
+	TIMES LOCAL:3, 1.50
+ENDSELECT
+
+;助手の調教知識による補正
+IF ASSI && PLAYER == MASTER
+	SELECTCASE TALENT_NAME(185, TALENT:ASSI:調教知識, ASSI)
+	;これについては常時効果を発揮
+	CASE "調教知識(露出プレイ)"
+		TIMES LOCAL:3, 1.50
+	ENDSELECT
+ENDIF
+
+SIF LOCAL:1 + LOCAL:2 + LOCAL:3 + LOCAL:4 > 0 && FLAG:8
+	PRINTL 
+
+IF LOCAL:1 > 0
+	SIF FLAG:8
+		PRINTFORML 奉仕快楽経験+{LOCAL:1}
+	EXP:奉仕快楽経験 += LOCAL:1
+	TFLAG:26 = LOCAL:1
+ENDIF
+IF LOCAL:2 > 0
+	SIF FLAG:8
+		PRINTFORML 嗜虐快楽経験+{LOCAL:2}
+	EXP:嗜虐快楽経験 += LOCAL:2
+	TFLAG:28 = LOCAL:2
+ENDIF
+IF LOCAL:3 > 0
+	SIF FLAG:8
+		PRINTFORML 羞恥快楽経験+{LOCAL:3}
+	EXP:羞恥快楽経験 += LOCAL:3
+ENDIF
+IF LOCAL:4 > 0
+	SIF FLAG:8
+		PRINTFORML 被虐快楽経験+{LOCAL:4}
+	EXP:被虐快楽経験 += LOCAL:4
+	TFLAG:27 = LOCAL:4
+ENDIF
+;ムードボーナス
+TFLAG:33 += (LOCAL:1 + LOCAL:2 + LOCAL:3 + LOCAL:4)/8
+
+
+;PLAYERが助手の時には嗜虐快楽経験を得るかも
+SIF PLAYER == MASTER || CUP:苦痛 < 100
+	RETURN 0
+;上の被虐快楽経験に、サド＆サドっ気で補正
+LOCAL:1 += GET_PALAMLV(CUP:苦痛)
+SIF TALENT:PLAYER:サド
+	LOCAL:1 += GET_PALAMLV(CUP:苦痛*2)
+;サドっ気
+SIF ABL:PLAYER:サドっ気 >= 3
+	LOCAL:1 += GET_PALAMLV(CUP:苦痛*3)
+EXP:PLAYER:嗜虐快楽経験 += LOCAL:1
+

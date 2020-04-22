@@ -1,0 +1,5803 @@
+﻿;≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
+;主にシステムイベントで使う関数
+;≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
+;-------------------------------------------------
+;IF文中で"GOTO INPUT_LOOP"を使うとエラーが出るのを回避する。以下は使い方のテンプレ：
+;	PRINTL [0] 
+;	PRINTL [1] 
+;	CALL INPUT_SELECT, 2
+;	IF RESULT == 0
+;	ELSEIF RESULT == 1
+;	ENDIF
+;便利な関数だが、RESULT == 0 && ABL:Ｖ感覚 >= 3 みたいな、条件も同時についているものには向かないので注意。
+;また、[100] やめる　など、番号を追加したい時には　INPUT_SELECT, 2, 100　とすること。
+;-------------------------------------------------
+@INPUT_SELECT, ARG, ARG:1, ARG:2, ARG:3, ARG:4, ARG:5, ARG:6, ARG:7, ARG:8, ARG:9, ARG:10
+INPUT
+
+SELECTCASE RESULT
+CASE IS < 0
+	RESTART
+CASE 0 TO ARG - 1, ARG:1, ARG:2, ARG:3, ARG:4, ARG:5, ARG:6, ARG:7, ARG:8, ARG:9, ARG:10
+	RETURN RESULT
+ENDSELECT
+RESTART
+
+;-------------------------------------------------
+;半角でARG:1文字以上ARG文字以下の文字列入力をさせて、RESULTSでかえす
+;-------------------------------------------------
+@INPUTS_SELECT, ARG, ARG:1
+INPUTS
+SELECTCASE STRLENS(RESULTS)
+CASE IS < ARG:1
+	IF STRLENS(RESULTS) == 0
+		PRINTL 文字を入力してください
+	ELSE
+		PRINTFORML %RESULTS%は短すぎます。半角で{ARG:1}～{ARG}文字に収めてください。
+	ENDIF
+	RESTART
+CASE IS > ARG
+	PRINTFORML %RESULTS%は長すぎます。半角で{ARG}文字までに収めてください。
+	RESTART
+CASEELSE
+
+ENDSELECT
+
+;-------------------------------------------------
+;@INPUT_SELECTのONEINPUT版
+;ARGには一桁の数字を入れること
+;-------------------------------------------------
+@ONEINPUT_SELECT, ARG, ARG:1, ARG:2, ARG:3, ARG:4, ARG:5, ARG:6, ARG:7, ARG:8, ARG:9, ARG:10
+#DIM MEMO_LINECOUNT
+MEMO_LINECOUNT = LINECOUNT
+
+ONEINPUT
+SELECTCASE RESULT
+CASE 0 TO ARG - 1, ARG:1, ARG:2, ARG:3, ARG:4, ARG:5, ARG:6, ARG:7, ARG:8, ARG:9, ARG:10
+	RETURN RESULT
+ENDSELECT
+
+CLEARLINE LINECOUNT - MEMO_LINECOUNT
+RESTART
+
+;-------------------------------------------------
+;簡単な選択肢を１行で記述するための関数
+;例えば、CALL PRINT_SELECT, "はい", "いいえ" とすると
+;	PRINTL [0] はい
+;	PRINTL [1] いいえ
+;	CALL INPUT_SELECT, 2
+;と記述した事に等しい。選択肢の番号を飛ばしたりなどは出来ないので、あくまで単純な選択肢を作りたい場合に向く
+;-------------------------------------------------
+@PRINT_SELECT, ARGS, ARGS:1, ARGS:2, ARGS:3, ARGS:4, ARGS:5
+#DIM LCOUNT
+
+VARSET LOCAL
+FOR LCOUNT, 0, 6
+	SIF ARGS:LCOUNT == ""
+		BREAK
+
+	PRINTFORML [{LCOUNT, 2}] %ARGS:LCOUNT%
+
+	;選択肢の数
+	LOCAL += 1
+NEXT
+
+CALL INPUT_SELECT, LOCAL
+
+RETURN RESULT
+
+;-------------------------------------------------
+;文字列ARGSを瞬間ではなく、若干ゆっくり表示させる関数
+;TWAITで指定できる遅延時間の最小が100msのため、使用側の思惑より著しくゆっくり。
+;長文に使用するときには注意すること！スキップさせろや！
+;CURRENTREDRAW()を記録してREDRAWを戻そうかと思ったけど、おそらく蛇足なのでしない
+;マウスクリックでTINPUTを進められればスキップもできるのにぐぬぬ
+;-------------------------------------------------
+@PRINTWAIT, ARGS
+#DIM LCOUNT
+
+REDRAW 0
+
+FOR LCOUNT, 0, STRLENSU(ARGS)
+	PRINTFORM %SUBSTRINGU(ARGS, LCOUNT, 1)%
+
+	;二文字に一度止める…うーｎ
+	;IF LCOUNT%2
+		TWAIT 100, 0
+	;ELSE
+	;	PRINTL 
+	;ENDIF
+	CLEARLINE 1
+	PRINTFORM %SUBSTRINGU(ARGS, 0, LCOUNT + 1)%
+NEXT
+
+REDRAW 1
+
+@PRINTWAITL, ARGS
+#DIM LCOUNT
+
+REDRAW 0
+
+FOR LCOUNT, 0, STRLENSU(ARGS)
+	PRINTFORM %SUBSTRINGU(ARGS, LCOUNT, 1)%
+	TWAIT 100, 1
+	CLEARLINE 1
+	PRINTFORM %SUBSTRINGU(ARGS, 0, LCOUNT + 1)%
+NEXT
+PRINTL 
+
+REDRAW 1
+
+@PRINTWAITW, ARGS
+#DIM LCOUNT
+
+REDRAW 0
+
+FOR LCOUNT, 0, STRLENSU(ARGS)
+	PRINTFORM %SUBSTRINGU(ARGS, LCOUNT, 1)%
+	TWAIT 100, 1
+	CLEARLINE 1
+	PRINTFORM %SUBSTRINGU(ARGS, 0, LCOUNT + 1)%
+NEXT
+PRINTW 
+
+REDRAW 1
+
+;-------------------------------------------------
+;文字列の桁数を合わせる
+;RJは右詰、LJは左詰め
+;-------------------------------------------------
+@TEXT_RJ(ARGS, ARG)
+#FUNCTIONS
+SELECTCASE STRLENS(ARGS)
+CASE IS >= ARG
+	RETURNF ARGS
+CASEELSE
+	LOCALS = %BL(ARG-STRLENS(ARGS) )%%ARGS%
+ENDSELECT
+RETURNF LOCALS
+
+@TEXT_LJ(ARGS, ARG)
+#FUNCTIONS
+SELECTCASE STRLENS(ARGS)
+CASE IS >= ARG
+	RETURNF ARGS
+CASEELSE
+	LOCALS = %ARGS%%BL(ARG-STRLENS(ARGS) )%
+ENDSELECT
+RETURNF LOCALS
+
+;-------------------------------------------------
+;左端にARGSを出力させるDRAWLINE
+;ARGS:1に文字列を入れると、ARGS部分をARGS:1を返すスイッチにします
+;-------------------------------------------------
+@DRAWLINES, ARGS, ARGS:1
+LOCALS = %ARGS%
+IF ARGS:1 != ""
+	PRINTBUTTON LOCALS, ARGS:1
+ELSE
+	PRINTFORM %LOCALS%
+ENDIF
+FOR LOCAL, 0, NUM("折り返し文字数") - STRLENS(ARGS)
+	PRINTFORM -
+NEXT
+;自動改行
+PRINTL 
+
+;-------------------------------------------------
+;複数指定のSETBIT、CLEARBIT, INVERTBIT
+;ただし、ARG:1～ARG:2までのbit全てと、ARG:3, ARG:4, …の単体のbitに作用する
+;そして、0bitを操作できるのはARG:1のみである
+;例1）LOCAL = SETBITS(LOCAL, 0, 5, 7)でLOCALの0～5bitと7bitがONになる
+;例2）LOCAL = SETBITS(LOCAL, 1, 5, 0)だとLOCALの1～5bitがONになる。0bitは変化しない
+;例3）LOCAL = SETBITS(LOCAL, 2)はSETBIT LOCAL, 2 と等しい
+;-------------------------------------------------
+@SETBITS(ARG, ARG:1, ARG:2, ARG:3, ARG:4, ARG:5, ARG:6, ARG:7)
+#FUNCTION
+FOR LOCAL, ARG:1, MAX(ARG:1, ARG:2)+1
+	SETBIT ARG, LOCAL
+NEXT
+FOR LOCAL, 3, 8
+	SIF ARG:LOCAL
+		SETBIT ARG, ARG:LOCAL
+NEXT
+RETURNF ARG
+
+@CLEARBITS(ARG, ARG:1, ARG:2, ARG:3, ARG:4, ARG:5, ARG:6, ARG:7)
+#FUNCTION
+FOR LOCAL, ARG:1, MAX(ARG:1, ARG:2)+1
+	CLEARBIT ARG, LOCAL
+NEXT
+FOR LOCAL, 3, 8
+	SIF ARG:LOCAL
+		CLEARBIT ARG, ARG:LOCAL
+NEXT
+RETURNF ARG
+
+@INVERTBITS(ARG, ARG:1, ARG:2, ARG:3, ARG:4, ARG:5, ARG:6, ARG:7)
+#FUNCTION
+FOR LOCAL, ARG:1, MAX(ARG:1, ARG:2)+1
+	INVERTBIT ARG, LOCAL
+NEXT
+FOR LOCAL, 3, 8
+	SIF ARG:LOCAL
+		INVERTBIT ARG, ARG:LOCAL
+NEXT
+RETURNF ARG
+
+;-------------------------------------------------
+;複数指定のGETBIT
+;ただし、ARG:1～ARG:2までのbit全てと、ARG:3, ARG:4, …の単体のbitに作用する
+;そして、0bitを参照できるのはARG:1のみである
+;例1）GETBITS(LOCAL, 0, 5, 7)でLOCALの0～5bitと7bitの和を返す
+;例2）GETBITS(LOCAL, 1, 5, 0)orGETBITS(LOCAL, 1, 5)だとLOCALの1～5bitの和を返す
+;具体的にはLOCAL = 2+8+32 ならGETBITS(LOCAL, 2, 4) = 8となる
+;実例）GETBITS(LOCAL, 2)は大体GETBIT(LOCAL, 2) と等しい用途に用いることが出来る
+;-------------------------------------------------
+@GETBITS(ARG, ARG:1, ARG:2, ARG:3, ARG:4, ARG:5, ARG:6, ARG:7)
+#FUNCTION
+#DIM LCOUNT
+VARSET LOCAL
+FOR LCOUNT, ARG:1, MAX(ARG:1, ARG:2)+1
+	SIF GETBIT(ARG, LCOUNT)
+		LOCAL += POWER(2, LCOUNT)
+NEXT
+FOR LCOUNT, 3, 8
+	SIF ARG:LCOUNT == 0
+		CONTINUE
+	SIF GETBIT(ARG, ARG:LCOUNT)
+		LOCAL += POWER(2, ARG:LCOUNT)
+NEXT
+RETURNF LOCAL
+
+;-------------------------------------------------
+;複数指定のSTRCOUNT
+;-------------------------------------------------
+@STRCOUNTS(ARGS, ARGS:1, ARGS:2, ARGS:3, ARGS:4, ARGS:5, ARGS:6, ARGS:7, ARGS:8, ARGS:9)
+#FUNCTION
+#DIM LCOUNT
+
+LOCAL = 0
+
+FOR LCOUNT, 1, 10
+	SIF ARGS:LCOUNT == ""
+		BREAK
+	LOCAL += STRCOUNT(ARGS, ARGS:LCOUNT)
+NEXT
+RETURNF LOCAL
+
+;-------------------------------------------------
+;ARGSから、文字ARGS:1とARGS:2に挟まれた部分を抜き出す
+;ARGS:1やARGS:2で分割した際に、２分割になるものだけに使うと間違いがないだろう
+;複数分割にされる場合には、文字列の中でARGS:1とARGS:2に挟まれた"一番左の文字列"を返す
+;ちなみにARGS:2 == "" の場合にはARGS:1の右側だけを返し、
+;ARGS:1 == "" の場合にはARGS:2の左側だけを返す
+;-------------------------------------------------
+@EXTSTR(ARGS, ARGS:1, ARGS:2)
+#FUNCTIONS
+
+VARSET LOCALS
+SPLIT ARGS, ARGS:1, LOCALS
+IF LOCALS:1 != ""
+	ARGS = %LOCALS:1%
+ELSE
+	ARGS = %LOCALS%
+ENDIF
+
+VARSET LOCALS
+SPLIT ARGS, ARGS:2, LOCALS
+
+RETURNF LOCALS
+
+;-------------------------------------------------
+;識別番号をキャラの番号に変換する関数
+;値が0を越えているのに該当キャラが居ない場合には-1を返す
+;そもそも調教キャラを指していないマイナスの値の場合にはその値を返す
+;-------------------------------------------------
+@TO_NUMBER(ARG)
+#FUNCTION
+
+SELECTCASE ARG
+CASE IS > 0
+	LOCAL = FINDCHARA(BASE:識別番号, ARG)
+CASEELSE
+	LOCAL = ARG
+ENDSELECT
+
+RETURNF LOCAL
+
+;-------------------------------------------------
+;/で区切られた要素でなる文字列ARGS中にARGS:1, ARGS:2, …が計何個あるかを返す関数
+;-------------------------------------------------
+@NUM_STR(ARGS, ARGS:1, ARGS:2, ARGS:3, ARGS:4, ARGS:5, ARGS:6, ARGS:7)
+#FUNCTION
+#DIM LCOUNT
+
+VARSET LOCALS
+;それぞれの要素に分解
+SPLIT ARGS, "/", LOCALS
+
+LOCAL = 0
+
+;LOCALSはLOCALS:0～LOCALS:99まで
+FOR LCOUNT, 0, 100
+	SIF LOCALS:LCOUNT == ""
+		RETURNF LOCAL
+
+	SELECTCASE LOCALS:LCOUNT
+	CASE ARGS:1, ARGS:2, ARGS:3, ARGS:4, ARGS:5, ARGS:6, ARGS:7
+		LOCAL += 1
+	ENDSELECT
+NEXT
+
+RETURNF LOCAL
+
+;-------------------------------------------------
+;/で区切られた数字の要素でなる文字列ARGS中の最大の数値を返す関数
+;-------------------------------------------------
+@MAX_STR(ARGS)
+#FUNCTION
+#DIM LCOUNT
+
+VARSET LOCALS
+;それぞれの要素に分解
+SPLIT ARGS, "/", LOCALS
+
+;左端の要素の数値を初期値とする
+LOCAL = TOINT(LOCALS:0)
+
+;LOCALSはLOCALS:0～LOCALS:99まで
+FOR LCOUNT, 1, 100
+	SIF LOCALS:LCOUNT == ""
+		RETURNF LOCAL
+
+	;文字列を数字化して比較
+	SIF TOINT(LOCALS:LCOUNT) > LOCAL
+		LOCAL = TOINT(LOCALS:LCOUNT)
+NEXT
+
+RETURNF LOCAL
+
+;-------------------------------------------------
+;/で区切られた数字の要素でなる文字列ARGS中の最小の数値を返す関数
+;-------------------------------------------------
+@MIN_STR(ARGS)
+#FUNCTION
+#DIM LCOUNT
+
+VARSET LOCALS
+;それぞれの要素に分解
+SPLIT ARGS, "/", LOCALS
+
+;左端の要素の数値を初期値とする
+LOCAL = TOINT(LOCALS:0)
+
+;LOCALSはLOCALS:0～LOCALS:99まで
+FOR LCOUNT, 1, 100
+	SIF LOCALS:LCOUNT == ""
+		RETURNF LOCAL
+
+	;文字列を数字化して比較
+	SIF TOINT(LOCALS:LCOUNT) < LOCAL
+		LOCAL = TOINT(LOCALS:LCOUNT)
+NEXT
+
+RETURNF LOCAL
+
+;-------------------------------------------------
+;/で区切られた数字の要素でなる文字列ARGS中の数値の総和を返す関数
+;-------------------------------------------------
+@SUM_STR(ARGS)
+#FUNCTION
+#DIM LCOUNT
+
+VARSET LOCALS
+;それぞれの要素に分解
+SPLIT ARGS, "/", LOCALS
+
+LOCAL = 0
+
+;LOCALSはLOCALS:0～LOCALS:99まで
+FOR LCOUNT, 0, 100
+	SIF LOCALS:LCOUNT == ""
+		RETURNF LOCAL
+
+	;文字列を数字化して足していく
+	LOCAL += TOINT(LOCALS:LCOUNT)
+NEXT
+
+RETURNF LOCAL
+
+;-------------------------------------------------
+;/で区切られた数字の要素でなる文字列ARGS中の各要素に整数ARGを足す関数
+;数値を減らしたい時にはARGに負の整数を代入する
+;-------------------------------------------------
+@ADDNUM_STR(ARGS, ARG)
+#FUNCTIONS
+#DIM LCOUNT
+
+VARSET LOCALS
+;それぞれの要素に分解
+SPLIT ARGS, "/", LOCALS
+
+LOCALS = {TOINT(LOCALS) + ARG}/
+
+;LOCALSはLOCALS:0～LOCALS:99まで
+FOR LCOUNT, 1, 100
+	SIF LOCALS:LCOUNT == ""
+		RETURNF LOCALS
+
+	;文字列を数字化して足していく
+	LOCALS = %LOCALS%{TOINT(LOCALS:LCOUNT) + ARG}/
+NEXT
+
+RETURNF LOCALS
+
+;-------------------------------------------------
+;ある条件におけるキャラ以外の数の判定
+;NUMの内部使用は禁止
+;-------------------------------------------------
+@NUM(ARGS, ARG)
+#FUNCTION
+#DIM LCOUNT
+
+LOCAL = 0
+SELECTCASE ARGS
+CASE "折り返し文字数"
+	RETURNF 80
+CASE "目標金額"
+	SIF CONFIG("ＥＡＳＹ")
+		RETURNF 100000
+	RETURNF 1000000
+CASE "目標金額：ＮＯＲＭＡＬ"
+	RETURNF 1000000
+CASE "目標金額：ＥＡＳＹ"
+	RETURNF 100000
+CASE "ターン数"
+	SIF ARG == 0 && TARGET
+		ARG = TARGET
+	LOCAL = TCVAR:ARG:150
+CASE "運営可能店舗"
+	LOCAL = MIN(CHARA_NUM("バイト可能")/4, 5)
+CASE "所持店舗"
+	LOCAL = FLAG:400
+CASE "運営店舗"
+	LOCAL = MIN(FLAG:400, CHARA_NUM("フロア店員")/4, 5)
+CASE "所持アクセサリ"
+	FOR LCOUNT, 1, 9
+		SIF FLAG:(300 + LCOUNT*10)
+			LOCAL += 1
+	NEXT
+CASE "未鑑定のアクセサリ"
+	FOR LCOUNT, 320, 330
+		SIF ITEM:LCOUNT
+			LOCAL += 1
+	NEXT
+CASE "所持衣装"
+	FOR LCOUNT, 500, 550
+		SIF ITEM:LCOUNT
+			LOCAL += 1
+	NEXT
+CASE "総衣装数"
+	FOR LCOUNT, 500, 550
+		SIF STRLENS(ITEMNAME:LCOUNT )
+			LOCAL += 1
+	NEXT
+CASE "所持アイテム"
+	FOR LCOUNT, 0, 100
+		SIF ITEM:LCOUNT
+			LOCAL += 1
+	NEXT
+	;瓶の精液はノーカン
+	SIF ITEM:精液貯蓄量
+		LOCAL -= 1
+CASE "所持インセンス"
+	FOR LCOUNT, 40, 50
+		SIF ITEM:LCOUNT
+			LOCAL += 1
+	NEXT
+CASE "存在するアルカナ"
+	FOR LCOUNT, 230, 260
+		SIF STRLENS(TALENTNAME:LCOUNT)
+			LOCAL += 1
+	NEXT
+CASE "売却可能アイテム"
+	FOR LCOUNT, 0, 50
+		SIF ITEM:LCOUNT
+			LOCAL += 1
+	NEXT
+	SIF ITEM:思考砥ぎの石
+		LOCAL += 1
+	SIF ITEM:ムーンドロップス
+		LOCAL += 1
+	FOR LCOUNT, 300, 320
+		SIF ITEM:LCOUNT
+			LOCAL += 1
+	NEXT
+	FOR LCOUNT, 350, 400
+		SIF ITEM:LCOUNT
+			LOCAL += 1
+	NEXT
+CASE "最大レベル"
+	SELECTCASE ARG
+	CASE 2 TO 5, 14, 16
+		RETURNF 10
+	;ＶＡ拡張ＬＶは暫定10
+	CASE 23, 26
+		RETURNF 10
+	;ＬＶは難易度で変化
+	CASE 90
+		IF CONFIG("ＨＡＲＤ")
+			RETURNF 50
+		ELSE
+			RETURNF 30
+		ENDIF
+	CASEELSE
+		RETURNF 5
+	ENDSELECT
+CASE "セクハラターン数"
+	VARSET LOCALS
+	SPLIT CSTR:MASTER:セクハラ済, "/", LOCALS
+	FOR LCOUNT, 0, 100
+		SIF LOCALS:LCOUNT == ""
+			BREAK
+		LOCAL += 1
+	NEXT
+CASE "セクハラ"
+	FOR LCOUNT, 0, 64
+		SIF STRLENS(NAMES(ARGS, LCOUNT) ) == 0
+			BREAK
+		LOCAL += 1
+	NEXT
+CASE "属性"
+	FOR LCOUNT, 0, 64
+		SIF STRLENS(NAMES(ARGS, LCOUNT) ) == 0
+			BREAK
+		LOCAL += 1
+	NEXT
+CASE "弱点"
+	FOR LCOUNT, 0, 64
+		SIF STRLENS(NAMES(ARGS, LCOUNT) ) == 0
+			BREAK
+		LOCAL += 1
+	NEXT
+CASE "ＥＮＤ閲覧済"
+	FOR LCOUNT, 1, 100
+		SIF FLAG:(1200 + LCOUNT) >= 2
+			LOCAL += 1
+	NEXT
+CASE "宝珠：淫核取得"
+	SIF ARG == 0 && TARGET
+		ARG = TARGET
+	LOCAL = 100000
+	SIF TALENT:ARG:淫核 + TALENT:ARG:淫壷 + TALENT:ARG:尻穴狂い + TALENT:ARG:淫乳 + TALENT:ARG:蕩唇
+		LOCAL *= 5
+	SIF TALENT:ARG:Ｃ敏感
+		LOCAL /= 2
+CASE "宝珠：尿道狂い取得"
+	SIF ARG == 0 && TARGET
+		ARG = TARGET
+	LOCAL = 100000
+	SIF TALENT:ARG:淫核 + TALENT:ARG:淫壷 + TALENT:ARG:尻穴狂い + TALENT:ARG:淫乳 + TALENT:ARG:蕩唇
+		LOCAL *= 5
+CASE "宝珠：淫壷取得"
+	SIF ARG == 0 && TARGET
+		ARG = TARGET
+	LOCAL = 100000
+	SIF TALENT:ARG:淫核 + TALENT:ARG:淫壷 + TALENT:ARG:尻穴狂い + TALENT:ARG:淫乳 + TALENT:ARG:蕩唇
+		LOCAL *= 5
+	SIF TALENT:ARG:Ｖ敏感
+		LOCAL /= 2
+CASE "宝珠：尻穴狂い取得"
+	SIF ARG == 0 && TARGET
+		ARG = TARGET
+	LOCAL = 100000
+	SIF TALENT:ARG:淫核 + TALENT:ARG:淫壷 + TALENT:ARG:尻穴狂い + TALENT:ARG:淫乳 + TALENT:ARG:蕩唇
+		LOCAL *= 5
+	SIF TALENT:ARG:Ａ敏感
+		LOCAL /= 2
+CASE "宝珠：淫乳取得"
+	SIF ARG == 0 && TARGET
+		ARG = TARGET
+	LOCAL = 100000
+	SIF TALENT:ARG:淫核 + TALENT:ARG:淫壷 + TALENT:ARG:尻穴狂い + TALENT:ARG:淫乳 + TALENT:ARG:蕩唇
+		LOCAL *= 5
+	SIF TALENT:ARG:Ｂ敏感
+		LOCAL /= 2
+CASE "宝珠：蕩唇取得"
+	SIF ARG == 0 && TARGET
+		ARG = TARGET
+	LOCAL = 100000
+	SIF TALENT:ARG:淫核 + TALENT:ARG:淫壷 + TALENT:ARG:尻穴狂い + TALENT:ARG:淫乳 + TALENT:ARG:蕩唇
+		LOCAL *= 5
+	SIF TALENT:ARG:Ｍ敏感
+		LOCAL /= 2
+CASE "宝珠：倒錯的取得"
+	SIF ARG == 0 && TARGET
+		ARG = TARGET
+	LOCAL = 50000
+CASE "宝珠：マゾ取得"
+	SIF ARG == 0 && TARGET
+		ARG = TARGET
+	LOCAL = 100000
+	SIF TALENT:ARG:サド
+		LOCAL = 300000
+CASE "宝珠：サド取得"
+	SIF ARG == 0 && TARGET
+		ARG = TARGET
+	LOCAL = 100000
+	SIF TALENT:ARG:マゾ
+		LOCAL = 300000
+CASE "宝珠：アルカナ習得"
+	SIF ARG == 0 && TARGET
+		ARG = TARGET
+	LOCAL = 100000
+	FOR LCOUNT, 230, 260
+		SIF TALENT:ARG:LCOUNT
+			LOCAL += 50000
+	NEXT
+	SIF TALENT:ARG:魔法使い
+		LOCAL /= 10
+CASE "アルカナ習得数"
+	SIF ARG == 0 && TARGET
+		ARG = TARGET
+	IF TALENT:ARG:魔法使い == 2
+		FOR LCOUNT, 230, 260
+			SIF STRLENS(TALENTNAME:LCOUNT)
+				LOCAL += 1
+		NEXT
+	ELSE
+		FOR LCOUNT, 230, 260
+			SIF TALENT:ARG:LCOUNT
+				LOCAL += 1
+		NEXT
+	ENDIF
+CASE "アルカナ習得可能数"
+	SIF ARG == 0 && TARGET
+		ARG = TARGET
+	FOR LCOUNT, 230, 260
+		SELECTCASE LCOUNT
+		CASE 235, 240
+			SIF ARG == MASTER
+				CONTINUE
+		ENDSELECT
+		SIF STRLENS(TALENTNAME:LCOUNT)
+			LOCAL += 1
+	NEXT
+CASE "経験値：素質獲得"
+	;SIF ARG == 0 && TARGET
+	;	ARG = TARGET
+	;LOCAL = 200 + 200*CFLAG:ARG:5
+	LOCAL = 300
+CASE "喫茶店：乱交予定人数"
+	SIF ARG == 0 && TARGET
+		ARG = TARGET
+	LOCAL = CFLAG:ARG:32
+CASE "喫茶店の肉棒比率"
+	FOR LCOUNT, 2, CHARANUM
+		SIF COND("フロア店員", LCOUNT) && PENIS(LCOUNT)
+			LOCAL += 1
+	NEXT
+	LOCAL = LOCAL * 100 / MAX(CHARA_NUM("フロア店員"), 1)
+CASE "貧乳の上限"
+	;AAA～Ａ
+	RETURNF 3
+CASE "並乳の上限"
+	;Ｂ～Ｄ
+	RETURNF 6
+CASE "巨乳の上限"
+	;ＦorＧorＨ
+	RETURNF 8 + CONFIG("巨乳補正：カップ")
+CASE "爆乳の上限"
+	;ＩorＪorＫ
+	RETURNF 11 + CONFIG("巨乳補正：カップ")
+CASE "妖精の上限"
+	RETURNF 75
+CASE "小柄の上限"
+	RETURNF 144
+CASE "普通の上限"
+	RETURNF 163
+;日付イベントなど特殊イベント
+CASE "クリスマスツリー"
+	FOR LCOUNT, 2, CHARANUM
+		SIF CEVENT("日付：クリスマスツリー", LCOUNT)
+			LOCAL += 1
+	NEXT
+ENDSELECT
+RETURNF LOCAL
+
+
+;-------------------------------------------------
+;ある条件におけるキャラの人数の判定
+;-------------------------------------------------
+@CHARA_NUM(ARGS)
+#FUNCTION
+#DIM LCOUNT
+
+LOCAL = 0
+SELECTCASE ARGS
+CASE "乱交参加中"
+	FOR LCOUNT, 2, CHARANUM
+		SIF COND(ARGS, LCOUNT)
+			LOCAL += 1
+	NEXT
+CASE "欲求不満で乱交可能"
+	FOR LCOUNT, 2, CHARANUM
+		SIF COND("欲求不満", LCOUNT) == 0
+			CONTINUE
+		SIF COND("乱交可能", LCOUNT) == 0
+			CONTINUE
+
+		LOCAL += 1
+	NEXT
+
+CASE "乱交可能"
+	FOR LCOUNT, 2, CHARANUM
+		SIF COND(ARGS, LCOUNT)
+			LOCAL += 1
+	NEXT
+CASE "日常イベント出演可能"
+	FOR LCOUNT, 2, CHARANUM
+		SIF EXP:LCOUNT:調教回数 == 0 || COND("日常イベント出演済み", LCOUNT)
+			CONTINUE
+		LOCAL += 1
+	NEXT
+CASE "書類仕事"
+	FOR LCOUNT, 2, CHARANUM
+		;登場できるかどうか
+		SELECTCASE NO:LCOUNT
+		;マーメイドは脚無いから…
+		CASE 13, 37
+			CONTINUE
+		;息子は…誰か書いて！
+		CASE 94
+			CONTINUE
+		ENDSELECT
+
+
+		;夜這い可能ぐらいが条件か
+		SIF COND("夜這い可能", LCOUNT) == 0
+			CONTINUE
+
+		LOCAL += 1
+	NEXT
+CASE "ドランク"
+	FOR LCOUNT, 1, CHARANUM
+		SIF STATE("ドランク", LCOUNT)
+			LOCAL += 1
+	NEXT
+CASE "館内露出観客数"
+	FOR LCOUNT, 151, 155
+		SIF TFLAG:LCOUNT
+			LOCAL += 1
+	NEXT
+CASE "温泉旅行可能"
+	FOR LCOUNT, 2, CHARANUM
+		SIF COND(ARGS, LCOUNT)
+			LOCAL += 1
+	NEXT
+;バイト可能人数(勤務指示や妊婦など、一時的に働けない人含む)
+CASE "バイト可能"
+	FOR LCOUNT, 2, CHARANUM
+		SIF COND(ARGS, LCOUNT)
+			LOCAL += 1
+	NEXT
+;フロア店員数(実際に働く予定の人数) 当然だが、バイト可能人数以下の値となる
+CASE "フロア店員"
+	FOR LCOUNT, 2, CHARANUM
+		SIF COND(ARGS, LCOUNT)
+			LOCAL += 1
+	NEXT
+CASE "アルカナ獲得可能"
+	FOR LCOUNT, 1, CHARANUM
+		SIF COND(ARGS, LCOUNT)
+			LOCAL += 1
+	NEXT
+CASE "出産間近"
+	FOR LCOUNT, 2, CHARANUM
+		SIF TALENT:LCOUNT:妊娠 == 3
+			LOCAL += 1
+	NEXT
+CASE "助手可能"
+	FOR LCOUNT, 2, CHARANUM
+		SIF CFLAG:LCOUNT:1 >= 2
+			LOCAL += 1
+	NEXT
+CASE "指示可能な助手"
+	FOR LCOUNT, 2, CHARANUM
+		SIF ABL:LCOUNT:助手
+			LOCAL += 1
+	NEXT
+CASE "売却可能"
+	FOR LCOUNT, 2, CHARANUM
+		SIF CFLAG:LCOUNT:1 >= 1
+			LOCAL += 1
+	NEXT
+CASE "一晩開放可能"
+	FOR LCOUNT, 2, CHARANUM
+		SIF COND(ARGS, LCOUNT)
+			LOCAL += 1
+	NEXT
+CASE "一晩開放実行予定"
+	FOR LCOUNT, 2, CHARANUM
+		SIF COND(ARGS, LCOUNT)
+			LOCAL += 1
+	NEXT
+CASE "一晩開放実行済み"
+	FOR LCOUNT, 2, CHARANUM
+		SIF COND(ARGS, LCOUNT)
+			LOCAL += 1
+	NEXT
+CASE "控えキャラ"
+	LOCAL = CHARANUM - 2
+	SIF TARGET
+		LOCAL -= 1
+CASE "調教経験あり"
+	FOR LCOUNT, 2, CHARANUM
+		SIF EXP:LCOUNT:調教回数
+			LOCAL += 1
+	NEXT
+CASE "繰り越しキャラ"
+	FOR LCOUNT, 2, CHARANUM
+		LOCAL += CFLAG:LCOUNT:6
+	NEXT
+CASE "陥落済み"
+	FOR LCOUNT, 2, CHARANUM
+		SIF TALENT:LCOUNT:淫乱 || TALENT:LCOUNT:恋慕
+			LOCAL += 1
+	NEXT
+CASE "恋慕淫乱"
+	FOR LCOUNT, 2, CHARANUM
+		SIF TALENT:LCOUNT:恋慕 || TALENT:LCOUNT:淫乱
+			LOCAL += 1
+	NEXT
+;それ以外は素質
+CASEELSE
+	FOR LCOUNT, 2, CHARANUM
+		SIF TALENT:LCOUNT:ARGS
+			LOCAL += 1
+	NEXT
+ENDSELECT
+RETURNF LOCAL
+
+;-------------------------------------------------
+;頻繁に使う条件のまとめ
+;LOCALなどの使用禁止！
+;ARGがARGSを満たすか判定する。ただし、挿入については@INSERTで管理する
+;素質については"素質名"を入れると機能し、その素質が無いのを条件とするときには"!素質名"とします
+;-------------------------------------------------
+@COND(ARGS, ARG)
+#FUNCTION
+#DIM LCOUNT
+
+SIF ARG < 0
+	RETURNF 0
+SIF ARG == 0 && TARGET
+	ARG = TARGET
+SELECTCASE ARGS
+CASE "絶頂"
+	SIF TEQUIP:ARG:てかげん > 0
+		RETURNF 0
+	;絶頂＆射精
+	SELECTCASE ARG
+	CASE TARGET
+		RETURNF NOWEX:ARG:絶頂数合計 + NOWEX:ARG:射精
+	CASE PLAYER
+		RETURNF TCVAR:ARG:1
+	CASEELSE
+		RETURNF MAX(TCVAR:ARG:1, NOWEX:ARG:絶頂数合計, NOWEX:ARG:射精)
+	ENDSELECT
+CASE "精通"
+	SIF PENIS(ARG) == 0 || EXP:ARG:射精経験 == 0
+		RETURNF 0
+	SIF NOWEX:ARG:射精 == EXP:ARG:射精経験
+		RETURNF 1
+CASE "イきそう"
+	SELECTCASE ARG
+	CASE PLAYER
+		;絶頂ゲージの75％以上
+		SIF BASE:ARG:絶頂 >= MAXBASE:ARG:絶頂 * 3 / 4
+			RETURNF 1
+	CASEELSE
+		SIF EX:ARG:イくのをこらえた
+			RETURNF 1
+		;快感許容値の75％以上
+		SIF BASE:ARG:快感許容値オンナ >= MAXBASE:ARG:快感許容値オンナ * 3 / 4
+			RETURNF 1
+		;絶頂ゲージの75％以上
+		SIF BASE:ARG:絶頂 >= MAXBASE:ARG:絶頂 * 3 / 4
+			RETURNF 1
+	ENDSELECT
+CASE "こらえる"
+	SIF TFLAG:7 >= 4 && NOWEX:ARG:ラグジャラスヒット == 0
+		RETURNF 1
+CASE "潮噴き可能"
+	;女性器があることと、ある程度の尿意が必須
+	SIF TALENT:ARG:オトコ || BASE:ARG:尿意 < 1000
+		RETURNF 0
+	;尿道挿入中は不可
+	SIF INSERT("尿道インサート", ARG)
+		RETURNF 0
+
+	;おもらし癖などがあるなら条件緩和
+	IF TALENT:ARG:おもらし癖 || TEQUIP:ARG:カテーテル || ABL:ARG:尿道拡張 >= 0
+		SIF MAX(NOWEX:ARG:Ｃ絶頂 + NOWEX:ARG:尿道絶頂, NOWEX:ARG:Ｖ絶頂, NOWEX:ARG:Ａ絶頂, NOWEX:ARG:Ｂ絶頂, NOWEX:ARG:Ｍ絶頂) < 2
+			RETURNF 0
+		SIF MAX(NOWEX:ARG:Ｃ絶頂 + NOWEX:ARG:尿道絶頂, NOWEX:ARG:Ｖ絶頂) == 0 && MAX(NOWEX:ARG:Ａ絶頂, NOWEX:ARG:Ｂ絶頂, NOWEX:ARG:Ｍ絶頂) < 3
+			RETURNF 0
+	ELSE
+		SIF MAX(NOWEX:ARG:Ｃ絶頂 + NOWEX:ARG:尿道絶頂, NOWEX:ARG:Ｖ絶頂) < 3 || NOWEX:ARG:絶頂数合計 < 5
+			RETURNF 0
+		SIF BASE:ARG:尿意 < 10000
+			RETURNF 0
+	ENDIF
+	RETURNF 1
+CASE "前回絶頂", "前Ｔ絶頂"
+	SIF PREVPLAY("絶頂", ARG)
+		RETURNF 1
+CASE "エナジードレイン"
+	SELECTCASE ARG
+	CASE PLAYER
+		SIF GETBIT(TEQUIP:ARG:特殊行動, 2)
+			RETURNF 1
+	CASEELSE
+		SIF GETBIT(TEQUIP:ARG:特殊行動, 2) && GETBIT(TEQUIP:PLAYER:特殊行動, 2)
+			RETURNF NOWEX:ARG:エナジードレイン
+	ENDSELECT
+CASE "レベルドレイン"
+	SELECTCASE ARG
+	CASE PLAYER
+		SIF GETBIT(TEQUIP:ARG:特殊行動, 3)
+			RETURNF 1
+	CASEELSE
+		SIF GETBIT(TEQUIP:ARG:特殊行動, 3) && GETBIT(TEQUIP:PLAYER:特殊行動, 3)
+			RETURNF 1
+	ENDSELECT
+
+CASE "両穴くぱぁ"
+	SIF GETBIT(TEQUIP:ARG:特殊行動, 4)
+		RETURNF 1
+
+CASE "絶頂：ドラゴン"
+	RETURNF TFLAG:9
+CASE "絶頂許可"
+	RETURNF TCVAR:ARG:2
+CASE "射精箇所変更"
+	RETURNF TCVAR:ARG:4
+CASE "派生前の選択コマンド"
+	RETURNF SELECTCOM:4
+CASE "派生前の前回選択コマンド"
+	RETURNF PREVCOM:4
+CASE "Ｗ押し倒し主導中"
+	SIF TEQUIP:ARG:Ｗ押し倒し == 1
+		RETURNF 1
+CASE "前回フェラ"
+	SELECTCASE PREVCOM
+	CASE 91, 99, 140, 150
+		SIF COND("前Ｔ調教者", ARG) == PLAYER && PENIS(PLAYER)
+			RETURNF 1
+	ENDSELECT
+CASE "主人への恋慕"
+	SIF TALENT:ARG:恋慕 || CEVENT("助手調教での素質変化：恋慕外し", ARG)
+		RETURNF 1
+CASE "口の使用"
+	;ボールギャグor触手口辱
+	SIF TEQUIP:ARG:口枷 == 1 || TEQUIP:ARG:触手口辱
+		RETURNF 0
+	RETURNF 1
+CASE "口淫中"
+	SELECTCASE SELECTCOM
+	CASE 6, 91, 99, 140, 150
+		RETURNF 1
+	ENDSELECT
+CASE "視力"
+	;アイマスク
+	SIF TEQUIP:ARG:アイマスク
+		RETURNF 0
+	RETURNF 1
+CASE "指の使用"
+	SIF TALENT:ARG:ハーピー || GETBIT(TEQUIP:ARG:拘束, 20)
+		RETURNF 0
+	RETURNF 1
+CASE "脚の使用"
+	SIF TALENT:ARG:ラミア || TALENT:ARG:マーメイド || GETBIT(TEQUIP:ARG:拘束, 21)
+		RETURNF 0
+	RETURNF 1
+CASE "脚が無い"
+	SIF TALENT:ARG:ラミア || TALENT:ARG:マーメイド
+		RETURNF 1
+CASE "靴の着用"
+	SIF TALENT:ARG:ラミア || TALENT:ARG:マーメイド || GETBIT(TEQUIP:ARG:拘束, 21)
+		RETURNF 0
+	SIF TALENT:ARG:動物足 == 2 || TALENT:ARG:動物足 == 5 || TALENT:ARG:動物足 == 8 || TALENT:ARG:動物足 == 11
+		RETURNF 0
+	RETURNF 1
+CASE "ツノハンドル"
+	;悪魔の角だと掴み易い
+	SIF TALENT:ARG:ツノ == 6
+		RETURNF 1
+
+;～自慰中はTARGETのみ
+CASE "Ｃ自慰中"
+	RETURNF GETBIT(CHECK_ONANIE(SELECTCOM), 0)
+CASE "Ｖ自慰中"
+	RETURNF GETBIT(CHECK_ONANIE(SELECTCOM), 1)
+CASE "Ａ自慰中"
+	RETURNF GETBIT(CHECK_ONANIE(SELECTCOM), 2)
+CASE "Ｂ自慰中"
+	RETURNF GETBIT(CHECK_ONANIE(SELECTCOM), 3)
+
+CASE "シャワー自慰中"
+	RETURNF GETBIT(CHECK_ONANIE(SELECTCOM), 10)
+CASE "Ｖバイブ自慰中"
+	RETURNF GETBIT(CHECK_ONANIE(SELECTCOM), 11)
+CASE "Ａバイブ自慰中"
+	RETURNF GETBIT(CHECK_ONANIE(SELECTCOM), 12)
+CASE "両穴バイブ自慰中"
+	RETURNF GETBIT(CHECK_ONANIE(SELECTCOM), 13)
+CASE "オナホ自慰中"
+	RETURNF GETBIT(CHECK_ONANIE(SELECTCOM), 14)
+
+CASE "ローションマッサージ実行済"
+	SIF GETBIT(TEQUIP:ARG:ローション, 2)
+		RETURNF 1
+
+CASE "ペニバン"
+	SIF ITEM:ペニスバンド == 0 || CONFIG("ペニバンフィルタ")
+		RETURNF 0
+	RETURNF 1
+CASE "双頭バイブ"
+	RETURNF GETBIT(TEQUIP:ARG:バイブ, 10)
+
+CASE "アナルパール"
+	RETURNF GETBIT(TEQUIP:ARG:アナルバイブ, 11)
+
+CASE "アナルプラグ"
+	RETURNF GETBIT(TEQUIP:ARG:浣腸, 9)
+CASE "アナル栓"
+	RETURNF GETBIT(TEQUIP:ARG:浣腸, 9) + TEQUIP:ARG:アナルバイブ + GETBIT(TEQUIP:拡張バルーン, 1)
+CASE "空気浣腸"
+	RETURNF GETBIT(TEQUIP:ARG:浣腸, 0)
+CASE "液体浣腸"
+	RETURNF GETBIT(TEQUIP:ARG:浣腸, 1) + GETBIT(TEQUIP:ARG:浣腸, 2) + GETBIT(TEQUIP:ARG:浣腸, 3) + GETBIT(TEQUIP:ARG:浣腸, 4)
+CASE "大量浣腸"
+	RETURNF GETBIT(TEQUIP:ARG:浣腸, 3) + GETBIT(TEQUIP:ARG:浣腸, 4)
+CASE "精液浣腸"
+	RETURNF GETBIT(TEQUIP:ARG:浣腸, 10)
+CASE "温泉浣腸"
+	RETURNF GETBIT(TEQUIP:ARG:浣腸, 11)
+
+CASE "排泄：危険域"
+	SIF TEQUIP:ARG:浣腸 && BASE:ARG:排泄欲 >= 8000
+		RETURNF 1
+CASE "排泄：限界"
+	SIF BASE:ARG:排泄欲 >= MAXBASE:ARG:排泄欲
+		RETURNF 1
+
+CASE "運命検閲：愛撫"
+	RETURNF GETBIT(TEQUIP:ARG:運命検閲, 0)
+CASE "運命検閲：アソコ"
+	RETURNF GETBIT(TEQUIP:ARG:運命検閲, 1)
+CASE "運命検閲：胸"
+	RETURNF GETBIT(TEQUIP:ARG:運命検閲, 2)
+CASE "運命検閲：キス"
+	RETURNF GETBIT(TEQUIP:ARG:運命検閲, 3)
+CASE "運命検閲：アナル"
+	RETURNF GETBIT(TEQUIP:ARG:運命検閲, 4)
+CASE "運命検閲：詠唱"
+	RETURNF GETBIT(TEQUIP:ARG:運命検閲, 5)
+
+CASE "尿道使用中"
+	IF ARG == TARGET
+		
+		SELECTCASE SELECTCOM
+		;尿道使用中
+		CASE 83 TO 88
+			RETURNF 1
+		CASEELSE
+			SIF INSERT("尿道インサート", ARG)
+				RETURNF 1
+		ENDSELECT
+	ENDIF
+CASE "焦らされ中"
+	SIF TEQUIP:ARG:てかげん > 0 && BASE:ARG:絶頂 >= MAXBASE:ARG:絶頂
+		RETURNF 1
+CASE "射精禁止中"
+	IF ARG == TARGET
+		IF TEQUIP:尿道ブジー
+			RETURNF 1
+		ENDIF
+		SIF TEQUIP:ARG:てかげん || TEQUIP:ARG:フラート == 1
+			RETURNF 1
+		SIF TEQUIP:ARG:カテーテル
+			RETURNF 1
+		SIF COND("尿道使用中", ARG)
+			RETURNF 1
+	ENDIF
+	SIF COND("Ｐバインド弱体フラグ", ARG)
+		RETURNF 0
+	SIF BASE:ARG:快感許容値オトコ >= MAX(MAXBASE:ARG:快感許容値オトコ*2, MAXBASE:ARG:絶頂*4)
+		RETURNF 0
+	SIF STATE("バインド：Ｐ", ARG)
+		RETURNF 1
+
+CASE "アルカナ対象"
+	RETURNF TCVAR:ARG:22
+CASE "アルカナ詠唱"
+	RETURNF TCVAR:ARG:23
+
+CASE "お気に入りの体位中"
+	SIF GETBIT(TALENT:ARG:好きな体位, 9)
+		RETURNF 0
+	SIF GETBIT(TALENT:ARG:好きな体位, 19) && SELECTCOM == 80
+		RETURNF 1
+	IF INSERT("Ｖインサート", ARG)
+		IF GETBIT(TALENT:ARG:好きな体位, 0) && INSERT("正常位", ARG)
+			RETURNF 1
+		ELSEIF GETBIT(TALENT:ARG:好きな体位, 1) && INSERT("後背位", ARG)
+			RETURNF 1
+		ELSEIF GETBIT(TALENT:ARG:好きな体位, 2) && INSERT("屈曲位", ARG)
+			RETURNF 1
+		ELSEIF GETBIT(TALENT:ARG:好きな体位, 3) && INSERT("対面座位", ARG)
+			RETURNF 1
+		ELSEIF GETBIT(TALENT:ARG:好きな体位, 4) && INSERT("背面座位", ARG)
+			RETURNF 1
+		ELSEIF GETBIT(TALENT:ARG:好きな体位, 5) && INSERT("騎乗位", ARG) && TEQUIP:ARG:押し倒し == 0
+			RETURNF 1
+		ELSEIF GETBIT(TALENT:ARG:好きな体位, 6) && INSERT("騎乗位", ARG) && TEQUIP:ARG:押し倒し
+			RETURNF 1
+		ENDIF
+	ENDIF
+	IF INSERT("Ａインサート", ARG)
+		IF GETBIT(TALENT:ARG:好きな体位, 10) && INSERT("正常位", ARG)
+			RETURNF 1
+		ELSEIF GETBIT(TALENT:ARG:好きな体位, 11) && INSERT("後背位", ARG)
+			RETURNF 1
+		ELSEIF GETBIT(TALENT:ARG:好きな体位, 12) && INSERT("屈曲位", ARG)
+			RETURNF 1
+		ELSEIF GETBIT(TALENT:ARG:好きな体位, 13) && INSERT("対面座位", ARG)
+			RETURNF 1
+		ELSEIF GETBIT(TALENT:ARG:好きな体位, 14) && INSERT("背面座位", ARG)
+			RETURNF 1
+		ELSEIF GETBIT(TALENT:ARG:好きな体位, 15) && INSERT("騎乗位", ARG) && TEQUIP:ARG:押し倒し == 0
+			RETURNF 1
+		ELSEIF GETBIT(TALENT:ARG:好きな体位, 16) && INSERT("騎乗位", ARG) && TEQUIP:ARG:押し倒し
+			RETURNF 1
+		ENDIF
+	ENDIF
+	IF INSERT("尿道インサート", ARG)
+		IF GETBIT(TALENT:ARG:好きな体位, 20) && INSERT("正常位", ARG)
+			RETURNF 1
+		ELSEIF GETBIT(TALENT:ARG:好きな体位, 21) && INSERT("後背位", ARG)
+			RETURNF 1
+		ELSEIF GETBIT(TALENT:ARG:好きな体位, 22) && INSERT("屈曲位", ARG)
+			RETURNF 1
+		ELSEIF GETBIT(TALENT:ARG:好きな体位, 23) && INSERT("対面座位", ARG)
+			RETURNF 1
+		ELSEIF GETBIT(TALENT:ARG:好きな体位, 24) && INSERT("背面座位", ARG)
+			RETURNF 1
+		ELSEIF GETBIT(TALENT:ARG:好きな体位, 25) && INSERT("騎乗位", ARG) && TEQUIP:ARG:押し倒し == 0
+			RETURNF 1
+		ELSEIF GETBIT(TALENT:ARG:好きな体位, 26) && INSERT("騎乗位", ARG) && TEQUIP:ARG:押し倒し
+			RETURNF 1
+		ENDIF
+	ENDIF
+;中出し後精液掻き出しイベントで使う。ということでTARGETとPLAYERは固定
+CASE "中出され量"
+	IF SHOOT("膣内", PLAYER)
+		RETURNF EXP_GAIN(17, TARGET)
+	ELSEIF SHOOT("アナル", PLAYER)
+		LOCAL = EXP_GAIN(18, TARGET)
+	ELSE
+		RETURNF 0
+	ENDIF
+	RETURNF LOCAL
+CASE "３Ｐ"
+	SIF SELECTCOM:2 >= 0
+		RETURNF 1
+
+CASE "人里"
+	SIF GETBIT(TEQUIP:野外プレイ, 0) || (GETBIT(TFLAG:16, 0) && SELECTCOM == 171)
+		RETURNF 1
+CASE "森林"
+	SIF GETBIT(TEQUIP:野外プレイ, 1) || (GETBIT(TFLAG:16, 1) && SELECTCOM == 171)
+		RETURNF 1
+CASE "花園"
+	SIF GETBIT(TEQUIP:野外プレイ, 2) || (GETBIT(TFLAG:16, 2) && SELECTCOM == 171)
+		RETURNF 1
+CASE "水辺"
+	SIF GETBIT(TEQUIP:野外プレイ, 3) || (GETBIT(TFLAG:16, 3) && SELECTCOM == 171)
+		RETURNF 1
+CASE "海"
+	SIF GETBIT(TEQUIP:野外プレイ, 4) || (GETBIT(TFLAG:16, 4) && SELECTCOM == 171)
+		RETURNF 1
+CASE "室内"
+	SIF TEQUIP:ARG:館内露出プレイ + TEQUIP:ARG:野外プレイ + TEQUIP:ARG:お風呂プレイ == 0
+		RETURNF 1
+CASE "調教側"
+	;封印中
+	RETURNF 0
+
+CASE "包茎"
+	SIF GETBIT(TALENT:ARG:ペニス, 12)
+		RETURNF 2
+	SIF GETBIT(TALENT:ARG:ペニス, 11)
+		RETURNF 1
+CASE "仮性包茎"
+	SIF GETBIT(TALENT:ARG:ペニス, 11)
+		RETURNF 1
+CASE "真性包茎"
+	SIF GETBIT(TALENT:ARG:ペニス, 12)
+		RETURNF 1
+CASE "包茎の皮を剥いた"
+	SIF GETBIT(TALENT:ARG:ペニス, 20)
+		RETURNF 1
+
+CASE "乳首肥大"
+	SIF CONFIG(ARGS) == 0
+		RETURNF 0
+	SIF GETBIT(TALENT:ARG:乳首, 3)
+		RETURNF 3
+	SIF GETBIT(TALENT:ARG:乳首, 2)
+		RETURNF 2
+	SIF GETBIT(TALENT:ARG:乳首, 1)
+		RETURNF 1
+	SIF GETBIT(TALENT:ARG:乳首, 0)
+		RETURNF 0
+
+CASE "陥没乳首"
+	SIF CONFIG(ARGS) == 0
+		RETURNF 0
+	SIF GETBIT(TALENT:ARG:乳首, 12)
+		RETURNF 2
+	SIF TALENT:ARG:ニプルピアス
+		RETURNF 0
+	SIF GETBIT(TALENT:ARG:乳首, 11)
+		RETURNF 1
+CASE "仮性陥没乳首"
+	SIF CONFIG("陥没乳首") == 0
+		RETURNF 0
+	SIF TALENT:ARG:ニプルピアス
+		RETURNF 0
+	SIF GETBIT(TALENT:ARG:乳首, 11)
+		RETURNF 1
+CASE "真性陥没乳首"
+	SIF CONFIG("陥没乳首") == 0
+		RETURNF 0
+	SIF GETBIT(TALENT:ARG:乳首, 12)
+		RETURNF 1
+
+CASE "巨乳輪"
+	SIF CONFIG(ARGS) == 0
+		RETURNF 0
+	SIF GETBIT(TALENT:ARG:乳首, 23)
+		RETURNF 3
+	SIF GETBIT(TALENT:ARG:乳首, 22)
+		RETURNF 2
+	SIF GETBIT(TALENT:ARG:乳首, 21)
+		RETURNF 1
+	SIF GETBIT(TALENT:ARG:乳首, 20)
+		RETURNF 0
+
+
+CASE "バスト"
+	IF COND("男の娘", ARG)
+		RETURNF BASE:ARG:バスト
+	ELSE
+		RETURNF BASE:ARG:バスト + BASE:ARG:バストの成長/10
+	ENDIF
+CASE "ニプルファック"
+	SIF CONFIG("ニプルファック") == 0
+		RETURNF 0
+	SIF TALENT:ARG:巨乳 == 0
+		RETURNF 0
+	SIF TALENT:ARG:スライム || TALENT:ARG:淫乳
+		RETURNF 1
+CASE "子宮口弛緩度"
+	;妊婦はNG
+	SIF TALENT:ARG:妊娠
+		RETURNF 0
+
+	;子宮口に筋弛緩剤orスライム
+	IF GETBIT(TEQUIP:ARG:筋弛緩剤, 3) || TALENT:ARG:スライム
+		RETURNF 3
+	;直前に子宮に挿入済み
+	ELSEIF EXP_GAIN(68, ARG) || (EXP:ARG:子宮経験 >= 100 && EXP:ARG:子宮姦経験 >= 10)
+		RETURNF 2
+	;淫壷で出産経験あり
+	ELSEIF TALENT:ARG:淫壷 && TALENT:ARG:出産経験
+		IF EXP:ARG:子宮経験 >= 50 && EXP:ARG:子宮姦経験
+			RETURNF 2
+		ELSEIF EXP:ARG:子宮経験 >= 50 || (EXP:ARG:子宮経験 >= 20 && EX:ARG:Ｖ絶頂 >= 5)
+			SIF MARK:ARG:淫紋 >= 4
+				RETURNF 2
+			RETURNF 1
+		ENDIF
+	;淫壷または出産経験あり
+	ELSEIF TALENT:ARG:淫壷 || TALENT:ARG:出産経験
+		IF EXP:ARG:子宮経験 >= 100 && (EXP_GAIN(68, ARG) || EXP:ARG:子宮姦経験 >= 5)
+			RETURNF 2
+		ELSEIF EXP:ARG:子宮経験 >= 100 || (TALENT:ARG:淫壷 && EXP:ARG:子宮経験 >= 50 && EX:ARG:Ｖ絶頂 >= 10)
+			SIF MARK:ARG:淫紋 >= 4
+				RETURNF 2
+			RETURNF 1
+		ENDIF
+	ENDIF
+	SIF MARK:ARG:淫紋 >= 4
+		RETURNF 1
+CASE "夢魔"
+	SIF TALENT:ARG:夢魔 || TALENT:ARG:上位夢魔
+		RETURNF 1
+CASE "男の娘"
+	SIF TALENT:ARG:オトコ && TALENT:ARG:男の娘 && TALENT:ARG:長身 == 0
+		RETURNF 1
+
+CASE "着床確認"
+	SIF MARK:ARG:淫紋 && BASE:ARG:胎児
+		RETURNF 1
+
+CASE "安全日"
+	SIF MARK:ARG:淫紋 && BASE:ARG:胎児
+		RETURNF 0
+	SIF GETBIT(BASE:ARG:バイオリズム, 10)
+		RETURNF 1
+CASE "危険日"
+	SIF TALENT:ARG:オトコ || TALENT:ARG:妊娠 || TALENT:ARG:避妊の護符 || TALENT:ARG:避妊薬服用 || TALENT:ARG:魔導人形 || TALENT:ARG:スライム
+		RETURNF 0
+	SIF MARK:ARG:淫紋 && BASE:ARG:胎児
+		RETURNF 0
+	SIF GETBIT(BASE:ARG:バイオリズム, 11)
+		RETURNF 1
+CASE "排卵中"
+	SIF MARK:ARG:淫紋 && BASE:ARG:胎児
+		RETURNF 0
+	SIF GETBIT(BASE:ARG:バイオリズム, 12)
+		RETURNF 1
+CASE "排卵誘発剤使用中"
+	SIF MARK:ARG:淫紋 && BASE:ARG:胎児
+		RETURNF 0
+	SIF GETBIT(BASE:ARG:バイオリズム, 13)
+		RETURNF 1
+CASE "妊娠確実"
+	SIF GETBIT(BASE:ARG:バイオリズム, 14)
+		RETURNF 1
+CASE "発情期"
+	SIF GETBIT(BASE:ARG:バイオリズム, 20)
+		RETURNF 1
+CASE "胎内の精液量"
+	RETURNF BASE:ARG:胎内精子量+BASE:ARG:胎内精液量
+CASE "受精確率"
+	SIF COND("妊娠可能", ARG) == 0 || BASE:ARG:胎内精子量 == 0 || BASE:ARG:精液の優勢 == 0
+		RETURNF 0
+	;妊娠する可能性ある人は主人？
+	SIF CONFIG("妊娠パッチ：主人妊娠可能") == 0 && ARG == MASTER
+		RETURNF 0
+
+	;だいたい排卵中の日に100ぐらいあれば妊娠するのが目安
+	LOCAL = BASE:ARG:胎内精子量
+
+	;種付け相手によって妊娠しやすさが違う（@CHECK_PREGNANTでの精子量の部分で差が出ている）
+	;TO_NUMBER(BASE:ARG:精液の優勢)はCOND("精液の優勢", ARG)に等しい
+	SELECTCASE TO_NUMBER(BASE:ARG:精液の優勢)
+	;触手
+	CASE -5
+		;主人以外でも妊娠可能？
+		SIF CONFIG("妊娠パッチ：主人の精子のみ")
+			RETURNF 0
+		;LOCAL /= 5
+	;一般人相手
+	CASE -4
+		;主人以外でも妊娠可能？
+		SIF CONFIG("妊娠パッチ：主人の精子のみ") || CONFIG("妊娠パッチ：調教以外で妊娠可能") == 0
+			RETURNF 0
+		;LOCAL /= 3
+	;ドラゴン
+	CASE -3
+		;主人以外でも妊娠可能？
+		SIF CONFIG("妊娠パッチ：主人の精子のみ")
+			RETURNF 0
+		;LOCAL /= 4
+	CASE MASTER
+
+	CASEELSE
+		;主人以外でも妊娠可能？
+		SIF CONFIG("妊娠パッチ：主人の精子のみ")
+			RETURNF 0
+	ENDSELECT
+
+	;妊娠確実
+	IF GETBIT(BASE:ARG:バイオリズム, 14)
+		RETURNF 100
+	;発情期
+	ELSEIF GETBIT(BASE:ARG:バイオリズム, 20)
+		LOCAL *= 20
+	;排卵誘発剤使用中
+	ELSEIF GETBIT(BASE:ARG:バイオリズム, 13)
+		LOCAL *= 15
+	;排卵中
+	ELSEIF GETBIT(BASE:ARG:バイオリズム, 12)
+		LOCAL *= 10
+	;危険日
+	ELSEIF GETBIT(BASE:ARG:バイオリズム, 11)
+		LOCAL *= 5
+	ELSE
+		;安全日
+		SIF GETBIT(BASE:ARG:バイオリズム, 10)
+			LOCAL /= 10
+	ENDIF
+
+	LOCAL = MIN(LOCAL/10, 100)
+	RETURNF LOCAL
+CASE "性転換中"
+	RETURNF CFLAG:ARG:4
+CASE "妊娠可能"
+	;パッチ不使用
+	SIF CONFIG("妊娠パッチ") == 0
+		RETURNF 0
+	;オトコor妊娠中or避妊中or人形
+	SIF TALENT:ARG:オトコ || TALENT:ARG:妊娠 || BASE:ARG:胎児 || TALENT:ARG:避妊の護符 || TALENT:ARG:避妊薬服用 || TALENT:ARG:魔導人形
+		RETURNF 0
+	;名がない娘
+	SIF NO:ARG == 97 && NAME:ARG == "娘"
+		RETURNF 0
+	RETURNF 1
+CASE "避妊中"
+	SIF TALENT:ARG:避妊の護符 || TALENT:ARG:避妊薬服用
+		RETURNF 1
+
+CASE "妊娠中"
+	RETURNF BASE:ARG:胎児
+CASE "妊娠中：妊娠発覚直前"
+	RETURNF GETBIT(BASE:ARG:胎児, 6)
+CASE "妊娠中：妊娠発覚済み"
+	RETURNF GETBIT(BASE:ARG:胎児, 7)
+CASE "妊娠中：臨月"
+	RETURNF GETBIT(BASE:ARG:胎児, 8)
+CASE "妊娠中：分娩直前"
+	RETURNF GETBIT(BASE:ARG:胎児, 9)
+CASE "妊娠中：分娩"
+	RETURNF GETBIT(BASE:ARG:胎児, 10)
+CASE "妊娠中：息子"
+	RETURNF GETBIT(BASE:ARG:胎児, 20)
+CASE "妊娠中：各イベント進行度"
+	LOCAL = GETBITS(BASE:ARG:胎児, 0, 5)
+	RETURNF LOCAL
+
+CASE "妊娠イベント中"
+	;妊娠確定、臨月、出産、子育て
+	SIF BASE:ARG:胎児 || BASE:ARG:育児中 || TALENT:ARG:妊娠
+		RETURNF 1
+CASE "出産日"
+	RETURNF CFLAG:ARG:485
+
+CASE "育児中：子供が大きくなった"
+	SIF GETBITS(BASE:ARG:育児中, 0, 5) >= 14
+		RETURNF 1
+CASE "育児中：育児終了"
+	RETURNF GETBIT(BASE:ARG:育児中, 6)
+CASE "育児中：息子"
+	RETURNF GETBIT(BASE:ARG:育児中, 20)
+
+CASE "具現可能"
+	SIF TALENT:ARG:具現 && PENIS(TARGET) == 0
+		RETURNF 1
+CASE "ユニーク"
+	SELECTCASE NO:ARG
+	CASE 32, 34 TO 40, 44 TO 57, 94, 98
+		RETURNF 1
+	ENDSELECT
+CASE "人外度"
+	;人外度を返す
+	SIF TALENT:ARG:ラミア + TALENT:ARG:マーメイド + TALENT:ARG:魔導人形 + TALENT:ARG:ハーピー + TALENT:ARG:旧支配者の名残 + TALENT:ARG:スライム + TALENT:ARG:多腕
+		RETURNF 3
+	SIF TALENT:ARG:妖精
+		RETURNF 2
+	SIF TALENT:ARG:ツノ + TALENT:ARG:翼 + TALENT:ARG:妖狐 + TALENT:ARG:動物耳 + TALENT:ARG:しっぽ
+		RETURNF 1
+CASE "カウンターの威力"
+
+CASE "恍惚確率"
+	RETURNF TFLAG:91
+CASE "弱点効果"
+	RETURNF TFLAG:92
+CASE "押し倒し確率"
+	RETURNF TFLAG:93
+CASE "アルカナカウンター"
+	RETURNF TFLAG:94
+CASE "カウンターの強度"
+	RETURNF TFLAG:96
+
+
+CASE "前Ｔ調教者"
+	RETURNF TFLAG:50
+CASE "前Ｔ対象"
+	RETURNF TFLAG:49
+CASE "前Ｔと同ペア"
+	SIF TFLAG:49 == TARGET && TFLAG:50 == PLAYER
+		RETURNF 1
+CASE "前Ｔから対象のみ変更"
+	SIF TFLAG:49 != TARGET && TFLAG:50 == PLAYER
+		RETURNF 1
+CASE "前Ｔから調教者のみ変更"
+	SIF TFLAG:49 == TARGET && TFLAG:50 != PLAYER
+		RETURNF 1
+CASE "連続実行"
+	;前回コマンドが違うor調教中で無いなら連続とはみなさない
+	SIF PREVCOM != SELECTCOM || SELECTCOM < 0 || COND("調教中", ARG) == 0
+		RETURNF 0
+	;連続実行の例外
+	SELECTCASE SELECTCOM
+	CASE 8
+		SIF CHECK_COM("Ｇスポ責め")
+			RETURNF 0
+	CASE 31, 201
+		SIF TEQUIP:バイブ == 0
+			RETURNF 0
+	CASE 33, 202
+		SIF TEQUIP:アナルバイブ == 0
+			RETURNF 0
+	CASE 34, 203
+		SIF TEQUIP:クリキャップ == 0
+			RETURNF 0
+	CASE 35, 204
+		SIF TEQUIP:ニプルキャップ == 0
+			RETURNF 0
+	CASE 36, 205
+		SIF TEQUIP:搾乳機 == 0
+			RETURNF 0
+	CASE 38
+		SIF TEQUIP:シャワー == 0
+			RETURNF 0
+	CASE 60 TO 79
+		SIF INSERT("ワイルドスウィング")
+			RETURNF 0
+	CASE 136, 207
+		SIF TEQUIP:浣腸 == 0
+			RETURNF 0
+	CASE 137
+		SIF TEQUIP:拡張バルーン == 0
+			RETURNF 0
+	CASE 208
+		SIF TEQUIP:触手口辱 == 0
+			RETURNF 0
+	ENDSELECT
+	RETURNF 1
+CASE "甘い言葉：成功"
+	SIF SELECTCOM == 300 && CFLAG:269
+		RETURNF 1
+CASE "褒める：成功"
+	SIF SELECTCOM == 24 && TEQUIP:褒める
+		RETURNF 1
+
+CASE "ドラ姦寝取られ"
+	SIF CONFIG("寝取られ") == 0
+		RETURNF 0
+	SIF TALENT:ARG:相思相愛 || MARK:ARG:竜姦刻印
+		RETURNF 1
+
+CASE "精飲に弱い"
+	RETURNF GETBIT(TALENT:ARG:精液に弱い, 0)
+CASE "膣内射精に弱い"
+	RETURNF GETBIT(TALENT:ARG:精液に弱い, 1)
+CASE "肛内射精に弱い"
+	RETURNF GETBIT(TALENT:ARG:精液に弱い, 2)
+CASE "乳内射精に弱い"
+	RETURNF GETBIT(TALENT:ARG:精液に弱い, 3)
+CASE "尿道内射精に弱い"
+	RETURNF GETBIT(TALENT:ARG:精液に弱い, 4)
+
+CASE "手に弱い"
+	RETURNF GETBIT(TALENT:ARG:弱点, 0)
+CASE "口に弱い"
+	RETURNF GETBIT(TALENT:ARG:弱点, 1)
+CASE "胸に弱い"
+	RETURNF GETBIT(TALENT:ARG:弱点, 2)
+CASE "脚に弱い"
+	RETURNF GETBIT(TALENT:ARG:弱点, 3)
+CASE "♀に弱い"
+	RETURNF GETBIT(TALENT:ARG:弱点, 4)
+CASE "唇に弱い"
+	RETURNF GETBIT(TALENT:ARG:弱点, 5)
+CASE "お尻に弱い"
+	RETURNF GETBIT(TALENT:ARG:弱点, 6)
+CASE "♂に弱い"
+	RETURNF GETBIT(TALENT:ARG:弱点, 7)
+CASE "全てに弱い"
+	SIF NUM_BIT(TALENT:ARG:弱点) == NUM("弱点")
+		RETURNF 1
+
+CASE "性癖：ユニーク"
+	RETURNF GETBIT(TALENT:ARG:性癖, 0)
+CASE "性癖：強気"
+	RETURNF GETBIT(TALENT:ARG:性癖, 1)
+CASE "性癖：清楚"
+	RETURNF GETBIT(TALENT:ARG:性癖, 2)
+CASE "性癖：陽気"
+	RETURNF GETBIT(TALENT:ARG:性癖, 3)
+CASE "性癖：素直"
+	RETURNF GETBIT(TALENT:ARG:性癖, 4)
+CASE "性癖：陰気"
+	RETURNF GETBIT(TALENT:ARG:性癖, 5)
+CASE "性癖：内気"
+	RETURNF GETBIT(TALENT:ARG:性癖, 6)
+CASE "性癖：臆病"
+	RETURNF GETBIT(TALENT:ARG:性癖, 7)
+CASE "性癖：サド"
+	RETURNF GETBIT(TALENT:ARG:性癖, 8)
+CASE "性癖：マゾ"
+	RETURNF GETBIT(TALENT:ARG:性癖, 9)
+CASE "性癖：高慢"
+	RETURNF GETBIT(TALENT:ARG:性癖, 10)
+CASE "性癖：クール"
+	RETURNF GETBIT(TALENT:ARG:性癖, 11)
+CASE "性癖：恥じらい"
+	RETURNF GETBIT(TALENT:ARG:性癖, 12)
+CASE "性癖：狂気"
+	RETURNF GETBIT(TALENT:ARG:性癖, 13)
+CASE "性癖：甘やかし"
+	RETURNF GETBIT(TALENT:ARG:性癖, 14)
+CASE "性癖：賢い"
+	RETURNF GETBIT(TALENT:ARG:性癖, 15)
+CASE "性癖：愚か"
+	RETURNF GETBIT(TALENT:ARG:性癖, 16)
+CASE "性癖：エッチ"
+	RETURNF GETBIT(TALENT:ARG:性癖, 17)
+CASE "性癖：ロリ"
+	RETURNF GETBIT(TALENT:ARG:性癖, 18)
+CASE "性癖：少女"
+	RETURNF GETBIT(TALENT:ARG:性癖, 19)
+CASE "性癖：ロリババア"
+	RETURNF GETBIT(TALENT:ARG:性癖, 20)
+CASE "性癖：お姉さん"
+	RETURNF GETBIT(TALENT:ARG:性癖, 21)
+CASE "性癖：オトナ"
+	RETURNF GETBIT(TALENT:ARG:性癖, 22)
+CASE "性癖：貧乳"
+	RETURNF GETBIT(TALENT:ARG:性癖, 23)
+CASE "性癖：巨乳"
+	RETURNF GETBIT(TALENT:ARG:性癖, 24)
+CASE "性癖：獣"
+	RETURNF GETBIT(TALENT:ARG:性癖, 25)
+CASE "性癖：悪魔"
+	RETURNF GETBIT(TALENT:ARG:性癖, 26)
+CASE "性癖：堕天使"
+	RETURNF GETBIT(TALENT:ARG:性癖, 27)
+CASE "性癖：天使"
+	RETURNF GETBIT(TALENT:ARG:性癖, 28)
+CASE "性癖：妖精"
+	RETURNF GETBIT(TALENT:ARG:性癖, 29)
+CASE "性癖：魔法使い"
+	RETURNF GETBIT(TALENT:ARG:性癖, 30)
+CASE "性癖：人外"
+	RETURNF GETBIT(TALENT:ARG:性癖, 31)
+CASE "性癖：人形"
+	RETURNF GETBIT(TALENT:ARG:性癖, 32)
+CASE "性癖：力持ち"
+	RETURNF GETBIT(TALENT:ARG:性癖, 33)
+CASE "性癖：気品"
+	RETURNF GETBIT(TALENT:ARG:性癖, 34)
+CASE "性癖：粗野"
+	RETURNF GETBIT(TALENT:ARG:性癖, 35)
+CASE "性癖：男の娘"
+	RETURNF GETBIT(TALENT:ARG:性癖, 36)
+CASE "性癖：近親"
+	RETURNF GETBIT(TALENT:ARG:性癖, 37)
+CASE "性癖：ショタ"
+	RETURNF GETBIT(TALENT:ARG:性癖, 38)
+CASE "性癖：褐色肌"
+	RETURNF GETBIT(TALENT:ARG:性癖, 39)
+CASE "性癖：色白"
+	RETURNF GETBIT(TALENT:ARG:性癖, 40)
+CASE "性癖：青い肌"
+	RETURNF GETBIT(TALENT:ARG:性癖, 41)
+CASE "性癖：腋"
+	RETURNF GETBIT(TALENT:ARG:性癖, 42)
+CASE "性癖：尻"
+	RETURNF GETBIT(TALENT:ARG:性癖, 43)
+CASE "性癖：尿道"
+	RETURNF GETBIT(TALENT:ARG:性癖, 44)
+CASE "性癖：においフェチ"
+	RETURNF GETBIT(TALENT:ARG:性癖, 45)
+
+;調教知識"
+CASE "愛撫・奉仕知識"
+	RETURNF GETBIT(TALENT:ARG:調教知識, 0)
+CASE "教え上手"
+	RETURNF GETBIT(TALENT:ARG:調教知識, 1)
+CASE "ＳＭ知識"
+	RETURNF GETBIT(TALENT:ARG:調教知識, 2)
+CASE "Ａ調教知識"
+	RETURNF GETBIT(TALENT:ARG:調教知識, 3)
+CASE "性器拡張知識"
+	RETURNF GETBIT(TALENT:ARG:調教知識, 4)
+CASE "道具使い"
+	RETURNF GETBIT(TALENT:ARG:調教知識, 5)
+CASE "露出知識"
+	RETURNF GETBIT(TALENT:ARG:調教知識, 6)
+
+CASE "昼"
+	SIF TIME == 0
+		RETURNF 1
+CASE "夜"
+	SIF TIME == 1
+		RETURNF 1
+
+CASE "調教終了可能"
+	SIF CONFIG("調教コンフィグモード")
+		RETURNF 0
+	SIF CONFIG("ＨＡＲＤ") == 0 || TEQUIP:押し倒し == 0
+		RETURNF 1
+	IF TEQUIP:Ｗ押し倒し && TARGET:1
+		SIF COND("満足", TARGET) && COND("満足", TARGET:1)
+			RETURNF 1
+	ELSEIF COND("満足", TARGET) || BASE:体力 < 1000 || BASE:気力 == 0 || BASE:精力 == 0
+		RETURNF 1
+	ENDIF
+;誰を調教対象に選んで調教に入ったか、などで参照できる
+CASE "第一対象"
+	RETURNF GETBITS(FLAG:99, 0, 6)
+CASE "調教中"
+	RETURNF GETBIT(FLAG:99, 10)
+CASE "主導権無し"
+	RETURNF GETBIT(FLAG:99, 11)
+CASE "一晩開放中"
+	RETURNF GETBIT(FLAG:99, 12)
+CASE "キャラメイク中"
+	RETURNF GETBIT(FLAG:99, 13)
+
+CASE "満足"
+	RETURNF CFLAG:ARG:99
+CASE "体力限界"
+	RETURNF GETBIT(CFLAG:ARG:99, 0)
+CASE "性欲満足"
+	RETURNF GETBIT(CFLAG:ARG:99, 1) + GETBIT(CFLAG:ARG:99, 2)
+CASE "性欲大満足"
+	RETURNF GETBIT(CFLAG:ARG:99, 2)
+CASE "精液欲満足"
+	RETURNF GETBIT(CFLAG:ARG:99, 3) + GETBIT(CFLAG:ARG:99, 4)
+CASE "精液欲大満足"
+	RETURNF GETBIT(CFLAG:ARG:99, 4)
+CASE "朝イベント"
+	RETURNF CFLAG:ARG:90
+CASE "夜イベント"
+	RETURNF CFLAG:ARG:91
+CASE "調教後イベント"
+	RETURNF CFLAG:ARG:92
+
+CASE "手一杯"
+	RETURNF GETBIT(CFLAG:ARG:95, 0)
+CASE "喫茶店出演済み"
+	RETURNF GETBIT(CFLAG:ARG:95, 1)
+CASE "一晩開放実行済み"
+	RETURNF GETBIT(CFLAG:ARG:95, 2)
+CASE "同衾イベント"
+	RETURNF GETBIT(CFLAG:ARG:95, 3)
+CASE "日常イベント出演済み"
+	RETURNF GETBIT(CFLAG:ARG:95, 4)
+CASE "乱交参加済み"
+	RETURNF GETBIT(CFLAG:ARG:95, 5)
+CASE "喫茶店挨拶済み"
+	RETURNF GETBIT(CFLAG:ARG:95, 6)
+CASE "喫茶店挨拶まだ"
+	SIF GETBIT(CFLAG:ARG:95, 6) == 0
+		RETURNF 1
+
+CASE "一緒に寝た"
+	RETURNF CFLAG:ARG:96
+CASE "前回調教日"
+	RETURNF CFLAG:ARG:97
+CASE "調教空白期間"
+	SIF CFLAG:ARG:97 == 0 || DAY - CFLAG:ARG:97 - 1 < 0
+		RETURNF 0
+	;前日に相手にした場合は空白は０になるべきだろう
+	RETURNF DAY - CFLAG:ARG:97 - 1
+
+
+;条件を緩く
+CASE "夜這い可能"
+	;相思相愛による夜這い制限有り
+	SIF CONFIG("相思相愛：夜這い制限") && TALENT:MASTER:相思相愛 && TALENT:ARG:相思相愛 == 0
+		RETURNF 0
+	SIF TALENT:ARG:Ｖ損傷 || TALENT:ARG:Ａ損傷
+		RETURNF 0
+	SIF (TALENT:ARG:恋慕 || TALENT:ARG:淫乱 || ABL:ARG:従順+ABL:ARG:欲望+MAX(ABL:ARG:Ｖ感覚, ABL:ARG:Ａ感覚)+ABL:ARG:奉仕精神 > 10) && BASE:ARG:体力 >= 500
+		RETURNF 1
+CASE "朝駆け可能"
+	;相思相愛による夜這い制限有りだと朝駆けも禁止
+	SIF CONFIG("相思相愛：夜這い制限") && TALENT:MASTER:相思相愛 && TALENT:ARG:相思相愛 == 0
+		RETURNF 0
+	SIF TALENT:ARG:Ｖ損傷 || TALENT:ARG:Ａ損傷
+		RETURNF 0
+	SIF (TALENT:ARG:恋慕 || TALENT:ARG:淫乱 || ABL:ARG:欲望 >= 3) && BASE:ARG:体力 >= 800
+		RETURNF 1
+
+CASE "夢魔化可能"
+	SIF TALENT:ARG:夢魔 || TALENT:ARG:上位夢魔 || TALENT:ARG:眷属 || TALENT:ARG:魔王のかけら
+		RETURNF 0
+	SELECTCASE ARG
+	CASE TARGET
+		SIF CONFIG("対象の夢魔化：男")
+			RETURNF 1
+		SIF CONFIG("対象の夢魔化") && TALENT:ARG:オトコ == 0
+			RETURNF 1
+	CASE ASSI, PLAYER, MASTER
+		SIF CONFIG("主人・助手の夢魔化：男")
+			RETURNF 1
+		SIF CONFIG("主人・助手の夢魔化") && TALENT:ARG:オトコ == 0
+			RETURNF 1
+	ENDSELECT
+
+CASE "売却可能フラグ"
+	RETURNF GETBIT(CFLAG:ARG:1, 0)
+CASE "助手可能フラグ"
+	RETURNF GETBIT(CFLAG:ARG:1, 1)
+
+CASE "売却可能"
+	;旅行に行く予定や胡蝶の夢の最中だと無理
+	SIF CFLAG:ARG:70 || BASE:ARG:胡蝶の夢
+		RETURNF 0
+	RETURNF GETBIT(CFLAG:ARG:1, 0)
+CASE "助手可能"
+	RETURNF GETBIT(CFLAG:ARG:1, 1)
+
+CASE "温泉旅行同行可能"
+	SIF TALENT:ARG:恋慕 + TALENT:ARG:淫乱 && (TALENT:ARG:処女 == 0 || (TALENT:ARG:処女 && TALENT:ARG:相思相愛) )
+		RETURNF 1
+CASE "温泉旅行可能"
+	SIF FLAG:60 || ITEM:胡蝶の夢 || DAYEV("金曜", "ゲーム内") == 0 || TEXTS("時間") != "夜" || MONEY < 3000 || ARG <= 0
+		RETURNF 0
+	SIF TALENT:ARG:恋慕 + TALENT:ARG:淫乱 && (TALENT:ARG:処女 == 0 || (TALENT:ARG:処女 && TALENT:ARG:相思相愛) )
+		RETURNF 1
+
+CASE "一言イベント中"
+	RETURNF GETBIT(FLAG:23, 10)
+CASE "セクハラ終了"
+	RETURNF GETBIT(FLAG:23, 11)
+
+CASE "外出許可"
+	;旅行に行く予定だと無理
+	SIF CFLAG:ARG:70
+		RETURNF 0
+	RETURNF CFLAG:ARG:49
+
+CASE "一晩開放可能"
+	;旅行に行く予定だと無理
+	SIF CFLAG:ARG:70
+		RETURNF 0
+	;怪我があるとダメ
+	SIF TALENT:ARG:Ｖ損傷 || TALENT:ARG:Ａ損傷
+		RETURNF 0
+	SIF CFLAG:ARG:49
+		RETURNF 1
+	;妖精はサイズ的に…
+	;SIF TALENT:ARG:妖精
+	;	RETURNF 0
+	SIF TALENT:ARG:好色 == 0 && ABL:ARG:従順 < 4 && MARK:ARG:屈服刻印 < 3 && MARK:ARG:淫紋 == 0
+		RETURNF 0
+	;SIF (TALENT:ARG:処女 || TALENT:ARG:オトコ) && (TALENT:ARG:Ａ処女 || ABL:ARG:Ａ感覚 < 3)
+	;	RETURNF 0
+
+	;どちらかの穴を使えるor女性相手ができないとダメ
+	SIF COND("ベテラン：セックス", ARG) == 0 && COND("一晩開放：女相手", ARG) == 0
+		RETURNF 0
+
+	SIF TALENT:ARG:好色 || TALENT:ARG:淫乱 || ABL:ARG:露出癖 >= 3
+		RETURNF 1
+;これがONだと実際に夜にイベント発生します
+CASE "一晩開放実行予定"
+	;旅行に行く予定だと無理
+	SIF CFLAG:ARG:70
+		RETURNF 0
+	SIF COND("同衾イベント", ARG)
+		RETURNF 0
+	;怪我があるとダメ
+	SIF TALENT:ARG:Ｖ損傷 || TALENT:ARG:Ａ損傷
+		RETURNF 0
+	;どちらかの穴を使えないとダメ
+	IF COND("ベテラン：Ｖセックス", ARG) && COND("身嗜み：Ｖ独占", ARG) == 0
+	ELSEIF COND("ベテラン：Ａセックス", ARG) && COND("身嗜み：Ａ独占", ARG) == 0
+	;女性が相手にできるならＯＫ
+	ELSEIF COND("一晩開放：女相手", ARG)
+	ELSE
+		RETURNF 0
+	ENDIF
+	;欲求不満も条件の一部
+	IF TALENT:ARG:淫乱 || (MARK:ARG:淫紋 && TALENT:ARG:オトコ == 0)
+		SIF COND("妊娠中：臨月", ARG) || COND("妊娠中：分娩直前", ARG) || COND("妊娠中：分娩", ARG)
+			RETURNF 0
+		SIF BASE:ARG:欲求不満 + TALENT:ARG:好色*5 + COND("調教空白期間", ARG) < 15
+			RETURNF 0
+	ELSE
+		SIF COND("妊娠イベント中", ARG)
+			RETURNF 0
+		SIF BASE:ARG:欲求不満 + TALENT:ARG:好色*5 < 15
+			RETURNF 0
+		SIF COND("胎内の精液量", ARG) >= 10000
+			RETURNF 0
+	ENDIF
+	SELECTCASE CFLAG:ARG:49
+	;外出させない
+	CASE 0
+		RETURNF 0
+	;好きに外出させる
+	CASE 1
+		RETURNF 1
+	;避妊中のみ許可する
+	CASE 2
+		SIF TALENT:ARG:避妊の護符 || TALENT:ARG:避妊薬服用
+			RETURNF 1
+		RETURNF 0
+	;安全日or避妊中に限り許可する
+	CASE 3
+		SIF TALENT:ARG:避妊の護符 || TALENT:ARG:避妊薬服用 || COND("安全日", ARG)
+			RETURNF 1
+		RETURNF 0
+	;危険日や発情中の日に限り許可する
+	CASE 4
+		SIF TALENT:ARG:避妊の護符 || TALENT:ARG:避妊薬服用
+			RETURNF 0
+		SIF COND("危険日", ARG) || COND("排卵中", ARG) || COND("排卵誘発剤使用中", ARG) || COND("妊娠確実", ARG) || COND("発情期", ARG)
+			RETURNF 1
+		RETURNF 0
+	ENDSELECT
+
+CASE "欲求不満"
+	SELECTCASE BASE:ARG:欲求不満
+	CASE 30
+		RETURNF 2
+	CASE IS >= 15
+		RETURNF 1
+	ENDSELECT
+CASE "ご無沙汰"
+	SIF EXP:ARG:調教回数 == 0
+		RETURNF 0
+	SELECTCASE COND("調教空白期間", ARG)
+	CASE IS >= MAX(CHARANUM - 1, 14)
+		RETURNF 1
+	ENDSELECT
+
+CASE "油断"
+	SIF 100*BASE:ARG:ウェスト/BASE:ARG:身長 >= 40
+		RETURNF 1
+CASE "スリム"
+	SIF 100*BASE:ARG:ウェスト/BASE:ARG:身長 <= 36
+		RETURNF 1
+
+CASE "巨尻"
+	;ヒップサイズの鑑定については身長比とウェスト比両方で判定する
+	;身長比では100*ヒップ/身長の値で(細い, 普通, 巨尻, 爆尻, 超尻) = (50以下, 51～53, 54～56, 57～59, 60以上)
+	;ウェスト比では100*ウェスト/ヒップで(細い, 普通, 大きい, 爆尻, 超尻) = (74以上, 73～70, 69～66, 65～62、61以下)
+	;ちなみに巨尻については両方の判定法で小さい方を選択する
+
+	;身長が0の事は無いが念のため
+	SIF BASE:ARG:身長 == 0
+		RETURNF 0
+
+	;とりあえずヒップサイズがＳ以下だと巨尻の資格無し
+	SELECTCASE BASE:ARG:ヒップ
+	CASE IS <= 86
+		SIF TALENT:ARG:小柄体型 == 0 && TALENT:ARG:妖精 == 0
+			RETURNF 0
+	ENDSELECT
+
+	SELECTCASE 100*BASE:ARG:ヒップ/BASE:ARG:身長
+	;超尻
+	CASE IS >= 60
+		LOCAL = 3
+	;爆尻
+	CASE IS >= 57
+		LOCAL = 2
+	;巨尻
+	CASE IS >= 54
+		LOCAL = 1
+	;普通
+	CASE IS >= 51
+		LOCAL = 0
+	;細め
+	CASEELSE
+		RETURNF 0
+	ENDSELECT
+
+	SELECTCASE 100 * BASE:ARG:ウェスト / BASE:ARG:ヒップ
+	;超尻
+	CASE IS <= 61
+		RETURNF LIMIT(LOCAL, 1, 3)
+	;爆尻
+	CASE IS <= 65
+		RETURNF LIMIT(LOCAL, 1, 2)
+	;巨尻
+	CASE IS <= 69
+		RETURNF MIN(LOCAL, 1)
+	;その他
+	CASEELSE
+		RETURNF 0
+	ENDSELECT
+CASE "小尻"
+	;ヒップサイズの鑑定については身長比とウェスト比両方で判定する
+	;身長比では100*ヒップ/身長の値で(細い, 普通, 巨尻, 爆尻) = (50以下, 51～53, 54～56, 57以上)
+	;ウェスト比では100*ウェスト/ヒップで(細い, 普通, 大きい, 爆尻) = (74以上, 73～70, 69～66, 65以下)
+	;小尻についてはどちらかが満たしているなら小尻とみなす
+
+	;身長が0の事は無いが念のため
+	SIF BASE:ARG:身長 == 0
+		RETURNF 0
+
+	;とりあえずヒップサイズがＭ以上だと小尻の資格無し
+	SELECTCASE BASE:ARG:ヒップ
+	CASE IS >= 87
+		RETURNF 0
+	ENDSELECT
+
+	SELECTCASE 100*BASE:ARG:ヒップ/BASE:ARG:身長
+	;巨尻以上
+	CASE IS >= 54
+		RETURNF 0
+	;普通
+	CASE 51 TO 53
+		LOCAL = 0
+	;細め
+	CASEELSE
+		LOCAL = 1
+	ENDSELECT
+
+	SELECTCASE 100 * BASE:ARG:ウェスト / BASE:ARG:ヒップ
+	;巨尻以上
+	CASE IS <= 69
+		RETURNF 0
+	;普通以下
+	CASE 70 TO 73
+		RETURNF LOCAL
+	;細め
+	CASEELSE
+		RETURNF 1
+	ENDSELECT
+CASE "陰毛"
+	RETURNF BASE:ARG:陰毛/100
+CASE "腋毛"
+	RETURNF BASE:ARG:腋毛/100
+CASE "陰毛の設定"
+	IF GETBIT(FLAG:207, 3)
+		SIF AGE(ARG) >= 4
+			RETURNF 1
+	ELSEIF GETBIT(FLAG:207, 2)
+		SIF AGE(ARG) >= 3
+			RETURNF 1
+	ELSEIF GETBIT(FLAG:207, 1)
+		SIF AGE(ARG) >= 2
+			RETURNF 1
+	ELSEIF GETBIT(FLAG:207, 0)
+		RETURNF 1
+	ENDIF
+
+CASE "身嗜み：陰毛"
+	IF GETBIT(CFLAG:ARG:368, 1)
+		RETURNF 3
+	ELSEIF GETBIT(CFLAG:ARG:368, 2)
+		RETURNF 5
+	ELSEIF GETBIT(CFLAG:ARG:368, 3)
+		RETURNF 7
+	ENDIF
+CASE "身嗜み：腋毛"
+	IF GETBIT(CFLAG:ARG:368, 6)
+		RETURNF 3
+	ELSEIF GETBIT(CFLAG:ARG:368, 7)
+		RETURNF 7
+	ENDIF
+CASE "身嗜み：Ｖ拡張"
+	SIF TALENT:ARG:オトコ
+		RETURNF 0
+	IF GETBIT(CFLAG:ARG:368, 11)
+		RETURNF 1
+	ELSEIF GETBIT(CFLAG:ARG:368, 12)
+		RETURNF 2
+	ELSEIF GETBIT(CFLAG:ARG:368, 13)
+		RETURNF 3
+	ELSEIF GETBIT(CFLAG:ARG:368, 14)
+		RETURNF 4
+	ENDIF
+CASE "身嗜み：Ａ拡張"
+	IF GETBIT(CFLAG:ARG:368, 16)
+		RETURNF 1
+	ELSEIF GETBIT(CFLAG:ARG:368, 17)
+		RETURNF 2
+	ELSEIF GETBIT(CFLAG:ARG:368, 18)
+		RETURNF 3
+	ELSEIF GETBIT(CFLAG:ARG:368, 19)
+		RETURNF 4
+	ENDIF
+CASE "身嗜み：Ａ準備"
+	IF GETBIT(CFLAG:ARG:368, 21)
+		RETURNF 1
+	ELSEIF GETBIT(CFLAG:ARG:368, 22)
+		RETURNF 2
+	ELSEIF GETBIT(CFLAG:ARG:368, 23)
+		RETURNF 3
+	ENDIF
+CASE "身嗜み：腸洗浄"
+	SIF GETBIT(CFLAG:ARG:368, 21) || GETBIT(CFLAG:ARG:368, 23)
+		RETURNF 1
+CASE "身嗜み：Ａローション"
+	SIF GETBIT(CFLAG:ARG:368, 22) || GETBIT(CFLAG:ARG:368, 23)
+		RETURNF 1
+CASE "身嗜み：Ｐ準備"
+	SIF PENIS(ARG) == 0
+		RETURNF 0
+	IF GETBIT(CFLAG:ARG:368, 26)
+		RETURNF 1
+	ENDIF
+CASE "身嗜み：Ｐ掃除"
+	SIF PENIS(ARG) == 0
+		RETURNF 0
+	SIF GETBIT(CFLAG:ARG:368, 26) == 0 && COND("真性包茎", ARG) == 0
+		RETURNF 1
+CASE "Ｐ不潔"
+	SIF PENIS(ARG) == 0
+		RETURNF 0
+	SIF GETBIT(BASE:ARG:老廃物, 0)
+		RETURNF 1
+CASE "身嗜み：Ｖ準備"
+	IF GETBIT(CFLAG:ARG:368, 28)
+		RETURNF 1
+	ENDIF
+CASE "身嗜み：Ｖ掃除"
+	SIF TALENT:ARG:オトコ
+		RETURNF 0
+	SIF GETBIT(CFLAG:ARG:368, 28) == 0
+		RETURNF 1
+CASE "Ｖ不潔"
+	SIF TALENT:ARG:オトコ
+		RETURNF 0
+	SIF GETBIT(BASE:ARG:老廃物, 1)
+		RETURNF 1
+;服装については、今のところペニスがあるなら無視
+CASE "身嗜み：服装"
+	SIF PENIS(ARG)
+		RETURNF 0
+	IF GETBIT(CFLAG:ARG:368, 31)
+		RETURNF 1
+	ENDIF
+CASE "身嗜み：ノーパン"
+	SIF PENIS(ARG)
+		RETURNF 0
+	SIF GETBIT(CFLAG:ARG:368, 31)
+		RETURNF 1
+CASE "身嗜み：尿道拡張"
+	SIF GETBIT(CFLAG:ARG:368, 36)
+		RETURNF 1
+CASE "身嗜み：性行為の制限"
+	SELECTCASE GETBITS(CFLAG:ARG:368, 41, 45)
+	CASE 0
+		RETURNF 0
+	;1p41～1p45と等しいのは一箇所だけ独占している状態の判定に用いる
+	CASE 1p41
+		RETURNF 1
+	CASE 1p42
+		RETURNF 2
+	CASE 1p43
+		RETURNF 3
+	CASE 1p44
+		RETURNF 4
+	CASE 1p45
+		RETURNF 5
+	CASE 1p41 + 1p42 + 1p43 + 1p44 + 1p45
+		RETURNF 100
+	CASEELSE
+		RETURNF 6
+	ENDSELECT
+CASE "身嗜み：Ｖ独占"
+	SIF TALENT:ARG:オトコ
+		RETURNF 0
+	SIF GETBIT(CFLAG:ARG:368, 41)
+		RETURNF 1
+CASE "身嗜み：Ａ独占"
+	SIF GETBIT(CFLAG:ARG:368, 42)
+		RETURNF 1
+CASE "身嗜み：口独占"
+	SIF GETBIT(CFLAG:ARG:368, 43)
+		RETURNF 1
+CASE "身嗜み：キス独占"
+	SIF GETBIT(CFLAG:ARG:368, 44)
+		RETURNF 1
+CASE "身嗜み：Ｐ独占"
+	SIF PENIS(ARG) == 0
+		RETURNF 0
+	SIF GETBIT(CFLAG:ARG:368, 45)
+		RETURNF 1
+CASE "身嗜み：完全独占"
+	SIF COND("身嗜み：性行為の制限", ARG) == 100
+		RETURNF 1
+
+;自慰コマンドの実行中は無視する
+CASE "身嗜み：性欲の管理"
+	SELECTCASE GETBITS(CFLAG:ARG:368, 46, 50)
+	CASE 0
+		RETURNF 0
+	;1p46～1p50と等しいのは一箇所だけ独占している状態の判定に用いる
+	CASE 1p46
+		RETURNF 1
+	CASE 1p47
+		RETURNF 2
+	CASE 1p48
+		RETURNF 3
+	CASE 1p49
+		RETURNF 4
+	CASE 1p50
+		RETURNF 5
+	CASE 1p46 + 1p47 + 1p48 + 1p49 + 1p50
+		RETURNF 100
+	CASEELSE
+		RETURNF 6
+	ENDSELECT
+CASE "身嗜み：自慰禁止"
+	SIF GETBIT(CFLAG:ARG:368, 46)
+		RETURNF 1
+
+CASE "ベテラン：セックス"
+	SIF COND("ベテラン：Ｖセックス", ARG) || COND("ベテラン：Ａセックス", ARG)
+		RETURNF 1
+CASE "ベテラン：Ｖセックス"
+	SIF TALENT:ARG:オトコ || TALENT:ARG:処女 || TALENT:ARG:Ｖ損傷
+		RETURNF 0
+	SIF EXP:ARG:Ｖ経験 < 50 || EXP:ARG:Ｖ性交経験 < 20 || EXP:ARG:腰使い経験 < 20 || ABL:ARG:Ｖ感覚 < 2
+		RETURNF 0
+	;妖精は巨根を受け入れられるくらい拡張が進んでないとダメ
+	SIF TALENT:ARG:妖精 && ABL:ARG:Ｖ拡張 < 2
+		RETURNF 0
+	SIF COND("一晩開放中", ARG) && COND("身嗜み：Ｖ独占", ARG)
+		RETURNF 0
+	IF TALENT:ARG:淫壷
+		SIF TALENT:ARG:尻穴狂い == 0
+			RETURNF 4
+		SIF ABL:ARG:Ｖ感覚 > ABL:ARG:Ａ感覚
+			RETURNF 3
+		RETURNF 2
+	ENDIF
+	RETURNF 1
+CASE "ベテラン：Ａセックス"
+	SIF TALENT:ARG:Ａ処女 || TALENT:ARG:Ａ損傷 || ABL:ARG:Ａ拡張 < 2
+		RETURNF 0
+	SIF EXP:ARG:Ａ経験 < 50 || EXP:ARG:Ａ性交経験 < 20 || EXP:ARG:腰使い経験 < 20 || ABL:ARG:Ａ感覚 < 2
+		RETURNF 0
+	SIF COND("一晩開放中", ARG) && COND("身嗜み：Ａ独占", ARG)
+		RETURNF 0
+	;妖精は巨根を受け入れられるくらい拡張が進んでないとダメ
+	SIF TALENT:ARG:妖精 && ABL:ARG:Ａ拡張 < 2
+		RETURNF 0
+	IF TALENT:ARG:尻穴狂い
+		SIF TALENT:ARG:淫壷 == 0
+			RETURNF 4
+		SIF ABL:ARG:Ａ感覚 > ABL:ARG:Ｖ感覚
+			RETURNF 3
+		RETURNF 2
+	ENDIF
+	RETURNF 1
+
+CASE "アナル性向"
+	SIF COND("ベテラン：Ａセックス", ARG) >= 3
+		RETURNF 1
+;ＶＡセックス両方とも無理なときにのみ参照する
+;これが1だと女性の相手もする。2だと女性の相手しかしない
+CASE "一晩開放：女相手"
+	SIF TALENT:ARG:男嫌い
+		RETURNF 2
+	;ペニスで相手する場合
+	IF PENIS(ARG)
+		SIF TALENT:ARG:童貞
+			RETURNF 0
+		;まぁ経験は無くても良いだろ
+		;SIF EXP:ARG:Ｖ挿入経験 < 20 || EXP:ARG:腰使い経験 < 20
+		;	RETURNF 0
+		SIF COND("身嗜み：Ｐ独占", ARG)
+			RETURNF 0
+		SIF TALENT:ARG:オトコ && ABL:ARG:ＢＬっ気 < 3
+			RETURNF 2
+		;まぁ…ホモセックスはまだ早いという事にしておこう
+		SIF TALENT:ARG:オトコ && COND("男の娘", ARG) == 0
+			RETURNF 2
+	ELSE
+		SIF ABL:ARG:レズっ気 < 3
+			RETURNF 0
+	ENDIF
+	RETURNF 1
+
+
+CASE "最新ビデオの価格"
+	RETURNF CFLAG:ARG:65
+
+CASE "人気：ＡＶ"
+	SIF GETBIT(TALENT:ARG:人気, 1)
+		RETURNF 1
+	;直近３本の価格が$5, 000以上or１０作以上に出演して最高額が$10, 000越え
+	SIF MIN(CFLAG:ARG:63, CFLAG:ARG:64, CFLAG:ARG:65) >= 5000 && (CFLAG:ARG:60 >= 10 || CFLAG:ARG:61 >= 10000)
+		RETURNF 1
+CASE "人気：喫茶店"
+	SIF GETBIT(TALENT:ARG:人気, 2)
+		RETURNF 1
+	;今までの実績が30以上
+	SIF CFLAG:ARG:30 >= 30
+		RETURNF 1
+
+;体力と精力を回復する
+CASE "元気になる薬"
+	SIF BASE:ARG:体力 < MAXBASE:ARG:体力 || BASE:ARG:精力 < MAXBASE:ARG:精力 || BASE:ARG:ストック < MAXBASE:ARG:ストック
+		RETURNF 1
+;女をふたなりにしたり、戻したりする
+CASE "ふたなり薬"
+	SIF TALENT:ARG:オトコ == 0
+		RETURNF 1
+;母乳体質にするor陥没乳首を治す
+CASE "青いドロップ"
+	SIF TALENT:ARG:オトコ || COND("妊娠イベント中", ARG)
+		RETURNF 0
+	SIF TALENT:ARG:母乳体質 == 0 || COND("陥没乳首", ARG)
+		RETURNF 1
+;処女膜が再生するor母乳体質を喪失する
+CASE "赤いドロップ"
+	SIF TALENT:ARG:オトコ || COND("妊娠イベント中", ARG)
+		RETURNF 0
+	SIF TALENT:ARG:処女 == 0 || TALENT:ARG:母乳体質
+		RETURNF 1
+;性転換させる
+CASE "黒いドロップ"
+	SIF COND("妊娠イベント中", ARG)
+		RETURNF 0
+	RETURNF 1
+;怪我などを治す
+CASE "白いドロップ"
+	SIF TALENT:ARG:Ｖ損傷 || TALENT:ARG:Ａ損傷 || TALENT:ARG:おもらし癖
+		RETURNF 1
+
+CASE "巨根薬"
+	SIF PENIS(ARG) == 0
+		RETURNF 0
+	IF TALENT:ARG:竜の血
+		SIF GETBIT(TALENT:ARG:ペニス, 5)
+			RETURNF 0
+	ELSE
+		SIF GETBIT(TALENT:ARG:ペニス, 3)
+			RETURNF 0
+	ENDIF
+	RETURNF 1
+CASE "縮根薬"
+	SIF PENIS(ARG) == 0 || GETBIT(TALENT:ARG:ペニス, 1)
+		RETURNF 0
+	RETURNF 1
+CASE "剥皮薬"
+	SIF PENIS(ARG) == 0 || GETBITS(TALENT:ARG:ペニス, 11, 12) == 0
+		RETURNF 0
+	RETURNF 1
+CASE "伸皮薬"
+	SIF PENIS(ARG) == 0 || GETBIT(TALENT:ARG:ペニス, 12)
+		RETURNF 0
+	RETURNF 1
+CASE "豊胸薬"
+	SIF TALENT:ARG:オトコ || TALENT:ARG:巨乳 >= 3
+		RETURNF 0
+	RETURNF 1
+CASE "貧乳薬"
+	SIF TALENT:ARG:オトコ || TALENT:ARG:貧乳
+		RETURNF 0
+	RETURNF 1
+CASE "巨人の薬"
+	SIF TALENT:ARG:長身 || TALENT:ARG:妖精
+		RETURNF 0
+	SIF TALENT:ARG:男の娘 && TALENT:ARG:小柄体型 == 0
+		RETURNF 0
+	RETURNF 1
+CASE "小人の薬"
+	SIF TALENT:ARG:小柄体型 || TALENT:ARG:妖精
+		RETURNF 0
+	RETURNF 1
+CASE "虹の薬"
+	RETURNF 1
+CASE "桃尻薬"
+	SIF TALENT:ARG:妖精 || AGE(ARG) == 1 || TALENT:ARG:オトコ || BASE:ARG:身長 == 0
+		RETURNF 0
+	SIF TALENT:ARG:巨尻 >= 3
+		RETURNF 0
+	RETURNF 1
+CASE "小尻薬"
+	SIF TALENT:ARG:妖精 || AGE(ARG) == 1 || TALENT:ARG:オトコ || BASE:ARG:身長 == 0
+		RETURNF 0
+	SIF TALENT:ARG:小尻
+		RETURNF 0
+	RETURNF 1
+CASE "淫紋刻印可能"
+	SIF TALENT:ARG:オトコ || COND("妊娠イベント中", ARG)
+		RETURNF 0
+	;とりあえず今のところは４画まで
+	SIF MARK:ARG:淫紋 >= 4
+		RETURNF 0
+	RETURNF 1
+
+CASE "恋慕取得可能"
+	;好感度が2500以上、従順が3以上かつ奉仕快楽経験500以上で恋慕
+	SIF ABL:ARG:従順 < 3 || TALENT:ARG:恋慕 || MARK:ARG:反発刻印
+		RETURNF 0
+	SIF CFLAG:ARG:2 >= 2500 && (CFLAG:ARG:2 - 2500)/5 + EXP:ARG:奉仕快楽経験 >= 500
+		RETURNF 1
+	SIF CONFIG("ＥＡＳＹ") && CFLAG:ARG:2 >= 2000 && (CFLAG:ARG:2 - 2000)/5 + EXP:ARG:奉仕快楽経験 >= 300
+		RETURNF 1
+CASE "淫乱取得可能"
+	;欲望が3以上、絶頂経験や精液経験などの合計が1000以上、自慰中毒と精液中毒の合計3以上、今回の絶頂数が10以上で淫乱
+	SIF ABL:ARG:欲望 < 3 || TALENT:ARG:淫乱 || EX:ARG:絶頂数合計 < 10
+		RETURNF 0
+	SIF EXP:ARG:絶頂経験*10 + EXP:ARG:射精経験*10 + EXP:ARG:自慰経験 + EXP:ARG:精液経験 + EXP:ARG:異常経験*100 >= 1000 && ABL:ARG:自慰中毒 + ABL:ARG:精液中毒 >= 3
+		RETURNF 1
+CASE "淫核取得不可能"
+	RETURNF (JUEL:ARG:快Ｃ < NUM("宝珠：淫核取得", ARG) ) + (ABL:ARG:欲望 < 4 || ABL:ARG:Ｃ感覚 < 4)*4 + (EX:ARG:Ｃ絶頂 < 20)*32 + TALENT:ARG:淫核*64
+CASE "尿道狂い取得不可能"
+	RETURNF (JUEL:ARG:快Ｃ < NUM("宝珠：尿道狂い取得", ARG) ) + (ABL:ARG:欲望 < 4)*4 + (EX:ARG:尿道絶頂 < 10)*32 + TALENT:ARG:尿道狂い*64
+CASE "淫壷取得不可能"
+	RETURNF (JUEL:ARG:快Ｖ < NUM("宝珠：淫壷取得", ARG) ) + (ABL:ARG:欲望 < 4 || ABL:ARG:Ｖ感覚 < 4)*4 + (EX:ARG:Ｖ絶頂 < 20)*32 + TALENT:ARG:淫壷*64
+CASE "尻穴狂い取得不可能"
+	RETURNF (JUEL:ARG:快Ａ < NUM("宝珠：尻穴狂い取得", ARG) ) + (ABL:ARG:欲望 < 4 || ABL:ARG:Ａ感覚 < 4)*4 + (EX:ARG:Ａ絶頂 < 20)*32 + TALENT:ARG:尻穴狂い*64
+CASE "淫乳取得不可能"
+	RETURNF (JUEL:ARG:快Ｂ < NUM("宝珠：淫乳取得", ARG) ) + (ABL:ARG:欲望 < 4 || ABL:ARG:Ｂ感覚 < 4)*4 + (EX:ARG:Ｂ絶頂 < 20)*32 + TALENT:ARG:淫乳*64
+CASE "蕩唇取得不可能"
+	RETURNF (JUEL:ARG:快Ｍ < NUM("宝珠：蕩唇取得", ARG) ) + (ABL:ARG:欲望 < 4 || ABL:ARG:Ｍ感覚 < 4)*4 + (EX:ARG:Ｍ絶頂 < 20)*32 + TALENT:ARG:蕩唇*64
+
+CASE "アルカナ獲得可能"
+	;大魔法使いは覚えるまでも無い
+	SIF TALENT:ARG:魔法使い == 2
+		RETURNF 0
+	;覚えられるアルカナが無いとダメ
+	SIF NUM("アルカナ習得数", ARG) >= NUM("アルカナ習得可能数", ARG)
+		RETURNF 0
+	RETURNF 1
+CASE "アルカナ習得可能"
+	SIF COND("アルカナ獲得可能", ARG) == 0
+		RETURNF 0
+	;習得の珠が無いとダメ
+	SIF JUEL:ARG:習得 < NUM("宝珠：アルカナ習得", ARG)
+		RETURNF 0
+	RETURNF 1
+CASE "倒錯的取得不可能"
+	RETURNF  (JUEL:欲情 < NUM("宝珠：倒錯的取得", ARG) ) + (EXP_GAIN(30) + EXP_GAIN(32) + EXP_GAIN(36) < 200)*2 + (ABL:露出癖 + ABL:マゾっ気 + ABL:サドっ気 < 9)*4 + TALENT:倒錯的*64
+CASE "マゾ取得不可能"
+	RETURNF (JUEL:欲情 < NUM("宝珠：マゾ取得", ARG) ) + (EXP:被虐快楽経験 < 400 && EXP:緊縛経験 < 800)*2 + (ABL:マゾっ気 < 5)*4 + TALENT:マゾ*64
+CASE "サド取得不可能"
+	RETURNF (JUEL:欲情 < NUM("宝珠：サド取得", ARG) ) + (EXP:嗜虐快楽経験 < 1000)*2 + (ABL:サドっ気 < 5)*4 + TALENT:サド*64
+
+CASE "素質獲得可能"
+	SIF EXP:経験値 < NUM("経験値：素質獲得")
+		RETURNF 0
+	RETURNF 1
+
+CASE "子持ち"
+	FOR LCOUNT, 1, CHARANUM
+		SIF TO_NUMBER(BASE:LCOUNT:母親) == ARG || TO_NUMBER(BASE:LCOUNT:父親) == ARG
+			RETURNF 1
+	NEXT
+CASE "子持ち：母親"
+	FOR LCOUNT, 1, CHARANUM
+		SIF TO_NUMBER(BASE:LCOUNT:母親) == ARG
+			RETURNF 1
+	NEXT
+CASE "子持ち：父親"
+	FOR LCOUNT, 1, CHARANUM
+		SIF TO_NUMBER(BASE:LCOUNT:父親) == ARG
+			RETURNF 1
+	NEXT
+
+CASE "子孫"
+	RETURNF NO:ARG == 95 || NO:ARG == 97
+CASE "成長性"
+	RETURNF !COND("成長済み", ARG) && !GETBIT(CFLAG:ARG:484, 0)
+CASE "成長期"
+	RETURNF COND("子孫", ARG) && GETBIT(CFLAG:ARG:484, 0) && !GETBIT(CFLAG:ARG:484, 1)
+CASE "成長可能"
+	RETURNF COND("成長期", ARG) && EXP:ARG:経験値 > 1000
+CASE "成長済み"
+	RETURNF !COND("子孫", ARG) || GETBIT(CFLAG:ARG:484, 1)
+
+CASE "眷属"
+	LOCAL = TO_NUMBER(TALENT:ARG:眷属)
+	RETURNF LOCAL
+CASE "父親", "母親", "精液の優勢", "胎児の父親", "胡蝶の夢"
+	LOCAL = TO_NUMBER(BASE:ARG:ARGS)
+	RETURNF LOCAL
+CASE "近親"
+	IF COND("子孫", ARG)
+		SIF COND("父親", ARG) == MASTER || COND("母親", ARG) == MASTER
+			RETURNF 1
+	ELSE
+		SELECTCASE MIN(NO:MASTER, NO:ARG)
+		CASE 0
+			;SIF MAX(NO:MASTER, NO:ARG) == 98
+			;	RETURNF 1
+		CASE 38
+			SIF MAX(NO:MASTER, NO:ARG) == 39 || MAX(NO:MASTER, NO:ARG) == 40
+				RETURNF 1
+		CASE 39
+			SIF MAX(NO:MASTER, NO:ARG) == 40
+				RETURNF 1
+		CASE 48
+			SIF MAX(NO:MASTER, NO:ARG) == 50
+				RETURNF 1
+		CASE 56
+			SIF MAX(NO:MASTER, NO:ARG) == 57
+				RETURNF 1
+		ENDSELECT
+		;ユニークじゃないキャラは保留
+		;SIF NAMES("種族", NO:MASTER, CFLAG:MASTER:8) == "リリス" && NAMES("種族", NO:ARG, CFLAG:ARG:8) == "リリム"
+			;RETURNF 1
+		;SIF NAMES("種族", NO:MASTER, CFLAG:MASTER:8) == "リリム" && NAMES("種族", NO:ARG, CFLAG:ARG:8) == "リリス"
+			;RETURNF 1
+	ENDIF
+
+;各種フラグ(異常経験判定などで使う)
+CASE "処女喪失フラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 0)
+CASE "処女簒奪フラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 1)
+CASE "童貞喪失フラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 2)
+CASE "童貞狩りフラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 3)
+CASE "お掃除フェラフラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 4)
+CASE "Ａお掃除フェラフラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 5)
+CASE "自慰フラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 6)
+CASE "お掃除クンニフラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 7)
+CASE "子宮責めフラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 8)
+CASE "Ａ奉仕フラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 9)
+CASE "針さばきフラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 10)
+CASE "剃毛フラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 11)
+CASE "Ｐバインド弱体フラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 12)
+CASE "子宮挿入フラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 13)
+CASE "ふきふきフラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 14)
+CASE "クリピアスフラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 15)
+CASE "ラビアピアスフラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 16)
+CASE "ニプルピアスフラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 17)
+CASE "へそピアスフラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 18)
+CASE "ピアスＯＮフラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 19)
+CASE "鎮痛麻酔フラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 20)
+CASE "ボトムを露出させた"
+	RETURNF GETBIT(TCVAR:ARG:10, 21)
+CASE "Ａ処女喪失フラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 22)
+CASE "Ａ処女簒奪フラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 23)
+CASE "母乳飲みフラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 24)
+CASE "飲尿フラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 25)
+CASE "ながらオナニーフラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 26)
+CASE "スパンキングセックスフラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 27)
+CASE "マーキングフラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 28)
+CASE "うっかり子宮挿入フラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 29)
+CASE "腋舐めフラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 30)
+CASE "腋見せフラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 31)
+CASE "膣内浴尿フラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 32)
+CASE "子宮内浴尿フラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 33)
+CASE "温泉浣腸フラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 34)
+CASE "乳内浴尿フラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 35)
+CASE "ディープスロートフラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 36)
+CASE "挿入前暴発フラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 37)
+CASE "具現化ＯＮフラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 38)
+CASE "具現化ＯＦＦフラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 39)
+CASE "尿道性感フラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 40)
+CASE "膀胱内浴尿フラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 41)
+CASE "追加キスフラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 42)
+CASE "お掃除Ａ舐めフラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 43)
+CASE "尿お掃除フェラフラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 44)
+CASE "尿お掃除クンニフラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 45)
+CASE "恥垢お掃除フェラフラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 46)
+CASE "恥垢お掃除クンニフラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 47)
+CASE "足舐めフラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 48)
+CASE "受精確認フラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 49)
+CASE "夢魔化フラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 50)
+CASE "性転換フラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 51)
+CASE "胡蝶の夢フラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 52)
+CASE "締め付けフラグ"
+	RETURNF GETBIT(TCVAR:ARG:10, 53)
+
+
+;乱交イベント…基本的には夜這い朝駆け可能な上で、この条件を見る
+CASE "乱交参加中"
+	SIF COND("乱交参加済み", ARG) == 0
+		RETURNF 0
+	SIF ARG == TARGET || ARG == TARGET:1 || ARG == TARGET:2
+		RETURNF 1
+
+CASE "乱交可能"
+	SIF COND("乱交参加済み", ARG)
+		RETURNF 0
+	SIF TALENT:ARG:Ｖ損傷 || TALENT:ARG:Ａ損傷 || MARK:ARG:反発刻印 || BASE:ARG:体力 < 800 || EXP:ARG:調教回数 == 0
+		RETURNF 0
+	;欲求不満か好色か淫乱かご無沙汰が必要
+	SIF BASE:ARG:欲求不満 == 0 && TALENT:ARG:好色 == 0 && TALENT:ARG:淫乱 == 0 && COND("ご無沙汰", ARG) == 0
+		RETURNF 0
+	;参加条件
+	IF COND("ベテラン：Ｖセックス", ARG) && ABL:ARG:Ｖ拡張 + TALENT:ARG:淫壷 >= SIZE("ペニス", MASTER)
+	ELSEIF COND("ベテラン：Ａセックス", ARG) && ABL:ARG:Ａ拡張 + TALENT:ARG:尻穴狂い >= SIZE("ペニス", MASTER)
+	ELSEIF ABL:ARG:奉仕精神 >= 3
+	ELSE
+		RETURNF 0
+	ENDIF
+	SIF TALENT:ARG:妄信 || TALENT:ARG:恋慕 || TALENT:ARG:淫乱 || TALENT:ARG:好色 || COND("欲求不満", ARG)
+		RETURNF 1
+
+;相性チェック
+CASE "相性☆"
+	SIF TARGET <= 0 || ARG <= 0
+		RETURNF 0
+	SIF MIN(RELATION:ARG:(NO:TARGET), RELATION:(NO:ARG) ) >= 200
+		RETURNF 1
+CASE "相性◎"
+	SIF TARGET <= 0 || ARG <= 0
+		RETURNF 0
+	SIF MIN(RELATION:ARG:(NO:TARGET), RELATION:(NO:ARG) ) >= 150
+		RETURNF 1
+CASE "相性○"
+	SIF TARGET <= 0 || ARG <= 0
+		RETURNF 0
+	SIF MIN(RELATION:ARG:(NO:TARGET), RELATION:(NO:ARG) ) >= 120
+		RETURNF 1
+
+;主に一晩開放での襲撃傾向に使用
+CASE "強姦Ｐ"
+	LOCAL = TALENT:ARG:粗野*2 + TALENT:ARG:力持ち + TALENT:ARG:気丈 + TALENT:ARG:高慢 + TALENT:ARG:強気 + TALENT:ARG:サド*3 + (ABL:ARG:サドっ気 + 1)/2
+
+	;欲求不満に寄る補正有り
+	LOCAL += BASE:ARG:欲求不満/3
+	RETURNF LOCAL
+CASE "和姦Ｐ"
+	LOCAL = TALENT:ARG:内気 + TALENT:ARG:保守的 + TALENT:ARG:陽気*2 + TALENT:ARG:鼓舞*2 + TALENT:魅惑*2 + TALENT:ARG:献身*5 + ABL:ARG:奉仕精神
+	RETURNF LOCAL
+CASE "肉便器Ｐ"
+	LOCAL = TALENT:ARG:倒錯的*3 + TALENT:ARG:マゾ*5 + ABL:ARG:マゾっ気
+
+	;欲求不満に寄る補正大
+	IF TALENT:ARG:倒錯的 && TALENT:ARG:マゾ
+		LOCAL += BASE:ARG:欲求不満
+	ELSEIF (TALENT:ARG:倒錯的 || TALENT:ARG:マゾ) && ABL:ARG:マゾっ気 >= 3
+		LOCAL += BASE:ARG:欲求不満/2
+	ENDIF
+	RETURNF LOCAL
+
+;喫茶店があるとして、店員候補になれるかどうかの条件
+CASE "バイト可能"
+	;恋慕or従順4LV
+	SIF TALENT:ARG:恋慕 == 0 && ABL:ARG:従順 < 4
+		RETURNF 0
+	;反発刻印、妊婦はダメ
+	SIF MARK:ARG:反発刻印 || TALENT:ARG:妊娠 || TALENT:ARG:四足歩行
+		RETURNF 0
+	;男の店員については男の娘はOK。コンフィグでショタ可能にしてるならそっちもOK
+	IF TALENT:ARG:オトコ
+		SIF COND("男の娘", ARG)
+			RETURNF 1
+		SIF CONFIG("ショタメイド") && GETBIT(BASE:ARG:属性, 38)
+			RETURNF 1
+		RETURNF 0
+	ENDIF
+	RETURNF 1
+
+;上の条件を満たしているキャラが実際にその日バイトできるかの判定
+CASE "フロア店員"
+	SIF NUM("所持店舗") == 0
+		RETURNF 0
+	;旅行に行く予定や胡蝶の夢の最中だと無理
+	SIF CFLAG:ARG:70 || BASE:ARG:胡蝶の夢
+		RETURNF 0
+	;バイトをさせない設定or同衾中でもだめ
+	SIF CFLAG:ARG:31 == 99 || COND("同衾イベント", ARG)
+		RETURNF 0
+	SIF COND("バイト可能", ARG)
+		RETURNF 1
+
+CASE "出演可能な店員"
+	SIF COND("フロア店員", ARG) && COND("喫茶店出演済み", ARG) == 0
+		RETURNF 1
+CASE "喫茶店：乱交"
+	;素質や経験的な否定条件
+	SIF TALENT:ARG:好色 + TALENT:ARG:淫乱 == 0 || TALENT:ARG:処女 + TALENT:ARG:オトコ + TALENT:ARG:妖精
+		RETURNF 0
+	SIF TALENT:処女 && ABL:Ａ感覚 < 3
+		RETURNF 0
+	SIF MIN(ABL:ARG:欲望, ABL:ARG:精液中毒, BASE:ARG:欲求不満) < 5
+		RETURNF 0
+	SIF CFLAG:ARG:31 == 0
+		RETURNF 1
+CASE "喫茶店：セックス"
+	IF COND("喫茶店：Ｖセックス", ARG) || COND("喫茶店：Ａセックス", ARG) || COND("喫茶店：インサート", ARG)
+		SIF CFLAG:ARG:31 == 0
+			RETURNF 1
+	ENDIF
+CASE "喫茶店：Ｖセックス"
+	SIF COND("身嗜み：Ｖ独占", ARG)
+		RETURNF 0
+	;素質や経験的な否定条件
+	SIF TALENT:ARG:好色 + TALENT:ARG:淫乱 == 0 && ABL:ARG:欲望 < 4
+		RETURNF 0
+	SIF TALENT:ARG:オトコ || TALENT:ARG:処女 || EXP:ARG:Ｖ性交経験 < 20
+		RETURNF 0
+	SIF MIN(ABL:ARG:欲望, ABL:ARG:Ｖ感覚, ABL:ARG:精液中毒) < 3
+		RETURNF 0
+	SIF TALENT:ARG:好色 + TALENT:ARG:淫乱 == 0 && BASE:ARG:欲求不満 < 3
+		RETURNF 0
+	SIF CFLAG:ARG:31 == 0
+		RETURNF 1
+CASE "喫茶店：Ａセックス"
+	SIF COND("身嗜み：Ａ独占", ARG)
+		RETURNF 0
+	;素質や経験的な否定条件
+	SIF TALENT:ARG:好色 + TALENT:ARG:淫乱 == 0 && ABL:ARG:欲望 < 4
+		RETURNF 0
+	SIF EXP:ARG:Ａ性交経験 < 20
+		RETURNF 0
+	IF TALENT:ARG:オトコ
+		SIF COND("男の娘", ARG) == 0 || ABL:ARG:ＢＬっ気 < 3 || TALENT:ARG:尻穴狂い == 0
+			RETURNF 0
+	ENDIF
+	SIF MIN(ABL:ARG:欲望, ABL:ARG:Ａ感覚, ABL:ARG:精液中毒) < 3
+		RETURNF 0
+	SIF TALENT:ARG:好色 + TALENT:ARG:淫乱 == 0 && BASE:ARG:欲求不満 < 3
+		RETURNF 0
+	SIF CFLAG:ARG:31 == 0
+		RETURNF 1
+CASE "喫茶店：インサート"
+	SIF COND("身嗜み：Ｐ独占", ARG)
+		RETURNF 0
+	;素質や経験的な否定条件
+	SIF TALENT:ARG:好色 + TALENT:ARG:淫乱 == 0 && ABL:ARG:欲望 < 4
+		RETURNF 0
+	SIF TALENT:ARG:童貞 || TALENT:ARG:妖精
+		RETURNF 0
+	SIF PENIS(ARG) == 0 && TALENT:ARG:具現 == 0
+		RETURNF 0
+	IF TALENT:ARG:オトコ == 0
+		SIF ABL:ARG:レズっ気 < 3
+			RETURNF 0
+	ENDIF
+	SIF ABL:ARG:欲望 < 3
+		RETURNF 0
+	SIF TALENT:ARG:好色 + TALENT:ARG:淫乱 == 0 && BASE:ARG:欲求不満 < 3
+		RETURNF 0
+	SIF CFLAG:ARG:31 == 0
+		RETURNF 1
+CASE "喫茶店：フェラ"
+	SIF COND("身嗜み：口独占", ARG)
+		RETURNF 0
+	;素質や経験的な否定条件
+	SIF TALENT:ARG:妖精 || MIN(ABL:ARG:欲望, ABL:ARG:精液中毒) < 2
+		RETURNF 0
+	SIF TALENT:ARG:好色 + TALENT:ARG:淫乱 == 0 && BASE:ARG:欲求不満 < 2
+		RETURNF 0
+	SIF CFLAG:ARG:31 <= 1
+		RETURNF 1
+CASE "喫茶店：おさわり"
+	SIF CFLAG:ARG:31 <= 2
+		RETURNF 1
+CASE "喫茶店：パンチラ"
+	SIF CFLAG:ARG:31 <= 3
+		RETURNF 1
+CASE "喫茶店：Ｈな事禁止"
+	SIF CFLAG:ARG:31 == 10
+		RETURNF 1
+
+CASE "制服：スカート"
+	RETURNF GETBITS(FLAG:401, 0, 4)
+CASE "制服：ウェイトレス"
+	RETURNF GETBIT(FLAG:401, 0)
+CASE "制服：メイド服"
+	RETURNF GETBIT(FLAG:401, 1)
+CASE "制服：巫女風"
+	RETURNF GETBIT(FLAG:401, 2)
+CASE "制服：バニー"
+	RETURNF GETBIT(FLAG:401, 5)
+CASE "制服：ミニスカ"
+	RETURNF GETBIT(FLAG:401, 10)
+CASE "制服：ロング"
+	RETURNF GETBIT(FLAG:401, 11)
+CASE "制服：ファスナー"
+	RETURNF GETBIT(FLAG:401, 20)
+CASE "制服：キャットガーター"
+	RETURNF GETBIT(FLAG:401, 30)
+
+;探索イベント
+CASE "探索：遭遇回避"
+	SIF TALENT:ARG:臆病 || TALENT:ARG:内気 || TALENT:ARG:保守的
+		RETURNF 1
+CASE "探索：遭遇増加"
+	SIF TALENT:ARG:高慢 || TALENT:ARG:強気 || TALENT:ARG:陽気
+		RETURNF 1
+CASE "探索：罠解除"
+	SIF TALENT:ARG:冷静 || TALENT:ARG:賢い
+		RETURNF 15
+CASE "探索：罠誘発"
+	SIF TALENT:ARG:愚か && TALENT:ARG:好奇心
+		RETURNF 3
+CASE "探索：財宝発見"
+	SIF TALENT:ARG:好奇心 || TALENT:ARG:動物耳
+		RETURNF 1
+CASE "探索：財宝見逃し"
+	SIF TALENT:ARG:保守的
+		RETURNF 1
+CASE "探索：階段発見"
+	SIF TALENT:ARG:好奇心 || TALENT:ARG:賢い
+		RETURNF 1
+CASE "探索：回復"
+	SIF TALENT:ARG:治療 || TALENT:ARG:ロギン || TALENT:ARG:魔法使い >= 2
+		RETURNF 1
+CASE "探索：戦闘補助"
+	RETURNF PALAM_EXPLORER("助手攻撃力", ARG) + PALAM_EXPLORER("アルカナ補助", ARG)
+CASE "探索：状態異常無効"
+	SIF TALENT:ARG:アルスイーサ || TALENT:ARG:魔法使い >= 2
+		RETURNF 1
+CASE "探索：状態異常無効持ちが居る"
+	SIF TALENT:PLAYER:アルスイーサ || TALENT:PLAYER:魔法使い >= 2
+		RETURNF 1
+	IF PLAYER == MASTER && ASSI
+		SIF TALENT:ASSI:アルスイーサ || TALENT:ASSI:魔法使い >= 2
+			RETURNF 1
+	ENDIF
+
+;日付イベントなど特殊イベント
+CASE "クリスマスツリー"
+	SIF CEVENT("日付：クリスマスツリー", ARG)
+		RETURNF 1
+
+;種族やキャラの判定用
+;口上セレクタを考慮する際にはCFLAG:209の値を添えること
+CASE "Ｃあなた"
+	SIF NO:ARG == 0
+		RETURNF 1
+CASE "Ｃナイトメア"
+	SIF NO:ARG == 1 && CFLAG:ARG:8 == 2
+		RETURNF 1
+CASE "Ｃアスモデ"
+	SIF NO:ARG == 1 && CFLAG:ARG:8 == 3
+		RETURNF 1
+CASE "Ｃリリス"
+	SIF NO:ARG == 1 && CFLAG:ARG:8 == 4
+		RETURNF 1
+CASE "Ｃサキュバス"
+	SIF NO:ARG == 1
+		RETURNF 1
+CASE "Ｃサキュバス１"
+	SIF NO:ARG == 1 && CFLAG:ARG:209 == 1
+		RETURNF 1
+CASE "Ｃサキュバス２"
+	SIF NO:ARG == 1 && CFLAG:ARG:209 == 2
+		RETURNF 1
+
+CASE "Ｃアルプ"
+	SIF NO:ARG == 2 && CFLAG:ARG:8 == 2
+		RETURNF 1
+CASE "Ｃリリム"
+	SIF NO:ARG == 2 && CFLAG:ARG:8 == 4
+		RETURNF 1
+CASE "Ｃインプ"
+	SIF NO:ARG == 2
+		RETURNF 1
+
+CASE "Ｃアルラウネ"
+	SIF NO:ARG == 3 && CFLAG:ARG:8 == 2
+		RETURNF 1
+CASE "Ｃスクーグスロー"
+	SIF NO:ARG == 3 && CFLAG:ARG:8 == 3
+		RETURNF 1
+CASE "Ｃドライアド"
+	SIF NO:ARG == 3
+		RETURNF 1
+CASE "Ｃドライアド１"
+	SIF NO:ARG == 3 && CFLAG:ARG:209 == 1
+		RETURNF 1
+CASE "Ｃドライアド２"
+	SIF NO:ARG == 3 && CFLAG:ARG:209 == 2
+		RETURNF 1
+
+CASE "Ｃリャナンシー"
+	SIF NO:ARG == 4 && CFLAG:ARG:8 == 2
+		RETURNF 1
+CASE "Ｃティターニア"
+	SIF NO:ARG == 4 && CFLAG:ARG:8 == 3
+		RETURNF 1
+CASE "Ｃピクシー"
+	SIF NO:ARG == 4
+		RETURNF 1
+CASE "Ｃピクシー１"
+	SIF NO:ARG == 4 && CFLAG:ARG:209 == 1
+		RETURNF 1
+CASE "Ｃピクシー２"
+	SIF NO:ARG == 4 && CFLAG:ARG:209 == 2
+		RETURNF 1
+CASE "Ｃピクシー３"
+	SIF NO:ARG == 4 && CFLAG:ARG:209 == 3
+		RETURNF 1
+
+CASE "Ｃウンディーネ"
+	SIF NO:ARG == 5 && CFLAG:ARG:8 == 1
+		RETURNF 1
+CASE "Ｃエアリアル"
+	SIF NO:ARG == 5 && CFLAG:ARG:8 == 3
+		RETURNF 1
+CASE "Ｃシルフ"
+	SIF NO:ARG == 5
+		RETURNF 1
+
+CASE "Ｃケットシー"
+	SIF NO:ARG == 6 && CFLAG:ARG:8 == 2
+		RETURNF 1
+CASE "Ｃスフィンクス"
+	SIF NO:ARG == 6 && CFLAG:ARG:8 == 4
+		RETURNF 1
+CASE "Ｃネコマタ"
+	SIF NO:ARG == 6
+		RETURNF 1
+
+CASE "Ｃケルベロス"
+	SIF NO:ARG == 7 && CFLAG:ARG:8 == 3
+		RETURNF 1
+CASE "Ｃワーウルフ"
+	SIF NO:ARG == 7
+		RETURNF 1
+CASE "Ｃワーウルフ１"
+	SIF NO:ARG == 7 && CFLAG:ARG:209 == 1
+		RETURNF 1
+CASE "Ｃワーウルフ２"
+	SIF NO:ARG == 7 && CFLAG:ARG:209 == 2
+		RETURNF 1
+CASE "Ｃワーウルフ３"
+	SIF NO:ARG == 7 && CFLAG:ARG:209 == 3
+		RETURNF 1
+
+CASE "Ｃバンシー"
+	SIF NO:ARG == 8 && CFLAG:ARG:8 == 2
+		RETURNF 1
+CASE "Ｃアルバスタ"
+	SIF NO:ARG == 8 && CFLAG:ARG:8 == 4
+		RETURNF 1
+CASE "Ｃヴィレッジャ"
+	SIF NO:ARG == 8
+		RETURNF 1
+CASE "Ｃヴィレッジャ１"
+	SIF NO:ARG == 8 && CFLAG:ARG:209 == 1
+		RETURNF 1
+CASE "Ｃヴィレッジャ２"
+	SIF NO:ARG == 8 && CFLAG:ARG:209 == 2
+		RETURNF 1
+
+CASE "ＣＶバンシー"
+	SIF NO:ARG == 9 && CFLAG:ARG:8 == 2
+		RETURNF 1
+CASE "ＣＶアルバスタ"
+	SIF NO:ARG == 9 && CFLAG:ARG:8 == 4
+		RETURNF 1
+CASE "ＣＶヴィレッジャ"
+	SIF NO:ARG == 9
+		RETURNF 1
+CASE "ＣＶヴィレッジャ１"
+	SIF NO:ARG == 9 && CFLAG:ARG:209 == 1
+		RETURNF 1
+CASE "ＣＶヴィレッジャ２"
+	SIF NO:ARG == 9 && CFLAG:ARG:209 == 2
+		RETURNF 1
+
+CASE "Ｃメリュジーヌ"
+	SIF NO:ARG == 10 && CFLAG:ARG:8 == 2
+		RETURNF 1
+CASE "Ｃエキドナ"
+	SIF NO:ARG == 10 && CFLAG:ARG:8 == 4
+		RETURNF 1
+CASE "Ｃラミア"
+	SIF NO:ARG == 10
+		RETURNF 1
+CASE "Ｃラミア１"
+	SIF NO:ARG == 10 && CFLAG:ARG:209 == 1
+		RETURNF 1
+CASE "Ｃラミア２"
+	SIF NO:ARG == 10 && CFLAG:ARG:209 == 2
+		RETURNF 1
+
+CASE "Ｃセイレーン"
+	SIF NO:ARG == 11 && CFLAG:ARG:8 == 2
+		RETURNF 1
+CASE "Ｃモーリアン"
+	SIF NO:ARG == 11 && CFLAG:ARG:8 == 3
+		RETURNF 1
+CASE "Ｃハーピー"
+	SIF NO:ARG == 11
+		RETURNF 1
+CASE "Ｃハーピー１"
+	SIF NO:ARG == 11 && CFLAG:ARG:209 == 1
+		RETURNF 1
+CASE "Ｃハーピー２"
+	SIF NO:ARG == 11 && CFLAG:ARG:209 == 2
+		RETURNF 1
+
+CASE "Ｃサラマンダー"
+	SIF NO:ARG == 12 && CFLAG:ARG:8 == 2
+		RETURNF 1
+CASE "Ｃヴィーヴル"
+	SIF NO:ARG == 12 && CFLAG:ARG:8 == 4
+		RETURNF 1
+CASE "Ｃリザードマン"
+	SIF NO:ARG == 12
+		RETURNF 1
+CASE "Ｃリザードマン１"
+	SIF NO:ARG == 12 && CFLAG:ARG:209 == 1
+		RETURNF 1
+CASE "Ｃリザードマン２"
+	SIF NO:ARG == 12 && CFLAG:ARG:209 == 2
+		RETURNF 1
+
+CASE "Ｃレヴィアタン"
+	SIF NO:ARG == 13 && CFLAG:ARG:8 == 3
+		RETURNF 1
+CASE "Ｃマーメイド"
+	SIF NO:ARG == 13
+		RETURNF 1
+
+CASE "Ｃダーキニー"
+	SIF NO:ARG == 14 && CFLAG:ARG:8 == 3
+		RETURNF 1
+CASE "Ｃアプサラス"
+	SIF NO:ARG == 14
+		RETURNF 1
+
+CASE "Ｃカリュブディス"
+	SIF NO:ARG == 15 && CFLAG:ARG:8 == 2
+		RETURNF 1
+CASE "Ｃスキュラ"
+	SIF NO:ARG == 15
+		RETURNF 1
+CASE "Ｃスキュラ１", "Ｃ長編スキュラ"
+	SIF NO:ARG == 15 && CFLAG:ARG:209 == 1
+		RETURNF 1
+CASE "Ｃスキュラ２", "Ｃ短編スキュラ"
+	SIF NO:ARG == 15 && CFLAG:ARG:209 == 2
+		RETURNF 1
+
+CASE "Ｃダッキ"
+	SIF NO:ARG == 16 && CFLAG:ARG:8 == 2
+		RETURNF 1
+CASE "Ｃタマモ"
+	SIF NO:ARG == 16 && CFLAG:ARG:8 == 3
+		RETURNF 1
+CASE "Ｃクズノハ"
+	SIF NO:ARG == 16
+		RETURNF 1
+
+CASE "Ｃエンプーサ"
+	SIF NO:ARG == 17 && CFLAG:ARG:8 == 1
+		RETURNF 1
+CASE "Ｃマイェストレ"
+	SIF NO:ARG == 17 && CFLAG:ARG:8 == 3
+		RETURNF 1
+CASE "Ｃクィーンメイブ"
+	SIF NO:ARG == 17
+		RETURNF 1
+CASE "Ｃクィーンメイブ１"
+	SIF NO:ARG == 17 && CFLAG:ARG:209 == 1
+		RETURNF 1
+CASE "Ｃクィーンメイブ２"
+	SIF NO:ARG == 17 && CFLAG:ARG:209 == 2
+		RETURNF 1
+
+CASE "Ｃナシュジェアスダ"
+	SIF NO:ARG == 18 && CFLAG:ARG:8 == 4
+		RETURNF 1
+CASE "Ｃシェロブ"
+	SIF NO:ARG == 18 && CFLAG:ARG:8 == 3
+		RETURNF 1
+CASE "Ｃアルケニー"
+	SIF NO:ARG == 18
+		RETURNF 1
+
+CASE "Ｃウィッチ"
+	SIF NO:ARG == 19
+		RETURNF 1
+
+CASE "Ｃガブリエル"
+	SIF NO:ARG == 20 && CFLAG:ARG:8 == 2
+		RETURNF 1
+CASE "Ｃエンジェル"
+	SIF NO:ARG == 20
+		RETURNF 1
+
+CASE "Ｃルシフェル"
+	SIF NO:ARG == 21
+		RETURNF 1
+
+CASE "Ｃハツメ"
+	SIF NO:ARG == 22 && CFLAG:ARG:8 == 2
+		RETURNF 1
+CASE "Ｃクノイチ"
+	SIF NO:ARG == 22
+		RETURNF 1
+CASE "Ｃクノイチ１"
+	SIF NO:ARG == 22 && CFLAG:ARG:209 == 1
+		RETURNF 1
+CASE "Ｃクノイチ２"
+	SIF NO:ARG == 22 && CFLAG:ARG:209 == 2
+		RETURNF 1
+
+CASE "Ｃホワイトラビット"
+	SIF NO:ARG == 23
+		RETURNF 1
+
+CASE "Ｃサロメ"
+	SIF NO:ARG == 24
+		RETURNF 1
+CASE "Ｃサロメ１"
+	SIF NO:ARG == 24 && CFLAG:ARG:209 == 1
+		RETURNF 1
+CASE "Ｃサロメ２"
+	SIF NO:ARG == 24 && CFLAG:ARG:209 == 2
+		RETURNF 1
+
+CASE "Ｃカーミラ"
+	SIF NO:ARG == 25 && CFLAG:ARG:8 == 2
+		RETURNF 1
+CASE "Ｃヴァンパイア"
+	SIF NO:ARG == 25
+		RETURNF 1
+CASE "Ｃヴァンパイア１"
+	SIF NO:ARG == 25 && CFLAG:ARG:209 == 1
+		RETURNF 1
+CASE "Ｃヴァンパイア２"
+	SIF NO:ARG == 25 && CFLAG:ARG:209 == 2
+		RETURNF 1
+CASE "Ｃヴァンパイア３"
+	SIF NO:ARG == 25 && CFLAG:ARG:209 == 3
+		RETURNF 1
+
+CASE "Ｃドラグーン"
+	SIF NO:ARG == 26
+		RETURNF 1
+
+CASE "Ｃプロフェテス"
+	SIF NO:ARG == 27
+		RETURNF 1
+
+CASE "Ｃソルジャー"
+	SIF NO:ARG == 28
+		RETURNF 1
+
+CASE "Ｃスライム"
+	SIF NO:ARG == 29
+		RETURNF 1
+
+CASE "Ｃバイコーン"
+	SIF NO:ARG == 30 && CFLAG:ARG:8 == 1
+		RETURNF 1
+CASE "Ｃユニコーン"
+	SIF NO:ARG == 30
+		RETURNF 1
+CASE "Ｃユニコーン１"
+	SIF NO:ARG == 30 && CFLAG:ARG:209 == 1
+		RETURNF 1
+CASE "Ｃユニコーン２"
+	SIF NO:ARG == 30 && CFLAG:ARG:209 == 2
+		RETURNF 1
+
+CASE "Ｃゴブリン"
+	SIF NO:ARG == 31
+		RETURNF 1
+CASE "Ｃゴブリン１"
+	SIF NO:ARG == 31 && CFLAG:ARG:209 == 1
+		RETURNF 1
+CASE "Ｃゴブリン２"
+	SIF NO:ARG == 31 && CFLAG:ARG:209 == 2
+		RETURNF 1
+
+CASE "Ｃマーシャ"
+	SIF NO:ARG == 32
+		RETURNF 1
+
+CASE "Ｃマモン"
+	SIF NO:ARG == 33 && CFLAG:ARG:8 == 4
+		RETURNF 1
+CASE "Ｃミミック"
+	SIF NO:ARG == 33
+		RETURNF 1
+CASE "Ｃストゥーナ"
+	SIF NO:ARG == 34
+		RETURNF 1
+CASE "Ｃメローナ"
+	SIF NO:ARG == 35
+		RETURNF 1
+CASE "Ｃセルマ"
+	SIF NO:ARG == 36
+		RETURNF 1
+CASE "Ｃフレデリカ"
+	SIF NO:ARG == 37
+		RETURNF 1
+CASE "Ｃエスプラーナ"
+	SIF NO:ARG == 38
+		RETURNF 1
+CASE "Ｃリズ・ラズ"
+	SIF NO:ARG == 39
+		RETURNF 1
+CASE "Ｃロッコ・バロッコ"
+	SIF NO:ARG == 40
+		RETURNF 1
+CASE "Ｃジャバウォック"
+	SIF NO:ARG == 41
+		RETURNF 1
+CASE "Ｃバンダースナッチ"
+	SIF NO:ARG == 42
+		RETURNF 1
+CASE "Ｃバンダースナッチ１"
+	SIF NO:ARG == 42 && CFLAG:ARG:209 == 1
+		RETURNF 1
+CASE "Ｃバンダースナッチ２"
+	SIF NO:ARG == 42 && CFLAG:ARG:209 == 2
+		RETURNF 1
+CASE "Ｃジャブジャブ"
+	SIF NO:ARG == 43
+		RETURNF 1
+CASE "Ｃリン"
+	SIF NO:ARG == 44
+		RETURNF 1
+CASE "Ｃリン１"
+	SIF NO:ARG == 44 && CFLAG:ARG:209 == 1
+		RETURNF 1
+CASE "Ｃリン２"
+	SIF NO:ARG == 44 && CFLAG:ARG:209 == 2
+		RETURNF 1
+CASE "Ｃリン３"
+	SIF NO:ARG == 44 && CFLAG:ARG:209 == 3
+		RETURNF 1
+
+CASE "Ｃクリスティン"
+	SIF NO:ARG == 45
+		RETURNF 1
+CASE "Ｃクララ"
+	SIF NO:ARG == 46
+		RETURNF 1
+CASE "Ｃベルナドット"
+	SIF NO:ARG == 47
+		RETURNF 1
+CASE "Ｃエスト"
+	SIF NO:ARG == 48
+		RETURNF 1
+CASE "Ｃフィムブルヴェト"
+	SIF NO:ARG == 49
+		RETURNF 1
+CASE "Ｃステラ"
+	SIF NO:ARG == 50
+		RETURNF 1
+CASE "Ｃオリビア"
+	SIF NO:ARG == 51
+		RETURNF 1
+CASE "Ｃルヴィッサ"
+	SIF NO:ARG == 52
+		RETURNF 1
+CASE "Ｃファミリア"
+	SIF NO:ARG == 53
+		RETURNF 1
+CASE "Ｃメルヤ"
+	SIF NO:ARG == 54
+		RETURNF 1
+CASE "Ｃ少女"
+	SIF NO:ARG == 55
+		RETURNF 1
+CASE "Ｃサフィ"
+	SIF NO:ARG == 56
+		RETURNF 1
+CASE "Ｃ黒サフィ"
+	SIF NO:ARG == 57
+		RETURNF 1
+CASE "Ｃマーチヘア"
+	SIF NO:ARG == 58
+		RETURNF 1
+CASE "Ｃドロレス"
+	SIF NO:ARG == 59
+		RETURNF 1
+CASE "Ｃハニービー"
+	SIF NO:ARG == 60
+		RETURNF 1
+CASE "Ｃハニービー１"
+	SIF NO:ARG == 60 && CFLAG:ARG:209 == 1
+		RETURNF 1
+CASE "Ｃハニービー２"
+	SIF NO:ARG == 60 && CFLAG:ARG:209 == 2
+		RETURNF 1
+CASE "Ｃヴァルキリー"
+	SIF NO:ARG == 61
+		RETURNF 1
+CASE "Ｃラルス"
+	SIF NO:ARG == 94
+		RETURNF 1
+CASE "Ｃラルス１"
+	SIF NO:ARG == 94 && CFLAG:ARG:209 == 1
+		RETURNF 1
+CASE "Ｃラルス２"
+	SIF NO:ARG == 94 && CFLAG:ARG:209 == 2
+		RETURNF 1
+CASE "Ｃ息子"
+	SIF NO:ARG == 95
+		RETURNF 1
+CASE "Ｃアイゼクト"
+	SIF NO:ARG == 96
+		RETURNF 1
+CASE "Ｃ娘"
+	SIF NO:ARG == 97
+		RETURNF 1
+CASE "Ｃ娘１９"
+	SIF NO:ARG == 97 && CFLAG:ARG:209 == 19
+		RETURNF 1
+CASE "Ｃ娘２２"
+	SIF NO:ARG == 97 && CFLAG:ARG:209 == 22
+		RETURNF 1
+CASE "Ｃ娘３３"
+	SIF NO:ARG == 97 && CFLAG:ARG:209 == 33
+		RETURNF 1
+CASE "Ｃ娘８５７"
+	SIF NO:ARG == 97 && CFLAG:ARG:209 == 857
+		RETURNF 1
+
+CASE "エンディング選択可能"
+	;温泉に行く予定or胡蝶の夢実行中は不可
+	SIF FLAG:60 || ITEM:胡蝶の夢
+		RETURNF 0
+	;目標金額クリアのENDなら日数関係なし
+	SIF MONEY >= NUM("目標金額")
+		RETURNF 1
+	;周回でのDAY初期化を止めたので、BADEND条件の日数は90+周回数*30日とする
+	SIF DAY >= 90 + (30 * FLAG:4)
+		RETURNF 1
+CASEELSE
+	IF STRLENS(ARGS) == 0
+		RETURNF 0
+	ELSEIF SUBSTRING(ARGS, 0, 1) == "!"
+		ARGS = %SUBSTRING(ARGS, 1, STRLENS(ARGS) )%
+		RETURNF !(TALENT:ARG:ARGS)
+	;バグ炙り出しのために、あえて参照前には素質かどうかを調べない
+	ELSE
+		RETURNF TALENT:ARG:ARGS
+	ENDIF
+ENDSELECT
+RETURNF 0
+
+;-------------------------------------------------
+;上のCONDの条件の組み合わせに耐えるキャラを選出する
+;ただし、TARGETは除外する
+;-------------------------------------------------
+@FIND_COND(ARGS:0, ARGS:1, ARGS:2, ARGS:3)
+#FUNCTION
+#DIM LCOUNT
+;該当するキャラの人数
+#DIM NUM_FIND
+
+VARSET LOCAL
+NUM_FIND = 0
+
+FOR LCOUNT, 2, CHARANUM
+	SIF LCOUNT == TARGET
+		CONTINUE
+	SIF ARGS:0 != "" && COND(ARGS:0, LCOUNT) == 0
+		CONTINUE
+	SIF ARGS:1 != "" && COND(ARGS:1, LCOUNT) == 0
+		CONTINUE
+	SIF ARGS:2 != "" && COND(ARGS:2, LCOUNT) == 0
+		CONTINUE
+	SIF ARGS:3 != "" && COND(ARGS:3, LCOUNT) == 0
+		CONTINUE
+
+	NUM_FIND += 1
+
+	SIF RAND:NUM_FIND == 0
+		LOCAL = LCOUNT
+NEXT
+RETURNF LOCAL
+
+;-------------------------------------------------
+;頻繁に使う条件のまとめ その２
+;ARGのARGSが何か、文字列で返す
+;-------------------------------------------------
+@CONDS(ARGS, ARG)
+#FUNCTIONS
+#DIM LCOUNT
+
+VARSET LOCALS
+
+SIF ARG == 0 && TARGET
+	ARG = TARGET
+
+SELECTCASE ARGS
+CASE "精液の優勢", "胎児の父親"
+	LOCAL = COND(ARGS, ARG)
+	SELECTCASE LOCAL
+	CASE IS > 0
+		IF LOCAL == MASTER
+			LOCALS = %CALLNAME:LOCAL%
+		ELSE
+			LOCALS = [{LOCAL}]%CALLNAME:LOCAL%
+		ENDIF
+	CASE -1
+		LOCALS = 売却された夢魔
+	CASE -2
+		LOCALS = ミランダの娼婦
+	CASE -3
+		LOCALS = ドラゴン
+	CASE -4
+		LOCALS = 見知らぬ相手
+	CASE -5
+		LOCALS = 触手
+	CASEELSE
+		LOCALS = 定義されていない相手（バグです！これを見た人は報告してください）
+	ENDSELECT
+CASE "一晩開放での襲撃傾向"
+	IF COND("強姦Ｐ", ARG) >= MAX(COND("和姦Ｐ", ARG), COND("肉便器Ｐ", ARG) )
+		LOCALS = 強姦
+	ELSEIF COND("和姦Ｐ", ARG) >= COND("肉便器Ｐ", ARG)
+		LOCALS = 和姦
+	ELSE
+		LOCALS = 肉便器
+	ENDIF
+
+CASE "尿道拡張度"
+	;どっちの尿道か
+	IF PENIS(ARG)
+		LOCALS = %CSTR:ARG:4%
+	ELSE
+		LOCALS = %CSTR:ARG:3%
+	ENDIF
+CASE "Ｖ尿道の初期拡張度"
+	LOCALS = 10/10/10/10/10/10/10/10/10/10/
+	SIF TALENT:ARG:妖精
+		LOCALS = %ADDNUM_STR(LOCALS, -5)%
+	SIF TALENT:ARG:魔導人形
+		LOCALS = %ADDNUM_STR(LOCALS, 2)%
+	SIF TALENT:ARG:スライム
+		LOCALS = %ADDNUM_STR(LOCALS, 10)%
+
+CASE "Ｐ尿道の初期拡張度"
+	LOCALS = 5/5/5/5/5/5/5/5/5/5/
+	SIF TALENT:ARG:妖精
+		LOCALS = %ADDNUM_STR(LOCALS, -2)%
+	SIF TALENT:ARG:魔導人形
+		LOCALS = %ADDNUM_STR(LOCALS, 1)%
+	SIF TALENT:ARG:スライム
+		LOCALS = %ADDNUM_STR(LOCALS, 5)%
+
+
+CASE "調教知識"
+	SELECTCASE TALENT:ARG:調教知識
+	CASE 1p0
+		LOCALS = 愛撫・奉仕知識
+	CASE 1p1
+		LOCALS = 教え上手
+	CASE 1p2
+		LOCALS = ＳＭ知識
+	CASE 1p3
+		LOCALS = Ａ調教知識
+	CASE 1p4
+		LOCALS = 性器拡張知識
+	CASE 1p5
+		LOCALS = 道具使い
+	CASE 1p6
+		LOCALS = 露出知識
+	ENDSELECT
+CASE "機嫌"
+	SELECTCASE MARK:ARG:機嫌
+	CASE 1
+		LOCALS = 様子見
+	CASE 2
+		LOCALS = やる気なし
+	CASE 3
+		LOCALS = 最悪
+	CASEELSE
+		LOCALS = 普通
+	ENDSELECT
+CASE "使用インセンス"
+	SELECTCASE GETBITS(TEQUIP:MASTER:インセンス, 4, 9)
+	CASE 1p4
+		LOCALS = ジャスミン
+	CASE 1p5
+		LOCALS = ラヴェンダー
+	CASE 1p6
+		LOCALS = ムスク
+	CASE 1p7
+		LOCALS = サンダルウッド
+	CASE 1p8
+		LOCALS = ローズマリー
+	CASE 1p9
+		LOCALS = フランキンセンス
+	CASEELSE
+		LOCALS = 
+	ENDSELECT
+CASE "肌の色"
+	SELECTCASE TALENT:ARG:肌の色
+	CASE 1
+		LOCALS = 褐色肌
+	CASE 2
+		LOCALS = 色白
+	CASE 3
+		LOCALS = 青肌
+	CASEELSE
+		LOCALS = 普通
+	ENDSELECT
+CASE "体型"
+	;まずは妖精や小柄かどうかで大きく分け、ウェスト、ヒップ、胸の大きさで細かく分ける
+	;ウェストの太さについては100*ウェスト/身長の値で(細い, 普通, 太い, 肥満) = (36以下, 37～39, 40～49, 50以上)
+	;ヒップの大きさについては100*ヒップ/身長の値で(細い, 普通, 大きい) = (50以下, 51～53, 54以上)
+	;COND("巨尻")とCOND("小尻")でヒップ判定も
+	IF TALENT:ARG:オトコ && COND("男の娘", ARG) == 0
+		LOCALS = オトコ
+	ELSEIF TALENT:ARG:妖精
+		LOCALS = 妖精
+	ELSEIF TALENT:ARG:小柄体型 || AGE(ARG) == 1
+		IF TALENT:ARG:巨乳
+			LOCALS = \@ AGE(ARG) >= 2 ? トランジスタグラマー # ロリ巨乳 \@
+		ELSEIF TALENT:ARG:貧乳
+			SELECTCASE 100*BASE:ARG:ウェスト/BASE:ARG:身長
+			;ウェスト太め
+			CASE IS >= 40
+				LOCALS = 子供体型
+			;ウェスト普通以下
+			CASEELSE
+				IF COND("陰毛", ARG) == 1
+					LOCALS = つるぺた
+				ELSE
+					LOCALS = ぺたんこ
+				ENDIF
+			ENDSELECT
+		ELSE
+			SELECTCASE 100*BASE:ARG:ウェスト/BASE:ARG:身長
+			;ウェスト太め
+			CASE IS >= 40
+				LOCALS = 子供体型
+			;ウェスト普通以下
+			CASEELSE
+				LOCALS = \@ AGE(ARG) >= 2 ? ちっちゃい # 発展途上 \@
+			ENDSELECT
+		ENDIF
+	ELSE
+		SELECTCASE COND("巨尻", ARG)
+		;超尻
+		CASE IS >= 3
+			SELECTCASE 100*BASE:ARG:ウェスト/BASE:ARG:身長
+			;ウェスト太め
+			CASE IS >= 40
+				IF TALENT:ARG:巨乳
+					LOCALS = 超豊満
+				ELSE
+					LOCALS = むちむち
+				ENDIF
+			;ウェスト普通
+			CASE 37 TO 39
+				IF TALENT:ARG:巨乳
+					LOCALS = 超尻グラマー
+				ELSE
+					LOCALS = 超尻
+				ENDIF
+			;ウェスト細い
+			CASEELSE
+				IF TALENT:ARG:巨乳
+					LOCALS = スリム%TALENT_NAME(110, TALENT:ARG:巨乳, ARG)%
+				ELSE
+					LOCALS = スリム超尻
+				ENDIF
+			ENDSELECT
+		;爆尻
+		CASE 2
+			SELECTCASE 100*BASE:ARG:ウェスト/BASE:ARG:身長
+			;ウェスト太め
+			CASE IS >= 40
+				IF TALENT:ARG:巨乳
+					LOCALS = 豊満
+				ELSE
+					LOCALS = むちむち
+				ENDIF
+			;ウェスト普通
+			CASE 37 TO 39
+				IF TALENT:ARG:巨乳
+					LOCALS = 爆尻グラマー
+				ELSE
+					LOCALS = 爆尻
+				ENDIF
+			;ウェスト細い
+			CASEELSE
+				IF TALENT:ARG:巨乳
+					LOCALS = スリム%TALENT_NAME(110, TALENT:ARG:巨乳, ARG)%
+				ELSE
+					LOCALS = スリム爆尻
+				ENDIF
+			ENDSELECT
+		;巨尻
+		CASE 1
+			SELECTCASE 100*BASE:ARG:ウェスト/BASE:ARG:身長
+			;ウェスト太め
+			CASE IS >= 40
+				IF TALENT:ARG:巨乳
+					LOCALS = 豊満
+				ELSE
+					LOCALS = むちむち
+				ENDIF
+			;ウェスト普通
+			CASE 37 TO 39
+				IF TALENT:ARG:巨乳
+					LOCALS = グラマー
+				ELSE
+					LOCALS = お尻大きめ
+				ENDIF
+			;ウェスト細い
+			CASEELSE
+				IF TALENT:ARG:巨乳
+					LOCALS = スリム%TALENT_NAME(110, TALENT:ARG:巨乳, ARG)%
+				ELSE
+					LOCALS = お尻大きめ
+				ENDIF
+			ENDSELECT
+		CASE 0
+			;ヒップ細め
+			IF COND("小尻", ARG)
+				SELECTCASE 100*BASE:ARG:ウェスト/BASE:ARG:身長
+				;ウェスト太め
+				CASE IS >= 40
+					IF TALENT:ARG:巨乳
+						LOCALS = %TALENT_NAME(110, TALENT:ARG:巨乳, ARG)%
+					ELSE
+						LOCALS = 油断
+					ENDIF
+				;ウェスト普通以下
+				CASEELSE
+					IF TALENT:ARG:巨乳
+						LOCALS = スリム%TALENT_NAME(110, TALENT:ARG:巨乳, ARG)%
+					ELSE
+						LOCALS = スレンダー
+					ENDIF
+				ENDSELECT
+			;ヒップ普通
+			ELSE
+				SELECTCASE 100*BASE:ARG:ウェスト/BASE:ARG:身長
+				;ウェスト太め
+				CASE IS >= 40
+					IF TALENT:ARG:巨乳
+						LOCALS = %TALENT_NAME(110, TALENT:ARG:巨乳, ARG)%
+					ELSE
+						LOCALS = 油断
+					ENDIF
+				;ウェスト普通
+				CASE 37 TO 39
+					IF TALENT:ARG:巨乳
+						LOCALS = %TALENT_NAME(110, TALENT:ARG:巨乳, ARG)%
+					ELSEIF TALENT:ARG:貧乳
+						LOCALS = 貧乳
+					ELSE
+						LOCALS = 普通
+					ENDIF
+				;ウェスト細い
+				CASEELSE
+					IF TALENT:ARG:巨乳
+						LOCALS = スリム%TALENT_NAME(110, TALENT:ARG:巨乳, ARG)%
+					ELSE
+						LOCALS = スレンダー
+					ENDIF
+				ENDSELECT
+			ENDIF
+		ENDSELECT
+	ENDIF
+CASE "ウェスト"
+	IF TALENT:ARG:妖精
+		LOCALS = 妖精
+	ELSE
+		SELECTCASE 100*BASE:ARG:ウェスト/BASE:ARG:身長
+		;ウェスト太め
+		CASE IS >= 40
+			LOCALS = 太め
+		;ウェスト普通
+		CASE 37 TO 39
+			LOCALS = 普通
+		;ウェスト細い
+		CASEELSE
+			LOCALS = 細め
+		ENDSELECT
+	ENDIF
+CASE "おっぱい"
+	IF TALENT:ARG:オトコ
+		LOCALS = オトコ
+	ELSEIF TALENT:ARG:巨乳 >= 3
+		LOCALS = 超乳
+	ELSEIF TALENT:ARG:巨乳 == 2
+		LOCALS = 爆乳
+	ELSEIF TALENT:ARG:巨乳
+		LOCALS = 巨乳
+	ELSEIF TALENT:ARG:貧乳
+		LOCALS = 貧乳
+	ELSE
+		LOCALS = 並乳
+	ENDIF
+CASE "バストカップ"
+	SELECTCASE BASE:ARG:カップ
+	CASE IS < 0
+		LOCALS = ---
+	CASE IS >= 28
+		LOCALS = Z
+	CASEELSE
+		VARSET LOCALS
+		SPLIT "---, AAA, AA, Ａ, Ｂ, Ｃ, Ｄ, Ｅ, Ｆ, Ｇ, Ｈ, Ｉ, Ｊ, Ｋ, Ｌ, Ｍ, Ｎ, Ｏ, Ｐ, Ｑ, Ｒ, Ｓ, Ｔ, Ｕ, Ｖ, Ｗ, Ｘ, Ｙ, Ｚ", ", ", LOCALS
+		LOCALS = %LOCALS:(BASE:ARG:カップ)%
+	ENDSELECT
+CASE "お尻"
+	IF TALENT:ARG:オトコ
+		LOCALS = 
+	ELSEIF TALENT:ARG:巨尻 >= 3
+		LOCALS = 超尻
+	ELSEIF TALENT:ARG:巨尻 == 2
+		LOCALS = 爆尻
+	ELSEIF TALENT:ARG:巨尻
+		LOCALS = 巨尻
+	ELSEIF TALENT:ARG:小尻
+		LOCALS = 小尻
+	ELSE
+		LOCALS = 
+	ENDIF
+CASE "ヒップサイズ"
+	SELECTCASE BASE:ARG:ヒップ
+	CASE IS <= 71
+		LOCALS = XS
+	CASE 72 TO 76
+		LOCALS = 3S
+	CASE 77 TO 81
+		LOCALS = SS
+	CASE 82 TO 86
+		LOCALS = Ｓ
+	CASE 87 TO 91
+		LOCALS = Ｍ
+	CASE 92 TO 96
+		LOCALS = Ｌ
+	CASE 97 TO 101
+		LOCALS = LL
+	CASE 102 TO 106
+		LOCALS = 3L
+	CASE 107 TO 111
+		LOCALS = 4L
+	CASE 112 TO 116
+		LOCALS = 5L
+	CASEELSE
+		LOCALS = XL
+	ENDSELECT
+CASE "ペニスサイズ"
+	SELECTCASE SIZE("ペニス", ARG)
+	CASE 0
+		LOCALS = 小
+	CASE 1
+		LOCALS = 並
+	CASE 2
+		LOCALS = 巨根
+	CASE 3
+		LOCALS = 馬並み
+	CASE 4
+		LOCALS = 腕並み
+	CASE 5
+		LOCALS = 竜並み
+	CASEELSE
+		LOCALS = 規格外
+	ENDSELECT
+CASE "もとの性別"
+	IF COND("性転換中", ARG)
+		IF GETBIT(CFLAG:ARG:4, 18)
+			LOCALS = オンナ
+		ELSEIF GETBITS(CFLAG:ARG:4, 19, 20)
+			LOCALS = ふたなり
+		ELSE
+			LOCALS = オトコ
+		ENDIF
+	ELSEIF TALENT:ARG:オンナ
+		LOCALS = オンナ
+	ELSEIF TALENT:ARG:ふたなり
+		LOCALS = ふたなり
+	ELSE
+		LOCALS = オトコ
+	ENDIF
+CASE "動物分類"
+	SELECTCASE MAX(TALENT:ARG:動物耳, TALENT:ARG:しっぽ, TALENT:ARG:ツノ, TALENT:ARG:翼, TALENT:ARG:動物足)
+	CASE 1
+		LOCALS = 猫
+	CASE 2
+		LOCALS = 狼
+	CASE 3
+		LOCALS = キツネ
+	CASE 4
+		LOCALS = ウサギ
+	CASE 5
+		LOCALS = ウマ
+	CASE 6
+		LOCALS = 悪魔
+	CASE 7
+		LOCALS = トカゲ
+	CASE 8
+		LOCALS = ジャバウォック
+	CASE 9
+		LOCALS = 鬼
+	CASE 10
+		LOCALS = 妖精
+	CASE 11
+		LOCALS = ハーピー
+	CASE 12
+		LOCALS = 天使
+	CASEELSE
+		LOCALS = 人
+	ENDSELECT
+CASE "カウンター"
+	SELECTCASE TFLAG:90
+	CASE 0
+		LOCALS = カウンター無し
+	CASE 1
+		LOCALS = Ｖインサート
+	CASE 2
+		LOCALS = Ａインサート
+	CASE 3
+		LOCALS = 愛撫
+	CASE 4
+		LOCALS = 奉仕
+	CASE 5
+		LOCALS = ＳＭ
+	CASE 9
+		LOCALS = アルカナ
+	CASE 10
+		LOCALS = 恍惚
+	CASE 11
+		LOCALS = 押し倒し
+	CASE 12
+		LOCALS = ストック使用
+	CASE 13
+		LOCALS = 強制終了
+	CASE 14
+		LOCALS = 恍惚から復帰
+	CASE 15
+		LOCALS = 助手が限界
+	ENDSELECT
+CASE "カウンター：強度"
+	SELECTCASE TFLAG:96
+	CASE 1
+		LOCALS = 弱
+	CASE 2
+		LOCALS = 中
+	CASE 3
+		LOCALS = 強
+	CASE 4
+		LOCALS = 必殺
+	CASEELSE
+		LOCALS = 失敗
+	ENDSELECT
+CASE "カウンター：アルカナ"
+	LOCALS = %TRAINNAME:(TFLAG:97)%
+CASE "体位"
+	SELECTCASE GETBITS(INSERT("インサート", ARG), 0, 9)
+	CASE 1p0
+		LOCALS = 正常位
+	CASE 1p1
+		LOCALS = 後背位
+	CASE 1p2
+		LOCALS = 屈曲位
+	CASE 1p3
+		LOCALS = 対面座位
+	CASE 1p4
+		LOCALS = 背面座位
+	CASE 1p5
+		LOCALS = 騎乗位
+	CASEELSE
+		IF PREVPLAY("正常位", ARG)
+			LOCALS = 正常位
+		ELSEIF PREVPLAY("後背位", ARG)
+			LOCALS = 後背位
+		ELSEIF PREVPLAY("屈曲位", ARG)
+			LOCALS = 屈曲位
+		ELSEIF PREVPLAY("対面座位", ARG)
+			LOCALS = 対面座位
+		ELSEIF PREVPLAY("背面座位", ARG)
+			LOCALS = 背面座位
+		ELSEIF PREVPLAY("騎乗位", ARG)
+			LOCALS = 騎乗位
+		ENDIF
+	ENDSELECT
+CASE "陰毛", "腋毛"
+	SELECTCASE ARGS
+	CASE "陰毛"
+		LOCAL = BASE:ARG:陰毛
+	CASE "腋毛"
+		LOCAL = BASE:ARG:腋毛
+	ENDSELECT
+	SELECTCASE LOCAL/100
+	CASE 1
+		IF ARGS == "陰毛"
+			LOCALS = パイパン
+		ELSE
+			LOCALS = 無毛
+		ENDIF
+	CASE 2
+		LOCALS = 脱毛処理
+	CASE 3
+		LOCALS = ツルツル
+	CASE 4
+		IF AGE(ARG) >= 3 && LOCAL%100 <= 2
+			LOCALS = 剃り跡
+		ELSEIF AGE(ARG) >= 4
+			LOCALS = 無精髭
+		ELSE
+			LOCALS = 生えかけ
+		ENDIF
+	CASE 5
+		LOCALS = お手入れ済
+	CASE 6
+		LOCALS = ナチュラル
+	CASE 7
+		LOCALS = 生え放題
+	ENDSELECT
+
+CASE "朝の相手"
+	LOCALS = %CALLNAME:FINDCHARA(CFLAG:90, COND("朝イベント", ARG), MASTER + 1)%
+CASE "夜の相手"
+	LOCALS = %CALLNAME:FINDCHARA(CFLAG:91, COND("夜イベント", ARG), MASTER + 1)%
+CASE "調教後の相手"
+	LOCALS = %CALLNAME:FINDCHARA(CFLAG:92, COND("調教後イベント", ARG), MASTER + 1)%
+CASE "喫茶店：制服"
+	SELECTCASE GETBITS(FLAG:401, 0, 9)
+	CASE 1p0
+		LOCALS = ウェイトレス
+	CASE 1p1
+		LOCALS = メイド服
+	CASE 1p2
+		LOCALS = 巫女風
+	CASE 1p5
+		LOCALS = バニー
+	ENDSELECT
+ENDSELECT
+RETURNF LOCALS
+
+;-------------------------------------------------
+;TALENT:ARG:外見年齢に体形などによる補正を加えたもの
+;-------------------------------------------------
+@AGE(ARG)
+#FUNCTION
+
+LOCAL = TALENT:ARG:外見年齢
+
+IF NO:ARG != 0
+	;SIF TALENT:ARG:長身 && CSVTALENT(NO:ARG, 100, 0)
+	;	LOCAL += 1
+	SIF TALENT:ARG:小柄体型 && CSVTALENT(NO:ARG, 100, 0) == 0
+		LOCAL -= 1
+	SIF TALENT:ARG:幼稚 && CSVTALENT(NO:ARG, 132, 0) == 0
+		LOCAL -= 1
+ENDIF
+SIF COND("成長済み", ARG) == 0
+	LOCAL = 0
+
+IF COND("男の娘", ARG)
+	LOCAL = LIMIT(LOCAL, 1, 2)
+ELSE
+	LOCAL = LIMIT(LOCAL, 1, 4)
+ENDIF
+
+RETURNF LOCAL
+
+;-------------------------------------------------
+;ARG:1～ARG:4のキャラの相性をARGだけ加算する(ARGが負の値なら減算)
+;ちょっとしたイベントなら+1～+2で良いでしょう
+;協力して何かを行ったぐらいで+5とか、+10は一大イベントぐらいです
+;-------------------------------------------------
+@CHANGE_RELATION, ARG, ARG:1, ARG:2, ARG:3, ARG:4
+#DIM LCOUNT
+#DIM LCOUNT2
+
+;PRINTFORML ARG:1 = {ARG:1}, ARG:2 = {ARG:2}, ARG:3 = {ARG:3}, ARG:4 = {ARG:4}
+;PRINTL 
+
+FOR LCOUNT, 1, 5
+	SIF ARG:LCOUNT <= 0
+		CONTINUE
+	FOR LCOUNT2, 1, 5
+		SIF LCOUNT == LCOUNT2
+			CONTINUE
+		SIF ARG:LCOUNT2 <= 0
+			CONTINUE
+		;RELATIONの初期値は０なので、その場合には100にする
+		SIF RELATION:(ARG:LCOUNT):(NO:(ARG:LCOUNT2) ) == 0
+			RELATION:(ARG:LCOUNT):(NO:(ARG:LCOUNT2) ) = 100
+
+		;PRINTFORM RELATION:{ARG:LCOUNT}:{NO:(ARG:LCOUNT2)} = {RELATION:(ARG:LCOUNT):(NO:(ARG:LCOUNT2) )} → 
+		RELATION:(ARG:LCOUNT):(NO:(ARG:LCOUNT2) ) += ARG
+		;PRINTFORML {RELATION:(ARG:LCOUNT):(NO:(ARG:LCOUNT2) )}
+
+		;MAXは200
+		SIF RELATION:(ARG:LCOUNT):(NO:(ARG:LCOUNT2) ) > 200
+			RELATION:(ARG:LCOUNT):(NO:(ARG:LCOUNT2) ) = 200
+	NEXT
+NEXT
+
+;-------------------------------------------------
+;@CHANGE_RELATIONの数値指定版。
+;ARGSには○、◎、☆が入り、それぞれ相性を120,150,200にする
+;-------------------------------------------------
+@CHANGE_RELATION_MARK, ARGS, ARG, ARG:1, ARG:2, ARG:3
+#DIM LCOUNT
+#DIM LCOUNT2
+
+;PRINTFORML ARG:0 = {ARG:0}, ARG:1 = {ARG:1}, ARG:2 = {ARG:2}, ARG:3 = {ARG:3}
+;PRINTL 
+
+FOR LCOUNT, 0, 4
+	SIF ARG:LCOUNT <= 0
+		CONTINUE
+	FOR LCOUNT2, 0, 4
+		SIF LCOUNT == LCOUNT2
+			CONTINUE
+		SIF ARG:LCOUNT2 <= 0
+			CONTINUE
+		;RELATIONの初期値は０なので、その場合には100にする
+		SIF RELATION:(ARG:LCOUNT):(NO:(ARG:LCOUNT2) ) == 0
+			RELATION:(ARG:LCOUNT):(NO:(ARG:LCOUNT2) ) = 100
+
+		;PRINTFORM RELATION:{ARG:LCOUNT}:{NO:(ARG:LCOUNT2)} = {RELATION:(ARG:LCOUNT):(NO:(ARG:LCOUNT2) )} → 
+
+		SELECTCASE ARGS
+		CASE "○"
+			SIF RELATION:(ARG:LCOUNT):(NO:(ARG:LCOUNT2) ) < 120
+				RELATION:(ARG:LCOUNT):(NO:(ARG:LCOUNT2) ) = 120
+		CASE "◎"
+			SIF RELATION:(ARG:LCOUNT):(NO:(ARG:LCOUNT2) ) < 150
+				RELATION:(ARG:LCOUNT):(NO:(ARG:LCOUNT2) ) = 150
+		CASE "☆"
+			SIF RELATION:(ARG:LCOUNT):(NO:(ARG:LCOUNT2) ) < 200
+				RELATION:(ARG:LCOUNT):(NO:(ARG:LCOUNT2) ) = 200
+		ENDSELECT
+
+		;PRINTFORML {RELATION:(ARG:LCOUNT):(NO:(ARG:LCOUNT2) )}
+
+		;MAXは200
+		SIF RELATION:(ARG:LCOUNT):(NO:(ARG:LCOUNT2) ) > 200
+			RELATION:(ARG:LCOUNT):(NO:(ARG:LCOUNT2) ) = 200
+	NEXT
+NEXT
+
+;-------------------------------------------------
+;主に現実の日付を参照するイベント全般の判定をする
+;ARGS:1には"現実のみ"、"ゲーム内"などが代入される
+;-------------------------------------------------
+@DAYEV(ARGS, ARGS:1)
+#FUNCTION
+
+;現実の年
+#DIM RYEAR
+;現実の日付時刻
+#DIM MONTH_DAY
+;現実の日(曜日計算でのみ使用)
+#DIM RDAY
+;現実の時刻
+#DIM RTIME
+;現実の曜日
+#DIM WEEKDAY
+
+
+GETTIME
+
+RYEAR = (RESULT / 10000000000000) % 10000
+;現実の日付時刻が02/05の4時ならMONTH_DAY = 20504
+MONTH_DAY = (RESULT / 10000000) % 1000000
+;現実の日
+RDAY = (RESULT / 1000000000) % 100
+;現実の時間0～23
+RTIME = MONTH_DAY%100
+
+;曜日の算出（1-2月の時は計算式が別）
+SELECTCASE MONTH_DAY/10000
+CASE 1, 2
+	WEEKDAY = (RYEAR - 1 + (RYEAR - 1)/4 - (RYEAR - 1)/100 + (RYEAR - 1)/400 + (13*(MONTH_DAY/10000 + 12) + 8)/5 + RDAY)%7
+CASEELSE
+	WEEKDAY = (RYEAR + RYEAR/4 - RYEAR/100 + RYEAR/400 + (13*MONTH_DAY/10000 + 8)/5 + RDAY)%7
+ENDSELECT
+
+;それぞれのイベント日は翌日の深夜まではＯＫとする
+SELECTCASE ARGS
+;日付イベント
+CASE "お正月"
+	SIF ARGS:1 != "現実のみ" && CONFIG("日付固定イベント再現") && FLAG:871 == 101
+		RETURNF 1
+	SIF MONTH_DAY >= 10100 && MONTH_DAY <= 10203
+		RETURNF 1
+CASE "バレンタイン前日"
+	SIF ARGS:1 != "現実のみ" && CONFIG("日付固定イベント再現") && FLAG:871 == 114
+		RETURNF 1
+	SIF MONTH_DAY >= 21300 && MONTH_DAY <= 21323
+		RETURNF 1
+CASE "バレンタイン"
+	SIF ARGS:1 != "現実のみ" && CONFIG("日付固定イベント再現") && FLAG:871 == 115
+		RETURNF 1
+	SIF MONTH_DAY >= 21400 && MONTH_DAY <= 21503
+		RETURNF 1
+CASE "バレンタイン翌日"
+	SIF ARGS:1 != "現実のみ" && CONFIG("日付固定イベント再現") && FLAG:871 == 116
+		RETURNF 1
+	SIF MONTH_DAY >= 21504 && MONTH_DAY <= 21603
+		RETURNF 1
+CASE "ホワイトデー"
+	;１年目は無し
+	SIF FLAG:872 < 2
+		RETURNF 0
+	SIF ARGS:1 != "現実のみ" && CONFIG("日付固定イベント再現") && FLAG:871 == 5
+		RETURNF 1
+	SIF MONTH_DAY >= 31400 && MONTH_DAY <= 31503
+		RETURNF 1
+CASE "海の日"
+	SIF ARGS:1 != "現実のみ" && CONFIG("日付固定イベント再現") && FLAG:871 == 46
+		RETURNF 1
+	SIF MONTH_DAY >= 71600 && MONTH_DAY <= 71703
+		RETURNF 1
+CASE "ハロウィン"
+	SIF ARGS:1 != "現実のみ" && CONFIG("日付固定イベント再現") && FLAG:871 == 80
+		RETURNF 1
+	SIF MONTH_DAY >= 103100 && MONTH_DAY <= 110103
+		RETURNF 1
+CASE "クリスマス一週間前"
+	SIF ARGS:1 != "現実のみ" && CONFIG("日付固定イベント再現") && FLAG:871 == 91
+		RETURNF 1
+	SIF MONTH_DAY >= 121800 && MONTH_DAY <= 121903
+		RETURNF 1
+CASE "クリスマス"
+	SIF ARGS:1 != "現実のみ" && CONFIG("日付固定イベント再現") && FLAG:871 == 98
+		RETURNF 1
+	;サービスで24と25両方ＯＫ
+	SIF MONTH_DAY >= 122400 && MONTH_DAY <= 122603
+		RETURNF 1
+CASE "クリスマス翌日"
+	SIF ARGS:1 != "現実のみ" && CONFIG("日付固定イベント再現") && FLAG:871 == 99
+		RETURNF 1
+	SIF MONTH_DAY >= 122604 && MONTH_DAY <= 122703
+		RETURNF 1
+CASE "クリスマス期間"
+	SIF ARGS:1 != "現実のみ" && CONFIG("日付固定イベント再現") && FLAG:871 >= 91 && FLAG:871 <= 99
+		RETURNF 1
+	SIF MONTH_DAY >= 121800 && MONTH_DAY <= 122703
+		RETURNF 1
+
+;時間区分
+CASE "早朝"
+	SIF RTIME >= 4 && RTIME <= 5
+		RETURNF 1
+CASE "朝"
+	SIF RTIME >= 4 && RTIME <= 10
+		RETURNF 1
+CASE "昼"
+	SELECTCASE ARGS:1
+	CASE "ゲーム内"
+		SIF TIME == 0
+			RETURNF 1
+	CASEELSE
+		SIF RTIME >= 11 && RTIME <= 14
+			RETURNF 1
+	ENDSELECT
+CASE "昼下がり"
+	SIF RTIME == 13
+		RETURNF 1
+CASE "夕方"
+	SIF RTIME >= 17 && RTIME <= 20
+		RETURNF 1
+CASE "夜"
+	SELECTCASE ARGS:1
+	CASE "ゲーム内"
+		SIF TIME
+			RETURNF 1
+	CASEELSE
+		SIF RTIME >= 20 && RTIME <= 23
+			RETURNF 1
+	ENDSELECT
+CASE "深夜"
+	SIF RTIME < 23
+		RTIME += 24
+	SIF RTIME >= 23 && RTIME <= 27
+		RETURNF 1
+
+;季節の詳細
+CASE "春"
+	SIF MONTH_DAY >= 30100 && MONTH_DAY <= 53124
+		RETURNF 1
+
+CASE "初夏"
+	SIF MONTH_DAY >= 51000 && MONTH_DAY <= 60924
+		RETURNF 1
+CASE "夏"
+	SIF MONTH_DAY >= 60100 && MONTH_DAY <= 83124
+		RETURNF 1
+
+CASE "初秋"
+	SIF MONTH_DAY >= 80800 && MONTH_DAY <= 90624
+		RETURNF 1
+CASE "秋"
+	SIF MONTH_DAY >= 90100 && MONTH_DAY <= 113124
+		RETURNF 1
+CASE "晩秋"
+	SIF MONTH_DAY >= 110100 && MONTH_DAY <= 120924
+		RETURNF 1
+
+CASE "冬"
+	SIF MONTH_DAY < 120100
+		RTIME += 120000
+	SIF MONTH_DAY >= 120100 && MONTH_DAY <= 143124
+		RETURNF 1
+
+;曜日判定
+CASE "日曜"
+	SELECTCASE ARGS:1
+	CASE "ゲーム内"
+		SIF (DAY - 1)%7 == 0
+			RETURNF 1
+	CASEELSE
+		SIF WEEKDAY == 0
+			RETURNF 1
+	ENDSELECT
+CASE "月曜"
+	SELECTCASE ARGS:1
+	CASE "ゲーム内"
+		SIF (DAY - 1)%7 == 1
+			RETURNF 1
+	CASEELSE
+		SIF WEEKDAY == 1
+			RETURNF 1
+	ENDSELECT
+CASE "火曜"
+	SELECTCASE ARGS:1
+	CASE "ゲーム内"
+		SIF (DAY - 1)%7 == 2
+			RETURNF 1
+	CASEELSE
+		SIF WEEKDAY == 2
+			RETURNF 1
+	ENDSELECT
+CASE "水曜"
+	SELECTCASE ARGS:1
+	CASE "ゲーム内"
+		SIF (DAY - 1)%7 == 3
+			RETURNF 1
+	CASEELSE
+		SIF WEEKDAY == 3
+			RETURNF 1
+	ENDSELECT
+CASE "木曜"
+	SELECTCASE ARGS:1
+	CASE "ゲーム内"
+		SIF (DAY - 1)%7 == 4
+			RETURNF 1
+	CASEELSE
+		SIF WEEKDAY == 4
+			RETURNF 1
+	ENDSELECT
+CASE "金曜"
+	SELECTCASE ARGS:1
+	CASE "ゲーム内"
+		SIF (DAY - 1)%7 == 5
+			RETURNF 1
+	CASEELSE
+		SIF WEEKDAY == 5
+			RETURNF 1
+	ENDSELECT
+CASE "土曜"
+	SELECTCASE ARGS:1
+	CASE "ゲーム内"
+		SIF (DAY - 1)%7 == 6
+			RETURNF 1
+	CASEELSE
+		SIF WEEKDAY == 6
+			RETURNF 1
+	ENDSELECT
+CASE "週末"
+	SELECTCASE ARGS:1
+	CASE "ゲーム内"
+		SIF (DAY - 1)%7 == 0 || (DAY - 1)%7 == 6
+			RETURNF 1
+	CASEELSE
+		SIF WEEKDAY == 0 || WEEKDAY == 6
+			RETURNF 1
+	ENDSELECT
+ENDSELECT
+
+RETURNF 0
+
+;-------------------------------------------------
+;キャラごとの日付イベントの発生を判定する
+;-------------------------------------------------
+@CDAYEV(ARGS, ARG)
+#FUNCTION
+
+SIF ARG == 0 && TARGET
+	ARG = TARGET
+SIF ARGS == ""
+	ARGS = %TEXTS("日付対応イベント")%
+
+;今日が指定した日付イベントの日でないなら発生しない
+SIF DAYEV(ARGS) == 0
+	RETURNF 0
+
+;TRYFORMにできないので力技
+SELECTCASE NO:ARG
+CASE 16
+	SELECTCASE CFLAG:ARG:209
+	CASE 1
+		SIF IS_DAYEV_K16_1(ARGS, ARG)
+			RETURNF 1
+	ENDSELECT
+CASE 25
+	SELECTCASE CFLAG:ARG:209
+	CASE 2
+		SIF IS_DAYEV_K25_2(ARGS, ARG)
+			RETURNF 1
+	ENDSELECT
+ENDSELECT
+RETURNF 0
+
+
+;-------------------------------------------------
+;CSVTALENTの調整版
+;ARGにはキャラの番号、ARG:1には参照したいTALENTの番号を入れる
+;-------------------------------------------------
+@CSVTALENT_EX(ARG, ARG:1)
+#FUNCTION
+
+VARSET LOCAL
+
+SELECTCASE ARG:1
+;CSV以外で記述する素質
+CASE 3, 52, 59, 73, 180 TO 185
+	LOCAL = MAX(SET_EXTALENT(TALENTNAME:(ARG:1), ARG), CSVTALENT(NO:ARG, ARG:1) )
+CASEELSE
+	LOCAL = CSVTALENT(NO:ARG, ARG:1)
+ENDSELECT
+
+RETURNF LOCAL
+
+;-------------------------------------------------
+;ARGS:0～の内のどれかを等確率で返す
+;＿は何も出力しない選択とする
+;-------------------------------------------------
+@TEXTR(ARGS:0, ARGS:1, ARGS:2, ARGS:3, ARGS:4, ARGS:5, ARGS:6, ARGS:7, ARGS:8, ARGS:9, ARGS:10, ARGS:11, ARGS:12, ARGS:13, ARGS:14, ARGS:15, ARGS:16, ARGS:17, ARGS:18, ARGS:19)
+#FUNCTIONS
+#DIM LCOUNT
+LOCALS = %ARGS:0%
+FOR LCOUNT, 1, 20
+	SIF ARGS:LCOUNT == ""
+		BREAK
+	SIF RAND:(LCOUNT + 1) == 0
+		LOCALS = %ARGS:LCOUNT%
+NEXT
+SIF LOCALS == "＿"
+	LOCALS = 
+RETURNF LOCALS
+
+
+;-------------------------------------------------
+;特殊な書式の文字列ARGSを読める文章に直す
+;行や命令は_で区切る事。そしてLOCALSは99までなので手加減してくれ
+;CASEを増やして、そのうち文字列を別作成しないで済むようにしたい
+;FLAG:5で操作することができる。
+;0bit WAITを打ち消し、WをPRINTLに変換する
+;-------------------------------------------------
+@PRINT_STR, ARGS, ARGS:1
+#DIM LCOUNT
+
+VARSET LOCALS
+
+;文字列を分解する
+SPLIT ARGS, "_", LOCALS
+
+FOR LCOUNT, 0, 100
+	;特殊な操作
+	SELECTCASE LOCALS:LCOUNT
+	CASE ""
+		BREAK
+	CASE "CALLNAME:TARGET"
+		PRINTFORM %CALLNAME:TARGET%
+		CONTINUE
+	CASE "CALLNAME:PLAYER"
+		PRINTFORM %CALLNAME:PLAYER%
+		CONTINUE
+	CASE "CALLNAME:ASSI"
+		PRINTFORM %CALLNAME:ASSI%
+		CONTINUE
+	CASE "CALLNAME:MASTER"
+		PRINTFORM %CALLNAME:MASTER%
+		CONTINUE
+	CASE "BUTTON"
+		;次の文字をボタンにする
+		LCOUNT += 1
+		PRINTBUTTON LOCALS:LCOUNT, LOCALS:LCOUNT
+		RESETCOLOR
+		CONTINUE
+	CASE "改行", "L"
+		PRINTL 
+		RESETCOLOR
+		CONTINUE
+	CASE "W"
+		IF GETBIT(FLAG:5, 0)
+			PRINTL 
+		ELSE
+			PRINTW 
+		ENDIF
+		RESETCOLOR
+		CONTINUE
+	CASE "WAIT"
+		SIF GETBIT(FLAG:5, 0) == 0
+			WAIT
+		RESETCOLOR
+		CONTINUE
+	CASE "FORCEWAIT"
+		FORCEWAIT
+		RESETCOLOR
+		CONTINUE
+	CASE "H", "ハート"
+		CALL HEARTMARK
+		RESETCOLOR
+		CONTINUE
+	CASE "ショッキングピンク", "ピンク", "ハートピンク", "赤", "紅", "黄色", "暗黄色", "イエロー", "緑", "青", "水色", "暗灰色", "灰色", "明灰色", "白"
+		SETCOLOR DEF_COLOR(LOCALS:LCOUNT)
+		CONTINUE
+	ENDSELECT
+
+	PRINTFORM %LOCALS:LCOUNT%
+	RESETCOLOR
+NEXT
+
+
+;-------------------------------------------------
+;ARGSに指定した色ARGをつけて出力する
+;-------------------------------------------------
+@PRINT_COLORTEXT, ARGS, ARG
+SETCOLOR ARG
+PRINTFORM %ARGS%
+RESETCOLOR
+;-------------------------------------------------
+;PRINT_COLORTEXTの改行版
+;-------------------------------------------------
+@PRINTL_COLORTEXT, ARGS, ARG
+SETCOLOR ARG
+PRINTFORML %ARGS%
+RESETCOLOR
+;-------------------------------------------------
+;PRINT_COLORTEXTのウェイトあり版
+;-------------------------------------------------
+@PRINTW_COLORTEXT, ARGS, ARG
+SETCOLOR ARG
+PRINTFORMW %ARGS%
+RESETCOLOR
+
+;-------------------------------------------------
+;条件分岐用のRAND
+;ARGには最低分岐数を入れる
+;nを正の整数とすると RANDIF(n, TALENT:強気, ABL:欲望 >= 3) は、
+;RAND:(n + LIMIT(TALENT:強気, 0, 1) + (ABL:欲望 >= 3) ) == 0 に等しい
+;主に、IF TALENT:高慢 && RANDIF(2, TALENT:強気, ABL:欲望 >= 3) 等のように用いる
+;-------------------------------------------------
+@RANDIF(ARG, ARG:1, ARG:2, ARG:3, ARG:4, ARG:5, ARG:6, ARG:7, ARG:8, ARG:9)
+#FUNCTION
+#DIM LCOUNT
+SIF ARG <= 0
+	RETURNF 0
+
+LOCAL = ARG
+FOR LCOUNT, 1, 10
+	SIF ARG:LCOUNT > 0
+		LOCAL += 1
+NEXT
+SIF RAND:LOCAL == 0
+	RETURNF 1
+RETURNF 0
+
+;-------------------------------------------------
+;ARGが0以下なら0を返すRAND
+;-------------------------------------------------
+@RANDN(ARG)
+#FUNCTION
+SIF ARG <= 0
+	RETURNF 0
+LOCAL = RAND:ARG
+RETURNF LOCAL
+
+;-------------------------------------------------
+;ゲーム内の日付、午前午後、現実時間のチェックタイミングによって同じ数値を返すRAND
+;FLAG:13は現実時間に応じて値が変わり、SHOP画面と調教中の１ターンごとに取得します
+;ARG:1に一つ確率に影響の出る変数を入れることが出来るので工夫してください
+;性質上、適当に使うのは非推奨。死に分岐ができるぞ！
+;-------------------------------------------------
+@RANDF(ARG, ARG:1)
+#FUNCTION
+
+SIF ARG <= 1
+	RETURNF 0
+
+;ARG:1を10倍して2乗させるので上限を設ける
+ARG:1 %= 10000000
+
+LOCAL = (POWER(FLAG:13 + (DAY*2 + TIME + ARG:1)*10, 2) / 100) % 1000000000000
+
+RETURNF LOCAL%ARG
+
+@GET_REALTIMEFORFLAG
+SIF FLAG:13 == 0 || COND("調教中")
+	FLAG:13 = GETMILLISECOND() % 1000000000
+
+;一言イベント中はSHOP画面では変更しない
+SIF FLAG:23
+	RETURN 0
+
+SIF CSTR:MASTER:セクハラ中 == ""
+	FLAG:13 = GETMILLISECOND() % 1000000000
+
+;-------------------------------------------------
+;ARG:1人プレイの時に、キャラ番号ARGが同キャラがいる場合でもRAND分岐で同じものを選ばないようにするために使う
+;-------------------------------------------------
+@RAND_MULTI(ARG, ARG:1)
+#FUNCTION
+#DIM LCOUNT
+
+LOCAL = RANDF(ARG:1, NO:ARG)
+
+FOR LCOUNT, 0, ARG:1
+	SIF ARG != TARGET:LCOUNT
+		CONTINUE
+
+	LOCAL = (LOCAL + LCOUNT) % ARG:1
+	BREAK
+NEXT
+
+RETURNF LOCAL
+
+;-------------------------------------------------
+;主に未読をチェックしながらランダム分岐させる関数試作
+;結局文字列だと物凄い長さになりそうなので、とりあえずFLAGを1つ使う予定の方式で作成
+;ARGには何分の一で分岐するかの値を代入(ツリー全てが既読の際にはRAND:ARG == 0で発生するようになる）、
+;ARG:1にチェックに用いるFLAG、ARG:2に分岐ツリーの一番下で使うビット、
+;ARG:3に分岐ツリーの一番上で使うビット、ARG:4にその選択肢を読むことでONになるビットを入れる
+;ただし、ARG:4が ARG:2 + ARG - 1 に等しい場合には省略してよい（どうせARG:4には0が代入されることはない）
+;-------------------------------------------------
+@RANDCHK(ARG, ARG:1, ARG:2, ARG:3, ARG:4)
+#FUNCTION
+#DIM LCOUNT
+;ARG:4以下の選択肢で、選ばれていないものの数
+#DIM NUM_SELECT
+
+SIF ARG:4 == 0
+	ARG:4 = ARG:2 + ARG - 1
+
+;まずツリー全部のビットフラグがＯＮだった場合の値の総和を出す
+LOCAL = 0
+NUM_SELECT = 0
+
+FOR LCOUNT, ARG:2, ARG:3 + 1
+	LOCAL += POWER(2, LCOUNT)
+	SIF LCOUNT <= ARG:4 && GETBIT(ARG:1, LCOUNT) == 0
+		NUM_SELECT += 1
+NEXT
+
+;PRINTFORML ARG:4 = {ARG:4}, NUM_SELECT = {NUM_SELECT}
+
+;ARG:4が選択済み
+IF GETBIT(ARG:1, ARG:4)
+	;すべて選択済みならRAND:ARG == 0 に委ねる
+	IF GETBITS(ARG:1, ARG:2, ARG:3) == LOCAL
+		SIF RAND:ARG == 0
+			RETURNF 1
+		RETURNF 0
+	;それ以外…つまり、ARG:4は選択されているが、ARG:2～ARG:3の内で選ばれていないものがある
+	ELSE
+		RETURNF 0
+	ENDIF
+;ARG:4はまだ選ばれていない
+ELSE
+	;ARG:4以外がすべて選択されているなら、この選択肢を実行
+	IF GETBITS(ARG:1, ARG:2, ARG:3) == LOCAL - POWER(2, ARG:4)
+		RETURNF 1
+	;ARG:4と、他いくつかが選択されていない
+	ELSE
+		;NUM_SELECTに、これ以下のツリーでの選択されていない数が入ってるのでそれを使う
+		SIF RAND:NUM_SELECT == 0
+			RETURNF 1
+		RETURNF 0
+	ENDIF
+ENDIF
+
+RETURNF 0
+
+;-------------------------------------------------
+;地の文調整用
+;-------------------------------------------------
+@TEXT_CONJ(ARGS)
+#FUNCTIONS
+IF ARGS == "す"
+	LOCALS = して
+ELSEIF ARGS == "む"
+	LOCALS = んで
+ELSEIF ARGS == "る"
+	LOCALS = て
+ENDIF
+RETURNF LOCALS
+
+;-------------------------------------------------
+;ARGを(ARG:1 / 100)倍する
+;A = MULTIPLY(A, 150)　は　TIMES A, 1.50　と等しい。
+;A = MULTIPLY(A, B)　でB <= 0ならば計算結果はマイナスでなくA*1/100とする。
+;-------------------------------------------------
+@MULTIPLY(ARG, ARG:1)
+#FUNCTION
+;0以下の数をかけたときには ARG:1 = 1 とする
+SIF ARG:1 <= 0
+	ARG:1 = 1
+LOCAL = ARG * ARG:1 / 100
+RETURNF LOCAL
+
+;-------------------------------------------------
+;ARGを(100/ARG:1)倍する
+;A = DIVIDE(A, 150)　は　TIMES A, 0.66　と大体等しく、A = A * 100 / 150　と等しい
+;A = DIVIDE(A, B)　でB <= 0ならば計算結果は無限やマイナスでなくAのままとなる。
+;-------------------------------------------------
+@DIVIDE(ARG, ARG:1)
+#FUNCTION
+;0以下の数では割れない
+SIF ARG:1 <= 0
+	RETURNF ARG
+LOCAL = ARG * 100 / ARG:1
+RETURNF LOCAL
+
+
+;-------------------------------------------------
+;3桁ごとにカンマの入った所持金表示
+;ARG:1には桁を揃える最大値を定めても良い
+;-------------------------------------------------
+@MONEY_C(ARG, ARG:1)
+#FUNCTIONS
+VARSET LOCALS
+FOR LOCAL, 0, 10
+	LOCALS = {ARG%1000}%LOCALS%
+	IF ARG/1000
+		SELECTCASE ARG%1000
+		CASE IS < 10
+			LOCALS = ,00%LOCALS%
+		CASE IS < 100
+			LOCALS = ,0%LOCALS%
+		CASEELSE
+			LOCALS = ,%LOCALS%
+		ENDSELECT
+		ARG /= 1000
+	ELSE
+		BREAK
+	ENDIF
+NEXT
+IF ARG:1
+	FOR LOCAL, 0, 10
+		LOCALS:1 = {ARG:1%1000}%LOCALS:1%
+		IF ARG:1/1000
+			SELECTCASE ARG:1%1000
+			CASE IS < 10
+				LOCALS:1 = ,00%LOCALS:1%
+			CASE IS < 100
+				LOCALS:1 = ,0%LOCALS:1%
+			CASEELSE
+				LOCALS:1 = ,%LOCALS:1%
+			ENDSELECT
+			ARG:1 /= 1000
+		ELSE
+			BREAK
+		ENDIF
+	NEXT
+	LOCALS = $%BL(STRLENS(LOCALS:1) - STRLENS(LOCALS))%%LOCALS%
+ELSE
+	LOCALS = $%LOCALS%
+ENDIF
+RETURNF LOCALS
+;-------------------------------------------------
+;半角スペースの出力
+;-------------------------------------------------
+@BL(ARG)
+#FUNCTIONS
+LOCALS = 
+SIF ARG <= 0
+	RETURNF LOCALS
+FOR LOCAL, 0, ARG
+	LOCALS += " "
+NEXT
+RETURNF LOCALS
+
+;-------------------------------------------------
+;色々フラグを考慮したDELCHARA
+;キャラ番号ARGのキャラを削除する
+;eramakerの命令DELCHARAと異なりTARGETとASSIを保つ
+;-------------------------------------------------
+@DELETE_CHARA, ARG
+
+DELCHARA ARG
+
+;TARGETとASSIの番号調整
+IF ARG == TARGET
+	TARGET = 0
+ELSEIF ARG < TARGET
+	TARGET -= 1
+ENDIF
+IF ARG == ASSI
+	ASSI = 0
+ELSEIF ARG < ASSI
+	ASSI -= 1
+ENDIF
+
+;-------------------------------------------------
+;色々フラグを考慮したキャラ番号の交換関数
+;キャラ番号ARGとARG:1のキャラを交換する
+;Emueraの命令SWAPCHARAと異なりTARGETとASSIを保つ
+;-------------------------------------------------
+@SWAP_CHARA, ARG, ARG:1
+;TARGETとASSIの番号調整
+SELECTCASE TARGET
+CASE 0
+CASE ARG
+	TARGET = ARG:1
+CASE ARG:1
+	TARGET = ARG
+ENDSELECT
+SELECTCASE ASSI
+CASE 0
+CASE ARG
+	ASSI = ARG:1
+CASE ARG:1
+	ASSI = ARG
+ENDSELECT
+
+SWAPCHARA ARG, ARG:1
+
+;-------------------------------------------------
+;Emueraの命令SORTCHARAのＳＱＮ対応版
+;ARGSにはソートの条件、ARGS:1には昇順か降順のどちらかが入る
+;-------------------------------------------------
+@SORT_CHARA, ARGS, ARGS:1
+#DIM LCOUNT
+
+;ドッペルあなたを一時的に消す
+CALL DELETE_CHARA, 0
+;MASTERを主人に設定
+MASTER = 0
+
+SELECTCASE ARGS:1
+CASE "昇順"
+	SELECTCASE ARGS
+	CASE "加入順"
+		SORTCHARA BASE:識別番号
+	CASE "キャラ番号"
+		SORTCHARA
+	CASE "好感度"
+		SORTCHARA CFLAG:2
+	CASE "最後に相手した日付"
+		SORTCHARA CFLAG:97
+	CASE "ＬＶ"
+		SORTCHARA ABL:ＬＶ
+	CASE "評価ポイント"
+		SORTCHARA CFLAG:44
+	CASE "身長"
+		SORTCHARA BASE:身長
+	CASE "胸の大きさ"
+		SORTCHARA BASE:バスト
+	ENDSELECT
+CASEELSE
+	SELECTCASE ARGS
+	CASE "加入順"
+		SORTCHARA BASE:識別番号, BACK
+	CASE "キャラ番号"
+		SORTCHARA BACK
+	CASE "好感度"
+		SORTCHARA CFLAG:2, BACK
+	CASE "最後に相手した日付"
+		SORTCHARA CFLAG:97, BACK
+	CASE "ＬＶ"
+		SORTCHARA ABL:ＬＶ, BACK
+	CASE "評価ポイント"
+		SORTCHARA CFLAG:44, BACK
+	CASE "身長"
+		SORTCHARA BASE:身長, BACK
+	CASE "胸の大きさ"
+		SORTCHARA BASE:バスト, BACK
+	ENDSELECT
+ENDSELECT
+
+;ドッペルあなたを復帰
+ADDCHARA 93
+;番号をドッペルあなたが[0]番になるように揃える
+FOR LCOUNT, 1, CHARANUM
+	LOCAL = CHARANUM - LCOUNT
+	LOCAL:1 = LOCAL - 1
+	CALL SWAP_CHARA, LOCAL, LOCAL:1
+NEXT
+
+;MASTERを主人に設定
+MASTER = 1
+
+;-------------------------------------------------
+;数値によって変化する素質を加味したTALENTNAME
+;ARGには素質番号、ARG:1にはその値、ARG:2には参照するキャラが代入される
+;-------------------------------------------------
+@TALENT_NAME(ARG, ARG:1, ARG:2)
+#FUNCTIONS
+#DIM LCOUNT
+
+VARSET LOCALS
+LOCALS = %TALENTNAME:ARG%
+SIF ARG:2 == 0 && TARGET
+	ARG:2 = TARGET
+SELECTCASE ARG
+;再生処女
+CASE 0
+	SIF ARG:1 == 2
+		LOCALS = %TALENTNAME:0%(再生)
+CASE 2
+	IF GETBIT(ARG:1, 5)
+		LOCALS = 竜並
+	ELSEIF GETBIT(ARG:1, 4)
+		LOCALS = 腕並
+	ELSEIF GETBIT(ARG:1, 3)
+		LOCALS = 馬並
+	ELSEIF GETBIT(ARG:1, 2)
+		LOCALS = 巨根
+	ELSEIF GETBIT(ARG:1, 1)
+		LOCALS = 短小
+	ELSEIF GETBIT(ARG:1, 0)
+		LOCALS = 普通
+	ENDIF
+	IF GETBIT(ARG:1, 12)
+		LOCALS = %LOCALS%(真性)
+	ELSEIF GETBIT(ARG:1, 11)
+		LOCALS = %LOCALS%(仮性)
+	ELSE
+		LOCALS = %LOCALS%(ズル剥け)
+	ENDIF
+	SIF TALENT:(ARG:2):竜の血
+		LOCALS = %LOCALS%%UNI("ドラゴン")%
+CASE 3
+	IF TALENT:(ARG:2):オトコ == 0
+		SELECTCASE ARG:1
+		CASE 1
+			LOCALS = ロリ
+		CASE 2
+			IF TALENT:(ARG:2):小柄体型 && (NO:(ARG:2) == 16 || NO:(ARG:2) == 22 || NO:(ARG:2) == 47)
+				LOCALS = ロリババア
+			ELSE
+				LOCALS = 少女
+			ENDIF
+		CASE 3
+			LOCALS = お姉さん
+		CASE 4
+			LOCALS = オトナ
+		ENDSELECT
+	ENDIF
+CASE 8
+	LOCALS = 
+	SIF COND("乳首肥大", ARG:2)
+		LOCALS = %LOCALS%[乳首肥大\@ COND("乳首肥大", ARG:2) >= 2 ? LV{COND("乳首肥大", ARG:2)} # \@]
+	IF COND("真性陥没乳首", ARG:2)
+		LOCALS = %LOCALS%[陥没乳首(真性)]
+	ELSEIF COND("仮性陥没乳首", ARG:2)
+		LOCALS = %LOCALS%[陥没乳首(仮性)]
+	ENDIF
+	SIF COND("巨乳輪", ARG:2)
+		LOCALS = %LOCALS%[巨乳輪\@ COND("巨乳輪", ARG:2) >= 2 ? LV{COND("巨乳輪", ARG:2)} # \@]
+
+	LOCALS = %SUBSTRING(LOCALS, 1, STRLENS(LOCALS) - 2)%
+CASE 49
+	SELECTCASE ARG:1
+	CASE 1p0
+		LOCALS = 精飲に弱い
+	CASE 1p1
+		LOCALS = 膣内射精に弱い
+	CASE 1p2
+		LOCALS = 肛内射精に弱い
+	CASE 1p3
+		LOCALS = 乳内射精に弱い
+	;CASE 1p4
+	;	LOCALS = 精液ぶっかけに弱い
+	ENDSELECT
+CASE 110
+	SELECTCASE ARG:1
+	CASE 2
+		LOCALS = 爆乳
+	CASE IS >= 3
+		LOCALS = 超乳
+	ENDSELECT
+CASE 121
+	SIF ARG:1 == 1
+		LOCALS = %LOCALS%(天然)
+CASE 122
+	SIF COND("男の娘", ARG:2)
+		LOCALS = 男の娘
+CASE 126
+	IF GETBITS(ARG:1, 1, 2)
+		LOCALS = 人気(
+		SIF GETBIT(ARG:1, 1)
+			LOCALS = %LOCALS%ＡＶ＆
+		SIF GETBIT(ARG:1, 2)
+			LOCALS = %LOCALS%喫茶店＆
+		LOCALS = %SUBSTRING(LOCALS, 0, STRLENS(LOCALS) - 2)%)
+	ENDIF
+CASE 135
+	SIF ARG:1 == 2
+		LOCALS = 臨月
+	SIF ARG:1 == 3
+		LOCALS = 出産間近
+CASE 139
+	SELECTCASE ARG:1
+	CASE 2
+		LOCALS = 爆尻
+	CASE IS >= 3
+		LOCALS = 超尻
+	ENDSELECT
+CASE 151
+	SIF ARG:1 == 2
+		LOCALS = 大魔法使い
+;羽or翼
+CASE 161
+	SIF (ARG:1 == 10 || ARG:1 == 12)
+		LOCALS = 羽
+CASE 163
+	SIF ARG:1 == 8
+		LOCALS = 爬虫類脚
+	SIF ARG:1 == 11
+		LOCALS = 猛禽脚
+CASE 164
+	SELECTCASE ARG:1
+	CASE 1
+		LOCALS = 褐色肌
+	CASE 2
+		LOCALS = 色白
+	CASE 3
+		LOCALS = 青肌
+	ENDSELECT
+;耳の形
+CASE 167
+	LOCALS = エルフ耳
+CASE 185
+	SELECTCASE ARG:1
+	CASE 1p0
+		LOCALS = %LOCALS%(愛撫・奉仕)
+	CASE 1p1
+		LOCALS = %LOCALS%(教え上手)
+	CASE 1p2
+		LOCALS = %LOCALS%(ＳＭ)
+	CASE 1p3
+		LOCALS = %LOCALS%(アナル)
+	CASE 1p4
+		LOCALS = %LOCALS%(性器拡張)
+	CASE 1p5
+		LOCALS = %LOCALS%(道具)
+	CASE 1p6
+		LOCALS = %LOCALS%(露出プレイ)
+	ENDSELECT
+CASE 73, 180 TO 189, 193
+	LOCALS = %TALENTNAME:ARG%LV{ARG:1}
+CASE 194
+	FOR LCOUNT, 0, 10
+		LOCAL = POWER(2, LCOUNT)
+		IF ARG:1 & LOCAL
+			SIF STRLENS(LOCALS)
+				LOCALS += "、"
+
+			SELECTCASE LOCAL
+			CASE 1p0
+				LOCALS += "手"
+			CASE 1p1
+				LOCALS += "口"
+			CASE 1p2
+				LOCALS += "胸"
+			CASE 1p3
+				LOCALS += "脚"
+			CASE 1p4
+				LOCALS += "♀"
+			CASE 1p5
+				LOCALS += "唇"
+			CASE 1p6
+				LOCALS += "お尻"
+			ENDSELECT
+		ENDIF
+	NEXT
+	SIF ARG:1 == 1p0 + 1p1 + 1p2 + 1p3 + 1p4 + 1p5 + 1p6
+		LOCALS = 全て
+	LOCALS += "に弱い"
+CASE 197
+	LOCALS = 
+	SIF GETBIT(ARG:1, 0)
+		LOCALS += "[正常位]"
+	SIF GETBIT(ARG:1, 1)
+		LOCALS += "[後背位]"
+	SIF GETBIT(ARG:1, 2)
+		LOCALS += "[屈曲位]"
+	SIF GETBIT(ARG:1, 3)
+		LOCALS += "[対面座位]"
+	SIF GETBIT(ARG:1, 4)
+		LOCALS += "[背面座位]"
+	SIF GETBIT(ARG:1, 5)
+		LOCALS += "[奉仕騎乗位]"
+	SIF GETBIT(ARG:1, 6)
+		LOCALS += "[押し倒し騎乗位]"
+	SIF GETBIT(ARG:1, 9)
+		LOCALS += "[特に無し]"
+	SIF GETBIT(ARG:1, 10)
+		LOCALS += "[Ａ正常位]"
+	SIF GETBIT(ARG:1, 11)
+		LOCALS += "[Ａ後背位]"
+	SIF GETBIT(ARG:1, 12)
+		LOCALS += "[Ａ屈曲位]"
+	SIF GETBIT(ARG:1, 13)
+		LOCALS += "[Ａ対面座位]"
+	SIF GETBIT(ARG:1, 14)
+		LOCALS += "[Ａ背面座位]"
+	SIF GETBIT(ARG:1, 15)
+		LOCALS += "[Ａ奉仕騎乗位]"
+	SIF GETBIT(ARG:1, 16)
+		LOCALS += "[押し倒しＡ騎乗位]"
+	SIF GETBIT(ARG:1, 19)
+		LOCALS += "[エースオブスペード]"
+
+	LOCALS = %SUBSTRING(LOCALS, 1, STRLENS(LOCALS) - 2)%
+
+CASE 201
+	SIF ARG:1 == 2
+		LOCALS = エルダーサキュバス
+CASE 202
+	LOCAL = COND("眷属", ARG:2)
+	SELECTCASE LOCAL
+	CASE IS > 0
+		LOCALS = %NAME:LOCAL%の眷属
+	ENDSELECT
+CASE 220
+	SIF PENIS(ARG:2)
+		LOCALS = ペニピアス
+CASE 240
+	SELECTCASE ARG:1
+	CASE 2
+		LOCALS = トゥレイルルート
+	CASE 3
+		LOCALS = シッポ巻きつき
+	CASE 4
+		LOCALS = クィーンズボンデージ
+	CASE 5
+		LOCALS = ワインディングウェッブ
+	CASE 6
+		LOCALS = パワーバインド
+	CASE 7
+		LOCALS = ペトラアイズ
+	CASE 8
+		LOCALS = バインドコード
+	CASE 9
+		LOCALS = ワンダートリップ
+	ENDSELECT
+CASE 243
+	SELECTCASE ARG:1
+	CASE 2
+		LOCALS = 分身
+	CASE 3
+		LOCALS = 分裂
+	ENDSELECT
+ENDSELECT
+RETURNF LOCALS
+
+;-------------------------------------------------
+;ビデオで撮影した内容の判定
+;-------------------------------------------------
+@VIDEO(ARGS)
+#FUNCTION
+;LOCALにのみ0以上の値を代入すると"コマンド番号==LOCAL"、LOCAL:1にも値を代入すると"LOCAL以上でLOCAL:1以下"のコマンドなら1を返す
+LOCAL = -1
+LOCAL:1 = - 1
+SELECTCASE ARGS
+CASE "処女喪失"
+	RETURNF GETBIT(CFLAG:69, 10)
+CASE "噴乳"
+	RETURNF GETBIT(CFLAG:69, 11)
+CASE "絶頂放尿"
+	RETURNF GETBIT(CFLAG:69, 12)
+CASE "浣腸"
+	LOCAL = 136
+CASE "セックス"
+	LOCAL = 60
+	LOCAL:1 = 69
+CASE "Ａセックス"
+	LOCAL = 70
+	LOCAL:1 = 79
+CASE "フィスト"
+	LOCAL = 141
+	LOCAL:1 = 143
+CASE "竜姦"
+	LOCAL = 304
+	LOCAL:1 = 305
+CASEELSE
+	FOR LOCAL:2, 11, 21
+		SIF FLAG:(LOCAL:2) >= 0 && ARGS == TRAINNAME:(FLAG:(LOCAL:2))
+			RETURNF 1
+	NEXT
+ENDSELECT
+IF LOCAL >= 0
+	FOR LOCAL:2, 11, 21
+		SIF FLAG:(LOCAL:2) >= LOCAL && FLAG:(LOCAL:2) <= MAX(LOCAL, LOCAL:1)
+			RETURNF 1
+	NEXT
+ENDIF
+RETURNF 0
+
+;ARGでONとなっているビットの数
+@NUM_BIT(ARG)
+#FUNCTION
+LOCAL:1 = 0
+FOR LOCAL, 0, 64
+	SIF GETBIT(ARG, LOCAL)
+		LOCAL:1 += 1
+NEXT
+RETURNF LOCAL:1
+
+;ペニスの名前
+@PENISNAME(ARG)
+#FUNCTIONS
+;持ち主はPLAYER
+IF TALENT:ARG:ふたなり || TALENT:ARG:オトコ
+	RESULTS = ペニス
+ELSE
+	RESULTS = ペニスバンド
+ENDIF
+RETURNF RESULTS
+
+;ハートマーク！！ ちょっと、ハートマークは一時休止
+@HEART()
+#FUNCTIONS
+CHKFONT "ＭＳ ゴシック"
+;IF RESULT
+;	;UNICODE 0x2764
+;	;SETFONT "Lucida Sans Unicode"
+;	UNICODE 0x2665
+;ELSE
+	RESULTS = ♪
+;ENDIF
+RETURNF RESULTS
+
+;-------------------------------------------------
+;ハートマークの出力…口上テキストには組み込みにくいが、はっきりとしたハートマーク
+;-------------------------------------------------
+;Lucida Sans Unicode は大きめだが、下の文章をかなり消してしまうんですよねぇ
+@HEARTMARK
+GETFONT
+CHKFONT "Times New Roman"
+SIF RESULT
+	SETFONT "Times New Roman"
+PRINTFORM %UNICODE(0x2665)%
+SETFONT RESULTS
+
+;口上の最後の時などに適している
+@HEARTMARK_E
+GETFONT
+CHKFONT "Times New Roman"
+SIF RESULT
+	SETFONT "Times New Roman"
+PRINTFORM %UNICODE(0x2665)%
+SETFONT RESULTS
+PRINTFORMW 」
+
+;改行版
+@HEARTMARK_L
+GETFONT
+CHKFONT "Times New Roman"
+SIF RESULT
+	SETFONT "Times New Roman"
+PRINTFORM %UNICODE(0x2665)%
+SETFONT RESULTS
+PRINTFORML 」
+
+@HEARTMARK_W
+GETFONT
+CHKFONT "Times New Roman"
+SIF RESULT
+	SETFONT "Times New Roman"
+PRINTFORMW %UNICODE(0x2665)%
+SETFONT RESULTS
+
+;-------------------------------------------------
+;ダミーカラーの設定
+;SETCOLOR SETCOLOR_DUMMY()　と使う
+;元の文字と微妙に違う色の文字にすることでGPI+特有の文字のズレを解消する（ただし工夫や力技必須）
+;()の中に値1～127を入れるとさらに微妙に別の色として扱えるが、10程度を超えると目に見えて違う色になってくる
+;-------------------------------------------------
+@SETCOLOR_DUMMY(ARG)
+#FUNCTION
+;RESULTの保持
+LOCAL = RESULT
+;現在のカラーの保持
+GETCOLOR
+LOCAL:1 = RESULT
+RESETCOLOR
+
+;デフォルトカラーの取得
+GETCOLOR
+IF ARG < 0 || ARG > 127
+	LOCAL:2 = RESULT
+ELSEIF RESULT%256 >= 255 - ARG
+	LOCAL:2 = RESULT-(1+ARG)
+ELSE
+	LOCAL:2 = RESULT+(1+ARG)
+ENDIF
+
+;カラーの復元
+SETCOLOR LOCAL:1
+;RESULTの復元
+RESULT = LOCAL
+
+RETURNF LOCAL:2
+
+
+;-------------------------------------------------
+;色の設定
+;-------------------------------------------------
+@DEF_COLOR(ARGS)
+#FUNCTION
+SELECTCASE ARGS
+CASE "ショッキングピンク"
+	RETURNF 0xEF0EEF
+CASE "ピンク"
+	RETURNF 0xEF857C
+CASE "ハートピンク"
+	RETURNF 0xFFC0CB
+CASE "赤"
+	RETURNF 0xEF5445
+CASE "紅"
+	RETURNF 0xB815B8
+CASE "黄色"
+	RETURNF 0xEFD540
+CASE "暗黄色"
+	RETURNF 0xC4C400
+CASE "イエロー"
+	RETURNF 0xFFFF00
+CASE "緑"
+	RETURNF 0x70E02C
+CASE "青"
+	RETURNF 0x4470EF
+CASE "水色"
+	RETURNF 0xB0CCEF
+CASE "暗灰色"
+	RETURNF 0x404040
+CASE "灰色"
+	RETURNF 0x707070
+CASE "明灰色"
+	RETURNF 0xA0A0A0
+CASE "白"
+	RETURNF 0xE3E3E3
+CASEELSE
+	RETURNF 0xE3E3E3
+ENDSELECT
+
+;-------------------------------------------------
+;BARの色付き等一括版
+;ぱ。さん作のぱにめーしょんを参考にさせていただきました
+;ARGSにどのゲージかを指示
+;ARGにバーにする変数、ARG:1に最大値、ARG:2に文字列としての長さ が入る
+;-------------------------------------------------
+@PRINT_BAR, ARGS, ARG, ARG:1, ARG:2
+
+SIF ARG < 0
+	ARG = 0
+SIF ARG:1 < 0
+	ARG:1 = 0
+
+PRINTPLAINFORM [
+
+GETFONT
+CHKFONT "ＭＳ ゴシック"
+SIF RESULT
+	SETFONT "ＭＳ ゴシック"
+
+VARSET LOCAL
+VARSET LOCALS
+;色と記号の設定
+IF CONFIG("画面表示：カラーバー")
+	SELECTCASE ARGS
+	CASE "ＰＡＬＡＭ絶頂"
+		LOCAL = DEF_COLOR("ショッキングピンク")
+	CASE "ＰＡＬＡＭ"
+		LOCAL = ((DEF_COLOR("白")/65536)/10*(10-MIN(10, GET_PALAMLV(ARG))))*65536
+		LOCAL += (((DEF_COLOR("白")/256)%256)/10*(10-MIN(10, GET_PALAMLV(ARG))))*256
+		LOCAL += ((DEF_COLOR("白")%256)/10*(10-MIN(10, GET_PALAMLV(ARG))))
+		LOCAL += ((DEF_COLOR("ピンク")/65536)/10*MIN(10, GET_PALAMLV(ARG)))*65536
+		LOCAL += (((DEF_COLOR("ピンク")/256)%256)/10*MIN(10, GET_PALAMLV(ARG)))*256
+		LOCAL += ((DEF_COLOR("ピンク")%256)/10*MIN(10, GET_PALAMLV(ARG)))
+	CASE "黄色ゲージ"
+		LOCAL = DEF_COLOR("黄色")
+	CASE "白色ゲージ"
+		LOCAL = DEF_COLOR("白")
+	CASE "桃色ゲージ"
+		LOCAL = DEF_COLOR("ピンク")
+	CASE "減少ゲージ"
+		SELECTCASE ARG * 100 / ARG:1
+		CASE IS >= 75
+			LOCAL = DEF_COLOR("緑")
+		CASE IS >= 50
+			LOCAL = DEF_COLOR("青")
+		CASE IS >= 25
+			LOCAL = DEF_COLOR("黄色")
+		CASE IS >= 1
+			LOCAL = DEF_COLOR("紅")
+		CASEELSE
+			LOCAL = DEF_COLOR("灰色")
+		ENDSELECT
+	CASE "溜めゲージ"
+		SELECTCASE ARG * 100 / ARG:1
+		CASE IS >= 100
+			LOCAL = DEF_COLOR("ピンク")
+		CASE IS >= 50
+			LOCAL = DEF_COLOR("黄色")
+		CASEELSE
+			LOCAL = DEF_COLOR("青")
+		ENDSELECT
+	ENDSELECT
+
+	SETCOLOR LOCAL
+	;バーの背景色
+	IF CONFIG("画面表示：バー背景無し")
+		LOCAL:1 = 0x000000
+	ELSE
+		LOCAL:1 = (MAX(30, (LOCAL/65536)/5)*65536 + MAX(30, ((LOCAL/256)%256)/5)*256 + MAX(30, (LOCAL%256)/5) )
+	ENDIF
+
+	LOCALS = %UNICODE(0x2587)%
+	LOCALS:1 = %LOCALS%
+ELSE
+	IF CONFIG("画面表示：バーのグラフ表示")
+		LOCALS = %UNICODE(0x2587)%
+	ELSE
+		LOCALS = *
+	ENDIF
+	IF CONFIG("画面表示：バー背景無し")
+		LOCALS:1 = %BL(1)%
+	ELSE
+		LOCALS:1 = .
+	ENDIF
+ENDIF
+
+;PALAM形式のバーの最大値の算出
+SELECTCASE ARGS
+CASE "ＰＡＬＡＭ", "ＰＡＬＡＭ絶頂"
+	IF GET_PALAMLV(ARG) >= 16
+		ARG:1 = PALAM_LV(16)
+	ELSE
+		ARG:1 = PALAM_LV(GET_PALAMLV(ARG) + 1) - PALAM_LV(GET_PALAMLV(ARG) )
+		ARG -= PALAM_LV(GET_PALAMLV(ARG) )
+	ENDIF
+ENDSELECT
+
+SELECTCASE ARG
+CASE IS <= 0
+	SIF CONFIG("画面表示：カラーバー")
+		SETCOLOR LOCAL:1
+	PRINTPLAINFORM %LOCALS:1 * ARG:2%
+CASE IS >= ARG:1
+	SELECTCASE ARGS
+	CASE "黄色ゲージ", "白色ゲージ", "桃色ゲージ", "ＰＡＬＡＭ"
+		SIF ARG:2 >= 3
+			LOCALS:2 = MAX
+	ENDSELECT
+	FOR LOCAL, 0, ARG:2
+		IF LOCALS:2 != "" && LOCAL == ARG:2/2 - STRLENS(LOCALS:2)/2
+			SETFONT RESULTS
+
+			PRINTPLAINFORM %LOCALS:2%
+
+			CHKFONT "ＭＳ ゴシック"
+			SIF RESULT
+				SETFONT "ＭＳ ゴシック"
+
+			LOCAL += STRLENS(LOCALS:2) - 1
+		ELSE
+			PRINTPLAINFORM %LOCALS%
+		ENDIF
+	NEXT
+CASEELSE
+	FOR LOCAL, 0, ARG:2
+		SELECTCASE LOCAL
+		CASE (ARG*ARG:2 - ARG:2 + ARG:1) / ARG:1
+			SIF CONFIG("画面表示：カラーバー")
+				SETCOLOR LOCAL:1
+			LOCALS = %LOCALS:1%
+		ENDSELECT
+		PRINTPLAINFORM %LOCALS%
+	NEXT
+ENDSELECT
+RESETCOLOR
+
+SETFONT RESULTS
+
+PRINTPLAINFORM ]
+
+
+
+;-------------------------------------------------
+;@PICKUP…２人以上の夢魔を使って描写する時の関数群
+;GETCHARA, FINDCHARAとの違いは、"TARGETを除いた、調教経験のあるキャラから指定されたタイプの一人をランダムで選ぶ"ところ。
+;-------------------------------------------------
+;夢魔が２人以上で、特定の夢魔１～２人を口上に絡ませる時
+;この関数のARG(いて欲しいキャラの番号)が指定されている時には、居るなら登録番号を、いないなら0を返します。
+;特に指定がなければ(ARG == 0)、ランダムで三人を選びます。
+;また、ARG:1にも数を代入すればRESULT:1に望みのキャラの番号が返る
+@PICKUP_NO, ARG, ARG:1
+#DIM LCOUNT
+;該当するキャラの人数
+#DIM NUM_FIND, 3
+
+VARSET RESULT
+VARSET LOCAL
+VARSET NUM_FIND
+
+;指定された夢魔がいるかどうかチェックします
+FOR LCOUNT, 2, CHARANUM
+	;MASTERの時や、まだ調教を行っていない時は処理を飛ばします
+	SIF LCOUNT == MASTER || LCOUNT == TARGET || EXP:LCOUNT:調教回数 == 0
+		CONTINUE
+
+	;夢魔がいた場合、RESULTにその夢魔の登録番号を保存します
+	IF (ARG == ARG:1 && ARG > 0 && NO:LCOUNT == ARG) || ARG == 0
+		NUM_FIND:2 += 1
+		IF RESULT == 0
+			RESULT = LCOUNT
+		ELSEIF RESULT:1 == 0
+			RESULT:1 = LCOUNT
+		ELSEIF RAND:(NUM_FIND:2) <= 1
+			IF RAND:2
+				RESULT = LCOUNT
+			ELSE
+				RESULT:1 = LCOUNT
+			ENDIF
+		ENDIF
+	ELSEIF NO:LCOUNT == ARG
+		NUM_FIND += 1
+		SIF RAND:NUM_FIND == 0
+			RESULT = LCOUNT
+	ELSEIF NO:LCOUNT == ARG:1
+		NUM_FIND:1 += 1
+		SIF RAND:(NUM_FIND:1) == 0
+			RESULT:1 = LCOUNT
+	ENDIF
+NEXT
+RETURN RESULT
+
+;-------------------------------------------------
+;キャラの中から特定の素質を持ったキャラをピックアップする関数
+;二人指定の時には、それぞれの希望素質を指定する。
+;例：長身二人指定なら、PICKUP_TALENT, 99, 99 、巨乳と貧乳なら、PICKUP_TALENT, 109, 110
+;-------------------------------------------------
+@PICKUP_TALENT, ARG, ARG:1
+VARSET RESULT
+VARSET LOCAL
+;指定された夢魔がいるかどうかチェックします
+FOR LOCAL, 2, CHARANUM
+	;MASTERの時や、まだ調教を行っていない時は処理を飛ばします
+	IF LOCAL == MASTER || LOCAL == TARGET || EXP:LOCAL:調教回数 == 0
+		CONTINUE
+	;夢魔がいた場合、RESULTにその夢魔の登録番号を保存します
+	ELSE
+		IF TALENT:LOCAL:ARG
+			LOCAL:1 += 1
+			SIF RAND:(LOCAL:1) == 0 || RESULT == RESULT:1
+				RESULT = LOCAL
+		ENDIF
+		IF TALENT:LOCAL:(ARG:1)
+			LOCAL:2 += 1
+			;一人の二部門制覇は避ける
+			IF RESULT > 0 && RESULT:1 > 0 && LOCAL == RESULT
+			ELSE
+				SIF RAND:(LOCAL:2) == 0
+					RESULT:1 = LOCAL
+			ENDIF
+		ENDIF
+	ENDIF
+NEXT
+RETURN RESULT
+
+
+;-------------------------------------------------
+;性転換イベント
+;-------------------------------------------------
+@CHANGE_SEX, ARG
+;男は女に、女orふたなりは男に
+;バイオリズムリセット
+BASE:ARG:バイオリズム = 0
+;作られたふたなりはオンナ
+IF TALENT:ARG:ふたなり == 2
+	TALENT:ARG:ふたなり = 0
+	TALENT:ARG:オンナ = 1
+ENDIF
+
+IF CFLAG:ARG:4
+	TALENT:ARG:オンナ = 0
+	TALENT:ARG:ふたなり = 0
+	TALENT:ARG:オトコ = 0
+
+	SIF GETBIT(CFLAG:ARG:4, 0)
+		TALENT:ARG:処女 = 1
+	SIF GETBIT(CFLAG:ARG:4, 1)
+		TALENT:ARG:処女 = 2
+
+	;男にも濡れやすさの変化をつける試み
+	;SIF GETBIT(CFLAG:ARG:4, 2)
+	;	TALENT:ARG:濡れやすい = 1
+	;SIF GETBIT(CFLAG:ARG:4, 3)
+	;	TALENT:ARG:濡れにくい = 1
+
+	SIF GETBIT(CFLAG:ARG:4, 4)
+		TALENT:ARG:Ｖ損傷 = 1
+	SIF GETBIT(CFLAG:ARG:4, 5)
+		TALENT:ARG:Ｖ損傷 = 2
+	SIF GETBIT(CFLAG:ARG:4, 6)
+		TALENT:ARG:Ｖ損傷 = 3
+	SIF GETBIT(CFLAG:ARG:4, 7)
+		TALENT:ARG:遅漏 = 1
+	SIF GETBIT(CFLAG:ARG:4, 8)
+		TALENT:ARG:遅漏 = 2
+	SIF GETBIT(CFLAG:ARG:4, 9)
+		TALENT:ARG:淫壷 = 1
+	SIF GETBIT(CFLAG:ARG:4, 10)
+		TALENT:ARG:男の娘 = 1
+
+	IF GETBIT(CFLAG:ARG:4, 11) && TALENT:ARG:長身 == 0
+		CALL CALC, "長身化", ARG
+	ELSEIF GETBIT(CFLAG:ARG:4, 12) && TALENT:ARG:小柄体型 == 0
+		CALL CALC, "小柄化", ARG
+	ELSEIF TALENT:ARG:長身 || TALENT:ARG:小柄体型
+		CALL CALC, "普通体型化", ARG
+	ENDIF
+
+	SIF GETBIT(CFLAG:ARG:4, 13)
+		TALENT:ARG:Ｖ鈍感 = 1
+	SIF GETBIT(CFLAG:ARG:4, 14)
+		TALENT:ARG:Ｖ敏感 = 1
+	SIF GETBIT(CFLAG:ARG:4, 15)
+		TALENT:ARG:貧乳 = 1
+	SIF GETBIT(CFLAG:ARG:4, 16)
+		TALENT:ARG:巨乳 = 1
+	SIF GETBIT(CFLAG:ARG:4, 17)
+		TALENT:ARG:巨乳 = 2
+	SIF GETBIT(CFLAG:ARG:4, 18)
+		TALENT:ARG:オンナ = 1
+	SIF GETBIT(CFLAG:ARG:4, 19)
+		TALENT:ARG:ふたなり = 1
+	SIF GETBIT(CFLAG:ARG:4, 20)
+		TALENT:ARG:ふたなり = 2
+	SIF GETBIT(CFLAG:ARG:4, 21)
+		TALENT:ARG:オトコ = 1
+	SIF GETBIT(CFLAG:ARG:4, 22)
+		TALENT:ARG:母乳体質 = 1
+	SIF GETBIT(CFLAG:ARG:4, 23)
+		TALENT:ARG:母乳体質 = 2
+	SIF GETBIT(CFLAG:ARG:4, 24)
+		TALENT:ARG:早漏 = 1
+	SIF GETBIT(CFLAG:ARG:4, 25)
+		TALENT:ARG:早漏 = 2
+	SIF GETBIT(CFLAG:ARG:4, 26)
+		TALENT:ARG:童貞 = 1
+
+	IF TALENT:ARG:貧乳
+		CALL CALC, "貧乳化", ARG
+	ELSEIF TALENT:ARG:巨乳 == 1
+		CALL CALC, "巨乳化", ARG
+	ELSEIF TALENT:ARG:巨乳 >= 2
+		CALL CALC, "爆乳化", ARG
+	ELSEIF TALENT:ARG:オトコ
+		CALL CALC, "男乳化", ARG
+	ELSE
+		CALL CALC, "並乳化", ARG
+	ENDIF
+	CFLAG:ARG:4 = 0
+ELSE
+	;CFLAG:ARG:4に性別反転前の情報を記録
+	SELECTCASE TALENT:ARG:処女
+	CASE 1
+		SETBIT CFLAG:ARG:4, 0
+	CASE IS >= 2
+		SETBIT CFLAG:ARG:4, 1
+	ENDSELECT
+
+	;男にも濡れやすさの変化をつける試み
+	;SIF TALENT:ARG:濡れやすい
+	;	SETBIT CFLAG:ARG:4, 2
+	;SIF TALENT:ARG:濡れにくい
+	;	SETBIT CFLAG:ARG:4, 3
+
+	SELECTCASE TALENT:ARG:Ｖ損傷
+	CASE 1
+		SETBIT CFLAG:ARG:4, 4
+	CASE 2
+		SETBIT CFLAG:ARG:4, 5
+	CASE IS >= 3
+		SETBIT CFLAG:ARG:4, 6
+	ENDSELECT
+
+	SELECTCASE TALENT:ARG:遅漏
+	CASE 1
+		SETBIT CFLAG:ARG:4, 7
+	CASE IS >= 2
+		SETBIT CFLAG:ARG:4, 8
+	ENDSELECT
+
+	SIF TALENT:ARG:淫壷
+		SETBIT CFLAG:ARG:4, 9
+	SIF TALENT:ARG:男の娘
+		SETBIT CFLAG:ARG:4, 10
+	SIF TALENT:ARG:長身
+		SETBIT CFLAG:ARG:4, 11
+	SIF TALENT:ARG:小柄体型
+		SETBIT CFLAG:ARG:4, 12
+	SIF TALENT:ARG:Ｖ鈍感
+		SETBIT CFLAG:ARG:4, 13
+	SIF TALENT:ARG:Ｖ敏感
+		SETBIT CFLAG:ARG:4, 14
+	SIF TALENT:ARG:貧乳
+		SETBIT CFLAG:ARG:4, 15
+
+	SELECTCASE TALENT:ARG:巨乳
+	CASE 1
+		SETBIT CFLAG:ARG:4, 16
+	CASE IS >= 2
+		SETBIT CFLAG:ARG:4, 17
+	ENDSELECT
+
+	SIF TALENT:ARG:オンナ
+		SETBIT CFLAG:ARG:4, 18
+
+	SELECTCASE TALENT:ARG:ふたなり
+	CASE 1
+		SETBIT CFLAG:ARG:4, 19
+	CASE IS >= 2
+		SETBIT CFLAG:ARG:4, 20
+	ENDSELECT
+
+	SIF TALENT:ARG:オトコ
+		SETBIT CFLAG:ARG:4, 21
+
+	SELECTCASE TALENT:ARG:母乳体質
+	CASE 1
+		SETBIT CFLAG:ARG:4, 22
+	CASE IS >= 2
+		SETBIT CFLAG:ARG:4, 23
+	ENDSELECT
+
+	SELECTCASE TALENT:ARG:早漏
+	CASE 1
+		SETBIT CFLAG:ARG:4, 24
+	CASE IS >= 2
+		SETBIT CFLAG:ARG:4, 25
+	ENDSELECT
+
+	SIF TALENT:ARG:童貞
+		SETBIT CFLAG:ARG:4, 26
+
+	IF TALENT:ARG:オトコ
+		TALENT:ARG:オトコ = 0
+		TALENT:ARG:オンナ = 1
+		;以下は、女性化ボーナス
+		IF ABL:ARG:欲望 >= 3
+			TALENT:ARG:Ｖ敏感 = RAND:2
+			TALENT:ARG:濡れやすい = RAND:2
+		ENDIF
+
+		;胸の大きさ
+		IF RAND:4 == 0
+			CALL CALC, "貧乳化", ARG
+			SIF RAND:3 == 0
+				CALL CALC, "小柄化", ARG
+		ELSEIF RAND:2
+			CALL CALC, "巨乳化", ARG
+		ELSE
+			CALL CALC, "並乳化", ARG
+		ENDIF
+		;処女はサービス！w
+		IF EXP:ARG:Ｖ経験 == 0
+			TALENT:ARG:処女 = 1
+		ELSE
+			TALENT:ARG:処女 = 2
+		ENDIF
+	ELSE
+		TALENT:ARG:オンナ = 0
+		TALENT:ARG:ふたなり = 0
+		TALENT:ARG:オトコ = 1
+		CALL CALC, "男乳化", ARG
+	ENDIF
+ENDIF
+
+;性別特有のありえない素質の消去
+IF TALENT:ARG:オトコ
+	FOR LOCAL, 0, 300
+		SIF CALCF("オンナ特有の素質", LOCAL)
+			TALENT:ARG:LOCAL = 0
+	NEXT
+ELSEIF TALENT:ARG:オンナ
+	FOR LOCAL, 0, 300
+		SIF CALCF("オトコ特有の素質", LOCAL)
+			TALENT:ARG:LOCAL = 0
+	NEXT
+ENDIF
+
+CALL CALC, "好きな体位", ARG
+CALL SETFLAG, "性転換フラグ", ARG
+CALL EXP50_CHECK, ARG
+
+IF CONFIG("ペニス詳細設定") && ARG == MASTER && PENIS(ARG) && TALENT:ARG:ペニス == 0
+	PRINTFORML 性別の移り変わりにつれて%CALLNAME:MASTER%の股間に変化が起こっています…
+	CALL SETCONFIG, "ペニス詳細設定：主人"
+ENDIF
+
+;-------------------------------------------------
+;横に長すぎる選択肢ARGSをスクロール表示させる関数
+;はっきり言って目が痛くなるのでボツ
+;-------------------------------------------------
+@INPUT_SCROLL, ARGS, ARG
+#DIM LCOUNT
+
+SIF ARG == 0
+	ARG = NUM("折り返し文字数")
+
+IF STRLENS(ARGS) <= ARG
+	PRINTFORML %ARGS%
+	INPUT
+	RETURN RESULT
+ENDIF
+
+REDRAW 0
+
+VARSET LOCALS
+
+FOR LCOUNT, 0, STRLENS(ARGS)
+	LOCALS:(LCOUNT%2) = %SUBSTRING(ARGS, LCOUNT*2)%%ARGS%
+	LOCALS:(LCOUNT%2) = %SUBSTRING(LOCALS:(LCOUNT%2), 0, ARG)%
+
+	SIF LOCALS == LOCALS:1
+		CONTINUE
+
+	PRINTFORM %LOCALS:(LCOUNT%2)%
+
+	TINPUT 110, 9999, 0, ""
+
+	SELECTCASE RESULT
+	CASE 9999
+		CLEARLINE 2
+	CASEELSE
+		REDRAW 1
+		RETURN RESULT
+	ENDSELECT
+NEXT
+RESTART
+

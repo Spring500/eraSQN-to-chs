@@ -1,0 +1,180 @@
+﻿;-------------------------------------------------
+;スカートをはかせる関数
+;指定番号によって名前がCSTR:43に代入される。
+;EQUIP:スカートはスカートの特徴フラグ。ビット管理する
+;-------------------------------------------------
+@SET_SKIRT, ARG, ARG:1, ARG:2
+;汚れ＆ずれたりしたフラグ等を初期化して新品にする
+TCVAR:ARG:26 = 0
+
+IF ARG:1 == 0
+	EQUIP:ARG:スカート = 0
+	CSTR:ARG:43 = 
+	RETURN 0
+ENDIF
+
+;名前記録
+CSTR:ARG:43 = %PALAM_SKIRT(ARG:1, ARG)%
+
+TCVAR:ARG:26 = 0
+
+;-------------------------------------------------
+;ARGのスカートの名前。ARG:1==0なら正式名称 by CSTR。ARG:1==1なら短縮名称 by EQUIP。
+;-------------------------------------------------
+@SKIRT(ARG, ARG:1)
+#FUNCTIONS
+IF ARG:1 == 0
+	LOCALS = %CSTR:ARG:43%
+ELSE
+	IF CHECK_SKIRT("鎧", ARG)
+		LOCALS = 垂れ
+	ELSEIF CHECK_SKIRT("ベビードール", ARG)
+		LOCALS = ベビードール
+	ELSEIF CHECK_SKIRT("Ｙシャツ", ARG)
+		LOCALS = シャツ
+	ELSEIF CHECK_SKIRT("袴", ARG)
+		LOCALS = 袴
+	ELSEIF CHECK_SKIRT("着物", ARG)
+		LOCALS = 裾
+	ELSEIF CHECK_SKIRT("巻きスカート", ARG)
+		LOCALS = 腰布
+	ELSE
+		LOCALS = スカート
+	ENDIF
+ENDIF
+RETURNF LOCALS
+
+;-------------------------------------------------
+;ARG番のスカートの正式名称(基本的には用いない)
+;ARG:1 > 0ならARG:1はキャラ番号として働く
+;-------------------------------------------------
+@NAME_SKIRT(ARG, ARG:1)
+#FUNCTIONS
+LOCALS = %PALAM_SKIRT(ARG, ARG:1)%
+RETURNF LOCALS
+
+;-------------------------------------------------
+;ARG番のスカートの詳細パラ
+;ARG:1 > 0ならARG:1はキャラ番号として働き、ARG:1 > 0 && ARG:2 > 0ならEQUIPを定める
+;はずだが、EQUIPなどについてはシャツのところに統合
+;-------------------------------------------------
+@PALAM_SKIRT(ARG, ARG:1, ARG:2)
+#FUNCTIONS
+VARSET LOCAL
+VARSET LOCALS
+
+SELECTCASE ARG
+CASE 10
+	LOCALS = 危ない腰布
+CASE 12
+	LOCALS = 垂れ
+CASE 14
+	LOCALS = 腰布
+CASE 16
+	IF CFLAG:(ARG:1):8 == 2
+		LOCALS = スカート
+	ELSEIF CFLAG:(ARG:1):8 == 3
+		LOCALS = 着物
+	ELSE
+		LOCALS = 緋袴
+	ENDIF
+CASE 22
+	LOCALS = 裾
+CASE 28
+	LOCALS = ミニスカート
+CASE 30
+	LOCALS = 巻布
+CASE 50, 112
+	LOCALS = ミニスカート
+CASE 100
+	LOCALS = シャツの裾
+CASE 101
+	LOCALS = タイトスカート
+CASE 102
+	LOCALS = 着物
+CASE 103
+	LOCALS = エプロンスカート
+CASE 105
+	LOCALS = 看護婦のスカート
+CASE 107
+	LOCALS = プリーツスカート
+CASE 108
+	LOCALS = 緋袴
+CASE 109
+	LOCALS = 裾
+CASE 111
+	LOCALS = フリルスカート
+CASEELSE
+	LOCALS = スカート
+ENDSELECT
+RETURNF LOCALS
+
+;-------------------------------------------------
+;指示されたとおりのスカートのフラグを設定するために使う
+;-------------------------------------------------
+@SETFLAG_SKIRT(ARGS:1, ARGS:2, ARGS:3, ARGS:4, ARGS:5, ARGS:6, ARGS:7, ARGS:8, ARGS:9, ARGS:10)
+#FUNCTION
+#DIM LCOUNT
+
+LOCAL = 0
+FOR LCOUNT, 1, 11
+	ARGS = %ARGS:LCOUNT%
+	SELECTCASE ARGS
+	CASE "ロング"
+		SETBIT LOCAL, 0
+	CASE "マキシ", "ベリーロング", "超ロング"
+		SETBIT LOCAL, 1
+		SETBIT LOCAL, 0
+	CASE "ミニ"
+		SETBIT LOCAL, 2
+	CASE "マイクロミニ", "マイクロ", "超ミニ"
+		SETBIT LOCAL, 3
+		SETBIT LOCAL, 2
+	CASE "フレア"
+		SETBIT LOCAL, 4
+	CASE "タイト"
+		SETBIT LOCAL, 5
+	CASE "プリーツ"
+		SETBIT LOCAL, 6
+	CASE "袴"
+		SETBIT LOCAL, 7
+		SETBIT LOCAL, 0
+		SETBIT LOCAL, 1
+	CASE "ドレス"
+		SETBIT LOCAL, 8
+	CASE "ヒップボーン", "ヒップボーンドレス"
+		SETBIT LOCAL, 9
+		SETBIT LOCAL, 8
+	CASE "エプロン"
+		SETBIT LOCAL, 10
+	CASE "着物", "和服"
+		SETBIT LOCAL, 11
+	CASE "巻きスカート", "巻き"
+		SETBIT LOCAL, 12
+	CASE "ベビードール"
+		SETBIT LOCAL, 13
+	CASE "Ｙシャツ"
+		SETBIT LOCAL, 14
+	CASEELSE
+		SIF STRLENS(ARGS)
+			LOCAL |= SETFLAG_COMMON(ARGS)
+	ENDSELECT
+	SIF STRLENS(ARGS:(LCOUNT + 1) ) == 0
+		RETURNF LOCAL
+NEXT
+RETURNF LOCAL
+
+
+;-------------------------------------------------
+;ARGのスカートが条件ARGSを満たすか確認する
+;-------------------------------------------------
+@CHECK_SKIRT(ARGS, ARG)
+#FUNCTION
+SIF ARG == 0 && TARGET
+	ARG = TARGET
+SIF EQUIP:ARG:スカート == 0
+	RETURNF 0
+SIF (SETFLAG_SKIRT(ARGS)&EQUIP:ARG:スカート) == SETFLAG_SKIRT(ARGS)
+	RETURNF 1
+RETURNF 0
+

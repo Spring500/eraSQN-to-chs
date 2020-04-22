@@ -1,0 +1,1022 @@
+﻿;調教時キャラ別口上を一括管理
+;-----------------------------------------------------------------------------------
+;口上用システムファイルの存在判定
+;EVENT_K.ERB(つまりこのファイル)が存在しているかを判定
+;口上が使用可能で口上機能を能動的にOFFにしていない場合には、自動的にスイッチが入る
+;各口上ファイル内でキャラフラグを制御するので、
+;EVENT_Kxx.ERB(キャラ別口上ファイル)を途中で削除してもエラーはでない
+;ただし、口上をONにした状態でこのファイルを削除するとエラーが発生する
+;あっても邪魔にはならないので削除しない方が良いだろう
+;-----------------------------------------------------------------------------------
+
+;--------------------------------------------------
+;@KOJO_MESSAGE_COM関係
+;コマンド実行時に出力されます
+;--------------------------------------------------
+@KOJO_MESSAGE_COM
+#DIM MEMO_LINECOUNT
+SIF FLAG:7 == 0
+	RETURN 0
+PRINTL 
+
+;口上があるかどうかを行数でチェック
+MEMO_LINECOUNT = LINECOUNT
+
+;口枷着用時には通常の口上をスキップする（OFFだと口を塞いでるのに喋りまくる）
+IF TEQUIP:口枷 && SELECTCOM != 135
+	CALL KOJO_MESSAGE_GAG
+	TRYCALL TRAIN_MESSAGE_C
+ELSE
+	TRYCALLFORM KOJO_MESSAGE_COM_{NO:TARGET}_{CFLAG:209}
+
+	;汎用口上など
+	IF LINECOUNT == MEMO_LINECOUNT
+		;シックスナイン
+		IF SELECTCOM == 99
+			TRYCALLFORM COM_ABLE{TEQUIP:シックスナイン}
+			SIF RESULT
+				SELECTCOM = TEQUIP:シックスナイン
+			IF PREVCOM == TEQUIP:シックスナイン
+				TRYCALLFORM COM_ABLE{TEQUIP:PLAYER:シックスナイン}
+				SIF RESULT
+					SELECTCOM = TEQUIP:PLAYER:シックスナイン
+			ENDIF
+			TRYCALLFORM KOJO_MESSAGE_COM_{NO:TARGET}_{CFLAG:209}
+			SELECTCOM = 99
+		ELSEIF SELECTCOM == 97
+			SELECTCOM = 90
+			TRYCALLFORM KOJO_MESSAGE_COM_{NO:TARGET}_{CFLAG:209}
+			SELECTCOM = 97
+		ELSE
+			CALL TRAINVOICE
+		ENDIF
+	ENDIF
+ENDIF
+
+;何も喋っていない場合には１行消す
+SIF LINECOUNT == MEMO_LINECOUNT
+	CLEARLINE 1
+
+;射精ゲージのチェック
+CALL CHECK_BASEPLAYER2
+
+;効果を及ぼすのはメインプレイヤー一人のみ
+CALL CALC, "エナジードレイン"
+
+;--------------------------------------------------
+;@KOJO_MESSAGE_BEFORE_COM関係
+;コマンド実行時に調教テキストの前に出力されます
+;--------------------------------------------------
+@KOJO_MESSAGE_BEFORE_COM
+#DIM MEMO_LINECOUNT
+
+SIF FLAG:7 == 0
+	RETURN 0
+
+;プレイヤーの絶頂度など試算(COND("絶頂", PLAYER)を使うため)
+CALL SAMEN_CHECK
+
+PRINTL 
+MEMO_LINECOUNT = LINECOUNT
+
+;口枷着用時には口上をスキップする（OFFだと口を塞いでるのに喋りまくる）
+IF TEQUIP:口枷 && SELECTCOM != 135
+	CALL KOJO_MESSAGE_BEFORE_GAG
+ELSE
+	TRYCALLFORM KOJO_MESSAGE_BEFORE_COM_{NO:TARGET}_{CFLAG:209}
+ENDIF
+
+SIF LINECOUNT == MEMO_LINECOUNT
+	CLEARLINE 1
+
+;プレイヤーの絶頂度などを元の値に戻す
+CALL SAMEN_CHECK, -1
+
+;射精ゲージのチェック
+CALL CHECK_BASEPLAYER2
+
+;--------------------------------------------------
+;@KOJO_MESSAGE_AFTER_COM関係
+;コマンド実行時にターン終了時に出力されます
+;--------------------------------------------------
+@KOJO_MESSAGE_AFTER_COM
+SIF FLAG:7 == 0
+	RETURN 0
+
+;口枷着用時には口上をスキップする（OFFだと口を塞いでるのに喋りまくる）
+SIF TEQUIP:口枷 && SELECTCOM != 135
+	RETURN 0
+
+TRYCALLFORM KOJO_MESSAGE_AFTER_COM_{NO:TARGET}_{CFLAG:209}
+
+;-------------------------------------------------
+;@KOJO_MESSAGE_PALAMCNG関係
+;パラメータ変動をトリガーにした口上
+;パラメータ変動後に口上を発動します
+;-------------------------------------------------
+@KOJO_MESSAGE_PALAMCNG
+SIF FLAG:7 == 0
+	RETURN 0
+
+VARSET FLAG, 0, 100, 200
+
+;口枷着用時には口上をスキップする（OFFだと口を塞いでるのに喋りまくる）
+SIF TEQUIP:口枷
+	RETURN 0
+
+LOCALS = %CHECK_MESSAGE_PALAMCNG()%
+SIF LOCALS == ""
+	RETURN 0
+
+PRINTL 
+
+TRYCALLFORM KOJO_MESSAGE_PALAMCNG_{NO:TARGET}_{CFLAG:209}, LOCALS
+
+;恋慕の時にセックスで破瓜
+SIF GETBIT(NOWEX:処女喪失, 1)
+	PRINTFORML %CALLNAME:TARGET%は%CALLNAME:MASTER%に処女を捧げられた事に幸福を感じているようだ…
+
+;相手が上位夢魔の場合には効果を発揮する攻略刻印（屈服刻印取得に要するパラメータ量を減らす）を得る
+IF FIRST_EV(LOCALS) == 0
+	SELECTCASE LOCALS
+	CASE "Ｃ絶頂", "尿道絶頂", "Ｖ絶頂", "Ａ絶頂", "Ｂ絶頂", "Ｍ絶頂", "絶頂放尿"
+		IF TALENT:上位夢魔 && MARK:屈服刻印 < 3
+			DRAWLINE
+			PRINTFORMW ☆★☆イベント達成・屈服刻印習得のペナルティが軽減されます☆★☆
+			DRAWLINE
+		ENDIF
+		MARK:攻略刻印 += 1
+	CASE "Ｃ絶頂20回以上", "尿道絶頂20回以上", "Ｖ絶頂20回以上", "Ａ絶頂20回以上", "Ｂ絶頂20回以上", "Ｍ絶頂20回以上", 
+		IF TALENT:上位夢魔 && MARK:屈服刻印 < 3
+			DRAWLINE
+			PRINTFORMW ☆★☆イベント達成・屈服刻印習得のペナルティが大幅軽減されます☆★☆
+			DRAWLINE
+		ENDIF
+		MARK:攻略刻印 += 2
+	ENDSELECT
+ENDIF
+
+;喋った口上のフラグを記録
+CALL SET_EV, TARGET, LOCALS
+;射精ゲージのチェック
+CALL CHECK_BASEPLAYER2
+
+;-------------------------------------------------
+;@KOJO_MESSAGE_PALAMCNG で何について喋るかの判定
+;優先度の高い順に、処女喪失、初絶頂、絶頂放尿、絶頂20回、焦らし、射精噴乳、通常絶頂、PALAM３ＬＶ突破
+;-------------------------------------------------
+@CHECK_MESSAGE_PALAMCNG()
+#FUNCTIONS
+LOCALS = 
+;-------------------------------------------------
+;処女喪失
+;-------------------------------------------------
+IF NOWEX:処女喪失 > 0
+	LOCALS = 処女喪失
+	RETURNF LOCALS
+ENDIF
+
+;-------------------------------------------------
+;初めての絶頂（二回目以降の絶頂は優先度が低いので下の方にある）
+;-------------------------------------------------
+LOCAL = 1
+IF NOWEX:Ｃ絶頂 > 0 && PENIS(TARGET) == 0 && FIRST_EV("Ｃ絶頂") == 0
+	SIF LOCALS == "" || RAND:LOCAL == 0
+		LOCALS = Ｃ絶頂
+	LOCAL += 1
+ENDIF
+IF NOWEX:尿道絶頂 > 0 && FIRST_EV("尿道絶頂") == 0
+	SIF LOCALS == "" || RAND:LOCAL == 0
+		LOCALS = 尿道絶頂
+	LOCAL += 1
+ENDIF
+IF NOWEX:Ｖ絶頂 > 0 && FIRST_EV("Ｖ絶頂") == 0
+	SIF LOCALS == "" || RAND:LOCAL == 0
+		LOCALS = Ｖ絶頂
+	LOCAL += 1
+ENDIF
+IF NOWEX:Ａ絶頂 > 0 && FIRST_EV("Ａ絶頂") == 0
+	SIF LOCALS == "" || RAND:LOCAL == 0
+		LOCALS = Ａ絶頂
+	LOCAL += 1
+ENDIF
+IF NOWEX:Ｂ絶頂 > 0 && FIRST_EV("Ｂ絶頂") == 0
+	SIF LOCALS == "" || RAND:LOCAL == 0
+		LOCALS = Ｂ絶頂
+	LOCAL += 1
+ENDIF
+IF NOWEX:Ｍ絶頂 > 0 && FIRST_EV("Ｍ絶頂") == 0
+	SIF LOCALS == "" || RAND:LOCAL == 0
+		LOCALS = Ｍ絶頂
+	LOCAL += 1
+ENDIF
+
+SIF LOCALS != ""
+	RETURNF LOCALS
+;-------------------------------------------------
+;絶頂放尿した
+;-------------------------------------------------
+IF NOWEX:絶頂お漏らし > 0
+	LOCALS = 絶頂放尿
+	RETURNF LOCALS
+ENDIF
+
+;-------------------------------------------------
+;絶頂しまくり （３回に一回程度しゃべる。多重絶頂だと確率ＵＰ）
+;-------------------------------------------------
+LOCAL = 3
+IF EX:Ｃ絶頂 >= 20 && PENIS(TARGET) == 0 && NOWEX:Ｃ絶頂 >= MAX(NOWEX:Ａ絶頂, NOWEX:Ｂ絶頂, NOWEX:Ｍ絶頂, NOWEX:尿道絶頂, 1)
+	SIF RAND:LOCAL == 0
+		LOCALS = Ｃ絶頂20回以上
+	LOCAL += 1
+ENDIF
+IF EX:尿道絶頂 >= 20 && NOWEX:尿道絶頂 >= MAX(NOWEX:Ｃ絶頂, NOWEX:Ｖ絶頂, NOWEX:Ａ絶頂, NOWEX:Ｂ絶頂, NOWEX:Ｍ絶頂, 1)
+	SIF RAND:LOCAL == 0
+		LOCALS = 尿道絶頂20回以上
+	LOCAL += 1
+ENDIF
+IF EX:Ｖ絶頂 >= 20 && NOWEX:Ｖ絶頂 >= MAX(NOWEX:Ｃ絶頂, NOWEX:Ａ絶頂, NOWEX:Ｂ絶頂, NOWEX:Ｍ絶頂, NOWEX:尿道絶頂, 1)
+	SIF RAND:LOCAL == 0
+		LOCALS = Ｖ絶頂20回以上
+	LOCAL += 1
+ENDIF
+IF EX:Ａ絶頂 >= 20 && NOWEX:Ａ絶頂 >= MAX(NOWEX:Ｃ絶頂, NOWEX:Ａ絶頂, NOWEX:Ｂ絶頂, NOWEX:Ｍ絶頂, NOWEX:尿道絶頂, 1)
+	SIF RAND:LOCAL == 0
+		LOCALS = Ａ絶頂20回以上
+	LOCAL += 1
+ENDIF
+IF EX:Ｂ絶頂 >= 20 && NOWEX:Ｂ絶頂 >= MAX(NOWEX:Ｃ絶頂, NOWEX:Ａ絶頂, NOWEX:Ｂ絶頂, NOWEX:Ｍ絶頂, NOWEX:尿道絶頂, 1)
+	SIF RAND:LOCAL == 0
+		LOCALS = Ｂ絶頂20回以上
+	LOCAL += 1
+ENDIF
+IF EX:Ｍ絶頂 >= 20 && NOWEX:Ｍ絶頂 >= MAX(NOWEX:Ｃ絶頂, NOWEX:Ａ絶頂, NOWEX:Ｂ絶頂, NOWEX:Ｍ絶頂, NOWEX:尿道絶頂, 1)
+	SIF RAND:LOCAL == 0
+		LOCALS = Ｍ絶頂20回以上
+	LOCAL += 1
+ENDIF
+
+SIF LOCALS != ""
+	RETURNF LOCALS
+
+;-------------------------------------------------
+;焦らし （３回に一回程度しゃべる。多重絶頂だと確率ＵＰ）
+;-------------------------------------------------
+LOCAL = 3
+IF NOWEX:Ｃ絶頂寸止め > 0 && CUP:快Ｃ && TALENT:尿道性感 && COND("尿道性感フラグ") && CHECK("尿道プレイ")
+	SIF RAND:LOCAL == 0
+		LOCALS = 尿道焦らし
+	LOCAL += 1
+ELSEIF NOWEX:Ｃ絶頂寸止め > 0 && CUP:快Ｃ && PENIS(TARGET) == 0
+	SIF RAND:LOCAL == 0
+		LOCALS = Ｃ焦らし
+	LOCAL += 1
+ENDIF
+IF NOWEX:Ｖ絶頂寸止め > 0 && CUP:快Ｖ
+	SIF RAND:LOCAL == 0
+		LOCALS = Ｖ焦らし
+	LOCAL += 1
+ENDIF
+IF NOWEX:Ａ絶頂寸止め > 0 && CUP:快Ａ
+	SIF RAND:LOCAL == 0
+		LOCALS = Ａ焦らし
+	LOCAL += 1
+ENDIF
+IF NOWEX:Ｂ絶頂寸止め > 0 && CUP:快Ｂ
+	SIF RAND:LOCAL == 0
+		LOCALS = Ｂ焦らし
+	LOCAL += 1
+ENDIF
+IF NOWEX:Ｍ絶頂寸止め > 0 && CUP:快Ｍ
+	SIF RAND:LOCAL == 0
+		LOCALS = Ｍ焦らし
+	LOCAL += 1
+ENDIF
+IF NOWEX:射精寸止め > 0
+	SIF RAND:LOCAL == 0
+		LOCALS = 射精焦らし
+	LOCAL += 1
+ENDIF
+
+SIF LOCALS != ""
+	RETURNF LOCALS
+
+;-------------------------------------------------
+;各種イベント（処女喪失と絶頂放尿は優先度が高いので上の方にある）
+;-------------------------------------------------
+LOCAL = 1
+IF NOWEX:射精 > 0
+	SIF LOCALS == "" || RAND:LOCAL == 0
+		LOCALS = 射精した
+	LOCAL += 1
+ENDIF
+IF NOWEX:噴乳 > 0
+	SIF LOCALS == "" || RAND:LOCAL == 0
+		LOCALS = 噴乳した
+	LOCAL += 1
+ENDIF
+
+SIF LOCALS != ""
+	RETURNF LOCALS
+
+;-------------------------------------------------
+;通常の絶頂（初回絶頂は優先度が高いので上の方にある）
+;-------------------------------------------------
+LOCAL = 4
+IF NOWEX:Ｃ絶頂 > 0 && PENIS(TARGET) == 0 && FIRST_EV("Ｃ絶頂")
+	SIF RAND:LOCAL == 0
+		LOCALS = Ｃ絶頂
+	LOCAL += 1
+ENDIF
+IF NOWEX:尿道絶頂 > 0 && FIRST_EV("尿道絶頂")
+	SIF RAND:LOCAL == 0
+		LOCALS = 尿道絶頂
+	LOCAL += 1
+ENDIF
+IF NOWEX:Ｖ絶頂 > 0 && FIRST_EV("Ｖ絶頂")
+	SIF RAND:LOCAL == 0
+		LOCALS = Ｖ絶頂
+	LOCAL += 1
+ENDIF
+IF NOWEX:Ａ絶頂 > 0 && FIRST_EV("Ａ絶頂")
+	SIF RAND:LOCAL == 0
+		LOCALS = Ａ絶頂
+	LOCAL += 1
+ENDIF
+IF NOWEX:Ｂ絶頂 > 0 && FIRST_EV("Ｂ絶頂")
+	SIF RAND:LOCAL == 0
+		LOCALS = Ｂ絶頂
+	LOCAL += 1
+ENDIF
+IF NOWEX:Ｍ絶頂 > 0 && FIRST_EV("Ｍ絶頂")
+	SIF RAND:LOCAL == 0
+		LOCALS = Ｍ絶頂
+	LOCAL += 1
+ENDIF
+
+SIF LOCALS != ""
+	RETURNF LOCALS
+
+;-------------------------------------------------
+;初めての各PALAM上昇 3LV
+;-------------------------------------------------
+LOCAL = 1
+IF PALAM:Ｖ潤 + CUP:Ｖ潤 >= 3000 && FIRST_EV("Ｖ潤LV3突破") == 0
+	SIF LOCALS == "" || RAND:LOCAL == 0
+		LOCALS = Ｖ潤LV3突破
+	LOCAL += 1
+ENDIF
+IF PALAM:欲情 + CUP:欲情 >= 3000 && FIRST_EV("欲情LV3突破") == 0
+	SIF LOCALS == "" || RAND:LOCAL == 0
+		LOCALS = 欲情LV3突破
+	LOCAL += 1
+ENDIF
+IF PALAM:恥情 + CUP:恥情 >= 3000 && FIRST_EV("恥情LV3突破") == 0
+	SIF LOCALS == "" || RAND:LOCAL == 0
+		LOCALS = 恥情LV3突破
+	LOCAL += 1
+ENDIF
+IF TEQUIP:押し倒し == 0 && PALAM:恐怖 + CUP:恐怖 >= 3000 && FIRST_EV("恐怖LV3突破") == 0
+	SIF LOCALS == "" || RAND:LOCAL == 0
+		LOCALS = 恐怖LV3突破
+	LOCAL += 1
+ENDIF
+
+RETURNF LOCALS
+
+;-------------------------------------------------
+;@KOJO_MESSAGE_SAMEN_AND_EXTACY関係
+;PLAYER、ドラゴン、触手の射精＆絶頂をトリガーにした口上
+;-------------------------------------------------
+@KOJO_MESSAGE_SAMEN_AND_EXTACY
+SIF FLAG:7 == 0
+	RETURN 0
+
+;口枷着用時には口上をスキップする（OFFだと口を塞いでるのに喋りまくる）
+SIF TEQUIP:口枷
+	RETURN 0
+
+TRYCALLFORM KOJO_MESSAGE_SAMEN_AND_EXTACY_{NO:TARGET}_{CFLAG:209}
+
+;寝取られイベント
+CALL EVENT_DRAGON_NTR, "射精"
+
+;喋った口上のフラグを記録
+CALL SETFLAG, "射精＆絶頂イベントフラグ"
+
+;射精ゲージのチェック
+CALL CHECK_BASEPLAYER2
+
+;-------------------------------------------------
+;@KOJO_MESSAGE_SHOOT関係
+;PLAYERの射精箇所選択直前の口上
+;-------------------------------------------------
+@KOJO_MESSAGE_SHOOT
+SIF FLAG:7 == 0
+	RETURN 0
+
+;口枷着用時には口上をスキップする（OFFだと口を塞いでるのに喋りまくる）
+SIF TEQUIP:口枷
+	RETURN 0
+
+TRYCALLFORM KOJO_MESSAGE_SHOOT_{NO:TARGET}_{CFLAG:209}
+
+;射精ゲージのチェック
+CALL CHECK_BASEPLAYER2
+
+;-------------------------------------------------
+;@COUNTER_KOJO関係
+;反撃をトリガーにした口上・処理
+;反撃フラグON時に口上を発動します
+;ARGSはイベント種別
+;-------------------------------------------------
+@COUNTER_KOJO, ARGS
+SIF FLAG:7 == 0
+	RETURN 0
+
+;口枷着用時には口上をスキップする（OFFだと口を塞いでるのに喋りまくる）
+SIF TEQUIP:口枷
+	RETURN 0
+
+TRYCALLFORM COUNTER_KOJO_{NO:TARGET}_{CFLAG:209}, ARGS
+
+;射精ゲージのチェック
+CALL CHECK_BASEPLAYER2
+
+SELECTCASE TFLAG:90
+CASE 1 TO 9
+	;効果を及ぼすのはメインプレイヤー一人のみ
+	CALL CALC, "エナジードレイン"
+ENDSELECT
+
+;-------------------------------------------------
+;@KOJO_MESSAGE_MARKCNG関係
+;刻印変動をトリガーにした口上
+;刻印変動後に口上を発動します
+;-------------------------------------------------
+@KOJO_MESSAGE_MARKCNG, ARGS
+SIF FLAG:7 == 0
+	RETURN 0
+
+VARSET FLAG, 0, 100, 200
+
+;口枷着用時には口上をスキップする（OFFだと口を塞いでるのに喋りまくる）
+SIF TEQUIP:口枷
+	RETURN 0
+
+TRYCALLFORM KOJO_MESSAGE_MARKCNG_{NO:TARGET}_{CFLAG:209}, ARGS
+LOCAL = RESULT
+
+;相手が上位夢魔の場合には攻略刻印（屈服刻印取得に要するパラメータ量を減らす）を得る
+IF FIRST_EV(LOCALS) == 0
+	SELECTCASE LOCALS
+	CASE "苦痛刻印Lv3取得", "快楽刻印Lv3取得"
+		IF TALENT:上位夢魔 && MARK:屈服刻印 < 3
+			DRAWLINE
+			PRINTFORMW ☆★☆イベント達成・屈服刻印習得のペナルティが軽減されます☆★☆
+			DRAWLINE
+		ENDIF
+		MARK:攻略刻印 += 1
+	ENDSELECT
+ENDIF
+
+;喋った口上のフラグを記録
+SIF LOCAL
+	CALL SET_EV, TARGET, ARGS
+
+;射精ゲージのチェック
+CALL CHECK_BASEPLAYER2
+
+;-------------------------------------------------
+;@SELF_KOJO関係
+;イベント時の口上、イベント開始時に出力します
+;-------------------------------------------------
+@SELF_KOJO, ARGS, ARG
+#DIM MEMO_LINECOUNT
+SIF FLAG:7 == 0
+	RETURN 0
+
+SIF ARG <= 0 && TARGET
+	ARG = TARGET
+
+SWAP TARGET, ARG
+
+VARSET FLAG, 0, 100, 200
+
+;口枷着用時には口上をスキップする（OFFだと口を塞いでるのに喋りまくる）
+SIF TEQUIP:口枷
+	RETURN 0
+
+;口上があるかどうかを行数でチェック
+MEMO_LINECOUNT = LINECOUNT
+
+TRYCALLFORM SELF_KOJO_K{NO:TARGET}_{CFLAG:209}, ARGS
+
+;喋った口上のフラグを記録
+IF LINECOUNT > MEMO_LINECOUNT
+	CALL SET_EV, TARGET, ARGS
+;汎用口上など
+ELSE
+	CALL TRAINVOICE_SELF, ARGS
+ENDIF
+
+;射精ゲージのチェック
+CALL CHECK_BASEPLAYER2
+
+SWAP TARGET, ARG
+
+;-------------------------------------------------
+;セリフの前後に改行を付けたSELF_KOJO
+;地の文などが無く、基本一行程度のセリフを出す場合に向く
+;-------------------------------------------------
+@SELF_KOJO_L, ARGS, ARG
+#DIM MEMO_LINECOUNT
+
+PRINTL 
+MEMO_LINECOUNT = LINECOUNT
+
+CALL SELF_KOJO, ARGS, ARG
+
+IF LINECOUNT == MEMO_LINECOUNT
+	CLEARLINE 1
+ELSE
+	PRINTL 
+ENDIF
+
+;--------------------------------------------------
+;@DAILY_LIFE_MESSAGE関係
+;休憩実行時に出力されます
+;--------------------------------------------------
+@DAILY_LIFE_MESSAGE
+#DIM MEMO_LINECOUNT
+
+MEMO_LINECOUNT = LINECOUNT
+;日付イベントのみ
+TRYCALLFORM DAILY_LIFE_DAYEV_{NO:TARGET}_{CFLAG:209}
+;イベント発生したならここで終了
+SIF LINECOUNT > MEMO_LINECOUNT
+	RETURN 1
+
+TRYCALLFORM DAILY_LIFE_MESSAGE_{NO:TARGET}_{CFLAG:209}
+
+;-------------------------------------------------
+;@SINGLE_ENDING関係
+;単体エンドの条件を満たした時に出力します
+;なお、エンディングのテキストが用意されている場合には最後をRETURN 1 、無いならRETURN 0とするようにして区別しています。
+;-------------------------------------------------
+@SINGLE_ENDING
+TRYCALLFORM SINGLE_ENDING_K{NO:TARGET}_{CFLAG:209}
+
+;-------------------------------------------------
+;以下は口上セレクタのポータルファイルです
+;口上ファイルを呼び出すための初回選択肢と振り分けを行っています
+;-------------------------------------------------
+
+;--------------------------------------------------
+;@EVENTTRAIN関係　初調教時のみ選択
+;エキストラモード・及び口上選択モード構文　CFLAG:209を使用
+;-------------------------------------------------
+@EVENTTRAIN
+#PRI
+#DIM LCOUNT
+#DIM MEMO_ABL, 100
+#DIM MEMO_EXP, 100
+#DIM MEMO_TALENT, 1000
+#DIM MEMO_LINECOUNT
+
+SIF CFLAG:209 > 0
+	RETURN 1
+
+;ABLとEXPとTALENTの変化を記録して後に違いを表示する試み
+FOR LCOUNT, 0, 100
+	MEMO_ABL:LCOUNT = ABL:LCOUNT
+NEXT
+
+;EXPはたいした差がないのでとりあえずは割愛
+;FOR LCOUNT, 0, 100
+;	MEMO_EXP:LCOUNT = EXP:LCOUNT
+;NEXT
+
+FOR LCOUNT, 0, 1000
+	MEMO_TALENT:LCOUNT = TALENT:LCOUNT
+NEXT
+
+;ここの導入文は自由に作者さんが書き換えてください
+SELECTCASE NO:TARGET
+CASE 1
+	PRINTFORML サキュバスといえば？
+	PRINTFORML [ 0] やっぱりオトコの人が好きねえ♪
+	PRINTFORML [ 1] あら、女の子も大好きよ。もちろんふたなりさんもね♪　アハ♪
+	CALL INPUT_SELECT, 2
+	IF RESULT == 0
+		PRINTFORMW 今回はサキュバス口上_1を採用します。
+		CFLAG:209 = 1
+	ELSEIF RESULT == 1
+		PRINTFORMW 今回はサキュバス口上_2を採用します。
+		CFLAG:209 = 2
+	ENDIF
+CASE 3
+	PRINTFORML あなたの望むドライアドさんは？
+	PRINTFORML [ 0] 知的なお姉さんを乱れさせたい！
+	PRINTFORML [ 1] 積極的なお姉さんに搾り取られたい！
+	CALL INPUT_SELECT, 2
+	IF RESULT == 0
+		PRINTFORMW 今回はドライアド口上_1を採用します。
+		CFLAG:209 = 1
+	ELSEIF RESULT == 1
+		PRINTFORMW 今回はドライアド口上_2を採用します。
+		CFLAG:209 = 2
+	ENDIF
+CASE 4
+	PRINTFORML ピクシーとどんな関係になりたい？
+	PRINTFORML [ 0] 身も心も虜になるような甘い関係
+	PRINTFORML [ 1] 体格差をものともしない激しい関係
+	IF CFLAG:8 == 3
+		PRINTFORML [ 2] 妖精のお姫様と身分を越えた関係
+		CALL INPUT_SELECT, 3
+	ELSE
+		CALL INPUT_SELECT, 2
+	ENDIF
+	IF RESULT == 0
+		PRINTFORMW 今回はピクシー口上_1を採用します。
+		CFLAG:209 = 1
+	ELSEIF RESULT == 1
+		PRINTFORMW 今回はピクシー口上_2を採用します。
+		CFLAG:209 = 2
+	ELSEIF RESULT == 2
+		PRINTFORMW 今回はピクシー口上_3…お姫様なティターニアを採用します。
+		CFLAG:209 = 3
+	ENDIF
+CASE 7
+	PRINTFORML 今回はどのワーウルフを選びますか？
+	PRINTFORML [ 0] いつもどおりの四足歩行！
+	PRINTFORML [ 1] ゆめおと版の二足歩行！人語も喋るよ！
+	PRINTFORML [ 2] 子犬的なワーウルフ！妄想の産物であります！
+	CALL INPUT_SELECT, 3
+	IF RESULT == 0
+		PRINTFORMW 今回はワーウルフ口上_1を採用します。
+		CFLAG:209 = 1
+	ELSEIF RESULT == 1
+		PRINTFORMW 今回はワーウルフ口上_2を採用します。
+		CFLAG:209 = 2
+		TALENT:気丈 = 1
+		TALENT:素直 = 1
+		TALENT:陽気 = 1
+		TALENT:貞操無頓着 = 0
+		TALENT:愚か = 0
+		TALENT:月光浴 = 1
+		TALENT:四足歩行 = 0
+		CALL CALC, "長身化", TARGET
+		CALL SETFLAG, "属性", TARGET
+	ELSEIF RESULT == 2
+		PRINTFORMW 今回はワーウルフ口上_3を採用します。
+		CFLAG:209 = 3
+	ENDIF
+CASE 8
+	;バンシー
+	IF CFLAG:8 == 2
+		CFLAG:209 = 2
+	ELSE
+		CFLAG:209 = 1
+	ENDIF
+CASE 9
+	;高慢？
+	IF TALENT:高慢
+		CFLAG:209 = 2
+		RETURN 0
+	ENDIF
+	PRINTFORML 処女のヴィレッジャといえば？
+	PRINTFORML [ 0] もちろん素朴な村娘
+	CALL PRINT_STR, "[ 1] 我侭に育てられたお嬢様タイプも良いよね（_ハートピンク_個別ＥＮＤ有_）_L_"
+	;PRINTFORML [ 2] それとも……人間と夢魔の狭間で悩んでいるのも良いかも？
+	CALL INPUT_SELECT, 2
+	IF RESULT == 0
+		PRINTFORMW 今回はヴァージン・ヴィレッジャ口上_1を採用します。
+		CFLAG:209 = 1
+	ELSEIF RESULT == 1
+		PRINTFORMW 今回はヴァージン・ヴィレッジャ口上_2を採用します。
+		CFLAG:209 = 2
+	ELSEIF RESULT == 2
+		PRINTFORMW 今回はヴァージン・ヴィレッジャ口上_3を採用します。
+		CFLAG:209 = 3
+	ENDIF
+CASE 10
+	;メリュジーヌ
+	IF CFLAG:8 == 2
+		CFLAG:209 = 2
+	ELSE
+		CFLAG:209 = 1
+	ENDIF
+CASE 11
+	;セイレーン
+	IF CFLAG:8 == 2
+		CFLAG:209 = 2
+	ELSE
+		CFLAG:209 = 1
+	ENDIF
+CASE 12
+	PRINTFORML リザードマンといえば？
+	PRINTFORML [ 0] 勝気で素直になれないツン姿をﾆﾖﾆﾖ眺めたい！
+	PRINTFORML 　　 ※43氏＋140氏の口上となります
+	PRINTFORML [ 1] デレ時にしおらしくなるギャップこそ命！
+	PRINTFORML 　　 ※829氏の口上となります
+	CALL INPUT_SELECT, 2
+	IF RESULT == 0
+		PRINTFORMW 今回はリザードマン口上_43+140を採用します。
+		CFLAG:209 = 1
+	ELSEIF RESULT == 1
+		PRINTFORMW 今回はリザードマン口上_829を採用します。
+		CFLAG:209 = 2
+	ENDIF
+CASE 15
+	PRINTFORML 今回のスキュラはどっち？
+	PRINTFORML [ 0] 長編版
+	PRINTFORML 魔女の呪いにより下半身が怪物となってしまった少女
+	PRINTFORML 怪物となった後はカリュブディスと共に海で人間を襲っていた
+	PRINTFORML そのせいか強気な態度を取りやすいが、元々経験の少ない少女であったため意外と素直である
+	PRINTFORML 襲った人間は食べていたため性交経験はほとんどない。
+	PRINTFORML 反対に自慰は触手すら使って行っていたためベテラン（？）の領域に達している。
+	PRINTFORML 反撃の際には存分にそのテクニックを使ってくるため、触手快感に溺れないよう十分に注意。
+	PRINTFORML 
+	CALL PRINT_STR, "[ 1] 短編版（_ハートピンク_個別ＥＮＤ有_）_L_"
+	PRINTFORML 神話の時代、魔女の嫉妬により下半身を怪物にされた少女と伝えられるモンスター
+	PRINTFORML 夢魔に犯され夢魔化してからは太古の少女時代の性格が蘇ったか献身的で頑張り屋
+	PRINTFORML モンスターとなった原因である「嫉妬」という感情を嫌っており欲求を自慰に向けやすい
+	CALL INPUT_SELECT, 2
+	IF RESULT == 0
+		PRINTFORMW 今回は長編版にしました
+		CFLAG:209 = 1
+		TALENT:痛みに弱い = 1
+		TALENT:旧支配者の名残 = 1
+	ELSEIF RESULT == 1
+		PRINTFORMW 今回は短編版にしました
+		CFLAG:209 = 2
+		EXP:レズ経験 += 20
+		ABL:レズっ気 += 1
+		TALENT:素直 = 1
+		TALENT:両刀 = 1
+		TALENT:旧支配者の名残 = 1
+		;少女化
+		TALENT:外見年齢 = 2
+	ENDIF
+CASE 17
+	;エンプーサ
+	IF CFLAG:8 == 1
+		CFLAG:209 = 2
+	ELSE
+		CFLAG:209 = 1
+	ENDIF
+CASE 22
+	PRINTFORML クノイチになんて呼ばれたい？
+	PRINTFORML [ 0] 主！
+	PRINTFORML 　　 ※729氏＋985氏の口上となります
+	PRINTFORML [ 1] おぬし！
+	PRINTFORML 　　 ※829氏の口上となります
+	CALL INPUT_SELECT, 2
+	IF RESULT == 0
+		PRINTFORMW 今回はクノイチ口上_729+985を採用します。
+		CFLAG:209 = 1
+	ELSEIF RESULT == 1
+		PRINTFORMW 今回はクノイチ口上_829を採用します。
+		CFLAG:209 = 2
+	ENDIF
+CASE 24
+	PRINTFORML サロメさんといえば？
+	PRINTFORML [ 0] 目に光を取り戻していく過程を見たいんだよっ！
+	PRINTFORML 　　※221氏+八五七氏の口上となります
+	PRINTFORML [ 1] 愛に飢えている少女だよ！
+	PRINTFORML 　　※371氏+963氏の口上となります
+	CALL INPUT_SELECT, 2
+	IF RESULT == 0
+		PRINTFORMW 今回はサロメ口上_221+八五七を採用します。
+	ELSEIF RESULT == 1
+		PRINTFORMW 今回はサロメ口上_371+963を採用します。
+		PRINTFORMW 素質が一部変更になります。
+		TALENT:妄信 = 0
+	ENDIF
+	CFLAG:209 = RESULT + 1
+CASE 25
+	PRINTFORML ヴァンパイアといえば？
+	PRINTFORML [ 0] ツンデレ系お嬢様だけどドジッ子属性
+	CALL PRINT_STR, "[ 1] デレるまではあらあらうふふ、デレてからは普通の乙女（_ハートピンク_個別ＥＮＤ有_）_L_"
+	PRINTFORML [ 2] 高慢ぶってるけど実はヘタレな少女なんていうのはどうだろう？
+	CALL INPUT_SELECT, 3
+	IF RESULT == 0
+		PRINTFORMW 今回はヴァンパイア口上_1を採用します。
+		CFLAG:209 = 1
+	ELSEIF RESULT == 1
+		PRINTFORMW 今回はヴァンパイア口上_2を採用します。
+		CFLAG:209 = 2
+	ELSEIF RESULT == 2
+		PRINTFORMW 今回はヴァンパイア口上_3を採用します（素質が変化し、経験が半減します…）。
+		CFLAG:209 = 3
+		FOR LCOUNT, 0, 100
+			;経験が２以上のものは全て半減
+			SIF EXP:LCOUNT != 1
+				EXP:LCOUNT /= 2
+		NEXT
+
+		ABL:技巧 = 1
+		ABL:精液中毒 = 0
+		SIF ABL:サドっ気 < 5
+			ABL:サドっ気 += 1
+		TALENT:意地悪 = 1
+		TALENT:臆病 = 1
+		TALENT:気品 = 0
+		TALENT:賢い = 0
+		TALENT:長身 = 0
+		TALENT:痛みに強い = 0
+		TALENT:痛みに弱い = 1
+		TALENT:快感に素直 = 0
+		TALENT:汚臭鈍感 = 0
+
+		;少女化
+		TALENT:外見年齢 = 2
+
+		;まな板にしようぜ！
+		CALL CALC, "貧乳化", TARGET
+		SIF TALENT:小柄体型 == 0
+			CALL CALC, "普通体型化", TARGET
+		CALL SETFLAG, "属性", TARGET
+	ENDIF
+CASE 30
+	PRINTFORML そういえば、召喚したユニコーンの確認をきちんと行っただろうか？
+	CALL PRINT_STR, "[ 0] もちろんした（_ハートピンク_個別ＥＮＤ有_）_L_"
+	;バイコーン
+	PRINTFORML [ 1] あれ、そういえば、なにやら違和感を覚えたような……？
+	CALL INPUT_SELECT, 2
+	IF RESULT == 0
+		CFLAG:209 = 1
+	ELSEIF RESULT == 1
+		CFLAG:209 = 2
+		CFLAG:8 = 1
+		ABL:Ａ感覚 = ABL:Ｖ感覚
+		ABL:Ｖ感覚 = 0
+		TALENT:Ｖ敏感 = 0
+		TALENT:Ａ敏感 = 1
+		TALENT:Ａ鈍感 = 0
+		TALENT:好色 = 1
+		TALENT:治療 = 0
+		TALENT:鼓舞 = 1
+		TALENT:ロギン = 0
+		TALENT:ウルズグン = 1
+		;名前がユニコーンならば、バイコーンに改名
+		SIF NAME:TARGET == "ユニコーン"
+			NAME:TARGET = バイコーン
+		SIF CALLNAME:TARGET == "ユニコーン"
+			CALLNAME:TARGET = バイコーン
+	ENDIF
+CASE 31
+	PRINTFORML ゴブリンといえば？
+	PRINTFORML [ 0] あなたを押し倒すのが大好き！
+	PRINTFORML [ 1] 過去に傷を持つ少女と友情のような愛を育むぜ！
+	CALL INPUT_SELECT, 2
+	IF RESULT == 0
+		PRINTFORMW 今回はゴブリン口上_1を採用します。
+		CFLAG:209 = 1
+	ELSEIF RESULT == 1
+		PRINTFORMW 今回はゴブリン口上_2を採用します。
+		CFLAG:209 = 2
+	ENDIF
+CASE 42
+	PRINTFORML バンダースナッチってどんな夢魔？
+	PRINTFORML [ 0] 掴みどころのない感じ
+	CALL PRINT_STR, "[ 1] 大人しそうな感じ（_ハートピンク_個別ＥＮＤ有_）_L_"
+	CALL INPUT_SELECT, 2
+	IF RESULT == 0
+		PRINTFORMW 今回はバンダースナッチ口上_1を採用します。
+		CFLAG:209 = 1
+	ELSEIF RESULT == 1
+		PRINTFORMW 今回はバンダースナッチ口上_2を採用します。
+		CFLAG:209 = 2
+		EXP:Ａ経験 += 10
+		ABL:Ｖ感覚 = 1
+		ABL:Ａ感覚 = 2
+		TALENT:素直 = 1
+		TALENT:強気 = 0
+		TALENT:冷静 = 1
+		TALENT:陽気 = 0
+		TALENT:賢い = 1
+		TALENT:Ｃ敏感 = 0
+		TALENT:Ｖ敏感 = 0
+		TALENT:Ａ敏感 = 1
+		TALENT:Ａ鈍感 = 0
+		;素のバンダースナッチは長編っぽい感じでネコ耳でしたのでちょっとなくしてみます
+		TALENT:動物耳 = 0
+
+		;衣装の設定や胸の大きさなど
+		CALL CALC, "並乳化", TARGET
+		CALL COORDINATE_MUMA, TARGET
+		CALL MEMO_FAVORITE_DRESS, TARGET
+		CALL SETFLAG, "属性", TARGET
+	ENDIF
+CASE 44
+	PRINTFORML ミランダに来る前のリンは…
+	PRINTFORML [ 0] 明るい感じ。師匠と呼ばれたいです…
+	PRINTFORML 　　 ※331氏の口上となります
+	PRINTFORML [ 1] おっとり村娘。ヴィレッジャに近いイメージ。
+	PRINTFORML 　　 ※その他の口上となります
+	CALL PRINT_STR, "[ 2] 明るいけどちょっと影のある感じ(>>331氏の設定を踏襲)（_ハートピンク_個別ＥＮＤ有_）_L_"
+	PRINTFORML 　　 ※eraSQ製作スレッド>>644氏の口上となります
+	CALL INPUT_SELECT, 3
+	IF RESULT == 0
+		PRINTFORMW 今回はリン口上_331を採用します。
+		CFLAG:209 = 1
+	ELSEIF RESULT == 1
+		PRINTFORMW 今回はその他リン口上を採用します。
+		CFLAG:209 = 2
+	ELSEIF RESULT == 2
+		PRINTFORMW 今回は>644氏のリン口上を採用します。
+		CFLAG:209 = 3
+	ENDIF
+CASE 48
+	PRINTFORML エスト様といえば…
+	PRINTFORML [ 0] 未熟な調教師にも容赦なし！
+	PRINTFORML [ 1] 未熟な調教師には手加減してくれる！
+	PRINTFORML 　　 ※体型が変わると口上も胸の大きさも変わります。
+	CALL INPUT_SELECT, 2
+	IF RESULT == 0
+		PRINTFORMW 今回はエスト様１を採用します。
+		CFLAG:209 = 1
+	ELSEIF RESULT == 1
+		PRINTFORMW 今回はエスト様２を採用します。
+		CFLAG:209 = 2
+	ENDIF
+CASE 60
+	PRINTFORML ハニービーってどんな夢魔？
+	PRINTFORML [ 0] 仕事に燃える働き蜂さん
+	CALL PRINT_STR, "[ 1] 強気だけど、世話焼きなおねーさん（_ハートピンク_個別ＥＮＤ有_）_L_"
+	CALL INPUT_SELECT, 2
+	IF RESULT == 0
+		PRINTFORMW 今回はハニービー口上_１を採用します。
+		CFLAG:209 = 1
+	ELSEIF RESULT == 1
+		PRINTFORMW 今回はハニービー口上_２を採用します。
+		CFLAG:209 = 2
+		TALENT:献身 = 1
+		TALENT:鼓舞 = 1
+	ENDIF
+CASE 94
+	IF NO:MASTER == 34
+		;ストゥーナ
+		CFLAG:209 = 1
+	ELSEIF NO:MASTER == 35
+		;メローナ
+		CFLAG:209 = 2
+	ENDIF
+CASE 97
+	IF BASE:種族 == 33
+		CFLAG:209 = 33
+	ELSEIF BASE:種族 == 19
+		CFLAG:209 = 19
+	ELSEIF BASE:種族 == 22
+		CFLAG:209 = 22
+	ELSE
+		CFLAG:209 = 857
+	ENDIF
+CASE 98
+	PRINTFORML 次のどちらを選びますか？
+	PRINTFORML [ 0] 従来のどっぺるさん
+	PRINTFORML 　　 ※127氏の口上となります
+	PRINTFORML [ 1] コピーする資質が多くて無口などっぺるさん
+	PRINTFORML 　　 ※1026氏の口上となります
+	CALL INPUT_SELECT, 2
+	IF RESULT == 0
+		CFLAG:209 = 1
+	ELSEIF RESULT == 1
+		CFLAG:209 = 2
+	ENDIF
+ENDSELECT
+
+CFLAG:209 = MAX(CFLAG:209, 1)
+
+PRINTL 
+
+MEMO_LINECOUNT = LINECOUNT
+
+;ABLやEXPやTALENTに変化あったか？
+FOR LCOUNT, 0, 100
+	;変化あり
+	SIF ABL:LCOUNT && MEMO_ABL:LCOUNT != ABL:LCOUNT
+		PRINTFORML %TEXT_RJ(ABLNAME:LCOUNT, 8)%：LV{MEMO_ABL:LCOUNT} → LV{ABL:LCOUNT}
+NEXT
+
+VARSET LOCALS
+FOR LCOUNT, 0, 1000
+	;失った
+	IF MEMO_TALENT:LCOUNT > 0 && TALENT:LCOUNT == 0
+		LOCALS = %LOCALS%[%TALENT_NAME(LCOUNT, MEMO_TALENT:LCOUNT)%]%BL(1)%
+	;得た(変化含む)
+	ELSEIF TALENT:LCOUNT > 0 && MEMO_TALENT:LCOUNT != TALENT:LCOUNT
+		LOCALS:1 = %LOCALS:1%[%TALENT_NAME(LCOUNT, TALENT:LCOUNT)%]%BL(1)%
+	ENDIF
+NEXT
+
+SIF LOCALS != ""
+	PRINTFORML ×：%LOCALS%
+SIF LOCALS:1 != ""
+	PRINTFORML ○：%LOCALS:1%
+
+SIF LINECOUNT > MEMO_LINECOUNT
+	WAIT
+

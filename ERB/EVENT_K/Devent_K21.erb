@@ -1,0 +1,699 @@
+﻿;-------------------------------------------------
+;ルシフェル日常口上_****_**_**（キャラクターの名前を入れる、下にコンセプトなど一言あれば入れる）
+;製作者　eraSQ製作スレッド1スレ目550
+;娘に行き詰ってやった…今は反省している
+;-------------------------------------------------
+@DAILY_LIFE_MESSAGE_21_1
+#DIM LCOUNT
+#DIM GUEST, 20
+;#DIM GUEST2, 20
+#DIM DEVENT, 100
+#DIM EVENT_NUM
+#DIM NUM_RAND
+
+;会話イベント用
+VARSET DEVENT
+VARSET GUEST
+;VARSET GUEST2
+
+;各イベントが発生する条件をチェックし、ＯＫならDEVENT:(イベント番号)に１を代入
+;登場させるキャラが居る場合には、一人目から順にGUEST, GUEST2にそのキャラの番号を代入する
+
+IF FIND_COND("Ｃウィッチ")
+	DEVENT:1 = 1
+	GUEST:1 = FIND_COND("Ｃウィッチ")
+ENDIF
+IF FIND_COND("Ｃピクシー")
+	DEVENT:2 = 1
+	GUEST:2 = FIND_COND("Ｃピクシー")
+ENDIF
+
+;起きうるイベントから、等確率でのランダム選択開始
+NUM_RAND = 1
+FOR LCOUNT, 1, 100
+	SIF DEVENT:LCOUNT == 0
+		CONTINUE
+	;CEVENTを用いて、イベントが既に発生したかをチェックし、していないなら優先的に発生させる処理を行う
+	;数字が大きい（新しく用意された）ものほど優先
+	;起きるイベント番号はEVENT_NUMに保存。イベントが発生しないならEVENT_NUM = 0 となる
+	LOCALS:LCOUNT = 日常：%TOFULL(TOSTR(LCOUNT) )%
+	SIF RAND:NUM_RAND == 0 || CEVENT(LOCALS:LCOUNT) == 0
+		EVENT_NUM = LCOUNT
+
+	NUM_RAND += 1
+NEXT
+
+;ゲストキャラ
+GUEST = GUEST:EVENT_NUM
+;GUEST2 = GUEST2:EVENT_NUM
+
+;-------------------------------------------------
+;以下個別日常口上
+;-------------------------------------------------
+;反発刻印Lv3の時
+IF MARK:反発刻印 == 3
+
+;体力が低め（1000以下）の時は休ませる
+ELSEIF BASE:体力 <= 1000
+	PRINTFORMW 通りすがりにふと%CALLNAME:TARGET%の部屋を覗いてみた……
+	;恋慕の時
+	IF TALENT:恋慕
+		IF RAND:7 == 0
+			PRINTFORMW 「ん…すぅ…」
+			PRINTFORMW %CALLNAME:MASTER%はテーブルの上で突っ伏して眠っている%CALLNAME:TARGET%を見つけた。
+			PRINTFORMW このまま寝かしておくのも何なので、部屋に運んであげる事にしました…。
+		ELSEIF RAND:6 == 0
+			PRINTFORMW %CALLNAME:TARGET%はテーブルの上に突っ伏して寝ている…
+			PRINTFORMW %CALLNAME:MASTER%が肩をトントンと叩くと寝ぼけ眼で
+			PRINTFORMW ｢…"黙れ"…」
+			PRINTFORMW 次の日までジェスチャーで過ごす羽目になった…
+		ELSEIF RAND:5 == 0
+			PRINTFORMW 布団を抱き枕代わりにして眠っている…
+			PRINTFORMW 軽く髪を撫でてやると%CALLNAME:TARGET%は幸せそうに微笑み顔を布団に埋めた…
+		;本の題名は適当です
+		ELSEIF RAND:4 == 0
+			PRINTFORMW %CALLNAME:TARGET%は寝付けないのかベッドの上で読書をしている
+			PRINTFORMW ｢ふわぁ〜…知ってるって、つまんないなぁ…｣
+			PRINTFORMW ポイッと本を投げ捨てるとそのまま布団を抱き枕代わりにして眠りに入ったようだ
+			PRINTFORM 目にはいった本のタイトルは『
+			IF RAND:8 == 0
+				PRINTFORM 東洋の神秘
+			ELSEIF RAND:7 == 0
+				PRINTFORM 魔術理論〜応用編〜
+			ELSEIF RAND:6 == 0
+				PRINTFORM 他民族文化の歴史
+			ELSEIF RAND:5 == 0
+				PRINTFORM 神話に隠されたエピソード
+			ELSEIF RAND:4 == 0
+				PRINTFORM 都市伝説の裏側
+			ELSEIF RAND:3 == 0
+				PRINTFORM 歴史の謎
+			ELSEIF RAND:2 == 0
+				PRINTFORM 宗教と人
+			ELSE
+				PRINTFORM 医学の歴史とこれから
+			ENDIF
+			PRINTFORMW 』とかいう、いかにも理解するには時間がかかりそうなものだった…
+			PRINTFORMW ソッと部屋に入り片付け%CALLNAME:TARGET%にキスをして立ち去った…
+		ELSEIF RAND:3 == 0
+			PRINTFORMW %CALLNAME:TARGET%は寝付けないのかベッドの上で読書をしている…
+			PRINTFORMW 「･･･････」
+			PRINTFORMW あまりにも熱心に読んでいるので気になり声をかけた…
+			PRINTFORMW 「ん？%CNAME("二人称")%どうしたの？　え、これ？結構面白いよ？違う意味でだけど♪」
+			PRINTFORM 横になりながら本のタイトルを見せてくるが、それは『
+			IF RAND:8 == 0
+				PRINTFORM 攻めと受け〜組み合わせ方〜
+			ELSEIF RAND:7 == 0
+				PRINTFORM 天井×床
+			ELSEIF RAND:6 == 0
+				PRINTFORM 小悪魔モンシロ
+			ELSEIF RAND:5 == 0
+				PRINTFORM モテ子の秘訣
+			ELSEIF RAND:4 == 0
+				PRINTFORM ダサい？ダサくない？アナタの流行チェック
+			ELSEIF RAND:3 == 0
+				PRINTFORM 一般相対性理論×特殊相対性理論
+			ELSEIF RAND:2 == 0
+				PRINTFORM ラル×エル
+			ELSE
+				PRINTFORM エル×ラル
+			ENDIF
+			PRINTFORMW 』とかいう、到底理解出来そうに無いものだった…
+			PRINTFORMW 「あはは…%CNAME("一人称")%も良く分からないから楽しいんだよ♪」
+			PRINTFORMW 無邪気に微笑む%CALLNAME:TARGET%の髪を撫でてキスをしその場を去った
+			PRINTFORMW 「…お休み…♪」
+		ELSEIF RAND:2 == 0
+			PRINTFORMW 扉を少し開けると%CALLNAME:TARGET%はそこに立っていた
+			PRINTFORMW 「あはは…♪やっぱりきたね…」
+			PRINTFORMW グイグイと%CALLNAME:TARGET%に引きずられ素早く服を脱がされベッドへ押し倒される…
+			IF RAND:3 == 0
+				PRINTFORM フェラで
+			ELSEIF RAND:2 == 0
+				PRINTFORM 手で
+			ELSE
+				PRINTFORM 騎乗位で
+			ENDIF
+			PRINTFORMW 精液を搾り取ると%CALLNAME:TARGET%は満足そうにそのまま寝入った
+			PRINTFORMW 「ふわぁ…もう駄目…疲れたぁ…お休み…♪」
+			PRINTFORMW %CALLNAME:MASTER%は汚れを拭き取りその場を立ち去った
+		ELSE
+			PRINTFORMW …規則正しい寝息を立てている
+			PRINTFORMW よっぽど疲れているらしい
+			PRINTFORMW 頬にキスをしてその場を立ち去った
+		ENDIF
+	;それ以外
+	ELSE
+		PRINTFORMW 規則正しい寝息が聞こえる…
+		PRINTFORMW 乱れた毛布を掛けなおしてその場を立ち去った
+	ENDIF
+;キャラ限定のイベント。まだ起きていないイベントならCEVENT(LOCALS:EVENT_NUM) == 0なので確実に起こしておく
+ELSEIF EVENT_NUM && (RAND:3 == 0 || CEVENT(LOCALS:EVENT_NUM) == 0)
+	SELECTCASE EVENT_NUM
+	;エンジェルとはやったのでウィッチです
+	;ウィッチ作者さんごめんなさいorz
+	CASE 1
+		IF RAND:3 == 0
+			PRINTFORMW %CALLNAME:TARGET%の部屋の前を通ると何か異様な匂いがする…
+			PRINTFORMW 少し隙間を開けて覗くと%CALLNAME:TARGET%と%CALLNAME:GUEST%が熱せられたフラスコの前で怪しい笑みを浮かべている…
+			PRINTFORMW もの凄く危険な組み合わせに気が付かれないようにソッと扉を閉めた…
+			PRINTFORMW 「『ふふふふふふふふふふふ･････』」
+			PRINTFORMW 中から不気味な笑い声が響いてきた…
+		ELSEIF RAND:2 == 0
+			PRINTFORMW 図書室の前を通ると%CALLNAME:TARGET%の声が聞こえてきた
+			PRINTFORMW 「そんなの簡単さ♪」
+			PRINTFORMW 少し苛立ったような%CALLNAME:GUEST%の声が聞こえる
+			PRINTFORMW 恐らく魔道書を読んでいた%CALLNAME:GUEST%に%CALLNAME:TARGET%が口を出したに違いない…
+			PRINTFORMW 『お手本を見せてくれるかしら？』
+			PRINTFORMW 「よし…じゃあ…"動くな"」
+			PRINTFORMW %CALLNAME:TARGET%は突如%CALLNAME:MASTER%の方を向き命じると%CALLNAME:MASTER%は動けなくなる…
+			PRINTFORMW 『盗み聞き？感心しないわね…』
+			PRINTFORMW 「うんうん、と言うわけで罰は与えなきゃね♪」
+			PRINTFORM 急に和解した二人は%CALLNAME:MASTER%
+			IF RAND:3 == 0
+				PRINTFORM の下半身を露出させ
+			ELSEIF RAND:2 == 0
+				PRINTFORM を女物の下着に着替えさせ
+			ELSE
+				PRINTFORM の顔にマジックで落書きをして
+			ENDIF
+			PRINTFORMW そのまま１時間ほど放置した…
+		ELSE
+			PRINTFORMW キッチンに立ち寄ると%CALLNAME:TARGET%と%CALLNAME:GUEST%が鍋の前で何かを煮込んでいる
+			PRINTFORMW 危険信号がバリバリと出る異臭を放ちながら鍋がグツグツと音を立てている…
+			PRINTFORMW %CALLNAME:MASTER%はそのまま通り過ぎようと思ったがいつの間にやら%CALLNAME:TARGET%に手を掴まれていた。
+			PRINTFORMW 「はい、ア〜ン♪」
+			PRINTFORMW %CALLNAME:TARGET%は嫌な笑顔を浮かべて怪しい物体Ｘをスプーンで口に運ぼうとしてくる
+			PRINTFORMW 『早く、食べなさい♪…ふふ…』
+			PRINTFORMW %CALLNAME:GUEST%が珍しく可愛らしく言い…怪しく微笑む
+			PRINTFORMW %CALLNAME:MASTER%が抵抗していると%CALLNAME:TARGET%が一言「"口を開けろ"」と言った瞬間に全ては終わった…
+			PRINTFORMW %CALLNAME:MASTER%の体に変化が起きる…！
+			PRINTFORMW 
+			IF RAND:3 == 0
+				PRINTFORMW %CALLNAME:MASTER%のペニスは腫れ上がり太腿の太さになった…
+				PRINTFORMW ズボンが引きちぎれんばかりに隆々とそそり立ち痛みと痒みを伴い悶絶する…
+				PRINTFORMW 「『････ゴクリ･･･』」
+				PRINTFORMW 張本人たちは顔を少し赤くして同時に唾を飲んだ…
+				PRINTFORMW 一時間後やっと元に戻った時には逃げられていた…
+			ELSEIF RAND:2 == 0
+				PRINTFORMW %CALLNAME:MASTER%の体は親指サイズまで小さくなってしまった…
+				PRINTFORMW 『失敗ね…』「これはこれでっ♪」
+				PRINTFORMW 興味を失う%CALLNAME:GUEST%と対照的に小さい体で文句を言う%CALLNAME:MASTER%を%CALLNAME:TARGET%は面白そうに指で掴み
+				PRINTFORMW ポイッと庭へと投げられた…
+				PRINTFORMW 「頑張っておいで〜」
+				PRINTFORMW 『おそろしいことするわね…』
+				PRINTFORMW 命がけで庭から生還しやっと元に戻った時には見事に逃げられた…
+			ELSE
+				PRINTFORMW %CALLNAME:MASTER%の胸は風船のように膨らみ恐ろしいサイズの乳房が現れる…
+				PRINTFORMW 「成功かな？」『嘘…』
+				PRINTFORMW 楽しそうに笑う%CALLNAME:TARGET%と愕然とする%CALLNAME:GUEST%の温度差が気になったが胸は膨らみ続ける…
+				PRINTFORMW 『ちょ、ちょっと危なそうよ…』「ん〜〜〜〜〜･･･えいっ♪」
+				PRINTFORMW %CALLNAME:TARGET%が膨らみ続ける胸に軽くデコピンをすると霧散した…
+				PRINTFORMW 「ガスで幻覚見てただけかぁ…つまらないなぁ…」
+				PRINTFORMW 『そうね…次こそ成功させましょう…』
+				PRINTFORMW 呆気に取られる%CALLNAME:MASTER%を置き去りにして２人は去っていった…
+			ENDIF
+		ENDIF
+	;ピクシー作者さんごめんなさいorz
+	CASE 2
+		IF TIME == 0
+			PRINTFORMW 何気なくキッチンへと足を運ぶと
+			PRINTFORMW %CALLNAME:TARGET%が%CALLNAME:GUEST%を肩に乗せて
+			PRINTFORMW ２人でものすごい勢いでつまみ食いをしている…
+			PRINTFORMW 「これも美味しいよ♪ほら、あ〜ん」
+			PRINTFORMW 肩に乗っている%CALLNAME:GUEST%に指で渡す
+			PRINTFORMW 『ありがと〜♪』
+			PRINTFORMW 何となく声をかけそびれてそのまま立ち去った
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%の部屋を覗くと%CALLNAME:GUEST%を掴んだまま寝ていた…
+			PRINTFORMW %CALLNAME:GUEST%が目をウルウルさせながら助けてサインを出しているが
+			PRINTFORMW 起こすとろくな目に合わないので手でゴメンサインを出し部屋を後にした
+		ENDIF
+	ENDSELECT
+	;ゲストと仲良くなる
+	CALL CHANGE_RELATION, 5, TARGET, GUEST
+	;今回起きたイベントを記録
+	CALL SET_CEVENT, LOCALS:EVENT_NUM
+;昼の時
+ELSEIF TIME == 0 && RAND:3 == 0
+	IF RAND:8 == 0 && TALENT:出産経験
+		PRINTFORMW 図書室の前を通ると%CALLNAME:TARGET%と子供の声が聞こえてきたので覗いてみる
+		PRINTFORMW 「ん〜っと…この絵はなにかな？」
+		PRINTFORMW 前衛的なアートを見て%CALLNAME:TARGET%は流石に驚いている…
+		PRINTFORMW 『もちろんママだよ！』
+		PRINTFORMW 「う〜ん…この前の絵の方が良かったかな…？」
+		PRINTFORMW 『だって…ママ普通に描くと文句ばっかり言うんだもん！』
+		PRINTFORMW 「えっ？あ〜…なるほど…それで…」
+		PRINTFORMW %CALLNAME:TARGET%は子供に見事に図星を突かれ、再び絵を見つめる
+		IF RAND:2 == 0
+			PRINTFORMW 「%CNAME("一人称")%の予想を裏切ったって事は凄い事だね…」
+			PRINTFORMW 『えへへ…誉められたぁ〜♪』
+			PRINTFORMW 噛みあってない会話を後にその場を立ち去った…
+		ELSE
+			PRINTFORMW 「次は文句言わないから、もう一度描いてみないかい？」
+			PRINTFORMW 『絶対言うよ…』
+			PRINTFORMW 「言わないって…」
+			PRINTFORMW 『パパといる時は素直なのに〜…』
+			PRINTFORMW 「〜〜〜っ！？」
+			PRINTFORMW 困りきっている%CALLNAME:TARGET%に苦笑しながらその場を去った…
+		ENDIF
+	ELSEIF RAND:7 == 0 && TALENT:出産経験
+		PRINTFORMW 部屋を覗くと%CALLNAME:TARGET%が子供を膝枕で寝かせている
+		PRINTFORMW 「静かにね…」
+		PRINTFORMW %CALLNAME:MASTER%はそっと部屋に入り隣に座る
+		PRINTFORMW 「%CNAME("一人称")%が母親になるなんてね…まだ実感が湧かないよ…」
+		PRINTFORMW %CALLNAME:TARGET%は子供の頭を撫でて幸せそうに微笑む
+		PRINTFORMW そして%CALLNAME:MASTER%の肩に頭をもたれかけ軽くため息をつく
+		PRINTFORMW 「ずっと…続くといいね…」
+		PRINTFORMW 静かな空間でしばらく%CALLNAME:TARGET%と他愛の無い話をして過ごした
+	ELSEIF RAND:6 == 0 && TALENT:出産経験
+		PRINTFORMW %CALLNAME:TARGET%の部屋に向かい扉を開けた瞬間タックルを食らった
+		PRINTFORMW 『ママの言ったとおりだぁっ♪』
+		PRINTFORMW …その様子を見ていた%CALLNAME:TARGET%は嫌な感じの明るい笑顔で微笑んでいる
+		PRINTFORMW 「あははっ♪…隅々まで知ってるからね…♪」
+		PRINTFORMW %CALLNAME:MASTER%がようやく起き上がると%CALLNAME:TARGET%は膝に子供を乗せて%CALLNAME:MASTER%を隣へと案内した
+		PRINTFORMW ３人で他愛の無い会話をしてすごした…
+	ELSEIF RAND:7 == 0 && TALENT:恋慕
+		PRINTFORMW 庭を散歩していると屋根の上に%CALLNAME:TARGET%が居た
+		PRINTFORMW なんとなく寂しそうな気がしたので二階の窓から無理矢理登って行く
+		PRINTFORMW やっとこ登った%CALLNAME:MASTER%の姿を見つけると%CALLNAME:TARGET%は複雑な笑みを浮かべた
+		PRINTFORMW そしてジッと空の上を見上げるかのように首を持ち上げる
+		PRINTFORMW 何も言わず%CALLNAME:TARGET%の隣に陣取り屋根の上に寝転がる、じりじりと暑い
+		PRINTFORMW %CALLNAME:TARGET%の手をそっと握り%CALLNAME:MASTER%は目を瞑り眠りへ入る…
+		PRINTFORMW ｢♪〜♪〜♪〜♪…っと起きたかい？｣
+		PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:MASTER%の顔を覗き込み微笑んだ…
+	ELSEIF RAND:4 == 0
+		PRINTFORMW 街で買い込んできた生活物資を両手に抱えて倉庫へ運んでいるとで%CALLNAME:TARGET%とすれ違った
+		IF RAND:2 == 0
+			PRINTFORMW %CALLNAME:TARGET%に声をかけるより運んでしまおうと頑張っていると満足そうな顔で話しかけてきた…
+			PRINTFORMW ｢お疲れ様、"飛んでけ"｣
+			PRINTFORMW 荷物の山が手を離れ倉庫へと吹っ飛んでいく
+			PRINTFORMW 「"速過ぎる""ゆっくりと"」
+			PRINTFORMW 荷物は減速し倉庫前にゆらゆらと着地した…
+			PRINTFORMW ｢たまには楽しても良いと思うよ♪｣
+			PRINTFORMW %CALLNAME:TARGET%はニコッと微笑み荷物の山へと向かっていく…
+			PRINTFORMW その後手伝ってくれたおかげで随分楽が出来た…
+			PRINTFORMW ｢ふぁぁ…お礼…いらないよ？｣
+			PRINTFORMW 明日は豪雨か大吹雪だ…
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%に手伝ってくれと頼むと…
+			PRINTFORMW 「"飛んでけ"」
+			PRINTFORMW 『え？え？きゃぁぁ〜〜〜！！』
+			PRINTFORMW 荷物は倉庫へと吹っ飛んで行き途中不幸な誰かを巻き込み倉庫へと追突した…
+			PRINTFORMW ｢当てにしちゃ駄目なんだよ…？｣
+			PRINTFORMW %CALLNAME:TARGET%は静かに踵を返し去っていった…
+		ENDIF
+	ELSEIF RAND:3 == 0
+		PRINTFORMW %CALLNAME:TARGET%が%CALLNAME:MASTER%の部屋に入ってきた
+		PRINTFORMW 「ちょっと借りてくね♪」
+		PRINTFORM もっていった物は
+		IF RAND:4 == 0
+			PRINTFORMW 黒歴史ノート
+		ELSEIF RAND:3 == 0
+			PRINTFORMW 秘蔵のエロ本
+		ELSEIF RAND:2 == 0
+			PRINTFORMW へそくり
+		ELSE
+			PRINTFORMW 隠しておいた夢魔のビデオ
+		ENDIF
+		PRINTFORMW 隠しておいても無駄のようだ…
+		PRINTFORMW むしろ隠した物を全員に晒すのが%CALLNAME:TARGET%だ…
+	;従順Lv3以上のとき、料理をつくる・いたずら、いろいろ分岐
+	ELSEIF ABL:従順 >= 3 && MARK:反発刻印 != 3 && RAND:2 == 0
+		PRINTFORMW 今日の昼食の当番は%CALLNAME:TARGET%だ
+		PRINTFORMW ｢適当に頑張るよ…｣
+		PRINTFORMW %CALLNAME:TARGET%は料理を始めた
+		CALL PICKUP_NO
+		GUEST = RESULT
+		PRINTFORMW …………
+		IF GUEST > 0 && ABL:レズっ気 == 5 && ABL:欲望 >= 4  && RAND:4
+			PRINTFORMW どうも遅い……
+			PRINTFORMW 台所に%CALLNAME:GUEST%が様子を見に行ったが戻ってこない
+			PRINTFORMW 流石に席を立ち様子を見に行く
+			PRINTFORMW ……%CALLNAME:TARGET%が%CALLNAME:GUEST%に怪しい液体を飲ませていた…
+			PRINTFORMW ｢失敗しちゃいました〜♪｣
+			PRINTFORMW なぜかぶりっ子になっている%CALLNAME:TARGET%にツッコミを入れ%CALLNAME:GUEST%を解放する事にした
+		ELSEIF ABL:技巧 == 0 || RAND:50 == 0
+			PRINTFORMW %CALLNAME:TARGET%が出来た料理を運んできてくれた
+			PRINTFORMW その見た目は悪意を捏ね繰り回したとしか言いようが無い…
+			PRINTFORMW ｢あはは…♪残さないよね…？｣
+			PRINTFORMW %CALLNAME:MASTER%には残すなとしか聴こえなかった…
+			PRINTFORMW ……！
+			PRINTFORMW そして面白いと笑う%CALLNAME:TARGET%を尻目に%CALLNAME:MASTER%は新しい味覚の世界へと旅立った……
+		ELSEIF ABL:技巧 == 1 || RAND:30 == 0
+			PRINTFORMW ｢たまには普通に作ってみたよ｣
+			PRINTFORMW %CALLNAME:TARGET%が出来た料理を運んできてくれた
+			PRINTFORMW 見た目も何もかも普通だ…
+			PRINTFORMW %CALLNAME:MASTER%は礼を言って食べ始めた……
+			PRINTFORMW ……！
+			PRINTFORMW ……平凡だ……
+			PRINTFORMW %CALLNAME:MASTER%はワザとらしくニコニコしている%CALLNAME:TARGET%を見て……
+			PRINTFORMW 美味しいといってみた…
+			PRINTFORMW ｢あはは♪嘘はいけないなぁ…♪｣
+			PRINTFORMW 何処まで本気か分らない%CALLNAME:TARGET%だった…
+		ELSEIF (ABL:技巧 < 4 && ABL:技巧 >= 2) || RAND:20 == 0
+			PRINTFORMW 「今日は本格的に作ってみたよ」
+			PRINTFORMW %CALLNAME:TARGET%が出来た料理を運んできてくれた
+			PRINTFORMW %CALLNAME:MASTER%は礼を言って食べ始めた……
+			IF RAND:2 == 0
+				PRINTFORMW 美味い…美味すぎる…
+			ELSE
+				PRINTFORMW 食べた事が無いほど美味しい…
+			ENDIF
+			PRINTFORMW %CALLNAME:TARGET%は味を尋ねてきた……
+			PRINTL [0]おいしいという
+			PRINTL [1]おいしくなくないという
+			CALL INPUT_SELECT, 2
+			IF RESULT == 0
+				PRINTFORMW ｢たまにだから良いのさ♪｣
+				SIF TALENT:恋慕
+					PRINTFORMW ｢また気が向いたら作るよ♪｣
+			ELSEIF RESULT == 1
+				PRINTFORMW %CALLNAME:TARGET%はジト目でどこかを見ている……
+				PRINTFORMW ｢…選択肢無いじゃないかって思ったかい？｣
+				PRINTFORMW 訳の分からないことを言う%CALLNAME:TARGET%を尻目に、%CALLNAME:MASTER%は美味しく平らげた…
+			ENDIF
+		ELSE
+			PRINTFORMW 珍しく調理場が静かだ…
+			PRINTFORMW %CALLNAME:TARGET%が出来た料理を運んできてくれた
+			PRINTFORMW %CALLNAME:MASTER%は礼を言って食べ始めた……
+			IF RAND:4 >= 1
+				PRINTFORMW …美味しいけど？…
+			ELSE
+				PRINTFORMW …ああ…頑張ったんだなぁ…
+			ENDIF
+			PRINTFORMW 素直に美味しいと口にした
+			PRINTFORMW %CALLNAME:TARGET%は珍しく顔まで真っ赤になった……
+			IF TALENT:恋慕
+				PRINTFORMW ｢…あはは♪…よかったぁ…｣
+				PRINTFORMW 良く見ると指先に絆創膏を巻いている…
+				PRINTFORMW ｢おかわりするよね？｣
+				PRINTFORMW %CALLNAME:MASTER%が頷くと嬉しそうに次々と料理を持ってきた…
+			ELSE
+				PRINTFORMW ｢…あはは♪、慣れない事はするもんじゃないね…｣
+				PRINTFORMW そして絆創膏を巻いた指を隠すようにして台所へ行った
+			ENDIF
+		ENDIF
+	ELSE
+		PRINTFORMW %CALLNAME:TARGET%はどうしているかと様子を見に行ってみた……
+		PRINTFORMW %CALLNAME:TARGET%の部屋の扉が軽く開いている
+		PRINTFORMW 覗いてみると%CALLNAME:TARGET%が鏡の前で着替えをしている
+		PRINTFORM %CALLNAME:TARGET%は鏡に向かい
+		IF RAND:3 == 0
+			PRINTFORMW セーラー服を着てポーズを取った
+		ELSEIF RAND:2 == 0
+			PRINTFORMW 体操服を着てポーズを取った
+		ELSE
+			PRINTFORMW ベビードールを着て真っ赤になっていた
+		ENDIF
+		PRINTFORMW ｢え？い、いつの間に！？戻るから待ってて！｣
+		PRINTFORMW %CALLNAME:MASTER%の存在に気付くと慌てて扉を閉じた…
+	ENDIF
+;通常夜の時
+ELSEIF TIME == 1 && RAND:3 == 0
+	;夜デート
+	IF TALENT:恋慕 && RAND:11 == 0
+		PRINTFORMW 部屋の扉が勢い良く開けられる
+		PRINTFORMW 「さぁ、出かけるよ♪」
+		PRINTFORMW 有無を言わさずに%CALLNAME:MASTER%を連れ出し酒場へと向かう
+		PRINTFORMW 席に着くと片っ端から注文を始めた
+		PRINTFORMW 「ほらほら♪しっかり食べて、飲んで精を付けないと駄目だよ？」
+		PRINTFORMW 「%CNAME("一人称")%の中にドロドロの精子一杯注ぎこんでもらうんだから♪」
+		PRINTFORMW 彼方此方から好奇の視線が刺さり居た堪れない…
+		PRINTFORMW しばらく飲んだり、食べたりして帰ろうかという時に%CALLNAME:TARGET%の様子がおかしい
+		PRINTFORMW 「あはは…♪飲みすぎて腰が砕けちゃった…」
+		PRINTFORMW 仕方なく%CALLNAME:TARGET%をおぶさり帰路に着く
+		PRINTFORMW 「あ、こっちこっち…♪」
+		PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:MASTER%の首を手綱代わりに道を誘導する
+		PRINTFORMW 着いた先はいかにもそれっぽい宿だった…
+		PRINTFORMW 「休憩で、さ、行こうか♪」
+		PRINTFORMW %CALLNAME:TARGET%は上機嫌に%CALLNAME:MASTER%の手を取り部屋に向かい
+		PRINTFORMW %CALLNAME:MASTER%は朝まで解放されなかった
+	ELSEIF RAND:8 == 0
+		PRINTFORMW 図書室に来てみると、暗い中ランプの光だけで%CALLNAME:TARGET%が何かを読んでいた
+		PRINTFORMW ｢………………。｣
+		IF TALENT:恋慕
+			IF RAND:4 == 0
+				PRINTFORMW ｢んっ？%CNAME("二人称")%どうしたんだい？｣
+				PRINTFORMW %CALLNAME:TARGET%はこちらに気付くと持っていた本を閉じて此方を向いた
+				PRINTFORMW その顔は少しだけ悲しそうだった…
+				PRINTFORMW なんとなく%CALLNAME:MASTER%は%CALLNAME:TARGET%を抱きしめて髪を撫でた…
+				PRINTFORMW 「あはは…大丈夫だよ♪」
+				PRINTFORMW %CALLNAME:TARGET%とキスを交わししばらくいちゃつきながら過ごした…
+			ELSEIF RAND:2 == 0
+				PRINTFORMW ｢んっ？%CNAME("二人称")%かい？｣
+				PRINTFORMW %CALLNAME:MASTER%に気付いた%CALLNAME:TARGET%は此方へと向き直った
+				PRINTFORMW 伊達眼鏡をしている…
+				PRINTFORMW ｢あ〜これ？なんと言うか読むぞ！って気分になるからつけてるんだけど…変かな？｣
+				PRINTFORMW 良く似合っているよルーたんと言った瞬間に分厚い辞書が飛んできた…
+				PRINTFORMW 「ルーたん言うなっ！」
+				PRINTFORMW 遠くなる意識の中それでもルーたんと呼ぶ事を新たに決意した…
+			ELSEIF RAND:2 == 0
+				PRINTFORMW 「んっ？%CNAME("二人称")%かい？」
+				PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:MASTER%の姿を見つけるとパンフレットを片手に此方へと歩いてきた…
+				PRINTFORMW ｢今度皆で行ってみないかい？…二人でもいいけどさ｣
+				PRINTFORM パンフレットのタイトルは
+				IF RAND:3 == 0
+					PRINTFORMW 『王都グルッペン観光ツアー』
+				ELSEIF RAND:2 == 0
+					PRINTFORMW 『港町フリーベリー〜海の旅〜』
+				ELSE
+					PRINTFORMW 『魔導院体験ツアー』
+				ENDIF
+				PRINTFORMW 意外にも他の夢魔たちの事も考えているようだ…
+				PRINTFORMW 「こっちはちょっと保留かな？」
+				PRINTFORMW そう言った%CALLNAME:TARGET%が目を落としたパンフレットには
+				PRINTFORMW 『愛の宿ミランダ〜100人斬り腕試しツアー』
+				PRINTFORMW 行きたいなんて口に出したら半殺しにされそうな気がする
+			ELSE
+				PRINTFORMW ｢ん？%CNAME("二人称")%、こんな遅くにどうしたんだい？｣
+				PRINTFORMW 伊達眼鏡を直しながら%CALLNAME:TARGET%は此方へと歩いてくる
+				PRINTFORMW %CALLNAME:MASTER%が推理小説を手に取ると
+				PRINTFORMW %CALLNAME:TARGET%はニヤニヤしながら隣に座ってくる…
+				PRINTFORMW 本を開くと人物の名前の横に波線が引いてある…
+				PRINTFORMW そして%CALLNAME:TARGET%は耳打ちをしてくる
+				PRINTFORMW 犯人だけならいざ知らず犯行動機やらトリックを説明され
+				PRINTFORMW %CALLNAME:MASTER%は本を読む気がうせてしまった…
+				PRINTFORMW 「そんなもの読むより%CNAME("一人称")%と話をした方が楽しいと思うよ？」
+				PRINTFORMW %CALLNAME:TARGET%は相変わらず悪い方向に全力疾走だ…
+			ENDIF
+		ELSE
+			IF RAND:3 == 0
+				PRINTFORMW %CALLNAME:TARGET%は本を大量に積み上げて何かを書いている
+				PRINTFORMW %CALLNAME:MASTER%が背中越しに見ると…
+				IF RAND:3 == 0
+					PRINTFORMW 『爆弾アピール作戦』
+				ELSEIF RAND:2 == 0
+					PRINTFORMW 『巨根化作戦』
+				ELSE
+					PRINTFORMW 『快感百倍作戦』
+				ENDIF
+				PRINTFORMW %CALLNAME:TARGET%の頭の中では物騒な作戦が展開されているようだ
+				PRINTFORMW ｢♪〜♪〜♪〜♪｣
+				PRINTFORMW 楽しそうに邪悪な笑みを浮かべる%CALLNAME:TARGET%の邪魔をすると怖いので
+				PRINTFORMW その場を去った…
+			ELSEIF RAND:2 == 0
+				PRINTFORMW %CALLNAME:TARGET%は恐ろしい速度で本を読み終えると%CALLNAME:MASTER%に声をかけてきた…
+				PRINTFORMW 「知識は必要だけど何でも知りすぎると嫌になるよ…気をつけてね」
+				PRINTFORMW いつもと違う空気を醸し出しながら%CALLNAME:TARGET%は去っていった…
+			ELSE
+				PRINTFORMW ｢…読書をしに来たのかい？｣
+				PRINTFORMW %CALLNAME:TARGET%はこちらに気付くと本を差し出してきた
+				IF RAND:4 == 0
+					PRINTFORMW 『英雄の条件』
+					PRINTFORMW 「英雄なんてろくな物じゃないけどね…」
+					PRINTFORMW %CALLNAME:TARGET%は静かに微笑みその場を去っていった
+				ELSEIF RAND:3 == 0
+					PRINTFORMW 『女を悦ばせるテクニック』
+					PRINTFORMW なんだろう凄く馬鹿にされている気がする…
+					PRINTFORMW 「あはは♪必要ないか♪」
+					PRINTFORMW %CALLNAME:TARGET%は楽しそうにその場を去った
+				ELSEIF RAND:2 == 0
+					PRINTFORMW 『言葉と事象と魔法の関連性』
+					PRINTFORMW 「難しいかも知れないけど大切な事さ…」
+					PRINTFORMW %CALLNAME:TARGET%と一緒に読んでみる事にした
+					PRINTFORMW 意外にも%CALLNAME:TARGET%はちゃんと教えてくれる…
+				ELSE
+					PRINTFORMW 『精神と肉体』
+					PRINTFORMW 「頭が真剣に腕が折れたって思うと本当に折れちゃうんだよ」
+					PRINTFORMW ちょっと興味が湧き読んでみる事にした
+					PRINTFORMW %CALLNAME:TARGET%は静かに微笑み隣に立っている
+				ENDIF
+			ENDIF
+		ENDIF
+	ELSEIF RAND:7 == 0
+		PRINTFORMW ランプ片手に薄暗い館内を見回りしていると%CALLNAME:TARGET%が外へ出て行くところを見かけた
+		PRINTFORMW 心配なので付いて行く事にする…
+		IF TALENT:恋慕
+			PRINTFORMW ｢ん…？%CNAME("二人称")%、どうしたの？｣
+			PRINTFORMW %CALLNAME:MASTER%の姿を見つけ声をかけてくる、しかし目線は空へと向かっている
+			PRINTFORMW 「良い月だね…一緒に見ようか？」
+			PRINTFORMW しばらく肩を寄り添わせて月見を楽しんだ…
+		ELSE
+			PRINTFORMW ｢ん…？どうしたの？｣
+			PRINTFORMW %CALLNAME:MASTER%の姿を見つけ声をかけてくる、しかし目線は空へと向かっている
+			PRINTFORMW 「心配しなくても大丈夫だから…一人にしておいて…」
+			PRINTFORMW 仕方なくその場を後にした…
+		ENDIF
+	ELSEIF RAND:6 == 0
+		GUEST = FIND_COND("陰気")
+		IF GUEST > 0 && MARK:GUEST:反発刻印 != 3 && RAND:3
+			PRINTFORMW %CALLNAME:TARGET%の部屋で、%CALLNAME:TARGET%と%CALLNAME:GUEST%が何かしているようだ
+			PRINTFORMW %CALLNAME:TARGET%が、何かの相談に来た%CALLNAME:GUEST%の話を聞いているようだ…
+			PRINTFORMW %CALLNAME:GUEST%の表情は真剣だ…
+			PRINTFORMW %CALLNAME:TARGET%は普段見せない顔で頭脳と論理を展開し解決策を指し示している…
+			IF TALENT:恋慕 && TALENT:GUEST:恋慕
+				PRINTFORMW …どうやら%CALLNAME:GUEST%の問題は解決したようだ
+				PRINTFORMW 少し安心して、ひとまずそこを立ち去ろうとしたその時
+				PRINTFORMW 「心配なのは分るけど盗み聞きは程ほどにね♪」
+				PRINTFORMW 扉越しに声を掛けられた、恐るべし…
+				PRINTFORMW 「ほらね、ちゃんと心配してるから安心しなよ…」
+				PRINTFORMW %CALLNAME:GUEST%は嬉しそうに挨拶をすると部屋を出て行った…
+			ELSE
+				PRINTFORMW 盗み聞きは良くないと思い立ち去った…
+			ENDIF
+		ELSEIF RAND:2 == 0
+			PRINTFORMW %CALLNAME:MASTER%の部屋の前で誰かが鼻歌交じりに何かをしている
+			PRINTFORMW ｢♪〜♪〜♪｣
+			PRINTFORMW 姿こそ見えないが、間違いなく%CALLNAME:TARGET%だろう…
+			PRINTFORMW %CALLNAME:MASTER%が扉を開けるとゴスッと小気味の良い音と共に%CALLNAME:TARGET%が退散していく
+			PRINTFORMW 後に残されたのは揮発性の薬品と手作りの時限式爆弾だ
+			PRINTFORMW 流石にシャレにならない…
+		ELSE
+			PRINTFORMW ふと%CALLNAME:TARGET%の部屋を通りかかると、%CALLNAME:TARGET%の歌が聞こえてきた……
+			PRINTFORMW 心に響く綺麗な歌だ…
+			PRINTFORMW しかし何故か歌詞が頭に入らない…
+			PRINTFORMW 首をかしげながらその場を去った…
+		ENDIF
+	ELSEIF RAND:4 == 0
+		PRINTFORMW 食堂に来てみると、%CALLNAME:TARGET%が何かをいじっている
+		PRINTFORM その指先先にあるのは
+		IF RAND:4 == 0
+			PRINTFORMW 壊れたオルゴールだ
+		ELSEIF RAND:3 == 0
+			PRINTFORMW 壊れた時計だ
+		ELSEIF RAND:2 == 0
+			PRINTFORMW 生地が破れた人形だ
+		ELSE
+			PRINTFORMW 枯れた鉢植えだ
+		ENDIF
+		PRINTFORMW ｢ん〜？んっと…ここをこうして…｣
+		PRINTFORMW 性格とは正反対に的確にテキパキと直していく…
+		PRINTFORMW 「物は大事にしてあげれば良い事あるからね♪」
+		PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:MASTER%の存在に気が付くと目線を外さずに声をかけてきた
+	;従順Lv3以上のとき、料理をつくる・いろいろ分岐
+	ELSEIF ABL:従順 >= 3 && MARK:反発刻印 != 3 && RAND:2 == 0
+		PRINTFORMW 今日の昼食の当番は%CALLNAME:TARGET%だ
+		PRINTFORMW ｢適当に頑張るよ…｣
+		PRINTFORMW %CALLNAME:TARGET%は料理を始めた
+		CALL PICKUP_NO
+		GUEST = RESULT
+		PRINTFORMW …………
+		IF GUEST > 0 && ABL:レズっ気 == 5 && ABL:欲望 >= 4  && RAND:4 >= 1
+			PRINTFORMW どうも遅い……
+			PRINTFORMW 台所に%CALLNAME:GUEST%が様子を見に行ったが戻ってこない
+			PRINTFORMW 流石に席を立ち様子を見に行く
+			PRINTFORMW ……%CALLNAME:TARGET%が%CALLNAME:GUEST%に怪しい液体を飲ませていた…
+			PRINTFORMW ｢失敗しちゃいました〜♪｣
+			PRINTFORMW なぜかぶりっ子になっている%CALLNAME:TARGET%にツッコミを入れ%CALLNAME:GUEST%を解放する事にした
+		ELSEIF ABL:技巧 == 0 || RAND:50 == 0
+			PRINTFORMW %CALLNAME:TARGET%が出来た料理を運んできてくれた
+			PRINTFORMW その見た目は悪意を捏ね繰り回したとしか言いようが無い…
+			PRINTFORMW ｢あはは…♪残さないよね…？｣
+			PRINTFORMW %CALLNAME:MASTER%には残すなとしか聴こえなかった…
+			PRINTFORMW ……！
+			PRINTFORMW そして面白いと笑う%CALLNAME:TARGET%を尻目に%CALLNAME:MASTER%は新しい味覚の世界へと旅立った……
+		ELSEIF ABL:技巧 == 1 || RAND:30 == 0
+			PRINTFORMW ｢たまには普通に作ってみたよ｣
+			PRINTFORMW %CALLNAME:TARGET%が出来た料理を運んできてくれた
+			PRINTFORMW 見た目も何もかも普通だ…
+			PRINTFORMW %CALLNAME:MASTER%は礼を言って食べ始めた……
+			PRINTFORMW ……！
+			PRINTFORMW ……平凡だ……
+			PRINTFORMW %CALLNAME:MASTER%はワザとらしくニコニコしている%CALLNAME:TARGET%を見て……
+			PRINTFORMW 美味しいといってみた…
+			PRINTFORMW ｢あはは♪嘘はいけないなぁ…♪｣
+			PRINTFORMW 何処まで本気か分らない%CALLNAME:TARGET%だった…
+		ELSEIF ABL:技巧 < 4 && ABL:技巧 >= 2 || RAND:20 == 0
+			PRINTFORMW 「今日は本格的に作ってみたよ」
+			PRINTFORMW %CALLNAME:TARGET%が出来た料理を運んできてくれた
+			PRINTFORMW %CALLNAME:MASTER%は礼を言って食べ始めた……
+			IF RAND:2 == 0
+				PRINTFORMW 美味い…美味すぎる…
+			ELSE
+				PRINTFORMW 食べた事が無いほど美味しい…
+			ENDIF
+			PRINTFORMW %CALLNAME:TARGET%は味を尋ねてきた……
+			PRINTL [0]おいしいという
+			PRINTL [1]おいしくなくないという
+			CALL INPUT_SELECT, 2
+			IF RESULT == 0
+				PRINTFORMW ｢たまにだから良いのさ♪｣
+				SIF TALENT:恋慕
+					PRINTFORMW ｢また気が向いたら作るよ♪｣
+			ELSEIF RESULT == 1
+				PRINTFORMW %CALLNAME:TARGET%はジト目でどこかを見ている……
+				PRINTFORMW ｢…選択肢無いじゃないかって思ったかい？｣
+				PRINTFORMW 訳の分からないことを言う%CALLNAME:TARGET%を尻目に、%CALLNAME:MASTER%は美味しく平らげた…
+			ENDIF
+		ELSE
+			PRINTFORMW 珍しく調理場が静かだ…
+			PRINTFORMW %CALLNAME:TARGET%が出来た料理を運んできてくれた
+			PRINTFORMW %CALLNAME:MASTER%は礼を言って食べ始めた……
+			IF RAND:4 >= 1
+				PRINTFORMW …美味しいけど？…
+			ELSE
+				PRINTFORMW …ああ…頑張ったんだなぁ…
+			ENDIF
+			PRINTFORMW 素直に美味しいと口にした
+			PRINTFORMW %CALLNAME:TARGET%は珍しく顔まで真っ赤になった……
+			IF TALENT:恋慕
+				PRINTFORMW ｢…あはは♪…よかったぁ…｣
+				PRINTFORMW 良く見ると指先に絆創膏を巻いている…
+				PRINTFORMW ｢おかわりするよね？｣
+				PRINTFORMW %CALLNAME:MASTER%が頷くと嬉しそうに次々と料理を持ってきた…
+			ELSE
+				PRINTFORMW ｢…あはは♪、慣れない事はするもんじゃないね…｣
+				PRINTFORMW そして絆創膏を巻いた指を隠すようにして台所へ行った
+			ENDIF
+		ENDIF
+	ELSE
+		PRINTFORMW %CALLNAME:TARGET%はどうしているかと様子を見に行ってみた……
+		PRINTFORMW %CALLNAME:TARGET%の部屋の扉が軽く開いている
+		IF TALENT:恋慕
+			IF RAND:3 == 0 && TALENT:巨乳 >= 2
+				PRINTFORMW 「うーん、やっぱりちょっと大きすぎるよなぁ…」
+				PRINTFORMW %CALLNAME:TARGET%鏡の前で自らの大きすぎる胸を持ち上げている…。
+				PRINTFORMW 「…でも、%CNAME("二人称")%は喜んでくれるから、いいか♪」
+				PRINTFORMW そして、%CALLNAME:TARGET%は自らの胸をやわやわと揉みながら蕩けた笑みを浮かべた…。
+			ELSEIF RAND:2 == 0
+				PRINTFORMW 「うーん、これはさすがに短すぎるかなぁ…」
+				PRINTFORMW 鏡の前でメイド服を着て考え込む%CALLNAME:TARGET%
+				PRINTFORMW そのメイド服は改造され、激ミニとすら言えない程短くなってしまっている
+				PRINTFORMW 「でも、喜んでくれるよね。…だよね？」
+				PRINTFORMW バレバレだった…
+			ELSE
+				PRINTFORMW 扉に手をかけると%CALLNAME:TARGET%の手がガシッと%CALLNAME:MASTER%の腕を掴み引きずり込まれる
+				PRINTFORMW 「さて、頑張ろうね♪」
+				PRINTFORMW 解放された時には太陽が黄色く見えた…
+			ENDIF
+		ELSE
+			IF RAND:3 == 0 && TALENT:巨乳 >= 2
+				PRINTFORMW 「うーん、やっぱりちょっと大きすぎるよなぁ…」
+				PRINTFORMW %CALLNAME:TARGET%鏡の前で自らの大きすぎる胸を持ち上げている…。
+				PRINTFORMW 「ここまででかいと肩こるし服も殆ど無いし…」
+				PRINTFORMW そのまま%CALLNAME:TARGET%はぶつぶつと愚痴り始めた…。
+			ELSEIF RAND:2 == 0
+				PRINTFORMW 鏡の前でメイド服を着て考え込んでいる
+				PRINTFORMW メイド服は改造したのか激ミニになっている
+				PRINTFORMW 「これはやりすぎたかなぁ、でも喜んでくれそうな気もする…」
+				PRINTFORMW 見つかると不味そうなのでその場を後にした…
+			ELSE
+				PRINTFORMW 「う〜〜〜ん、傷んでるなぁ…」
+				PRINTFORMW 青いような黒いような翼を丁寧にいじっている
+				PRINTFORMW 「悔しいけどあいつに手入れを聞いてみるかなぁ…」
+				PRINTFORMW …誰だろ？
+			ENDIF
+		ENDIF
+	ENDIF
+ENDIF
+RETURN 1

@@ -1,0 +1,302 @@
+﻿;-------------------------------------------------
+;ズボンなど、腰辺りから足首までを覆うものを穿かせる関数。パンストなども含む
+;指定番号によって名前がCSTR:45に代入される。
+;99番までは、その番号の夢魔の下着。
+;EQUIP:アウターはズボンの特徴フラグ。ビット管理する
+;-------------------------------------------------
+@SET_OUTER, ARG, ARG:1
+;ARGのズボンをARG:1番のものにする。ARG:1==0ならズボンを脱がす
+;汚れ＆ずれたりしたフラグ等を初期化して新品にする
+STAIN:ARG:アウター = 0
+TCVAR:ARG:26 = 0
+
+IF ARG:1 == 0 || COND("脚の使用", ARG) == 0
+	IF CHECK_OUTER("つなぎ", ARG)
+		EQUIP:ARG:上着 = 0
+		CSTR:ARG:42 = 
+	ENDIF
+	EQUIP:ARG:アウター = 0
+	CSTR:ARG:45 = 
+	RETURN 0
+ENDIF
+
+;名前記録
+CSTR:ARG:45 = %PALAM_OUTER(ARG:1, ARG, 1)%
+IF CHECK_OUTER("つなぎ", ARG) == 0 && CHECK_SHIRT("つなぎ", ARG)
+	EQUIP:ARG:上着 = 0
+	CSTR:ARG:42 = 
+ENDIF
+
+SIF EQUIP:ARG:アウター && !CHECK_OUTER("パンスト", ARG)
+	CALL SET_BODYS, ARG
+IF EQUIP:ARG:アウター && EQUIP:ARG:パンツ
+	SIF CHECK_OUTER("食い込み", ARG) && !CHECK_PANTIES("食い込み", ARG) && !CHECK_PANTIES("Ｔバック", ARG) && !CHECK_PANTIES("Ｖバック", ARG)
+		CALL SET_PANTIES, ARG
+	SIF CHECK_OUTER("ファスナー", ARG) || CHECK_OUTER("Ｖ露出", ARG) || CHECK_OUTER("Ａ露出", ARG)
+		CALL SET_PANTIES, ARG
+ENDIF
+SIF EQUIP:ARG:アウター && CHECK_OUTER("パンスト", ARG)
+	CALL SET_SOCKS, ARG
+
+TCVAR:ARG:26 = 0
+RETURN ARG:1
+;-------------------------------------------------
+;ARGの穿いているズボンの名前。ARG:1==0なら正式名称 by CSTR。ARG:1==1なら短縮名称 by EQUIP。
+;-------------------------------------------------
+@OUTER(ARG, ARG:1)
+#FUNCTIONS
+IF ARG:1 == 0
+	LOCALS = %CSTR:ARG:45%
+	SIF CONFIG("衣装の細かい色表示の禁止")
+		RETURNF LOCALS
+	LOCALS:1 = %TEXTS("衣装の色", EQUIP:ARG:アウター)%
+	SIF LOCALS:1 != "" && (SUBSTRING(CSTR:ARG:45, 0, 2) != SUBSTRING(LOCALS:1, 0, 2) )
+		LOCALS = %LOCALS%(%LOCALS:1%)
+ELSE
+	IF CHECK_OUTER("ブルマ", ARG)
+		LOCALS = ブルマ
+	ELSEIF CHECK_OUTER("ホットパンツ", ARG)
+		LOCALS = ホットパンツ
+	ELSEIF CHECK_OUTER("スパッツ", ARG)
+		LOCALS = スパッツ
+	ELSEIF CHECK_OUTER("パンスト", ARG)
+		LOCALS = パンスト
+	ELSEIF CHECK_OUTER("レギンス", ARG)
+		LOCALS = レギンス
+	ELSEIF CHECK_OUTER("パジャマ", ARG)
+		LOCALS = パジャマ
+	ELSEIF CHECK_OUTER("ハーフパンツ", ARG)
+		LOCALS = ハーフパンツ
+	ELSE
+		LOCALS = ズボン
+	ENDIF
+ENDIF
+RETURNF LOCALS
+
+;-------------------------------------------------
+;ARG番のズボンの正式名称
+;ARG:1 > 0ならARG:1はキャラ番号として働く
+;-------------------------------------------------
+@NAME_OUTER(ARG, ARG:1)
+#FUNCTIONS
+
+LOCALS = %PALAM_OUTER(ARG, ARG:1)%
+RETURNF LOCALS
+
+;-------------------------------------------------
+;ARG番のズボンの詳細パラ
+;ARG:1 > 0ならARG:1はキャラ番号として働き、ARG:1 > 0 && ARG:2 > 0ならEQUIPを定める
+;-------------------------------------------------
+@PALAM_OUTER(ARG, ARG:1, ARG:2)
+#FUNCTIONS
+VARSET LOCAL
+VARSET LOCALS
+
+IF ARG:1 > 0 && COND("脚の使用", ARG:1) == 0
+	SIF ARG:2 > 0
+		EQUIP:(ARG:1):アウター = LOCAL
+	RETURNF LOCALS
+ENDIF
+
+SELECTCASE ARG
+CASE 17
+	IF CFLAG:(ARG:1):8 != 1
+		LOCALS = ホットパンツ
+		LOCAL = SETFLAG_OUTER("ずれ不可", "コキ不可", "ホットパンツ", "レザー", "通気性無し", "黒")
+	ENDIF
+CASE 23
+	IF CFLAG:(ARG:1):8 == 2
+		LOCALS = ローライズパンツ
+		LOCAL = SETFLAG_OUTER("ずれ不可", "コキ不可", "ズボン", "ローライズ", "橙")
+	ELSE
+		LOCALS = ローライズパンツ
+		LOCAL = SETFLAG_OUTER("ずれ不可", "コキ不可", "ズボン", "ローライズ", "薄緑")
+	ENDIF
+CASE 34
+	LOCALS = ホットパンツ
+	LOCAL = SETFLAG_OUTER("ずれ不可", "コキ不可", "ホットパンツ", "薄緑")
+CASE 42
+	IF CFLAG:(ARG:1):209 == 2
+		LOCALS = ホットパンツ
+		LOCAL = SETFLAG_OUTER("ずれ不可", "コキ不可", "ホットパンツ", "黒")
+	ENDIF
+CASE 58
+	LOCALS = ローライズパンツ
+	LOCAL = SETFLAG_OUTER("ずれ不可", "コキ不可", "ズボン", "ローライズ", "橙")
+CASE 100
+	LOCALS = ブルマ
+	LOCAL = SETFLAG_OUTER("ブルマ", "ブルマカラー")
+CASE 101
+	LOCALS = ハイレグブルマ
+	LOCAL = SETFLAG_OUTER("ハイレグ", "Ｖバック", "ブルマ", "ブルマカラー")
+CASE 102
+	LOCALS = スパッツ
+	LOCAL = SETFLAG_OUTER("ずれ不可", "スパッツ")
+CASE 103
+	LOCALS = ホットパンツ
+	LOCAL = SETFLAG_OUTER("ずれ不可", "コキ不可", "ホットパンツ")
+CASE 104
+	LOCALS = パンスト
+	LOCAL = SETFLAG_OUTER("ずれ不可", "コキ不可", "パンスト")
+CASE 105
+	LOCALS = 網パンスト
+	LOCAL = SETFLAG_OUTER("ずれ不可", "コキ不可", "パンスト", "レース")
+CASE 106
+	LOCALS = オープンパンスト
+	LOCAL = SETFLAG_OUTER("ずれ不可", "コキ不可", "パンスト", "ＶＡ露出")
+CASE 107
+	LOCALS = レギンス
+	LOCAL = SETFLAG_OUTER("ずれ不可", "コキ不可", "レギンス")
+CASE 108
+	IF ITEM:パジャマ && TALENT:小柄体型
+		LOCALS = パジャマズボン
+		LOCAL = SETFLAG_OUTER("ずれ不可", "コキ不可", "パジャマ", "ズボン")
+	ENDIF
+CASE 109
+	LOCALS = ハーフパンツ
+	LOCAL = SETFLAG_OUTER("ずれ不可", "コキ不可", "ハーフパンツ")
+
+CASE 120
+	LOCALS = ブルマ
+	LOCAL = SETFLAG_OUTER("ずれ不可", "コキ不可", "ブルマ", "ＶＡ露出", "ブルマカラー")
+CASE 125
+	LOCALS = スパッツ
+	LOCAL = SETFLAG_OUTER("ずれ不可", "コキ不可", "スパッツ", "ＶＡ露出")
+CASE 130
+	LOCALS = ホットパンツ
+	LOCAL = SETFLAG_OUTER("ずれ不可", "コキ不可", "ホットパンツ", "Ａ露出")
+CASE 135
+	LOCALS = ホットパンツ
+	LOCAL = SETFLAG_OUTER("ずれ不可", "コキ不可", "ホットパンツ", "スリット")
+ENDSELECT
+
+SIF ARG:1 > 0 && ARG:2 > 0
+	EQUIP:(ARG:1):アウター = LOCAL
+
+RETURNF LOCALS
+
+;-------------------------------------------------
+;指示されたとおりのズボンのフラグを設定するために使う
+;-------------------------------------------------
+@SETFLAG_OUTER(ARGS:1, ARGS:2, ARGS:3, ARGS:4, ARGS:5, ARGS:6, ARGS:7, ARGS:8, ARGS:9, ARGS:10)
+#FUNCTION
+#DIM LCOUNT
+
+LOCAL = 0
+FOR LCOUNT, 1, 11
+	ARGS = %ARGS:LCOUNT%
+	SELECTCASE ARGS
+	CASE "ズボン"
+		SETBIT LOCAL, 0
+		LOCAL |= SETFLAG_COMMON("ずれ不可")
+		LOCAL |= SETFLAG_COMMON("コキ不可")
+	CASE "スパッツ"
+		SETBIT LOCAL, 1
+		LOCAL |= SETFLAG_COMMON("ずれ不可")
+	CASE "ホットパンツ"
+		SETBIT LOCAL, 2
+		SETBIT LOCAL, 0
+		LOCAL |= SETFLAG_COMMON("ずれ不可")
+		LOCAL |= SETFLAG_COMMON("コキ不可")
+	CASE "ブルマ"
+		SETBIT LOCAL, 3
+	CASE "ハイレグ"
+		SETBIT LOCAL, 4
+	CASE "Ｔフロント", "Tフロント"
+		SETBIT LOCAL, 5
+	CASE "Ｖバック", "Vバック"
+		SETBIT LOCAL, 6
+	CASE "Ｔバック", "Tバック"
+		SETBIT LOCAL, 7
+	CASE "ローライズ", "浅履き"
+		SETBIT LOCAL, 8
+	CASE "パンスト"
+		SETBIT LOCAL, 9
+		LOCAL |= SETFLAG_COMMON("シースルー")
+	CASE "レギンス"
+		SETBIT LOCAL, 10
+	CASE "パジャマ"
+		SETBIT LOCAL, 11
+	CASE "ハーフパンツ"
+		SETBIT LOCAL, 12
+
+	CASE "ブルマカラー"
+		IF RAND:2
+			LOCAL |= SETFLAG_COMMON("赤")
+		ELSE
+			LOCAL |= SETFLAG_COMMON("紺")
+		ENDIF
+	CASEELSE
+		SIF STRLENS(ARGS)
+			LOCAL |= SETFLAG_COMMON(ARGS)
+	ENDSELECT
+	SIF STRLENS(ARGS:(LCOUNT + 1) ) == 0
+		RETURNF LOCAL
+NEXT
+RETURNF LOCAL
+
+;-------------------------------------------------
+;ARGのズボンが条件ARGSを満たすか確認する
+;-------------------------------------------------
+@CHECK_OUTER(ARGS, ARG)
+#FUNCTION
+SIF ARG == 0 && TARGET
+	ARG = TARGET
+SIF EQUIP:ARG:アウター == 0
+	RETURNF 0
+SELECTCASE ARGS
+;ずれ不可でなく、ずらしていない
+CASE "ずらし可", "ずらせる"
+	SIF SETFLAG_OUTER("Ｖ露出")&EQUIP:ARG:アウター
+		RETURNF 0
+	IF SETFLAG_OUTER("ファスナー")&EQUIP:ARG:アウター
+		SIF SETFLAG_OUTER("ファスナー開")&EQUIP:ARG:アウター
+			RETURNF 0
+		SIF CHECK_OUTER("ファスナー閉")
+			RETURNF 1
+	ENDIF
+	SIF SETFLAG_OUTER("ずらした")&EQUIP:ARG:アウター
+		RETURNF 0
+	SIF SETFLAG_OUTER("ずれ不可")&EQUIP:ARG:アウター
+		RETURNF 0
+	RETURNF 1
+;パンストで、破いていない
+CASE "破ける"
+	SIF SETFLAG_OUTER("破いた")&EQUIP:ARG:アウター
+		RETURNF 0
+	SIF SETFLAG_OUTER("パンスト")&EQUIP:ARG:アウター
+		RETURNF 1
+;ファスナーがあり、あけていない
+CASE "ファスナー閉"
+	SIF SETFLAG_OUTER("ファスナー開")&EQUIP:ARG:アウター
+		RETURNF 0
+	SIF SETFLAG_OUTER("ファスナー")&EQUIP:ARG:アウター
+		RETURNF 1
+CASE "クロッチ"
+	SIF SETFLAG_OUTER("ファスナー開", "ずらした", "破いた", "Ｖ露出", "スリット")&EQUIP:ARG:アウター
+		RETURNF 0
+	RETURNF 1
+CASE "Ａクロッチ"
+	SIF SETFLAG_OUTER("ファスナー開", "ずらした", "破いた", "Ａ露出", "スリット")&EQUIP:ARG:アウター
+		RETURNF 0
+	RETURNF 1
+CASE "食い込み"
+	SIF SETFLAG_OUTER("ずらした", "ファスナー開", "Ｖ露出", "スリット", "破いた")&EQUIP:ARG:アウター
+		RETURNF 0
+	SIF SETFLAG_OUTER("ハイレグ", "Ｔフロント")&EQUIP:ARG:アウター
+		RETURNF 1
+CASE "蒸れ"
+	SIF SETFLAG_OUTER("ずらした", "ファスナー開", "Ｖ露出", "スリット", "破いた")&EQUIP:ARG:アウター
+		RETURNF 0
+	SIF CHECK_STAIN(STAIN:ARG:アウター, "蒸れ")
+		RETURNF 1
+CASE "染み"
+	SIF SETFLAG_OUTER("ずらした", "ファスナー開", "Ｖ露出", "スリット", "破いた", "通気性無し")&EQUIP:ARG:アウター
+		RETURNF 0
+	SIF CHECK_STAIN(STAIN:ARG:アウター, "濡れ")
+		RETURNF 1
+CASEELSE
+	SIF (SETFLAG_OUTER(ARGS)&EQUIP:ARG:アウター) == SETFLAG_OUTER(ARGS)
+		RETURNF 1
+ENDSELECT
+RETURNF 0

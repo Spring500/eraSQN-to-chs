@@ -1,0 +1,2805 @@
+﻿@COM175
+;着せ替え
+CALL PRINT_TRAIN_NAME(SELECTCOM)
+
+;-------------------------------------------------
+;実行できるかの判定
+;-------------------------------------------------
+CALL SHOW_COM_ORDER_COM, 175
+
+;実行できない
+SIF TCVAR:28 == 0
+	RETURN 0
+;-------------------------------------------------
+;着せ替えのフラグ、スクリプト、説明等
+;基本的に、夢魔の服は短編のものに準じることにします。
+;-------------------------------------------------
+CALL TRAIN_MESSAGE_B
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+STR:0 = %STR:2%
+
+RETURN 1
+
+@FLAG_COM175, ARG
+
+@SOURCE_COM175, ARG
+VARSET LOCAL
+
+LOCAL:20 += 50
+LOCAL:21 += 50
+
+LOCAL:3 = 100
+
+;ABL:露出癖をみる
+SELECTCASE ABL:露出癖
+CASE 0
+	LOCAL:12 += 100
+	LOCAL:13 += 100
+CASE 1
+	LOCAL:11 += 150
+	LOCAL:12 += 500
+	LOCAL:13 += 300
+CASE 2
+	LOCAL:11 += 300
+	LOCAL:12 += 100
+	LOCAL:13 += 50
+CASE 3
+	LOCAL:11 += 600
+	LOCAL:12 += 50
+CASE 4
+	LOCAL:11 += 1000
+CASEELSE
+	LOCAL:11 += 2000
+ENDSELECT
+;ABL:従順をみる
+SELECTCASE ABL:従順
+CASE 0
+CASE 1
+	TIMES LOCAL:3 , 1.20
+CASE 2
+	TIMES LOCAL:3 , 1.40
+CASE 3
+	TIMES LOCAL:3 , 1.50
+CASE 4
+	TIMES LOCAL:3 , 2.10
+CASEELSE
+	TIMES LOCAL:3 , 3.00
+ENDSELECT
+
+LOCAL:16 += LOCAL:3
+
+CALL CALC, "調教ソース", LOCAL:0, LOCAL:1, LOCAL:2, LOCAL:3, LOCAL:4, LOCAL:5, LOCAL:6, LOCAL:7, LOCAL:8, LOCAL:9, LOCAL:10, LOCAL:11, LOCAL:12, LOCAL:13, LOCAL:14, LOCAL:15, LOCAL:16, LOCAL:17, LOCAL:18, LOCAL:19, LOCAL:20, LOCAL:21, ARG
+
+
+@TRAIN_MESSAGE_COM175
+IF TEQUIP:押し倒し || ( (TEQUIP:拘束 || TEQUIP:館内露出プレイ || TEQUIP:野外プレイ) && (ABL:従順 >= 4 || ABL:露出癖 >= 3) )
+	IF EQUIP:パンツ && EQUIP:ボディスーツ + EQUIP:アウター == 0 && CHECK_CLO("パンツ露出")
+		PRINTFORMW %CALLNAME:TARGET%はパンツを脱いだ…
+		CALL SET_PANTIES, TARGET
+	ELSEIF CHECK_CLO("ハダカ") == 0
+		PRINTFORMW %CALLNAME:TARGET%は服を脱いで裸になった…
+		CALL SETFLAG, "ハダカにする", TARGET
+	ENDIF
+ELSEIF TEQUIP:拘束 || TEQUIP:館内露出プレイ || TEQUIP:野外プレイ
+	IF EQUIP:パンツ && EQUIP:ボディスーツ + EQUIP:アウター == 0 && CHECK_CLO("パンツ露出")
+		PRINTFORMW %CALLNAME:PLAYER%は%CALLNAME:TARGET%のパンツを手早く脱がせた…
+		CALL SET_PANTIES, TARGET
+	ELSEIF CHECK_CLO("ハダカ") == 0
+		PRINTFORMW %CALLNAME:PLAYER%は%CALLNAME:TARGET%の服を無理やり剥ぎ取り裸にした…
+		CALL SETFLAG, "ハダカにする", TARGET
+	ENDIF
+ELSE
+	CALL KISEKAE
+ENDIF
+
+@KISEKAE
+#DIM LCOUNT
+#DIM MEMO_LINECOUNT
+
+;着ていた服を記憶
+FOR LCOUNT, 40, 50
+	LOCAL:LCOUNT = EQUIP:LCOUNT
+	LOCALS:LCOUNT = %CSTR:LCOUNT%
+NEXT
+LOCAL:30 = CHECK_CLO("ハダカ")
+
+$START_KISEKAE
+
+MEMO_LINECOUNT = LINECOUNT
+
+REDRAW 0
+
+DRAWLINE
+PRINTFORML %CALLNAME:TARGET%に何を着替えてもらいますか？
+PRINTFORML 
+	PRINTFORML  [ 0] コーディネート
+	PRINTFORML  [ 1] 衣装
+SIF COND("脚の使用")
+	PRINTFORML  [ 2] ボディスーツ、ワンピース水着等
+	PRINTFORML  [ 3] 下着、セパレート水着等
+SIF COND("脚の使用")
+	PRINTFORML  [ 4] ブルマ、スパッツ、パンスト等
+SIF COND("脚の使用")
+	PRINTFORML  [ 5] ソックス等
+SIF COND("指の使用")
+	PRINTFORML  [ 6] グローブ
+SIF COND("靴の着用")
+	PRINTFORML  [ 7] 靴
+	PRINTFORML  [ 8] アクセサリ
+
+;SIF EQUIP:スカート && !CHECK_SKIRT("ワンピース")
+;	PRINTFORML  [10] スカートを脱いでもらう
+
+SIF EQUIP:パンツ + EQUIP:ブラ && EQUIP:靴下 && CHECK_SOCKS("ガーター")
+	PRINTFORML  [90] ガーターの色を下着に合わせる
+SIF CHECK_CLO("ハダカ") == 0
+	PRINTFORML  [98] ハダカになってもらう
+SIF CHECK_CLO("全裸") == 0
+	PRINTFORML  [99] 全部脱いでもらう
+
+PRINTFORM  現在：
+CALL PRINT_DRESS, TARGET
+PRINTL 
+PRINTL 
+
+PRINTFORM  現在の服装をお気に入りに登録する(登録がされている番号は
+CALL PRINT_COLORTEXT, "黄色", DEF_COLOR("黄色")
+PRINTFORML で表示されます)
+FOR LCOUNT, 0, 10
+	PRINTFORM  [{70 + LCOUNT, 2}] 
+	SIF GETBIT(IS_FAVORITE_DRESS(TARGET), LCOUNT)
+		SETCOLOR DEF_COLOR("黄色")
+
+	PRINTFORM {LCOUNT}番
+
+	SELECTCASE LCOUNT
+	CASE 4
+		PRINTFORML 
+	CASE 5
+		PRINTFORM (昼用)
+	CASE 6
+		PRINTFORM (夜用)
+	CASE 7
+		PRINTFORM (水着)
+	CASE 8
+		PRINTFORM (外出)
+	CASE 9
+		PRINTFORML (風呂)
+	CASEELSE
+		PRINTFORM 　　　
+	ENDSELECT
+
+	RESETCOLOR
+NEXT
+
+SIF IS_FAVORITE_DRESS(TARGET)
+	PRINTFORML  [80] お気に入りに着替える（削除もここ）
+
+PRINTFORML 
+PRINTFORML [100] これでＯＫ
+PRINTFORML [999] 着せ替えに関するコンフィグを開く
+
+$INPUT_LOOP
+INPUT
+
+IF RESULT == 100
+	;服を着替えたなら、それの感想
+	IF EQUIP:上着 && EQUIP:上着 != LOCAL:42 && CSTR:42 != LOCALS:42
+		TFLAG:16 = 1
+	;ボディスーツを着替えたなら、それの感想
+	ELSEIF EQUIP:ボディスーツ && EQUIP:ボディスーツ != LOCAL:44 && CSTR:44 != LOCALS:44
+		TFLAG:16 = 1
+	;水着に着替えたなら、その感想
+	ELSEIF CHECK_CLO("水着姿") && EQUIP:パンツ != LOCAL:40 && CSTR:40 != LOCALS:40
+		TFLAG:16 = 1
+	;アウターを着替えたなら、それの感想
+	ELSEIF EQUIP:アウター && EQUIP:アウター != LOCAL:45 && CSTR:45 != LOCALS:45
+		TFLAG:16 = 5
+	;ハダカになったなら、それの感想
+	ELSEIF CHECK_CLO("ハダカ") && CHECK_CLO("ハダカ") != LOCAL:30
+		TFLAG:16 = 2
+	;パンツを着替えたor脱いだなら、それの感想
+	ELSEIF EQUIP:パンツ != LOCAL:40 && CSTR:40 != LOCALS:40
+		IF EQUIP:パンツ
+			TFLAG:16 = 3
+		ELSE
+			TFLAG:16 = 4
+		ENDIF
+	;ブラだけ替えたor外した
+	ELSEIF EQUIP:ブラ != LOCAL:41 && CSTR:41 != LOCALS:41
+		TFLAG:16 = 9
+	;手袋を替えたor外した
+	ELSEIF EQUIP:手袋 != LOCAL:48 && CSTR:48 != LOCALS:48
+		TFLAG:16 = 6
+	;靴下を替えたor外した
+	ELSEIF EQUIP:靴下 != LOCAL:46 && CSTR:46 != LOCALS:46
+		TFLAG:16 = 7
+	;靴だけ替えたor外した
+	ELSEIF EQUIP:靴 != LOCAL:47 && CSTR:47 != LOCALS:47
+		TFLAG:16 = 8
+	;その他小物だけ替えたor外した
+	ELSEIF EQUIP:アクセサリ != LOCAL:49
+		TFLAG:16 = 9
+	ELSE
+		TFLAG:14 = 1
+		;何も変えなかったかチェック
+		FOR LCOUNT, 42, 46
+			IF LOCAL:LCOUNT != EQUIP:LCOUNT && LOCALS:LCOUNT != CSTR:LCOUNT
+				TFLAG:14 = 0
+				BREAK
+			ENDIF
+		NEXT
+	ENDIF
+	REDRAW 1
+	RETURN 0
+ELSEIF RESULT == 0
+	CALL COORDINATE
+ELSEIF RESULT == 1
+	CALL SELECT_SHIRT
+ELSEIF RESULT == 2 && COND("脚の使用")
+	CALL SELECT_BODYSUIT
+ELSEIF RESULT == 3
+	CALL SELECT_PANTU
+ELSEIF RESULT == 4 && COND("脚の使用")
+	CALL SELECT_OUTER
+ELSEIF RESULT == 5 && COND("脚の使用")
+	CALL SELECT_SOCKS
+ELSEIF RESULT == 6 && COND("指の使用")
+	CALL SELECT_GLOVE
+ELSEIF RESULT == 7 && COND("靴の着用")
+	CALL SELECT_SHOES
+ELSEIF RESULT == 8
+	CALL SELECT_OTHER
+;スカートの細分化はまた今度
+;ELSEIF RESULT == 10 && EQUIP:スカート && !CHECK_SKIRT("ワンピース")
+;	CALL SET_SKIRT, TARGET
+ELSEIF RESULT == 90 && EQUIP:パンツ + EQUIP:ブラ && EQUIP:靴下 && CHECK_SOCKS("ガーター")
+	IF EQUIP:パンツ
+		CALL SAME_COLOR, TARGET, 40, 46
+	ELSE
+		CALL SAME_COLOR, TARGET, 41, 46
+	ENDIF
+ELSEIF RESULT == 98 && CHECK_CLO("ハダカ") == 0
+	CALL EVENT_DATUI_HADAKA
+ELSEIF RESULT == 99 && CHECK_CLO("全裸") == 0
+	CALL EVENT_DATUI_HADAKA
+	CALL SETFLAG, "衣装全脱ぎ", TARGET
+ELSEIF RESULT >= 70 && RESULT <= 79
+	PRINTFORML 現在の服装をお気に入りとします
+	LOCAL = RESULT%70
+	CALL MEMO_FAVORITE_DRESS, TARGET, LOCAL
+;	PRINTFORM お気に入りの{LOCAL}番を
+;	CALL PRINT_FAVORITE_DRESS, LOCAL
+;	PRINTFORMW にしました
+	CLEARLINE LINECOUNT - MEMO_LINECOUNT
+	PRINTFORM お気に入りの{LOCAL}番：
+	CALL PRINT_FAVORITE_DRESS, LOCAL
+	PRINTFORML 
+ELSEIF RESULT == 80 && IS_FAVORITE_DRESS(TARGET)
+	;初期表示は着せ替えを選ぶモード
+	FLAG:271 = 0
+	CALL SELECT_FAVORITE_DRESS
+ELSEIF RESULT == 999
+	CALL SETCONFIG, "着せ替え設定"
+ELSE
+	GOTO INPUT_LOOP
+ENDIF
+
+GOTO START_KISEKAE
+
+
+;-------------------------------------------------
+;お気に入り関連の関数
+;-------------------------------------------------
+@SELECT_FAVORITE_DRESS
+#DIM LCOUNT
+#DIM MEMO_LINECOUNT
+
+MEMO_LINECOUNT = LINECOUNT
+REDRAW 0
+PRINTL 
+SELECTCASE FLAG:271
+CASE 0
+	PRINTFORML どの衣装を選びますか？
+CASE 1
+	PRINTFORML どの番号を未登録状態に戻しますか？
+ENDSELECT
+PRINTFORML (昼、夜、水着、外出、風呂は対応するＴＰＯで優先して選択される衣装です)
+
+FOR LCOUNT, 0, 10
+	SETCOLOR DEF_COLOR("黄色")
+	SELECTCASE LCOUNT
+	CASE 5
+		PRINTFORM 昼用
+	CASE 6
+		PRINTFORM 夜用
+	CASE 7
+		PRINTFORM 水着
+	CASE 8
+		PRINTFORM 外出
+	CASE 9
+		PRINTFORM 風呂
+	CASEELSE
+		PRINTFORM 　　
+	ENDSELECT
+	RESETCOLOR
+	IF GETBIT(IS_FAVORITE_DRESS(TARGET), LCOUNT)
+		PRINTFORM  [{LCOUNT, 2}] 
+		CALL PRINT_FAVORITE_DRESS, LCOUNT
+	ELSE
+		SETCOLOR DEF_COLOR("灰色")
+		PRINTFORM  [×] 未登録
+		RESETCOLOR
+	ENDIF
+	PRINTFORML 
+NEXT
+PRINTFORML 　　[100] 戻る
+SELECTCASE FLAG:271
+CASE 0
+	PRINTFORML 　　[200] 削除モードへ
+CASE 1
+	PRINTFORML 　　[200] 衣装選択モードへ
+ENDSELECT
+
+
+
+CALL INPUT_SELECT, 10, 100, 200
+LOCAL = RESULT
+
+SELECTCASE LOCAL
+CASE 100
+	REDRAW 1
+	RETURN 0
+CASE 200
+	INVERTBIT FLAG:271, 0
+CASEELSE
+	SELECTCASE FLAG:271
+	CASE 0
+		IF GETBIT(IS_FAVORITE_DRESS(TARGET), LOCAL)
+			CALL SET_FAVORITE_DRESS, TARGET, LOCAL
+			REDRAW 1
+			RETURN 0
+		ENDIF
+	CASE 1
+		CSTR:(50 + LOCAL) = %TEXTS("全裸状態")%
+	ENDSELECT
+ENDSELECT
+
+CLEARLINE LINECOUNT - MEMO_LINECOUNT
+RESTART
+
+@MEMO_FAVORITE_DRESS, ARG, ARG:1
+;CSTR:(50 + ARG:1) に全ての衣装の情報を入れる
+CSTR:ARG:(50 + ARG:1) = 
+FOR LOCAL, 40, 50
+	CSTR:ARG:(50 + ARG:1) = %CSTR:ARG:(50 + ARG:1)%{EQUIP:ARG:LOCAL},%CSTR:ARG:LOCAL%,
+NEXT
+
+
+@PRINT_FAVORITE_DRESS, ARG
+#DIM LCOUNT
+FOR LCOUNT, 40, 50
+	LOCAL:(LCOUNT-30) = STAIN:(LCOUNT-30)
+	LOCAL:LCOUNT = EQUIP:LCOUNT
+	LOCALS:LCOUNT = %CSTR:LCOUNT%
+NEXT
+
+CALL SET_FAVORITE_DRESS, TARGET, ARG
+CALL PRINT_DRESS, TARGET
+
+FOR LCOUNT, 40, 50
+	STAIN:(LCOUNT-30) = LOCAL:(LCOUNT-30)
+	EQUIP:LCOUNT = LOCAL:LCOUNT
+	CSTR:LCOUNT = %LOCALS:LCOUNT%
+NEXT
+
+
+@SET_FAVORITE_DRESS, ARG, ARG:1
+#DIM LCOUNT
+
+CALL SETFLAG, "衣装全脱ぎ", ARG
+
+VARSET LOCALS
+SPLIT CSTR:ARG:(50 + ARG:1), ",", LOCALS
+
+FOR LCOUNT, 0, 10
+	EQUIP:ARG:(LCOUNT + 40) = TOINT(LOCALS:(LCOUNT*2) )
+	CSTR:ARG:(LCOUNT + 40) = %LOCALS:(LCOUNT*2 + 1)%
+NEXT
+
+@IS_FAVORITE_DRESS(ARG)
+#FUNCTION
+#DIM LCOUNT
+
+;何も衣装を身に着けていないとこうなる
+LOCALS = %TEXTS("全裸状態")%
+
+LOCAL = 0
+FOR LCOUNT, 0, 10
+	SELECTCASE CSTR:ARG:(LCOUNT + 50)
+	CASE "", LOCALS
+	CASEELSE
+		SETBIT LOCAL, LCOUNT
+	ENDSELECT
+NEXT
+RETURNF LOCAL
+
+;-------------------------------------------------
+;キャラARG:1のARG番のお気に入りの衣装がARGS(これには靴とかEQUIPで用いる名称が入る)を設定されているかをチェックする
+;-------------------------------------------------
+@CHECK_FAVORITE(ARGS, ARG, ARG:1)
+#FUNCTION
+SIF ARG:1 == 0 && TARGET
+	ARG:1 = TARGET
+
+LOCAL = 0
+
+SIF CSTR:(ARG:1):(50 + ARG) == TEXTS("全裸状態")
+	RETURNF LOCAL
+
+VARSET LOCALS
+SPLIT CSTR:(ARG:1):(50 + ARG), ",", LOCALS
+
+SELECTCASE ARGS
+CASE "パンツ"
+	LOCAL = TOINT(LOCALS:0)
+CASE "ブラ"
+	LOCAL = TOINT(LOCALS:2)
+CASE "上着"
+	LOCAL = TOINT(LOCALS:4)
+CASE "スカート"
+	LOCAL = TOINT(LOCALS:6)
+CASE "ボディスーツ"
+	LOCAL = TOINT(LOCALS:8)
+;パンストはここ
+CASE "アウター"
+	LOCAL = TOINT(LOCALS:10)
+CASE "靴下"
+	LOCAL = TOINT(LOCALS:12)
+CASE "靴"
+	LOCAL = TOINT(LOCALS:14)
+CASE "手袋"
+	LOCAL = TOINT(LOCALS:16)
+;メガネなど、その他（これに限りビット管理）
+CASE "アクセサリ"
+	LOCAL = TOINT(LOCALS:18)
+ENDSELECT
+
+RETURNF LOCAL
+
+;-------------------------------------------------
+;上の関数の文字列版
+;キャラARG:1のARG番のお気に入りの衣装がARGS(これには靴とかEQUIPで用いる名称が入る)を設定されているかをチェックする
+;-------------------------------------------------
+@CHECK_FAVORITES(ARGS, ARG, ARG:1)
+#FUNCTIONS
+SIF ARG:1 == 0 && TARGET
+	ARG:1 = TARGET
+LOCALS = 
+
+SIF CSTR:(ARG:1):(50 + ARG) == TEXTS("全裸状態")
+	RETURNF LOCALS
+
+VARSET LOCALS
+SPLIT CSTR:(ARG:1):(50 + ARG), ",", LOCALS
+
+SELECTCASE ARGS
+CASE "パンツ"
+	LOCALS = %LOCALS:1%
+CASE "ブラ"
+	LOCALS = %LOCALS:3%
+CASE "上着"
+	LOCALS = %LOCALS:5%
+CASE "スカート"
+	LOCALS = %LOCALS:7%
+CASE "ボディスーツ"
+	LOCALS = %LOCALS:9%
+;パンストはここ
+CASE "アウター"
+	LOCALS = %LOCALS:11%
+CASE "靴下"
+	LOCALS = %LOCALS:13%
+CASE "靴"
+	LOCALS = %LOCALS:15%
+CASE "手袋"
+	LOCALS = %LOCALS:17%
+;メガネなど、その他（これに限りビット管理）
+CASE "アクセサリ"
+	LOCALS = %LOCALS:19%
+ENDSELECT
+
+RETURNF LOCALS
+
+;-------------------------------------------------
+;下着だけを脱いでもらった時のテキスト
+;上半身がブラだけならブラも脱ぎます
+;-------------------------------------------------
+@EVENT_DATUI_PANTU, ARGS
+SELECTCASE ARGS
+CASE "ブラ"
+	PRINTFORMW %CALLNAME:TARGET%は\@ CHECK_CLO("水着姿") ? 水着の #  \@ブラジャーを外した…
+CASEELSE
+	IF TALENT:淫乱 && RAND:3 == 0 && CHECK_CLO("パンツ露出")
+		PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%にお尻を向けると、股間を見せ付けるように前屈しながらパンツを降ろした…
+	ELSEIF (ABL:露出癖 - TALENT:恥じらい + TALENT:恥薄い >= 3 || TALENT:好色) && CHECK_CLO("パンツ露出")
+		PRINTFORM %CALLNAME:TARGET%は
+		IF (ABL:露出癖 >= 3 || TALENT:好色 || TALENT:献身) && CHECK_SKIRT("ロング")
+			PRINTFORM %SKIRT(TARGET, 1)%の端を口でくわえて下腹部を露わにした体勢をとってからパンツを脱ぐ様を披露すると、
+		ELSE
+			PRINTFORM スルリとパンツを脱ぐと、
+		ENDIF
+		IF RAND:2 && EQUIP:スカート && CHECK_SKIRT("ロング") == 0
+			PRINTFORMW %SKIRT(TARGET, 1)%をたくし上げて無防備な股間を%CALLNAME:PLAYER%に見せ付けてきた…
+		ELSEIF PENIS(TARGET) == 0 && (ABL:露出癖 >= 3 || TALENT:好色) && CHECK_PANTIES("蒸れ")
+			IF CHECK_PANTIES("染み") && RAND:3
+				IF RAND:3 == 0
+					PRINT 汚れた
+				ELSEIF RAND:2
+					PRINT 恥ずかしい染みの出来た
+				ELSE
+					PRINT 愛液で濡れた
+				ENDIF
+			ELSE
+				PRINTFORM %TEXTS("匂い")%の染み付いた
+			ENDIF
+			PRINTFORM クロッチ部分を
+			IF TALENT:恥じらい
+				IF RAND:2
+					PRINT 耳まで赤くしながら
+				ELSE
+					PRINT 恥ずかしそうに
+				ENDIF
+			ELSE
+				IF TALENT:陽気 + TALENT:好色 + TALENT:小悪魔 && RAND:3 == 0
+					PRINT 綾取りをするような手つきで
+				ELSEIF RAND:2
+					PRINT ニヤニヤしながら
+				ELSE
+					PRINT 楽しそうに
+				ENDIF
+			ENDIF
+			IF TALENT:陽気 + TALENT:好色 + TALENT:小悪魔 && RAND:3
+				PRINTFORMW %CALLNAME:PLAYER%に見せ付けてきた…
+			ELSE
+				PRINTFORMW %CALLNAME:PLAYER%に見せてきた…
+			ENDIF
+		ELSEIF CHECK_PANTIES("蒸れ")
+			PRINTFORMW 暖かく湿ったソレを%CALLNAME:PLAYER%に手渡してきた…
+		ELSE
+			PRINTFORMW 温もりの移ったソレを%CALLNAME:PLAYER%に手渡してきた…
+		ENDIF
+	ELSEIF TALENT:恥じらい
+		IF MARK:屈服刻印 < 3
+			PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%から見えないように注意して、ゴソゴソと下着を脱いだ…
+		ELSE
+			PRINTFORMW %CALLNAME:PLAYER%は顔を赤くした%CALLNAME:TARGET%の下着をゆっくりと脱がした…
+		ENDIF
+	ELSE
+		PRINTFORMW %CALLNAME:TARGET%は\@ CHECK_CLO("水着姿") ? 水着 # 下着 \@を脱いだ…
+	ENDIF
+ENDSELECT
+
+SELECTCASE ARGS
+CASE "ブラ"
+	CALL SET_BRA, TARGET
+CASE "パンツ"
+	CALL SET_PANTIES, TARGET
+CASEELSE
+	CALL SET_BRA, TARGET
+	CALL SET_PANTIES, TARGET
+ENDSELECT
+
+;-------------------------------------------------
+;服を脱いでもらった時のテキスト
+;-------------------------------------------------
+@EVENT_DATUI_FUKU
+PRINTFORM %CALLNAME:TARGET%
+;恥じらい
+IF TALENT:恥じらい && RAND:3 == 0
+	PRINT は時々恥ずかしそうに微笑みながら、
+;巨乳 && RAND:3 == 0
+ELSEIF TALENT:巨乳
+	PRINT は胸とお尻を強調するように見せ付けながら、
+;プライド高い、小悪魔、魅力
+ELSEIF (TALENT:高慢 || TALENT:小悪魔 || TALENT:魅惑) && RAND:3 == 0
+	PRINT は焦らすように、
+;淫乱
+ELSEIF TALENT:淫乱 && EQUIP:パンツ && RAND:3 == 0
+	PRINTFORM は%CALLNAME:PLAYER%に自分の\@ CHECK_CLO("水着姿") ? 水着 # 下着 \@姿を鑑賞させながら、
+ELSEIF RAND:2 == 0
+	PRINTFORM は%CALLNAME:PLAYER%に流し目を送りながら、
+ELSE 
+	PRINT は楽しそうに、
+ENDIF
+IF RAND:2 == 0 && EQUIP:上着 + EQUIP:ボディスーツ
+	PRINT 服を脱いで
+	IF EQUIP:パンツ
+		PRINTFORM \@ CHECK_CLO("水着姿") ? 水着 # 下着 \@姿
+	ELSE
+		PRINTFORM ハダカ
+	ENDIF
+	PRINTW になった…
+ELSEIF RAND:2 == 0 && EQUIP:パンツ
+	PRINTW パンツを残して一枚一枚ゆっくりと脱いでいった…
+ELSE
+	PRINTW ゆっくりと脱いでいった…
+ENDIF
+CALL SET_SHIRT, TARGET
+CALL SET_BODYS, TARGET
+
+;ハダカになってもらった時のテキスト
+@EVENT_DATUI_HADAKA
+PRINTFORM %CALLNAME:TARGET%
+;恥じらい
+IF TALENT:恥じらい && RAND:3 == 0
+	PRINT は時々恥ずかしそうに微笑みながら、
+;巨乳
+ELSEIF TALENT:巨乳 && RAND:3 == 0
+	PRINT は胸とお尻を強調するように見せ付けながら、
+;プライド高い、小悪魔、魅力
+ELSEIF (TALENT:高慢 || TALENT:小悪魔 || TALENT:魅惑) && RAND:3 == 0
+	PRINT は焦らすように、
+;淫乱
+ELSEIF TALENT:淫乱 && EQUIP:パンツ && RAND:3 == 0
+	PRINTFORM は%CALLNAME:PLAYER%に自分の下着姿を鑑賞させながら、
+ELSEIF RAND:2 == 0
+	PRINTFORM は%CALLNAME:PLAYER%に流し目を送りながら、
+ELSE 
+	PRINTFORM は楽しそうに、
+ENDIF
+IF EQUIP:靴下 + EQUIP:靴 + EQUIP:手袋 && RANDIF(2, EQUIP:パンツ, EQUIP:上着 + EQUIP:ボディスーツ)
+	IF EQUIP:手袋
+		IF EQUIP:靴下 + EQUIP:靴
+			PRINTFORMW 手足の衣装だけ残して脱いでいった…
+		ELSE
+			PRINTFORMW 手袋だけを残して脱いでいった…
+		ENDIF
+	ELSEIF EQUIP:靴下
+		IF EQUIP:靴
+			PRINTFORMW %SHOES(TARGET, 1)%と%SOCKS(TARGET, 1)%だけ残して脱いでいった…
+		ELSE
+			PRINTFORMW %SOCKS(TARGET, 1)%だけを残して脱いでいった…
+		ENDIF
+	ELSE
+		PRINTFORMW %SHOES(TARGET, 1)%以外の全てを脱いでいった…
+	ENDIF
+ELSEIF EQUIP:上着 + EQUIP:ボディスーツ && RANDIF(2, EQUIP:パンツ)
+	PRINTW 服を脱いでハダカになった…
+ELSEIF EQUIP:パンツ && RAND:2
+	PRINTW パンツを脱いでハダカになった…
+ELSE
+	PRINTW ゆっくりと脱いでいった…
+ENDIF
+CALL SETFLAG, "ハダカにする", TARGET
+
+;-------------------------------------------------
+;コーディネート関数
+;-------------------------------------------------
+@COORDINATE
+#DIM LCOUNT
+PRINTL 
+VARSET LOCAL
+PRINTFORML  [ 0] %CALLNAME:MASTER%のＹシャツ
+LOCAL:0 = 1
+FOR LCOUNT, 1, 50
+	SIF LCOUNT >= 22 && COND("脚の使用") == 0
+		CONTINUE
+	SIF LCOUNT == 13 && (TALENT:小柄体型 == 0 || COND("脚の使用") == 0)
+		CONTINUE
+	IF ITEM:(499+LCOUNT)
+		PRINTFORML  [{LCOUNT, 2}] %ITEMNAME:(499+LCOUNT)%
+		LOCAL:LCOUNT = 1
+	ENDIF
+NEXT
+;種族ごとの服に使用
+PRINTFORML  [99] %CALLNAME:TARGET%自身の衣装
+PRINTFORML [100] 戻る
+
+$INPUT_LOOP
+INPUT
+
+IF RESULT == 100
+	RETURN 0
+ELSEIF RESULT >= 0 && RESULT < 50 && LOCAL:RESULT
+	CALL COORDINATE_COS, RESULT
+	IF CHECK_SHIRT("Ｙシャツ")
+		IF TALENT:小柄体型
+			PRINTFORMW %CALLNAME:TARGET%にはブカブカの、%CALLNAME:MASTER%のＹシャツに着替えてもらいました
+			PRINTFORMW あまりに袖が余っているので、くるくると折って手を出させてあげます
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%には丈が少し長めな、%CALLNAME:MASTER%のＹシャツに着替えてもらいました
+			IF TALENT:恥薄い || RAND:6 == 0
+				PRINTFORM 裾の合わせ目からチラチラ見える
+				IF EQUIP:パンツ && COND("脚の使用")
+					PRINT パンツ
+				ELSE
+					IF COND("陰毛") >= 5
+						PRINT 茂み
+					ELSEIF COND("陰毛") == 4
+						PRINT 剃り跡
+					ELSE
+						IF COND("陰毛") && PENIS(TARGET) == 0 && RAND:2 == 0
+							PRINT 無毛のアソコ
+						ELSE
+							PRINT 股間
+						ENDIF
+					ENDIF
+				ENDIF
+				PRINTFORMW が%CALLNAME:MASTER%の目を奪います…
+			ELSEIF TALENT:恥じらい || RAND:5 == 0
+				IF RAND:2 == 0
+					PRINTFORMW 長めの裾はスカートとしては物足りないようで、恥ずかしそうに脚をもじもじしています…
+				ELSE
+					PRINTFORMW 長めの裾はスカートとしては物足りないようで、ぎゅっと裾を掴んで下に引き伸ばしています…
+				ENDIF
+			ENDIF
+		ENDIF
+	ELSEIF CHECK_SHIRT("女教師")
+		PRINTFORMW タイトスカートの女教師の格好になってもらいました
+	ELSEIF CHECK_SHIRT("和服")
+		PRINTFORMW 和服姿になってもらいました
+	ELSEIF CHECK_SHIRT("メイド服")
+		PRINTFORMW ぴしっと糊の効いた、清潔なメイド服を着てもらいました
+	ELSEIF CHECK_SHIRT("体操服")
+		PRINTFORMW \@ COND("脚の使用") ? ブルマから伸びる脚が # \@健康的な体操服に着替えてもらいました
+	ELSEIF CHECK_SHIRT("ナース服")
+		PRINTFORMW 白衣の天使になってもらいました
+	ELSEIF CHECK_SHIRT("チャイナ服")
+		PRINTFORMW \@ COND("脚の使用") ? スリットから伸びる脚が # \@艶かしいチャイナ服に着替えてもらいました
+	ELSEIF CHECK_SHIRT("セーラー服")
+		PRINTFORMW チラリと見えるおへそが魅力的なセーラー服に着替えてもらいました
+	ELSEIF CHECK_SHIRT("巫女")
+		PRINTFORMW 穢れ無き清純さ溢れる紅白の巫女服に着替えてもらいました
+	ELSEIF CHECK_SHIRT("ベビードール")
+		PRINTFORMW ほんのり透ける可愛らしいベビードールに着替えてもらいました
+	ELSEIF CHECK_SHIRT("ウェディングドレス")
+		PRINTFORMW 純白のウェディングドレスに着替えてもらいました
+		IF TALENT:小柄体型
+			PRINTFORMW ちょっと背伸びした感じも、可愛らしさに一役買っています
+		ELSEIF TALENT:生意気
+			PRINTFORM %CALLNAME:TARGET%は恥ずかしさ
+			SIF TALENT:恋慕
+				PRINT と嬉しさ
+			PRINTFORMW を紛らわすためか、悪態をつきはじめました…
+		ELSEIF (TALENT:素直 || TALENT:清楚) && TALENT:恋慕
+			PRINTFORMW %CALLNAME:TARGET%は滲み出る嬉しさを隠せていません…
+		ENDIF
+	ELSEIF CHECK_SHIRT("ゴスロリドレス")
+		PRINTFORMW \@ AGE(TARGET) <= 2 ? 妖しくも可愛らしい # 可愛らしさとのギャップに妖しい魅力を感じる \@ゴシック＆ロリータ服に着替えてもらいました
+	ELSEIF CHECK_SHIRT("チアリーダー")
+		PRINTFORMW 健康的な魅力に、見ていると元気になれるチアリーダー服に着替えてもらいました
+	ELSEIF CHECK_SHIRT("パジャマ")
+		PRINTFORMW 可愛らしいパジャマに着替えてもらいました
+	ELSEIF CHECK_SHIRT("ウェイトレス")
+		PRINTFORMW 喫茶店でおなじみな制服姿になってもらいました
+	ELSEIF CHECK_CLO("ビキニ姿")
+		IF TALENT:巨乳 && RAND:2 == 0
+			PRINT 大きな胸がこぼれそうな
+		ELSE
+			PRINT 大胆な
+		ENDIF
+		PRINTFORMW ビキニ姿になってもらいました
+	ELSEIF CHECK_BODYS("スク水")
+		PRINTFORMW 紺色のスク水を着てもらいました
+	ELSEIF CHECK_BODYS("レオタード") && CHECK_BODYS("Ｖ露出")
+		PRINTFORMW 股間と胸の周りだけが露出しているレオタード姿になってもらいました
+	ELSEIF CHECK_BODYS("ボンデージ")
+		PRINTFORMW \@ PENIS(TARGET) == 0 ? 乳房が丸出しの上に # \@股間にファスナーの付いたボンデージ姿になってもらいました
+	ELSEIF CHECK_BODYS("バニースーツ")
+		PRINTFORMW 大人の魅力満点のバニーガール姿になってもらいました
+	ELSEIF CHECK_BODYS("ワンピース水着")
+		PRINTFORMW ちょっと清楚な雰囲気が漂う白いワンピース水着になってもらいました
+	ENDIF
+ELSEIF RESULT == 99
+	CALL COORDINATE_MUMA, TARGET
+	PRINTFORMW %CALLNAME:TARGET%自身の衣装に着替えてもらいました
+ELSE
+	GOTO INPUT_LOOP
+ENDIF
+
+SIF EQUIP:上着 == 0 && COND("脚の使用")
+	CALL SHOW_PUBICHAIR
+
+@COORDINATE_COS, ARG
+;下着以外のフラグ消去
+CALL SET_SHIRT, TARGET
+CALL SET_BODYS, TARGET
+CALL SET_OUTER, TARGET
+CALL SET_SOCKS, TARGET
+CALL SET_SHOES, TARGET
+CALL SET_GLOVE, TARGET
+
+SELECTCASE ARG
+CASE 0
+	CALL SET_SHIRT, TARGET, 100
+CASE 1
+	CALL SET_SHIRT, TARGET, 101
+	CALL SET_OUTER, TARGET, 104
+	CALL SET_SHOES, TARGET, 100
+CASE 2
+	CALL SET_SHIRT, TARGET, 102
+	CALL SET_SOCKS, TARGET, 107
+	CALL SET_SHOES, TARGET, 107
+CASE 3
+	CALL SET_SHIRT, TARGET, 103
+	CALL SET_SOCKS, TARGET, 106
+	CALL SET_SHOES, TARGET, 101
+CASE 4
+	CALL SET_SHIRT, TARGET, 104
+	CALL SET_OUTER, TARGET, 100
+	CALL SET_SOCKS, TARGET, 100
+	CALL SET_SHOES, TARGET, 109
+CASE 5
+	CALL SET_SHIRT, TARGET, 105
+	CALL SET_SOCKS, TARGET, 105
+	CALL SET_SHOES, TARGET, 102
+CASE 6
+	CALL SET_SHIRT, TARGET, 106
+	CALL SET_SHOES, TARGET, 106
+CASE 7
+	CALL SET_SHIRT, TARGET, 107
+	CALL SET_SOCKS, TARGET, 101
+	CALL SET_SHOES, TARGET, 101
+CASE 8
+	CALL SET_SHIRT, TARGET, 108
+	CALL SET_SOCKS, TARGET, 107
+	CALL SET_SHOES, TARGET, 107
+CASE 9
+	CALL SET_SHIRT, TARGET, 109
+CASE 10
+	CALL SET_SHIRT, TARGET, 110
+	CALL SET_SOCKS, TARGET, 106
+	CALL SET_GLOVE, TARGET, 100
+	CALL SET_SHOES, TARGET, 100
+CASE 11
+	CALL SET_SHIRT, TARGET, 111
+	CALL SET_SOCKS, TARGET, 108
+	CALL SET_SHOES, TARGET, 101
+CASE 12
+	CALL SET_SHIRT, TARGET, 112
+	CALL SET_SOCKS, TARGET, 100
+	CALL SET_SHOES, TARGET, 109
+CASE 13
+	CALL SET_SHIRT, TARGET, 113
+	CALL SET_OUTER, TARGET, 108
+CASE 21
+	CALL SET_PANTIES, TARGET, 110, 1
+	CALL SET_SHOES, TARGET, 102
+CASE 22
+	CALL SET_BODYS, TARGET, 107
+CASE 23
+	CALL SET_BODYS, TARGET, 103
+	CALL SET_SHOES, TARGET, 105
+CASE 24
+	CALL SET_BODYS, TARGET, 106
+	CALL SET_GLOVE, TARGET, 102
+	CALL SET_SHOES, TARGET, 106
+CASE 25
+	CALL SET_BODYS, TARGET, 104
+	CALL SET_SOCKS, TARGET, 105
+	CALL SET_SHOES, TARGET, 106
+	CALL SET_OTHER, TARGET, 110
+	CALL SET_OTHER, TARGET, 131
+CASE 26
+	CALL SET_BODYS, TARGET, 108
+ENDSELECT
+
+@COORDINATE_MUMA, ARG
+CALL SETFLAG, "衣装全脱ぎ", ARG
+SIF STRLENS(NAME_PANTIES(BASE:ARG:種族, ARG) )
+	CALL SET_PANTIES, ARG, BASE:ARG:種族
+IF STRLENS(NAME_PANTIES(BASE:ARG:種族, ARG) ) && STRLENS(NAME_BRA(BASE:ARG:種族, ARG) )
+	CALL SET_PANTIES, ARG, BASE:ARG:種族, 1
+ELSEIF STRLENS(NAME_PANTIES(BASE:ARG:種族, ARG) )
+	CALL SET_PANTIES, ARG, BASE:ARG:種族
+ELSEIF STRLENS(NAME_BRA(BASE:ARG:種族, ARG) )
+	CALL SET_BRA, ARG, BASE:ARG:種族
+ENDIF
+SIF STRLENS(NAME_SHIRT(BASE:ARG:種族, ARG) )
+	CALL SET_SHIRT, ARG, BASE:ARG:種族
+SIF STRLENS(NAME_BODYS(BASE:ARG:種族, ARG) )
+	CALL SET_BODYS, ARG, BASE:ARG:種族
+SIF STRLENS(NAME_OUTER(BASE:ARG:種族, ARG) )
+	CALL SET_OUTER, ARG, BASE:ARG:種族
+SIF STRLENS(NAME_SOCKS(BASE:ARG:種族, ARG) )
+	CALL SET_SOCKS, ARG, BASE:ARG:種族
+SIF STRLENS(NAME_SHOES(BASE:ARG:種族, ARG) )
+	CALL SET_SHOES, ARG, BASE:ARG:種族
+SIF STRLENS(NAME_GLOVE(BASE:ARG:種族, ARG) )
+	CALL SET_GLOVE, ARG, BASE:ARG:種族
+CALL SET_OTHER, ARG, BASE:ARG:種族
+
+
+;-------------------------------------------------
+;パンツの選択
+;-------------------------------------------------
+@SELECT_PANTU
+#DIM LCOUNT
+#DIM MEMO_LINECOUNT
+#DIM MEMO_PANTU
+#DIM MEMO_BRA
+
+MEMO_LINECOUNT = LINECOUNT
+
+PRINTL 
+PRINTFORML （パンツを穿いた状態でブラを選択すると、可能な限り同じ色のものを選びます）
+IF EQUIP:パンツ+EQUIP:ブラ
+	PRINTFORM 着用中：
+	IF EQUIP:パンツ
+		PRINTFORM [%PANTIES(TARGET)%
+		IF CHECK_PANTIES("ファスナー開")
+			PRINT (開)
+		ELSEIF CHECK_PANTIES("ＶＡ露出")
+			PRINT (穴開き)
+		ELSEIF CHECK_PANTIES("Ａ露出")
+			PRINT (Ａ穴開き)
+		ELSEIF CHECK_PANTIES("Ｖ露出")
+			PRINT (Ｖ穴開き)
+		ELSEIF CHECK_PANTIES("ファスナー閉")
+			PRINT (閉)
+		ELSEIF CHECK_PANTIES("スリット")
+			PRINT (スリット)
+		ENDIF
+		PRINTFORM ] 
+	ELSE
+		PRINTFORM [ノーパン] 
+	ENDIF
+	IF EQUIP:ブラ
+		PRINTFORML [%BRA(TARGET)%]
+	ELSE
+		PRINTFORML [ノーブラ]
+	ENDIF
+ENDIF
+VARSET LOCAL
+FOR LCOUNT, 0, 50
+	LOCALS = %NAME_PANTIES(LCOUNT+100, TARGET)%
+	IF STRLENS(LOCALS)
+		SIF LCOUNT <30
+			PRINTFORM  [{LCOUNT, 2}] %TEXT_LJ(LOCALS, 30)%
+		LOCAL:LCOUNT = 1
+	ENDIF
+	LOCALS:1 = %NAME_BRA(LCOUNT+100, TARGET)%
+	IF STRLENS(LOCALS:1)
+		SIF LCOUNT < 30
+			PRINTFORM  [{LCOUNT+50, 2}] %LOCALS:1%
+		LOCAL:(LCOUNT+50) = 1
+	ENDIF
+	SIF STRLENS(LOCALS) + STRLENS(LOCALS:1) && LCOUNT < 30
+		PRINTL 
+NEXT
+
+;Ｈな下着([80]も常に直接選択は可能)
+IF COND("脚の使用")
+	PRINTFORML  [30] %TEXT_LJ("Ｈな下着セット(ランダム)を付けてもらう", 30)%
+	LOCAL:30 = 1
+ELSE
+	PRINTFORML  [80] %TEXT_LJ("Ｈなブラジャー(ランダム)を付けてもらう", 30)%
+	LOCAL:80 = 1
+ENDIF
+
+PRINTFORML  [90] \@ CONFIG("パンツとブラを合わせる") ? ○ # − \@ブラをパンツに合わせる
+LOCAL:90 = 1
+
+;名前に色や縞々とあるもの以外なら色合いの変更を認める
+;IF EQUIP:パンツ && SUBSTRING(CSTR:40, 0, 2) == SUBSTRING(TEXTS("衣装の色", EQUIP:パンツ), 0, 2)
+;ELSEIF EQUIP:ブラ && SUBSTRING(CSTR:41, 0, 2) == SUBSTRING(TEXTS("衣装の色", EQUIP:ブラ), 0, 2)
+;ELSEIF EQUIP:パンツ + EQUIP:ブラ
+;	PRINTFORM  [95] \@ CHECK_CLO("水着姿") ? 水着 # 下着 \@の色等を変更する
+	LOCAL:95 = 1
+;	PRINTL 
+;ENDIF
+IF EQUIP:パンツ || EQUIP:ブラ
+	IF EQUIP:パンツ
+		PRINTFORM  [96] %TEXT_LJ("パンツを脱いでもらう", 30)%
+		LOCAL:96 = 1
+	ENDIF
+	IF EQUIP:ブラ
+		PRINTFORM  [97] ブラを外してもらう
+		LOCAL:97 = 1
+	ENDIF
+	PRINTL 
+ENDIF
+IF EQUIP:パンツ && EQUIP:ブラ
+	PRINTFORML  [98] 上下とも脱いでもらう
+	LOCAL:98 = 1
+ENDIF
+LOCALS = %NAME_PANTIES(BASE:種族, TARGET)%
+LOCALS:1 = %NAME_BRA(BASE:種族, TARGET)%
+IF STRLENS(LOCALS) || STRLENS(LOCALS:1)
+	IF STRLENS(LOCALS)
+		PRINTFORM  [99] %TEXT_LJ(LOCALS, 30)%
+		LOCAL:99 = 1
+	ENDIF
+	IF STRLENS(LOCALS:1)
+		PRINTFORM [149] %LOCALS:1%
+		LOCAL:149 = 1
+	ENDIF
+	PRINTL 
+ENDIF
+PRINTFORML [100] 戻る
+
+$INPUT_LOOP
+INPUT
+
+MEMO_PANTU = EQUIP:パンツ
+MEMO_BRA = EQUIP:ブラ
+
+IF RESULT == 100
+	RETURN 0
+ELSEIF RESULT == 30 && LOCAL:RESULT
+	CALL SET_PANTIES, TARGET, 130, 1
+	PRINTFORM エロチックな
+	IF CHECK_PANTIES("シースルー")
+		PRINTFORM シースルー素材の
+	ELSEIF CHECK_PANTIES("レース")
+		PRINTFORM レースで彩られた
+	ELSEIF CHECK_PANTIES("シルク")
+		PRINTFORM シルク製の
+	ENDIF
+	;マイクロ（Ｔバックでもある）
+	IF CHECK_PANTIES("マイクロ")
+		PRINTFORM 布面積が異常に少ない
+	ELSEIF CHECK_PANTIES("ファスナー")
+		PRINTFORM クロッチ部分にファスナーのついた
+	ELSEIF CHECK_PANTIES("Ｖ露出")
+		PRINTFORM クロッチ部分に生地が無い
+	ELSEIF CHECK_PANTIES("Ａ露出")
+		PRINTFORM お尻の穴の周りだけ生地が無い
+	ENDIF
+	;紐
+	IF CHECK_PANTIES("紐")
+		PRINTFORM 紐パン
+	;Tバック
+	ELSEIF CHECK_PANTIES("Ｔバック")
+		PRINTFORM Ｔバック
+	;ローorハイ
+	ELSEIF CHECK_PANTIES("ローレグ")
+		PRINTFORM ローレグ下着
+	ELSEIF CHECK_PANTIES("ハイレグ")
+		PRINTFORM ハイレグ下着
+	ELSE
+		PRINTFORM 下着
+	ENDIF
+	PRINTFORMW を着けてもらいました。
+	IF EQUIP:ブラ
+		PRINTFORM ブラジャーはお揃いの色と素材で作られた
+		IF CHECK_BRA("オープンブラ")
+			PRINTFORM 、乳首周辺が全く隠されていない
+		ELSEIF CHECK_BRA("1/4カップ")
+			PRINTFORM 、乳房の下までしかなくおっぱい丸見えの
+		ELSEIF CHECK_BRA("マイクロ")
+			PRINTFORM 、\@CHECK_PANTIES("マイクロ") ? やはり # \@布面積が異常に少ない
+		ELSEIF CHECK_BRA("1/2カップ")
+			PRINTFORM 、乳輪が半分見えている
+		ENDIF
+		PRINTFORMW 逸品です…
+	ENDIF
+ELSEIF RESULT == 80 && LOCAL:RESULT
+	CALL SET_BRA, TARGET, 130
+	PRINTFORM エロチックな
+	IF CHECK_BRA("シースルー")
+		PRINTFORM シースルー素材の
+	ELSEIF CHECK_BRA("レース")
+		PRINTFORM レースで彩られた
+	ELSEIF CHECK_BRA("シルク")
+		PRINTFORM シルク製の
+	ENDIF
+	IF CHECK_BRA("オープンブラ")
+		PRINTFORM 乳首周辺が全く隠されていないブラジャー(？)
+	ELSEIF CHECK_BRA("1/4カップ")
+		PRINTFORM 乳房の下までしかなくおっぱい丸見えのブラジャー(？)
+	ELSEIF CHECK_BRA("マイクロ")
+		PRINTFORM 布面積が異常に少ないブラジャー
+	ELSEIF CHECK_BRA("1/2カップ")
+		PRINTFORM 乳房の上半分が半分見えているブラジャー
+	ELSE
+		PRINTFORM ブラジャー
+	ENDIF
+	PRINTFORMW を着けてもらいました。
+ELSEIF RESULT >= 0 && RESULT < 50 && LOCAL:RESULT
+	LOCAL = RESULT + 100
+
+	CALL SET_PANTIES, TARGET, LOCAL
+
+	SELECTCASE LOCAL
+	CASE 100
+		IF RAND:2 == 0
+			PRINTFORMW 体のラインを控えめに主張させる縞々の下着を着けてもらいました
+		ELSE
+			PRINTFORMW 股間の陰影を柔らかく浮かばせる縞々パンツをはいてもらいました
+		ENDIF
+	CASE 101
+		IF RAND:2 == 0
+			PRINTFORMW セクシーな黒いレース生地の下着を着けてもらいました
+		ELSE
+			PRINTFORMW 大人の香り漂う黒いレースのパンツをはいてもらいました
+		ENDIF
+	CASE 102
+		IF RAND:2 == 0
+			PRINTFORMW 可愛らしいフリルで飾られた下着を着けてもらいました
+		ELSE
+			PRINTFORMW 清楚なフリル付きのパンツをはいてもらいました
+		ENDIF
+	CASE 103
+		PRINTFORMW 脱がしやすそうな紐パンをはいてもらいました
+	CASE 104
+		PRINTFORMW お尻のラインが可愛いＴバックをはいてもらいました
+	CASE 105
+		PRINTFORMW 股上が浅いゴム履きのローライズをはいてもらいました
+	CASE 106
+		IF RAND:2 == 0
+			PRINTFORMW 大胆に透けている下着を着けてもらいました
+		ELSE
+			PRINTFORMW なんとも淫靡なシースルーのパンツをはいてもらいました
+		ENDIF
+	CASE 107
+		PRINTFORMW \@ PENIS(TARGET) ? 押さえつけられたペニスが主張する # 柔らかな恥丘を際立たせる \@ハイレグパンツをはいてもらいました
+	CASE 108
+		PRINTFORMW 股間にファスナーのついた、きわどい革製のハイレグパンツをはいてもらいました
+	CASE 109
+		LOCALS = 
+		SELECTCASE COND("陰毛")
+		CASE 1, 2
+			LOCALS = 剥き卵の様な恥丘
+		CASE 3
+			LOCALS = ツルツルの恥丘
+		CASE 4
+			IF CONDS("陰毛") == "剃り跡"
+				LOCALS = ジョリジョリの剃り跡
+			ELSE
+				LOCALS = 生えかけの陰毛
+			ENDIF
+		CASE 5
+			IF CSTR:71 != "" && RAND:2
+				LOCALS = %CSTR:71%に剃り整えられた陰毛
+			ELSE
+				LOCALS = ばっちりお手入れされた陰毛
+			ENDIF
+		CASE IS >= 6
+			LOCALS = 陰毛の茂み
+		ENDSELECT
+		IF LOCALS != "" && PENIS(TARGET) == 0
+			IF RAND:3 == 0
+				LOCALS = %LOCALS%を見せ付けるようなデザインの
+			ELSEIF RAND:2
+				IF AGE(TARGET) >= 3
+					LOCALS = %LOCALS%は勿論、それどころかクリトリスの鞘が見えている
+				ELSE
+					LOCALS = %LOCALS%は勿論、それどころかスジの上端が見えかけている
+				ENDIF
+			ELSE
+				LOCALS = %LOCALS%\@ ABL:露出癖 >= 3 ? を見せ付けるのに最適な形状の # がよく見える \@
+			ENDIF
+		ELSE
+			LOCALS = 股上が異常に浅い
+		ENDIF
+		PRINTFORMW %LOCALS%ローレグパンツをはいてもらいました
+	CASE 110
+		PRINTFORMW 大胆なビキニを着てもらいました
+	CASE 111
+		PRINTFORMW 大事なところを全然隠せていない極小生地の水着を着てもらいました
+	CASE 112
+		IF RAND:2 == 0
+			PRINTFORMW 上品でお洒落なレース生地の下着を着けてもらいました
+		ELSE
+			PRINTFORMW 大人っぽくも可愛らしいレースのパンツをはいてもらいました
+		ENDIF
+	CASE 113
+		PRINTFORMW 小さな布と形容した方がいいような、物凄くきわどいパンツをはいてもらいました
+	CASE 114
+		PRINTFORML …どうせなら、更にエロチックなものを選びますか？
+		PRINTFORML [ 0] シースルー！
+		PRINTFORML [ 1] 穴開き！
+		PRINTFORML [ 2] いや、別に普通ので良い
+		CALL INPUT_SELECT, 3
+		PRINTFORMW パンツと言って良いものか迷う逸品、Ｃストリングを付けてもらいました
+		IF RESULT == 0
+			CSTR:40 = 透けＣスト
+			CALL CALC, "パンツフラグ追加", SETFLAG_PANTIES("シースルー")
+			PRINTFORMW 生地がスケスケなので、模様越しに%CALLNAME:TARGET%の大事な部分が見えてとても扇情的です
+		ELSEIF RESULT == 1
+			CALL CALC, "パンツフラグ追加", SETFLAG_PANTIES("Ｖ露出")
+			PRINTFORMW 穴が開いているおかげで、下着というよりも性器がここに有ると強調するための物の様です
+		ENDIF
+	CASE 120
+		IF PENIS(TARGET)
+			PRINTFORMW \@ TALENT:オトコ ? # 男物の \@%PANTIES(TARGET)%を穿いてもらいました
+		ELSE
+			PRINTFORMW ボーイッシュな可愛さ溢れるボクサーパンツをはいてもらいました
+		ENDIF
+	CASE 121, 122
+		PRINTFORMW \@ TALENT:オトコ ? # 男物の \@%PANTIES(TARGET)%を穿いてもらいました
+	CASEELSE
+		PRINTFORMW %PANTIES(TARGET)%を穿いてもらいました
+	ENDSELECT
+
+	;ブラも合わせる？
+	;SELECTCASE LOCAL
+	;CASE 100 TO 119
+		SIF CONFIG("パンツとブラを合わせる")
+			CALL SET_BRA, TARGET, LOCAL
+	;ENDSELECT
+ELSEIF RESULT >= 50 && RESULT <= 80 && LOCAL:RESULT
+	LOCAL = RESULT + 50
+	CALL SET_BRA, TARGET, LOCAL
+	SELECTCASE LOCAL
+	CASE 100
+		PRINTFORMW 胸のラインを控えめに主張させる縞々のブラを着けてもらいました
+	CASE 101
+		PRINTFORMW セクシーな黒いレース生地のブラを着けてもらいました
+	CASE 102
+		PRINTFORMW 可愛らしいフリルで飾られたブラを着けてもらいました
+	CASE 103
+		PRINTFORMW 可愛らしいキャミソールを着てもらいました
+	CASE 104
+		PRINTFORMW カップが下半分しか無いブラをつけてもらいました
+	CASE 105
+		PRINTFORMW 活動的なタンクトップを着てもらいました
+	CASE 106
+		PRINTFORMW 生地の大半が透けているブラを着けてもらいました
+	CASE 107
+		PRINTFORMW \@ TALENT:オトコ ? 上４分の一が露出したつくりの # 胸の谷間が強調された \@ブラをつけてもらいました
+	CASE 108
+		PRINTFORMW 倒錯的な雰囲気漂う、革製のブラをつけてもらいました
+	CASE 109
+		PRINTFORMW ぴったりと胸を覆うチューブトップをつけてもらいました
+	CASE 110
+		PRINTFORMW 大胆なビキニタイプのブラを着けてもらいました
+	CASE 111
+		PRINTFORMW 大事なところを全然隠せていない極小生地の水着をつけてもらいました
+	CASE 112
+		PRINTFORMW 上品なレース生地のブラを着けてもらいました
+	CASE 113
+		PRINTFORMW 小さな布と形容した方がいいような、きわどいブラをつけてもらいました
+	CASEELSE
+		PRINTFORMW %BRA(TARGET)%をつけてもらいました
+	ENDSELECT
+ELSEIF RESULT == 90 && LOCAL:RESULT
+	INVERTBIT FLAG:204, 3
+	CLEARLINE LINECOUNT - MEMO_LINECOUNT
+ELSEIF RESULT == 95 && LOCAL:RESULT
+	PRINTFORML どの色合いにしますか？
+	PRINTFORML  [ 0] 白
+	PRINTFORML  [ 1] 純白
+	PRINTFORML  [ 2] 黒
+	PRINTFORML  [ 3] 赤
+	PRINTFORML  [ 4] ピンク
+	PRINTFORML  [ 5] 真紅
+	PRINTFORML  [ 6] 緑
+	PRINTFORML  [ 7] ライトグリーン
+	PRINTFORML  [ 8] 黄色
+	PRINTFORML  [ 9] 橙色
+	PRINTFORML  [10] 青
+	PRINTFORML  [11] ライトブルー
+	PRINTFORML  [12] 紺
+	PRINTFORML  [13] 紫
+	PRINTFORML  [14] 縞々(青＆白)
+	PRINTFORML  [15] 縞々(黄＆白)
+	PRINTFORML  [16] 縞々(緑＆白)
+	PRINTFORML  [17] 縞々(赤＆白)
+	PRINTFORML  [18] 縞々(黒＆白)
+	PRINTFORML [100] 変更しない
+	CALL INPUT_SELECT, 19, 100
+	LOCAL = RESULT
+	SELECTCASE RESULT
+	CASE 100
+	CASEELSE
+		SELECTCASE RESULT
+		CASE 0
+			LOCAL = SETFLAG_COMMON("白")
+		CASE 1
+			LOCAL = SETFLAG_COMMON("純白")
+		CASE 2
+			LOCAL = SETFLAG_COMMON("黒")
+		CASE 3
+			LOCAL = SETFLAG_COMMON("赤")
+		CASE 4
+			LOCAL = SETFLAG_COMMON("薄桃")
+		CASE 5
+			LOCAL = SETFLAG_COMMON("真紅")
+		CASE 6
+			LOCAL = SETFLAG_COMMON("緑")
+		CASE 7
+			LOCAL = SETFLAG_COMMON("薄緑")
+		CASE 8
+			LOCAL = SETFLAG_COMMON("黄")
+		CASE 9
+			LOCAL = SETFLAG_COMMON("橙")
+		CASE 10
+			LOCAL = SETFLAG_COMMON("青")
+		CASE 11
+			LOCAL = SETFLAG_COMMON("薄青")
+		CASE 12
+			LOCAL = SETFLAG_COMMON("紺")
+		CASE 13
+			LOCAL = SETFLAG_COMMON("紫")
+		CASE 14
+			LOCAL = SETFLAG_COMMON("縞々", "青")
+		CASE 15
+			LOCAL = SETFLAG_COMMON("縞々", "黄")
+		CASE 16
+			LOCAL = SETFLAG_COMMON("縞々", "緑")
+		CASE 17
+			LOCAL = SETFLAG_COMMON("縞々", "赤")
+		CASE 18
+			LOCAL = SETFLAG_COMMON("縞々", "黒")
+		ENDSELECT
+		IF EQUIP:パンツ
+			EQUIP:パンツ = CLEARBITS(EQUIP:パンツ, 53, 59)
+			EQUIP:パンツ |= LOCAL
+		ENDIF
+		IF EQUIP:ブラ
+			EQUIP:ブラ = CLEARBITS(EQUIP:ブラ, 53, 59)
+			EQUIP:ブラ |= LOCAL
+		ENDIF
+	ENDSELECT
+	RESTART
+ELSEIF RESULT == 96 && LOCAL:RESULT
+	CALL EVENT_DATUI_PANTU, "パンツ"
+ELSEIF RESULT == 97 && LOCAL:RESULT
+	CALL EVENT_DATUI_PANTU, "ブラ"
+ELSEIF RESULT == 98 && LOCAL:RESULT
+	CALL EVENT_DATUI_PANTU, "上下"
+ELSEIF RESULT == 99 && LOCAL:RESULT
+	CALL SET_PANTIES, TARGET, BASE:種族
+	PRINTFORMW %PANTIES(TARGET)%を穿いてもらいました
+ELSEIF RESULT == 149 && LOCAL:RESULT
+	CALL SET_BRA, TARGET, BASE:種族
+	PRINTFORMW %BRA(TARGET)%をつけてもらいました
+ELSE
+	GOTO INPUT_LOOP
+ENDIF
+
+;拘束などされていたり、パンツはいてないならここまで
+SIF TEQUIP:アイマスク || TEQUIP:拘束 || TEQUIP:口枷 || TEQUIP:館内露出プレイ || TEQUIP:野外プレイ
+	RESTART
+SIF MEMO_PANTU == EQUIP:パンツ && MEMO_BRA == EQUIP:ブラ
+	RESTART
+
+;スカート かつ 拘束などされてない かつ 陽気or恋慕or小悪魔 かつ 反発0LV
+IF EQUIP:スカート && EQUIP:パンツ && MEMO_PANTU != EQUIP:パンツ && TALENT:陽気 + TALENT:恋慕 + TALENT:小悪魔 && MARK:反発刻印 == 0 && CHECK_PANTIES("男物") == 0 && RAND:3 == 0
+	PRINTFORM %CALLNAME:TARGET%は
+	;淫乱or欲情1000以上
+	IF (TALENT:淫乱 && PALAM:欲情 >= 1000) && RAND:4
+		PRINT 妖艶に微笑みながら
+	ELSEIF RAND:3 == 0
+		SIF RAND:2 == 0
+			PRINT 楽しそうに
+		PRINT 微笑みながら
+	;プライド高いor淫乱orサド
+	ELSEIF TALENT:高慢 + TALENT:淫乱 + TALENT:サド && RAND:2 == 0
+		PRINT 不敵な笑みを浮かべながら
+	;小悪魔
+	ELSEIF TALENT:小悪魔 && RAND:2 == 0
+		PRINT ニヤニヤしながら
+	ELSEIF TALENT:恥じらい
+		PRINT 頬を染めながら
+	ENDIF
+	IF TALENT:好色 + TALENT:淫乱 && RAND:2 == 0
+		PRINT 大胆に
+	ELSEIF RAND:3
+		PRINT ゆっくりと
+	ENDIF
+	PRINTFORM %SKIRT(TARGET, 1)%をたくし上げて、
+	IF CHECK_CLO("水着姿")
+		PRINT 水着
+	ELSE
+		SIF PALAM:Ｖ潤 >= 3000 && PENIS(TARGET) == 0 && RAND:2 == 0
+			PRINT しっとりと汗ばんだ
+		PRINT パンツ
+	ENDIF
+	PRINTW のフィット具合を見せ付けてきた…
+ENDIF
+
+;ぱんつを履き替えた
+IF EQUIP:パンツ && MEMO_PANTU != EQUIP:パンツ && COND("脚の使用") && PENIS(TARGET) == 0 && RANDIF(1, EQUIP:ブラ && MEMO_BRA != EQUIP:ブラ)
+	CALL SHOW_PUBICHAIR
+;ブラを着けかえた
+ELSEIF EQUIP:ブラ && MEMO_BRA != EQUIP:ブラ
+	CALL SHOW_NYUURIN
+ENDIF
+
+RESTART
+
+;ブラ着用後の詳細描写。主に形状と材質で言及
+@SHOW_NYUURIN
+IF CHECK_BRA("オープンブラ") || CHECK_BRA("1/4カップ") || CHECK_BRA("1/2カップ") || CHECK_BRA("シースルー")
+	IF CHECK_BRA("シースルー")
+		PRINTFORM %TEXTR("生地越しに透けて見える", "うっすらと透ける", "儚い生地越しに透ける")%
+	ELSE
+		PRINTFORM %TEXTR("丸見えの", "力強く主張する", "恥ずかしげも無く晒されている")%
+	ENDIF
+	IF CALCF("Ｂ発情")
+		IF COND("乳首肥大") && RANDIF(1, TALENT:ニプルピアス)
+			IF COND("乳首肥大") >= 2
+				PRINTFORM 肥大しきった
+			ELSE
+				PRINTFORM 大きな
+			ENDIF
+		ELSEIF TALENT:ニプルピアス
+			PRINTFORM ピアスで飾られた
+		ENDIF
+	ELSE
+		PRINTFORM 陥没
+	ENDIF
+	PRINTFORM 乳首と
+	SELECTCASE COND("巨乳輪")
+	CASE IS >= 2
+		PRINTFORM 大きすぎる
+	CASE 1
+		PRINTFORM 大きな
+	ENDSELECT
+	PRINTFORMW 乳輪がなんとも%TEXTR("淫靡です", "興奮を誘う", "お洒落です")%…
+ELSEIF CHECK_BRA("マイクロ")
+	IF CALCF("Ｂ発情") && COND("乳首肥大") && RANDIF(1, COND("巨乳輪") )
+		PRINTFORMW 密着度の高い生地のため、下で主張している乳首の大きさを隠すことができないどころか逆に強調されてしまっています…
+	ELSEIF COND("巨乳輪")
+		PRINTFORM 乳首はかろうじて隠せているものの、
+		SELECTCASE COND("巨乳輪")
+		CASE IS >= 2
+			PRINTFORM 恥ずかしいほどに大きな
+		CASE 1
+			PRINTFORM 平均よりもかなり大きめの
+		ENDSELECT
+		PRINTFORMW 乳輪はその大半を晒してしまっています…
+	ENDIF
+ENDIF
+
+;途中
+@SHOW_PUBICHAIR
+;アソコ穴開きでの分岐はとりあえず無し
+;生え放題
+SELECTCASE COND("陰毛")
+CASE 7
+	IF CHECK_CLO("食い込み") || CHECK_CLO("パンツ露出") == 0
+		IF RAND:3 == 0
+			;マイクロ
+			IF CHECK_CLO("パンツ露出") && RAND:2
+				IF CHECK_PANTIES("マイクロ")
+					PRINTW 股間の小さな生地の全方位からは、盛大に陰毛がはみ出しています…
+				ELSE
+					PRINTW 小さな布地からは、大分陰毛がはみ出ています…
+				ENDIF
+			ELSEIF RAND:2 == 0
+				PRINTW 股間に食い込む細い布地の脇からは、盛大に陰毛がはみ出しています…
+			ELSE
+				PRINTW 激しく切れ上がった股の脇からは、盛大に陰毛がはみ出しています…
+			ENDIF
+		ELSEIF RAND:3 == 0
+			PRINTW はみ出している陰毛がなんとも興奮を誘う…
+		ELSEIF RAND:2 == 0
+			PRINTW 処理されていない陰毛がはみ出ているのがなんとも淫靡だ…
+		ELSE
+			PRINTW 処理されていないので、陰毛が大分はみ出ています…
+		ENDIF
+	ELSEIF CHECK_CLO("パンツ露出") == 0
+	ELSEIF CHECK_PANTIES("シースルー")
+		PRINTW うっすらと透けて見える剛毛がなんとも興奮を誘います…
+	ELSEIF CHECK_PANTIES("ローライズ") && CSTR:40 != "ローレグ"
+		PRINTW パンツの上のほうからは、処理されていない剛毛が見えてしまっています…
+	ENDIF
+;ナチュラル
+CASE 6
+	IF CHECK_CLO("食い込み") || CHECK_CLO("パンツ露出") == 0
+		IF RAND:3 == 0
+			IF CHECK_CLO("パンツ露出") && RAND:2
+				IF CHECK_PANTIES("マイクロ")
+					PRINTW 股間の小さな生地からは、大分陰毛がはみ出しています…
+				ELSE
+					PRINTW 小さな布地からは、だらしなく陰毛がはみ出ています…
+				ENDIF
+			ELSEIF RAND:2 == 0
+				PRINTW 股間に食い込む布地の脇からは、僅かに陰毛がはみ出しています…
+			ELSE
+				PRINTW 激しく切れ上がった股の脇からは、僅かに陰毛がはみ出しています…
+			ENDIF
+		ELSEIF RAND:3 == 0
+			PRINTW だらしなくはみ出た陰毛がなんとも興奮を誘う…
+		ELSEIF RAND:2 == 0
+			PRINTW 処理されていない陰毛がはみ出ているのがなんとも淫靡だ…
+		ELSE
+			PRINTW 処理されていないので、陰毛が見えてしまっています…
+		ENDIF
+	ELSEIF CHECK_CLO("パンツ露出") == 0
+	ELSEIF CHECK_PANTIES("シースルー")
+		PRINTW うっすらと透けて見える柔らかそうな毛がなんとも興奮を誘います…
+	ELSEIF CHECK_PANTIES("ローライズ") && CSTR:40 != "ローレグ"
+		PRINTW パンツの上のほうからは、柔らかそうな毛が見えてしまっています…
+	ENDIF
+;お手入れ済み
+CASE 5
+	IF CHECK_CLO("パンツ露出") == 0
+	ELSEIF CHECK_CLO("食い込み") 
+		IF CHECK_PANTIES("ローレグ")
+			PRINTW パンツの上のほうからは、陰毛どころか、縦スジが見えてしまっています…
+		ELSE
+			PRINTW 股間の小さな生地からは、微かに陰毛がはみ出しています…
+		ENDIF
+	ELSEIF CHECK_PANTIES("シースルー")
+		PRINTW うっすらと透けて見える柔らかそうな毛がなんとも興奮を誘います…
+	ELSEIF CHECK_PANTIES("ローレグ") && CSTR:40 != "ローレグ"
+		PRINTW パンツの上のほうからは、お手入れされた陰毛が見えてしまっています…
+	ENDIF
+;生えかけ
+CASE 4
+	IF CHECK_CLO("パンツ露出") == 0
+	ELSEIF CHECK_CLO("食い込み")
+		IF CHECK_PANTIES("ローレグ")
+			PRINTW パンツの上のほうからは、縦スジが見えてしまっています…
+		ELSE
+			PRINTW 股間の小さな生地からは、微かに陰毛がはみ出しています…
+		ENDIF
+	ELSEIF CHECK_PANTIES("シースルー")
+		PRINTW うっすらと透けて見える柔らかそうな毛がなんとも興奮を誘います…
+	ELSEIF CHECK_PANTIES("ローレグ") && CSTR:40 != "ローレグ"
+		PRINTW パンツの上のほうからは、柔らかそうな丘が見えてしまっています…
+	ENDIF
+;無毛
+CASE 1 TO 3
+	IF CHECK_CLO("パンツ露出") == 0
+	ELSEIF CHECK_PANTIES("マイクロ")
+		PRINTW 陰毛が全く生えてないので、少しずれただけで陰唇が見えてしまいそうです…
+	ELSEIF CHECK_PANTIES("シースルー")
+		PRINTW うっすら透ける股間の縦スジが、なんとも魅力的です…
+	ELSEIF CHECK_PANTIES("ローレグ") && CSTR:40 != "ローレグ"
+		PRINTW パンツの上のほうでは、柔らかそうな丘が見えてしまっています…
+	ENDIF
+ENDSELECT
+
+@RAND_PANTU, ARG
+;パンツの着用禁止
+IF COND("身嗜み：ノーパン", ARG)
+	CALL SET_PANTIES, ARG
+	RETURN 0
+ENDIF
+
+;オトコは今のところ変えない
+SIF TALENT:ARG:オトコ && COND("男の娘", ARG) == 0
+	RETURN 0
+;ラミア、マーメイドはパンツはけない
+SIF COND("脚が無い", ARG)
+	RETURN 0
+;アウターなどがＶorＡ穴開きならパンツははかない
+IF EQUIP:ARG:ボディスーツ && (CHECK_BODYS("Ｖ露出", ARG) || CHECK_BODYS("Ａ露出", ARG) )
+	CALL SET_PANTIES, ARG
+	RETURN 0
+ELSEIF EQUIP:ARG:アウター && (CHECK_OUTER("Ｖ露出", ARG) || CHECK_OUTER("Ａ露出", ARG) )
+	CALL SET_PANTIES, ARG
+	RETURN 0
+ENDIF
+;ボディスーツを着ているor自分では脱がないor水着
+SIF EQUIP:ARG:ボディスーツ || CHECK_PANTIES("水着", ARG) || CHECK_PANTIES("脱衣不可", ARG)
+	RETURN 0
+;パンツが変わっていると微妙なものは変えない
+SIF CHECK_PANTIES("褌", ARG)
+	RETURN 0
+
+;勝負下着は勝負しっぱなし
+IF CHECK_PANTIES("超Ｈ", ARG)
+	CALL SET_PANTIES, ARG, 130, 1
+	RETURN 0
+ENDIF
+
+;アウターがハイレグ
+IF EQUIP:ARG:アウター && CHECK_OUTER("ハイレグ", ARG)
+	IF RAND:5 || ABL:ARG:露出癖 < 3
+		CALL SET_PANTIES, ARG, 107, 1
+	ELSE
+		CALL SET_PANTIES, ARG
+	ENDIF
+ELSE
+	LOCAL = SET_RAND_PANTU(ARG)
+	IF LOCAL
+		CALL SET_PANTIES, ARG, LOCAL, 1
+	ELSE
+		CALL SET_PANTIES, ARG
+	ENDIF
+ENDIF
+
+@SET_RAND_PANTU(ARG)
+#FUNCTION
+;ノーパン
+SIF RAND:10 == 0 && ABL:ARG:露出癖 >= 3
+	RETURNF 0
+;夢魔自身のパンツを（あれば）穿くことも。
+SIF STRLENS(NAME_PANTIES(BASE:ARG:種族, ARG)) && RAND:3 == 0
+	RETURNF BASE:ARG:種族
+SIF TALENT:ARG:好色 + TALENT:ARG:淫乱 && ABL:ARG:露出癖 >= 3 && RAND:5 == 0
+	RETURNF 130
+
+SELECTCASE AGE(ARG)
+;おとな
+CASE 4
+	IF RAND:8 == 0
+		LOCAL = 113
+	ELSEIF RAND:7 == 0
+		LOCAL = 112
+	ELSEIF RAND:6 == 0
+		LOCAL = 107
+	ELSEIF RAND:5 == 0
+		LOCAL = 106
+	ELSEIF RAND:4 == 0
+		LOCAL = 104
+	ELSEIF RAND:3 == 0
+		LOCAL = 103
+	ELSEIF RAND:2
+		LOCAL = 102
+	ELSE
+		LOCAL = 101
+	ENDIF
+
+;お姉さん
+CASE 3
+	IF RAND:7 == 0
+		LOCAL = 113
+	ELSEIF RAND:6 == 0
+		LOCAL = 112
+	ELSEIF RAND:5 == 0
+		LOCAL = 107
+	ELSEIF RAND:4 == 0
+		LOCAL = 106
+	ELSEIF RAND:3 == 0
+		LOCAL = 104
+	ELSEIF RAND:2
+		LOCAL = 103
+	ELSE
+		LOCAL = 102
+	ENDIF
+;少女以下
+CASEELSE
+	IF RAND:4 == 0
+		LOCAL = 109
+	ELSEIF RAND:3 == 0
+		LOCAL = 105
+	ELSEIF RAND:2
+		LOCAL = 102
+	ELSE
+		LOCAL = 100
+	ENDIF
+ENDSELECT
+RETURNF LOCAL
+
+;-------------------------------------------------
+;服に関する関数
+;-------------------------------------------------
+@SELECT_SHIRT
+#DIM LCOUNT
+PRINTL 
+SIF EQUIP:上着
+	PRINTFORML 現在:[%SHIRT(TARGET)%\@ CHECK_SHIRT("スカート着用") && EQUIP:スカート == 0 ? (スカートなし) # \@]
+VARSET LOCAL
+FOR LCOUNT, 0, 20
+	LOCALS = %NAME_SHIRT(LCOUNT+100, TARGET)%
+	IF STRLENS(LOCALS)
+		PRINTFORML  [{LCOUNT, 2}] %LOCALS%
+		LOCAL:LCOUNT = 1
+	ENDIF
+NEXT
+IF EQUIP:スカート && !CHECK_SKIRT("ワンピース")
+	PRINTFORML  [97] スカートだけ脱いでもらう
+	LOCAL:97 = 1
+ENDIF
+IF EQUIP:上着 + EQUIP:スカート
+	PRINTFORML  [98] 脱いでもらう
+	LOCAL:98 = 1
+ENDIF
+IF STRLENS(NAME_SHIRT(BASE:種族, TARGET))
+	PRINTFORML  [99] %NAME_SHIRT(BASE:種族, TARGET)%
+	LOCAL:99 = 1
+ENDIF
+	PRINTFORML [100] 戻る
+
+$INPUT_LOOP
+INPUT
+
+IF RESULT == 100
+	RETURN 0
+ELSEIF RESULT >= 0 && RESULT <= 20 && LOCAL:RESULT
+	CALL SET_SHIRT, TARGET, RESULT+100
+	SELECTCASE SHIRT(TARGET)
+	CASE "女教師"
+		PRINTFORMW タイトスカートの女教師の格好になってもらいました
+	CASE "和服"
+		PRINTFORMW 和服姿になってもらいました
+	CASE "メイド服"
+		PRINTFORML どのようなメイド服にしましょう？
+		PRINTFORML  [ 0] 清楚で露出の少ないロングスカートタイプ
+		PRINTFORML  [ 1] やはりミニスカートに限る
+		PRINTFORML  [ 2] これって本当にメイド？なフレンチメイドスタイル
+
+		CALL INPUT_SELECT, 3
+
+		SELECTCASE RESULT
+		CASE 0
+			PRINTFORMW ぴしっと糊の効いた、清潔なメイド服を着てもらいました
+		CASE 1
+			PRINTFORMW 半ばまで露出した太ももが目に眩しい、ミニスカ型のメイド服を着てもらいました
+
+			CSTR:42 = ミニスカメイド
+			EQUIP:スカート = SETFLAG_SKIRT("ミニ", "エプロン", "フリル")
+		CASE 2
+			PRINTFORMW ノースリーブに超ミニスカートを合わせた、扇情的なメイド服を着てもらいました
+
+			CSTR:42 = フレンチメイド
+			EQUIP:上着 = SETFLAG_SHIRT("スカート着用", "ズリ不可", "腋露出", "メイド服", "フリル")
+			EQUIP:スカート = SETFLAG_SKIRT("超ミニ", "エプロン", "フリル")
+		ENDSELECT
+	CASE "体操服"
+		PRINTFORMW \@ COND("脚の使用") ? ブルマから伸びる脚が # \@健康的な体操服に着替えてもらいました
+	CASE "ナース服"
+		PRINTFORMW 白衣の天使になってもらいました
+	CASE "チャイナ服"
+		PRINTFORMW \@ COND("脚の使用") ? スリットから伸びる脚が # \@艶かしいチャイナ服に着替えてもらいました
+	CASE "セーラー服"
+		PRINTFORMW チラリと見えるおへそが魅力的なセーラー服に着替えてもらいました
+	CASE "巫女服"
+		PRINTFORML …どのような巫女服にしましょう？
+		PRINTFORML  [ 0] 伝統の巫女服
+		PRINTFORML  [ 1] やはりミニスカートに限る
+		PRINTFORML  [ 2] これって本当に巫女？な%TEXTS("腋")%見せスタイル
+
+		CALL INPUT_SELECT, 3
+
+		SELECTCASE RESULT
+		CASE 0
+			PRINTFORMW 穢れ無き清純さ溢れる紅白の巫女服に着替えてもらいました
+		CASE 1
+			PRINTFORMW 半ばまで露出した太ももが目に眩しい、ミニスカ型の巫女服を着てもらいました
+
+			CSTR:42 = ミニスカ巫女
+			EQUIP:上着 = SETFLAG_SHIRT("スカート着用", "ズリ不可", "巫女服", "純白")
+			EQUIP:スカート = SETFLAG_SKIRT("ミニ", "赤")
+		CASE 2
+			PRINTFORMW ノースリーブに超ミニスカートを合わせた、扇情的な巫女服を着てもらいました
+
+			CSTR:42 = 腋巫女
+			EQUIP:上着 = SETFLAG_SHIRT("スカート着用", "ズリ不可", "腋露出", "巫女服", "純白")
+			EQUIP:スカート = SETFLAG_SKIRT("超ミニ", "赤")
+		ENDSELECT
+	CASE "ベビードール"
+		PRINTFORMW ほんのり透ける可愛らしいベビードールに着替えてもらいました
+	CASE "ウェディングドレス"
+		PRINTFORMW 純白のウェディングドレスに着替えてもらいました
+	CASE "ゴスロリドレス"
+		PRINTFORMW \@ AGE(TARGET) <= 2 ? 妖しくも可愛らしい # 可愛らしさとのギャップに妖しい魅力を感じる \@ゴシック＆ロリータ服に着替えてもらいました
+	CASE "チアリーダー"
+		PRINTFORMW 健康的な魅力に、見ていると元気になれるチアリーダー服に着替えてもらいました
+	CASE "パジャマ"
+		PRINTFORMW 可愛らしい子供用パジャマに着替えてもらいました。
+	CASE "怪獣パジャマ"
+		PRINTFORML 怪獣の格好のように見える、子供らしくて可愛らしいパジャマを着てもらいました。
+		PRINTFORMW ちなみに、上下が繋がっている構造なのでトイレ用にファスナーも付いています。
+	CASEELSE
+		IF CHECK_SHIRT("Ｙシャツ")
+			IF TALENT:小柄体型
+				PRINTFORMW %CALLNAME:TARGET%にはブカブカの、%CALLNAME:MASTER%のＹシャツに着替えてもらいました
+				PRINTFORMW あまりに袖が余っているので、くるくると折って手を出させてあげます
+			ELSE
+				PRINTFORMW %CALLNAME:TARGET%には丈が少し長めな、%CALLNAME:MASTER%のＹシャツに着替えてもらいました
+				IF TALENT:恥薄い || RAND:6 == 0
+					IF CHECK_CLO("ブルマ露出") || CHECK_CLO("スパッツ露出")
+						PRINTFORMW 裾の合わせ目からチラチラ見える%OUTER(TARGET, 1)%が%CALLNAME:MASTER%の目を奪います…
+					ELSEIF CHECK_CLO("パンツ露出")
+						PRINTFORMW 裾の合わせ目からチラチラ見える%PANTIES(TARGET, 1)%が%CALLNAME:MASTER%の目を奪います…
+					;アソコ丸見えorパンストのみ
+					ELSEIF CHECK_CLO("Ｖ露出")
+						PRINTFORM 裾の合わせ目からチラチラ見える
+						IF COND("陰毛") >= 5
+							PRINT 茂み
+						ELSEIF COND("陰毛") == 4
+							PRINT 剃り跡
+						ELSE
+							IF COND("陰毛") && PENIS(TARGET) == 0 && RAND:2 == 0
+								PRINT 無毛のアソコ
+							ELSE
+								PRINT 股間
+							ENDIF
+						ENDIF
+						PRINTFORMW が%CALLNAME:MASTER%の目を奪います…
+					ENDIF
+				ELSEIF TALENT:恥じらい || RAND:5 == 0
+					IF RAND:2 == 0
+						PRINTFORMW 長めの裾はスカートとしては物足りないようで、恥ずかしそうに脚をもじもじしています…
+					ELSE
+						PRINTFORMW 長めの裾はスカートとしては物足りないようで、ぎゅっと裾を掴んで下に引き伸ばしています…
+					ENDIF
+				ENDIF
+			ENDIF
+		ELSE
+			PRINTFORMW %SHIRT(TARGET)%を着てもらいました
+		ENDIF
+	ENDSELECT
+ELSEIF RESULT == 97 && LOCAL:RESULT
+	PRINTFORMW %CALLNAME:TARGET%は%SKIRT(TARGET)%を脱いだ…
+	CALL SET_SKIRT, TARGET
+ELSEIF RESULT == 98 && LOCAL:RESULT
+	CALL EVENT_DATUI_FUKU
+ELSEIF RESULT == 99 && LOCAL:RESULT
+	CALL SET_SHIRT, TARGET, BASE:種族
+	PRINTFORMW %SHIRT(TARGET)%に着替えてもらいました
+ELSE
+	GOTO INPUT_LOOP
+ENDIF
+RESTART
+
+;-------------------------------------------------
+;ボディスーツに関する関数
+;-------------------------------------------------
+@SELECT_BODYSUIT
+#DIM LCOUNT
+PRINTL 
+VARSET LOCAL
+FOR LCOUNT, 0, 20
+	LOCALS = %NAME_BODYS(LCOUNT+100, TARGET)%
+	IF STRLENS(LOCALS)
+		PRINTFORML  [{LCOUNT, 2}] %LOCALS%
+		LOCAL:LCOUNT = 1
+	ENDIF
+NEXT
+
+SIF EQUIP:ボディスーツ
+	PRINTFORML  [98] 脱いでもらう
+SIF STRLENS(NAME_BODYS(BASE:種族, TARGET) )
+	PRINTFORML  [99] %NAME_BODYS(BASE:種族, TARGET)%
+	PRINTFORML [100] 戻る
+
+$INPUT_LOOP
+INPUT
+
+IF RESULT == 100
+	RETURN 0
+ELSEIF RESULT >= 0 && RESULT <= 20 && LOCAL:RESULT
+	CALL SET_BODYS, TARGET, RESULT+100
+	SELECTCASE RESULT
+	CASE 100
+		PRINTFORMW 体のラインを際立たせる、薄手のレオタードに着替えてもらいました
+	CASE 101
+		PRINTFORMW 伸縮性のある生地が際どいカットで股間に食い込むハイレグのレオタードに着替えてもらいました
+	CASE 102
+		PRINTFORMW エナメルの質感がなんとも淫靡な、股間にファスナーの隠されたＴバックのレオタードに着替えてもらいました
+	CASE 103
+		PRINTFORMW 股間と胸の周りだけが露出しているレオタードに着替えてもらいました
+	CASE 104
+		PRINTFORML 実は股間にファスナーなんて用意されてたりは……
+		PRINTFORML [ 0] します
+		PRINTFORML [ 1] まさか！
+		CALL INPUT_SELECT, 2
+		SIF RESULT == 0
+			CALL CALC, "ボディスーツフラグ追加", SETFLAG_BODYS("ファスナー")
+		IF CHECK_BODYS("黒")
+			PRINTFORM 可愛らしいタイツ生地の
+		ELSEIF CHECK_BODYS("白")
+			PRINTFORM 清楚な白に対して艶めかしいギャップを感じさせる
+		ELSE
+			PRINTFORM 真っ赤な
+		ENDIF
+		PRINTFORMW バニースーツに着替えてもらいました
+		SIF CHECK_BODYS("ファスナー")
+			PRINTFORMW しかも、股間には何の用途に使うのかファスナーがついています！
+	CASE 105
+		PRINTFORMW ちょっとエッチなハイレグのバニースーツに着替えてもらいました
+	CASE 106
+		PRINTFORMW \@ PENIS(TARGET) == 0 ? 乳房が丸出しの上に # \@股間にファスナーの付いたボンデージに着替えてもらいました
+	CASE 107
+		PRINTFORMW 旧型のスク水を着てもらいました
+	CASE 108
+		PRINTFORMW 清楚な白いワンピースタイプの水着を着てもらいました
+	CASE 109
+		PRINTFORMW 股間の食い込みが凄い、ハイレグ＆Ｔバック仕様のワンピース水着を着てもらいました
+	CASE 110
+		PRINTFORMW 程よいハイレグカットで泳ぎやすそうな競泳水着を着てもらいました
+	CASEELSE
+		PRINTFORMW %BODYS(TARGET)%を着てもらいました
+	ENDSELECT
+ELSEIF RESULT == 98 && EQUIP:ボディスーツ
+	CALL EVENT_DATUI_FUKU
+ELSEIF RESULT == 99 && STRLENS(NAME_BODYS(BASE:種族, TARGET) )
+	CALL SET_BODYS, TARGET, BASE:種族
+	PRINTFORMW %BODYS(TARGET)%に着替えてもらいました
+ELSE
+	GOTO INPUT_LOOP
+ENDIF
+
+IF EQUIP:ボディスーツ && COND("脚の使用")
+	IF CHECK_BODYS("ハイレグ") && RAND:2
+		PRINTFORMW 惜しげもなく晒されている鼠径部が、なんとも素晴らしい眺めです
+	ELSE
+		CALL SHOW_PUBICHAIR
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;アウターに関する関数
+;-------------------------------------------------
+@SELECT_OUTER
+#DIM LCOUNT
+PRINTL 
+VARSET LOCAL
+FOR LCOUNT, 0, 50
+	LOCALS = %NAME_OUTER(LCOUNT+100, TARGET)%
+	IF STRLENS(LOCALS)
+		SIF LCOUNT < 20
+			PRINTFORML  [{LCOUNT, 2}] %LOCALS%
+		LOCAL:LCOUNT = 1
+	ENDIF
+NEXT
+SIF EQUIP:アウター
+	PRINTFORML  [98] 脱いでもらう
+SIF STRLENS(NAME_OUTER(BASE:種族, TARGET))
+	PRINTFORML  [99] %NAME_OUTER(BASE:種族, TARGET)%
+	PRINTFORML [100] 戻る
+
+$INPUT_LOOP
+INPUT
+
+IF RESULT == 100
+	RETURN 0
+ELSEIF RESULT >= 0 && RESULT <= 49 && LOCAL:RESULT
+	CALL SET_OUTER, TARGET, RESULT+100
+	IF RESULT == 100
+		PRINTFORMW 脚線美を際立たせるブルマをはいてもらいました
+	ELSEIF RESULT == 101
+		PRINTFORMW 食い込んだ股間とお尻が可愛いハイレグブルマをはいてもらいました
+	ELSEIF RESULT == 102
+		PRINTFORMW 太ももから腰にかけてを絶妙に締め付けるスパッツをはいてもらいました
+		IF CHECK_CLO("アウター直穿き")
+			IF RAND:2 == 0
+				PRINTFORMW 柔らかそうな股間のふくらみがなんとも魅力的です…
+			ELSE
+				PRINTFORMW 食い込みぎみの股間がなんとも魅力的です…
+			ENDIF
+		ELSEIF EQUIP:パンツ
+			PRINTFORMW 薄手なので、%PANTIES(TARGET, 1)%のラインが浮き出ています…
+		ENDIF
+	ELSEIF RESULT == 103
+		PRINTFORMW ピチピチのホットパンツをはいてもらいました
+	ELSEIF RESULT == 104
+		PRINTFORMW 下半身のラインを整える薄手のパンストをはいてもらいました
+	ELSEIF RESULT == 105
+		PRINTFORMW 網目がなんともセクシーなパンストをはいてもらいました
+	ELSEIF RESULT == 106
+		PRINTFORMW 股間部分だけが大胆に開かれた、セクシーなパンストをはいてもらいました
+	ELSEIF RESULT == 107
+		PRINTFORMW 露出した足首がお洒落なレギンスをはいてもらいました
+	ELSEIF RESULT == 108
+		PRINTFORMW 子供用パジャマのズボンをはいてもらいました
+	ELSE
+		PRINTFORMW %OUTER(TARGET)%をはいてもらいました
+	ENDIF
+ELSEIF RESULT == 98 && EQUIP:アウター
+	PRINTFORMW %OUTER(TARGET)%を脱いでもらいました
+	CALL SET_OUTER, TARGET
+ELSEIF RESULT == 99 && STRLENS(NAME_OUTER(BASE:種族, TARGET))
+	CALL SET_OUTER, TARGET, BASE:種族
+	PRINTFORMW %OUTER(TARGET)%をはいてもらいました
+ELSE
+	GOTO INPUT_LOOP
+ENDIF
+
+
+;-------------------------------------------------
+;ソックスに関する関数
+;-------------------------------------------------
+@SELECT_SOCKS
+#DIM LCOUNT
+PRINTL 
+VARSET LOCAL
+FOR LCOUNT, 0, 20
+	LOCALS = %NAME_SOCKS(LCOUNT+100, TARGET)%
+	IF STRLENS(LOCALS)
+		PRINTFORML  [{LCOUNT, 2}] %LOCALS%
+		LOCAL:LCOUNT = 1
+	ENDIF
+NEXT
+SIF EQUIP:靴下
+	PRINTFORML  [98] 脱いでもらう
+SIF STRLENS(NAME_SOCKS(BASE:種族, TARGET))
+	PRINTFORML  [99] %NAME_SOCKS(BASE:種族, TARGET)%
+	PRINTFORML [100] 戻る
+
+$INPUT_LOOP
+INPUT
+
+IF RESULT == 100
+	RETURN 0
+ELSEIF RESULT >= 0 && RESULT <= 19 && LOCAL:RESULT
+	CALL SET_SOCKS, TARGET, RESULT+100
+	IF RESULT == 100
+		PRINTFORMW 靴下をはいてもらいました
+	ELSEIF RESULT == 101
+		PRINTFORMW ハイソックスをはいてもらいました
+	ELSEIF RESULT == 102
+		PRINTFORMW 絶対領域が素晴らしいニーソをはいてもらいました
+	ELSEIF RESULT == 103
+		PRINTFORMW 太もも中央まで覆うサイハイソックスをはいてもらいました
+	ELSEIF RESULT == 104
+		PRINTFORMW 途中まで覆われた太ももがなんとも魅力的なストッキングをはいてもらいました
+	ELSEIF RESULT == 105
+		PRINTFORMW 網目がなんともセクシーなストッキングをはいてもらいました
+	ELSEIF RESULT == 106
+		PRINTFORMW 華やかさと淫靡さが融合したガーターベルトで吊られたストッキングをはいてもらいました
+	ELSEIF RESULT == 107
+		PRINTFORMW 穢れなき真っ白な足袋をはいてもらいました
+	ELSE
+		PRINTFORMW %SOCKS(TARGET)%をはいてもらいました
+	ENDIF
+ELSEIF RESULT == 98 && EQUIP:靴下
+	PRINTFORMW %SOCKS(TARGET)%を脱いでもらいました
+	CALL SET_SOCKS, TARGET
+ELSEIF RESULT == 99 && STRLENS(NAME_SOCKS(BASE:種族, TARGET))
+	CALL SET_SOCKS, TARGET, BASE:種族
+	PRINTFORMW %SOCKS(TARGET)%をはいてもらいました
+ELSE
+	GOTO INPUT_LOOP
+ENDIF
+
+;-------------------------------------------------
+;靴に関する関数
+;-------------------------------------------------
+@SELECT_SHOES
+#DIM LCOUNT
+PRINTL 
+VARSET LOCAL
+FOR LCOUNT, 0, 20
+	LOCALS = %NAME_SHOES(LCOUNT+100, TARGET)%
+	IF STRLENS(LOCALS)
+		PRINTFORML  [{LCOUNT, 2}] %LOCALS%
+		LOCAL:LCOUNT = 1
+	ENDIF
+NEXT
+SIF EQUIP:靴
+	PRINTFORML  [98] 脱いでもらう
+SIF STRLENS(NAME_SHOES(BASE:種族, TARGET))
+	PRINTFORML  [99] %NAME_SHOES(BASE:種族, TARGET)%
+	PRINTFORML [100] 戻る
+
+$INPUT_LOOP
+INPUT
+
+IF RESULT == 100
+	RETURN 0
+ELSEIF RESULT >= 0 && RESULT <= 19 && LOCAL:RESULT
+	CALL SET_SHOES, TARGET, RESULT+100
+	PRINTFORMW %SHOES(TARGET)%をはいてもらいました
+ELSEIF RESULT == 98 && EQUIP:靴
+	PRINTFORMW %SHOES(TARGET)%を脱いでもらいました
+	CALL SET_SHOES, TARGET
+ELSEIF RESULT == 99 && STRLENS(NAME_SHOES(BASE:種族, TARGET))
+	CALL SET_SHOES, TARGET, BASE:種族
+	PRINTFORMW %SHOES(TARGET)%をはいてもらいました
+ELSE
+	GOTO INPUT_LOOP
+ENDIF
+
+;-------------------------------------------------
+;グローブに関する関数
+;-------------------------------------------------
+@SELECT_GLOVE
+#DIM LCOUNT
+PRINTL 
+VARSET LOCAL
+FOR LCOUNT, 0, 20
+	LOCALS = %NAME_GLOVE(LCOUNT+100, TARGET)%
+	IF STRLENS(LOCALS)
+		PRINTFORML  [{LCOUNT, 2}] %LOCALS%
+		LOCAL:LCOUNT = 1
+	ENDIF
+NEXT
+SIF EQUIP:手袋
+	PRINTFORML  [98] 脱いでもらう
+SIF STRLENS(NAME_GLOVE(BASE:種族, TARGET))
+	PRINTFORML  [99] %NAME_GLOVE(BASE:種族, TARGET)%
+	PRINTFORML [100] 戻る
+
+$INPUT_LOOP
+INPUT
+
+IF RESULT == 100
+	RETURN 0
+ELSEIF RESULT >= 0 && RESULT <= 19 && LOCAL:RESULT
+	CALL SET_GLOVE, TARGET, RESULT+100
+	IF RESULT == 100
+		PRINTFORMW 肌触りの素晴らしい絹で出来た手袋をはめてもらいました
+	ELSEIF RESULT == 101
+		PRINTFORMW 二の腕の半ばまで覆う、センスの良い長手袋をはめてもらいました
+	ELSEIF RESULT == 102
+		PRINTFORMW 所々に鋲の打たれた、革製の長手袋をはめてもらいました
+	ELSEIF RESULT == 103
+		PRINTFORMW 手首から二の腕まで覆う、装飾の素晴らしいドレススリーブをつけてもらいました
+	ELSE
+		PRINTFORMW %GLOVE(TARGET)%をつけてもらいました
+	ENDIF
+ELSEIF RESULT == 98 && EQUIP:手袋
+	PRINTFORMW %GLOVE(TARGET)%を外してもらいました
+	CALL SET_GLOVE, TARGET
+ELSEIF RESULT == 99 && STRLENS(NAME_GLOVE(BASE:種族, TARGET))
+	CALL SET_GLOVE, TARGET, BASE:種族
+	PRINTFORMW %GLOVE(TARGET)%をはめてもらいました
+ELSE
+	GOTO INPUT_LOOP
+ENDIF
+
+;-------------------------------------------------
+;メガネなどその他小物に関する関数
+;-------------------------------------------------
+@SELECT_OTHER
+#DIM LCOUNT
+PRINTL 
+IF EQUIP:アクセサリ
+	PRINTFORM 現在:
+	VARSET LOCALS
+	SPLIT CSTR:49, "/", LOCALS
+	FOR LCOUNT, 0, 5
+		SIF LOCALS:LCOUNT != ""
+			PRINTFORM [%LOCALS:LCOUNT%]
+	NEXT
+	PRINTL 
+ENDIF
+VARSET LOCAL
+LOCAL:99 = 0
+FOR LCOUNT, 0, 64
+	LOCALS = %NAME_OTHER(LCOUNT+100, TARGET)%
+	IF STRLENS(LOCALS)
+		SELECTCASE LCOUNT
+		CASE 0
+			PRINTFORML ・首周りのアクセサリ
+			LOCAL:99 = 0
+		CASE 20
+			PRINTL 
+			PRINTFORML ・眼鏡
+			LOCAL:99 = 0
+		CASE 25
+			PRINTL 
+			PRINTFORML ・帽子、付け耳
+			LOCAL:99 = 0
+		CASE 30
+			PRINTL 
+			LOCAL:99 = 0
+		CASE 40
+			PRINTL 
+			PRINTFORML ・髪飾り
+			LOCAL:99 = 0
+		CASE 55
+			PRINTL 
+			PRINTFORML ・その他装飾品
+			LOCAL:99 = 0
+		CASEELSE
+			SIF LOCAL:99%2 == 0
+				PRINTL 
+		ENDSELECT
+
+		PRINTFORM  [{LCOUNT, 2}] %TEXT_LJ(LOCALS, 24)%
+		LOCAL:LCOUNT = 1
+		LOCAL:99 += 1
+	ENDIF
+NEXT
+PRINTL 
+PRINTL 
+SIF EQUIP:アクセサリ
+	PRINTFORML  [98] すべて外してもらう
+SIF STRLENS(NAME_OTHER(BASE:種族, TARGET))
+	PRINTFORML  [99] %CALLNAME:TARGET%の普段のセットを身につけてもらう
+
+PRINTFORML [100] 戻る
+
+$INPUT_LOOP
+INPUT
+
+IF RESULT == 100
+	RETURN 0
+ELSEIF RESULT >= 0 && RESULT <= 63 && LOCAL:RESULT
+	LOCAL = RESULT + 100
+
+	VARSET LOCALS
+	SPLIT CSTR:49, "/", LOCALS
+	FOR LCOUNT, 0, 5
+		LOCALS:(LCOUNT+10) = %LOCALS:LCOUNT%
+	NEXT
+
+	CALL SET_OTHER, TARGET, LOCAL
+
+	VARSET LOCALS
+	SPLIT CSTR:49, "/", LOCALS
+	SELECTCASE LOCAL
+	CASE 100 TO 119
+		IF CHECK_OTHER("首周り")
+			PRINTFORMW %LOCALS:0%をつけてもらいました
+		ELSE
+			PRINTFORMW %LOCALS:10%を外してもらいました
+		ENDIF
+	CASE 120 TO 124
+		IF CHECK_OTHER("眼鏡等")
+			PRINTFORMW %LOCALS:1%をかけてもらいました
+		ELSE
+			PRINTFORMW %LOCALS:11%を外してもらいました
+		ENDIF
+	CASE 125 TO 129
+		IF CHECK_OTHER("帽子")
+			PRINTFORMW %LOCALS:2%をかぶってもらいました
+		ELSE
+			PRINTFORMW %LOCALS:12%を脱いでもらいました
+		ENDIF
+	CASE 130 TO 139
+		IF CHECK_OTHER("帽子")
+			PRINTFORMW %LOCALS:2%をつけてもらいました
+		ELSE
+			PRINTFORMW %LOCALS:12%を外してもらいました
+		ENDIF
+	CASE 140 TO 154
+		IF CHECK_OTHER("髪飾り")
+			PRINTFORMW %LOCALS:3%をつけてもらいました
+		ELSE
+			PRINTFORMW %LOCALS:13%を外してもらいました
+		ENDIF
+	CASE 155 TO 163
+		IF CHECK_OTHER("その他装飾具")
+			PRINTFORMW %LOCALS:4%をつけてもらいました
+		ELSE
+			PRINTFORMW %LOCALS:14%を外してもらいました
+		ENDIF
+	ENDSELECT
+ELSEIF RESULT == 98 && EQUIP:アクセサリ
+	PRINTFORMW 小物類を外してもらいました
+	CALL SET_OTHER, TARGET
+ELSEIF RESULT == 99 && STRLENS(NAME_OTHER(BASE:種族, TARGET))
+	CALL SET_OTHER, TARGET, BASE:種族
+	PRINTFORMW %CALLNAME:TARGET%の普段のセットを身につけてもらいました
+ELSE
+	GOTO INPUT_LOOP
+ENDIF
+
+RESTART
+
+;-------------------------------------------------
+;現在の衣服の表記
+;ARGS == 短縮表示 の時にはグローブなどをコンフィグによっては表示しない
+;-------------------------------------------------
+@PRINT_DRESS, ARG, ARGS
+#DIM LCOUNT
+
+IF EQUIP:ARG:上着
+	PRINTFORM [%SHIRT(ARG)%\@ CHECK_SHIRT("はだけた", ARG) ? (はだけ) # \@\@ CHECK_STAIN(STAIN:ARG:服, "精液") ? <精> # \@
+	IF CHECK_SHIRT("スカート着用", ARG) && EQUIP:ARG:スカート == 0
+		PRINTFORM (スカートなし)
+	ELSEIF CHECK_SHIRT("つなぎ")
+		IF CHECK_OUTER("破いた", ARG)
+			PRINT (破)
+		ELSEIF CHECK_OUTER("ずらした", ARG)
+			PRINT (ずれ)
+		ELSEIF CHECK_OUTER("ファスナー開", ARG)
+			PRINT (開)
+		ELSEIF CHECK_OUTER("スリット", ARG)
+			PRINT (スリット)
+		ELSEIF CHECK_OUTER("ＶＡ露出", ARG)
+			PRINT (穴開き)
+		ELSEIF CHECK_OUTER("Ａ露出", ARG)
+			PRINT (Ａ穴開き)
+		ELSEIF CHECK_OUTER("Ｖ露出", ARG)
+			PRINT (Ｖ穴開き)
+		ELSE
+			SIF CHECK_CLO("アウター直穿き", ARG)
+				PRINT (直穿き)
+			;汚れ
+			IF !CHECK_CLO("Ｖ露出", ARG)
+				IF CHECK_STAIN(STAIN:ARG:アウター, "尿")
+					PRINT <尿>
+				ELSEIF CHECK_STAIN(STAIN:ARG:アウター, "濡れ")
+					PRINT <濡>
+				ELSEIF CHECK_STAIN(STAIN:ARG:アウター, "蒸れ")
+					PRINT <蒸>
+				ENDIF
+				;SIF CHECK_STAIN(STAIN:ARG:アウター, "精液")
+				;	PRINT <精>
+			ENDIF
+		ENDIF
+	ENDIF
+	PRINT ]
+ENDIF
+
+IF EQUIP:ARG:ボディスーツ
+	PRINTFORM [%BODYS(ARG)%
+	IF CHECK_BODYS("ずらした", ARG)
+		PRINT (ずれ)
+	ELSEIF CHECK_BODYS("ファスナー開", ARG)
+		PRINT (開)
+	ELSEIF CHECK_BODYS("ＶＡ露出", ARG)
+		PRINT (穴開き)
+	ELSEIF CHECK_BODYS("Ａ露出", ARG)
+		PRINT (Ａ穴開き)
+	ELSEIF CHECK_BODYS("Ｖ露出", ARG)
+		PRINT (Ｖ穴開き)
+	;汚れ
+	ELSE
+		IF CHECK_STAIN(STAIN:ARG:ボディスーツボトム, "尿")
+			PRINT <尿>
+		ELSEIF CHECK_STAIN(STAIN:ARG:ボディスーツボトム, "濡れ")
+			PRINT <濡>
+		ELSEIF CHECK_STAIN(STAIN:ARG:ボディスーツボトム, "蒸れ")
+			PRINT <蒸>
+		ENDIF
+		SIF CHECK_STAIN(STAIN:ARG:ボディスーツボトム, "精液")
+			PRINT <精>
+	ENDIF
+	PRINT ]
+ENDIF
+
+;上半身の状態チェック
+SIF CHECK_CLO("トップレス", ARG)
+	PRINT [トップレス]
+
+;ブラは、上に何か着ていたりする時などは非表示
+SIF EQUIP:ARG:ブラ && (ARGS != "短縮表示" || EQUIP:ARG:上着 + EQUIP:ARG:ボディスーツ == 0)
+	PRINTFORM [%BRA(ARG)%\@ CHECK_BRA("ずらした", ARG) ? (ずれ) # \@]
+
+IF EQUIP:ARG:アウター && CHECK_OUTER("つなぎ") == 0
+	PRINTFORM [%OUTER(ARG)%
+	IF CHECK_OUTER("破いた", ARG)
+		PRINT (破)
+	ELSEIF CHECK_OUTER("ずらした", ARG)
+		PRINT (ずれ)
+	ELSEIF CHECK_OUTER("ファスナー開", ARG)
+		PRINT (開)
+	ELSEIF CHECK_OUTER("スリット", ARG)
+		PRINT (スリット)
+	ELSEIF CHECK_OUTER("ＶＡ露出", ARG)
+		PRINT (穴開き)
+	ELSEIF CHECK_OUTER("Ａ露出", ARG)
+		PRINT (Ａ穴開き)
+	ELSEIF CHECK_OUTER("Ｖ露出", ARG)
+		PRINT (Ｖ穴開き)
+	ELSE
+		SIF CHECK_CLO("アウター直穿き", ARG)
+			PRINT (直穿き)
+		;汚れ
+		IF !CHECK_CLO("Ｖ露出", ARG)
+			IF CHECK_STAIN(STAIN:ARG:アウター, "尿")
+				PRINT <尿>
+			ELSEIF CHECK_STAIN(STAIN:ARG:アウター, "濡れ")
+				PRINT <濡>
+			ELSEIF CHECK_STAIN(STAIN:ARG:アウター, "蒸れ")
+				PRINT <蒸>
+			ENDIF
+			SIF CHECK_STAIN(STAIN:ARG:アウター, "精液")
+				PRINT <精>
+		ENDIF
+	ENDIF
+	PRINT ]
+ENDIF
+
+IF ARGS == "短縮表示" && CONFIG("下着が見えない服装時の表示の制限") && CHECK_CLO("アウター露出", ARG) + CHECK_CLO("ボディスーツ露出", ARG)
+ELSEIF EQUIP:ARG:パンツ
+	PRINTFORM [%PANTIES(ARG)%
+	IF CHECK_PANTIES("ずらした", ARG)
+		PRINT (ずれ)
+	ELSEIF CHECK_PANTIES("ファスナー開", ARG)
+		PRINT (開)
+	ELSEIF CHECK_PANTIES("ＶＡ露出", ARG)
+		PRINT (穴開き)
+	ELSEIF CHECK_PANTIES("Ａ露出", ARG)
+		PRINT (Ａ穴開き)
+	ELSEIF CHECK_PANTIES("Ｖ露出", ARG)
+		PRINT (Ｖ穴開き)
+	ELSE
+		IF CHECK_STAIN(STAIN:ARG:パンツ, "尿")
+			PRINT <尿>
+		ELSEIF CHECK_STAIN(STAIN:ARG:パンツ, "濡れ")
+			PRINT <濡>
+		ELSEIF CHECK_STAIN(STAIN:ARG:パンツ, "蒸れ")
+			PRINT <蒸>
+		ENDIF
+		SIF CHECK_STAIN(STAIN:ARG:パンツ, "精液")
+			PRINT <精>
+	ENDIF
+	PRINT ]
+ENDIF
+
+IF CHECK_CLO("ハダカ", ARG)
+	PRINT [ハダカ]
+ELSEIF CHECK_CLO("ボトムレス", ARG)
+	PRINT [ボトムレス]
+ELSEIF CHECK_CLO("ノーパン", ARG)
+	PRINT [ノーパン]
+ENDIF
+
+SIF EQUIP:ARG:靴下
+	PRINTFORM [%SOCKS(ARG)%\@ CHECK_STAIN(STAIN:ARG:ソックス, "精液") ? <精> # \@]
+
+IF EQUIP:ARG:アクセサリ
+	VARSET LOCALS
+	SPLIT CSTR:ARG:49, "/", LOCALS
+	FOR LCOUNT, 0, 5
+		SIF LOCALS:LCOUNT != ""
+			PRINTFORM [%LOCALS:LCOUNT%]
+	NEXT
+ENDIF
+
+;靴と手袋の表示コンフィグ
+IF ARGS == "短縮表示"
+	SELECTCASE CONFIG("靴やグローブの表記")
+	CASE 1
+		RETURN 0
+	CASE 2
+		SIF CHECK_CLO("ハダカ", ARG) == 0
+			RETURN 0
+	ENDSELECT
+ENDIF
+
+SIF EQUIP:ARG:靴
+	PRINTFORM [%SHOES(ARG)%\@ CHECK_STAIN(STAIN:ARG:靴, "精液") ? <精> # \@]
+
+SIF EQUIP:ARG:手袋
+	PRINTFORM [%GLOVE(ARG)%\@ CHECK_STAIN(STAIN:ARG:靴, "精液") ? <精> # \@]
+
+
+;--------------------------------------------------------
+;自発脱ぎ
+;--------------------------------------------------------
+@EVENT_DATUI
+;夢魔が自分で脱いでくるのはどうだろう
+;脱がないようにお願い中or75%で脱いでこない
+SIF CONFIG("衣装の自動脱ぎの禁止") || RAND:4 || (BASE:気力 <= 0 && BASE:性欲 >= MAXBASE:性欲)
+	RETURN 0
+;ぱんつコキコマンド
+SIF PREVCOM == 97 && (CHECK_COM("Ａ責め手コキ") || CHECK_COM("ぱふぱふ手コキ") )
+	RETURN 0
+;シックスナイン、ラブトラップ、緊縛、触手、アイマスク中は脱いでこない
+SIF TEQUIP:ラブトラップ || TEQUIP:アイマスク || TEQUIP:拘束 || TEQUIP:シックスナイン || TEQUIP:触手 || TEQUIP:ディープスロート
+	RETURN 0
+;インサート、絶頂中は脱いできません
+SIF INSERT("インサート") || INSERT("挿入中") || NOWEX:絶頂数合計
+	RETURN 0
+;既にハダカ
+SIF CHECK_CLO("ハダカ")
+	RETURN 0
+
+;初期値は0〜5
+LOCAL = RAND:6
+
+SELECTCASE SELECTCOM
+;愛撫、胸愛撫、キスは我慢できずに脱いでくる確率アップ
+CASE 0, 5, 6
+	LOCAL += 5
+;セックス系
+CASE 60 TO 89, 120 TO 129, 160 TO 169
+	RETURN 0
+;コスプレ系
+CASE 97, 100, 175
+	RETURN 0
+;アイテム系or特殊コマンド系
+CASE 230 TO 279, 300 TO 302, 304, 305, 309
+	RETURN 0
+ENDSELECT
+
+;強気、好奇心、貞操無頓着、目立ちたがり、恥薄い、好色、淫乱でボーナス
+LOCAL += TALENT:強気*10 + TALENT:好奇心*2 + TALENT:貞操無頓着*2 + TALENT:目立ちたがり*3 + TALENT:恥薄い*4 + TALENT:好色*5 + TALENT:淫乱*5
+;臆病、自制心、保守的、貞操観念、恥じらいでペナルティ
+LOCAL -= TALENT:臆病*3 + TALENT:冷静*2 + TALENT:保守的*2 + TALENT:恥じらい*3
+;欲望、露出癖、Ｖ潤、欲情でボーナス
+LOCAL += (ABL:欲望 + 1)/2 + (ABL:露出癖 + 1)/2 + GET_PALAMLV(PALAM:Ｖ潤 + PALAM:欲情)
+;媚薬
+SIF TEQUIP:媚薬
+	LOCAL += 5
+;押し倒されている
+SIF TEQUIP:押し倒し
+	LOCAL += 3
+;恍惚状態
+SIF STATE("恍惚", PLAYER)
+	LOCAL += 3
+
+;ビデオカメラ
+IF TEQUIP:ビデオカメラ
+	LOCAL -= 5
+	SIF ABL:露出癖 >= 3
+		LOCAL += 3
+	SIF ABL:露出癖 >= 5
+		LOCAL += 3
+ENDIF
+
+;野外プレイ(人里)
+IF COND("人里")
+	LOCAL -= 10
+	SIF ABL:露出癖 == 3
+		LOCAL += 4
+	SIF ABL:露出癖 == 4
+		LOCAL += 8
+	SIF ABL:露出癖 >= 5
+		LOCAL += 12
+	SIF TIME == 0
+		LOCAL -= 5
+;野外プレイ(人里以外)
+ELSEIF TEQUIP:野外プレイ
+	LOCAL -= 3
+	SIF ABL:露出癖 >= 3
+		LOCAL += 1
+	SIF ABL:露出癖 >= 5
+		LOCAL += 3
+	SIF TIME == 0
+		LOCAL -= 3
+ENDIF
+
+;服装による、脱いでくる条件の補正
+;挿入系が選べない服装だと脱いできやすい
+SIF CHECK_CLO("Ｖ露出可") == 0 && CHECK_CLO("Ａ露出可") == 0
+	LOCAL += 10
+
+;ムードが低いと脱いでこない
+SELECTCASE MOOD_HEART()
+CASE 0
+	LOCAL /= 10
+CASE IS < 3
+	LOCAL /= 2
+CASE IS >= 4
+	LOCAL += 10
+ENDSELECT
+
+;まずは全裸化チェック(コスプレは脱ぎません)
+IF CHECK_CLO("自分の服") == 0
+ELSEIF LOCAL >= 30 && RAND:3 == 0
+	PRINTL 
+	PRINTFORMW %CALLNAME:TARGET%は服を脱いでハダカになった…
+	CALL SETFLAG, "ハダカにする", TARGET
+	CALL SELF_KOJO, "自発脱ぎ"
+	RETURN 0
+ENDIF
+
+;既に股間が露出している
+SIF CHECK_CLO("Ｖ露出") || CHECK_CLO("Ａ露出")
+	RETURN 0
+
+IF CHECK_CLO("ボディスーツ露出")
+	IF CHECK_BODYS("ファスナー閉") && LOCAL >= 20
+		PRINTL 
+		PRINTFORM %CALLNAME:TARGET%は軽く脚を開くと、%BODYS(TARGET, 1)%の股間部分に隠されたファスナーを下ろした
+		CALL CALC, "ボディスーツフラグ追加", SETFLAG_OUTER("ファスナー開")
+		IF (TALENT:恋慕 || TALENT:恥薄い) && TALENT:オトコ == 0 && CHECK_CLO("Ｖ露出")
+			PRINTW 。
+			PRINTFORMW 指で広げられた開口部からは、%TEXTS("アソコ：視覚")%が覗いている…
+		ELSE
+			PRINTFORMW …
+		ENDIF
+		CALL SELF_KOJO, "自発脱ぎ"
+	ENDIF
+ELSEIF CHECK_CLO("パンスト露出")
+	IF PALAM:欲情 < 30000
+	ELSEIF LOCAL >= 15
+		PRINTL 
+		PRINTFORM %CALLNAME:TARGET%は%OUTER(TARGET, 1)%を破いて
+		CALL CALC, "アウターフラグ追加", SETFLAG_OUTER("破いた")
+		IF CHECK_CLO("Ｖ露出")
+			PRINTFORMW \@ PENIS(TARGET) ? 股間 # アソコ \@を剥き出しにしてきた…
+		ELSE
+			PRINTFORMW パンツを見せ付けてきた…
+		ENDIF
+		CALL SELF_KOJO, "自発脱ぎ"
+	ENDIF
+;ブルマは脱ぎません
+ELSEIF CHECK_OUTER("ブルマ")
+ELSEIF CHECK_CLO("アウター露出")
+	IF CHECK_OUTER("ファスナー")
+		IF CHECK_OUTER("ファスナー閉") && LOCAL >= 20
+			PRINTL 
+			PRINTFORM %CALLNAME:TARGET%は軽く脚を開くと、%OUTER(TARGET, 1)%の股間部分に隠されたファスナーを下ろした
+			CALL CALC, "アウターフラグ追加", SETFLAG_OUTER("ファスナー開")
+			IF (TALENT:恋慕 || TALENT:恥薄い) && TALENT:オトコ == 0 && CHECK_CLO("Ｖ露出")
+				PRINTW 。
+				PRINTFORMW 指で広げられた開口部からは、%TEXTS("アソコ：視覚")%が覗いている…
+			ELSE
+				PRINTFORMW …
+			ENDIF
+			CALL SELF_KOJO, "自発脱ぎ"
+		ENDIF
+	;パンツも穿いている
+	ELSEIF EQUIP:パンツ && LOCAL >= 30
+		PRINTL 
+		PRINTFORMW %CALLNAME:TARGET%は下着ごと%OUTER(TARGET, 1)%を脱いだ…
+		CALL SET_OUTER, TARGET
+		CALL SET_PANTIES, TARGET
+		CALL SELF_KOJO, "自発脱ぎ"
+	ELSEIF LOCAL >= 10
+		PRINTL 
+		PRINTFORM %CALLNAME:TARGET%は%OUTER(TARGET, 1)%
+		IF TALENT:オトコ == 0 && TEQUIP:押し倒し && TALENT:恥薄い + TALENT:好色 + TALENT:淫乱 + TALENT:小悪魔 - TALENT:恥じらい - TALENT:清楚 > 0
+			PRINTFORMW を脱いで、%CALLNAME:PLAYER%の顔の上に落としてきた…
+			SIF PALAM:Ｖ潤 >= 3000 && PALAM:欲情 >= 3000 && RAND:3 == 0
+				PRINTFORMW %CALLNAME:PLAYER%の鼻腔に、ちょっと湿った生地の%TEXTS("匂い")%が流れてくる…
+		ELSE
+			PRINTFORMW を脱いだ…
+		ENDIF
+		CALL SET_OUTER, TARGET
+		CALL SELF_KOJO, "自発脱ぎ"
+	ENDIF
+ELSEIF CHECK_CLO("パンツ露出")
+	;ファスナー優先
+	IF CHECK_PANTIES("ファスナー閉") && LOCAL >= 20
+		PRINTL 
+		PRINTFORM %CALLNAME:TARGET%はクロッチのファスナーを下ろした
+		CALL CALC, "パンツフラグ追加", SETFLAG_PANTIES("ファスナー開")
+		IF TALENT:オトコ == 0 && (TALENT:恋慕 || TALENT:恥薄い) && CHECK_CLO("Ｖ露出")
+			PRINTW 。
+			PRINTFORMW 指で広げられた開口部からは、%TEXTS("アソコ：視覚")%が覗いている…
+		ELSE
+			PRINTFORMW …
+		ENDIF
+		CALL SELF_KOJO, "自発脱ぎ"
+	ELSEIF CHECK_PANTIES("脱衣不可") == 0 && LOCAL >= 20
+		PRINTL 
+		IF TEQUIP:押し倒し && TALENT:恥薄い + TALENT:好色 + TALENT:淫乱 + TALENT:小悪魔 - TALENT:恥じらい - TALENT:清楚 > 0
+			PRINTFORM %CALLNAME:TARGET%は%PANTIES(TARGET, 1)%
+			IF CHECK_PANTIES("Ｃストリング")
+				PRINT を外して、
+			ELSEIF CHECK_PANTIES("紐")
+				PRINT の結び目を片方ずつゆっくりと解くと、
+			ELSE
+				PRINT を脱いで、
+			ENDIF
+			IF TEQUIP:顔面騎乗
+				PRINTFORMW %CALLNAME:PLAYER%の顔に座りなおしてきた…
+			ELSE
+				PRINTFORMW %CALLNAME:PLAYER%の顔の上に落としてきた…
+			ENDIF
+			IF TALENT:オトコ == 0 && PALAM:Ｖ潤 >= 3000 && PALAM:欲情 >= 3000 && RAND:3 == 0
+				IF RAND:2 && CHECK_PANTIES("Ｃストリング") == 0
+					PRINTFORMW 汚れの強い部分に\@ CHECK_CLO("食い込み") ? 食い込んで # 触れて \@いた股布は、中から溢れた%TEXTR("粘つく", "淫らな")%汁ですっかり色を変えてしまっている…
+				ELSE
+					PRINTFORMW %CALLNAME:PLAYER%の鼻腔を%CALLNAME:TARGET%の%TEXTS("匂い")%が刺激する…
+				ENDIF
+			ENDIF
+		ELSE
+			PRINTFORM %CALLNAME:TARGET%は%PANTIES(TARGET, 1)%
+			IF CHECK_PANTIES("紐")
+				PRINTFORMW の結び目をゆっくりと解いた…
+			ELSEIF TALENT:恥薄い && RAND:3 == 0
+				PRINTFORMW を脱いで、%CALLNAME:PLAYER%に向けて放り投げてきた…
+			ELSEIF ABL:露出癖 + TALENT:好色 && CHECK_PANTIES("男物") == 0 && CHECK_PANTIES("Ｃストリング") == 0 && RAND:2
+				PRINTFORMW から片足だけを抜いて、残った足首に絡めた…
+			ELSEIF RAND:2 && TALENT:オトコ == 0 && COND("陰毛") && COND("陰毛") != 6
+				PRINTFORM を脱いで、
+				SIF RAND:2 && CHECK_PANTIES("Ｈ")
+					PRINT オトナっぽい下着に隠されていた
+				SELECTCASE COND("陰毛")
+				CASE 1
+					PRINT 無毛の
+				CASE 2
+					PRINT 脱毛済みの
+				CASE 3
+					IF RAND:2
+						PRINT 剃毛済みの
+					ELSE
+						PRINT ツルツルの
+					ENDIF
+				CASE 4
+					;剃り跡
+					IF CONDS("陰毛") == "剃り跡"
+						PRINT 剃り跡の目立つ
+					ELSE
+						PRINT 陰毛の薄い
+					ENDIF
+				CASE 5
+					IF RAND:2
+						PRINT お手入れ済みの
+					ELSE
+						PRINT 手入れの行き届いた
+					ENDIF
+				CASE 6
+					PRINT 柔らかな茂みを備えた
+				CASE 7
+					PRINT 毛深い
+				ENDSELECT
+				PRINTFORMW アソコを露にした…
+			ELSE
+				PRINTFORMW を脱いだ…
+			ENDIF
+			IF TALENT:オトコ == 0 && PALAM:Ｖ潤 >= 3000 && PALAM:欲情 >= 3000 && RAND:3 == 0
+				IF CHECK_PANTIES("通気性無し") && TALENT:オトコ == 0
+					PRINTFORMW 通気性の無い生地で密封されていたアソコの発情した%TEXTS("匂い")%が、たちまち辺りにたちこめる…
+				ELSEIF CHECK_PANTIES("男物") == 0
+					PRINTFORMW パンツのクロッチ部分には隠せないほどに染みができている…
+				ENDIF
+			ENDIF
+		ENDIF
+		CALL SET_PANTIES, TARGET
+		CALL SELF_KOJO, "自発脱ぎ"
+	ENDIF
+ENDIF
+
+
+;ずらしたパンツとかを直す
+@EVENT_ZURENAOSHI
+;67%で直さない
+SIF RAND:3 || BASE:気力 <= 0 || TALENT:オトコ
+	RETURN 0
+;ずらしてない
+SIF CHECK_CLO("ずらした") == 0
+	RETURN 0
+
+SELECTCASE SELECTCOM
+;股間弄り系、責められ系等
+CASE 1 TO 4, 7 TO 59, 130 TO 138, 140 TO 159
+	RETURN 0
+;セックス系
+CASE 60 TO 89, 120 TO 129, 160 TO 169
+	RETURN 0
+;コスプレ系
+CASE 97, 100, 175
+	RETURN 0
+;アイテム系or特殊コマンド系
+CASE 230 TO 279, 282, 300 TO 302, 304, 305, 309
+	RETURN 0
+ENDSELECT
+
+;ぱんつコキコマンド
+SIF PREVCOM == 97 && (CHECK_COM("Ａ責め手コキ") || CHECK_COM("ぱふぱふ手コキ") )
+	RETURN 0
+;シックスナイン、ラブトラップ、緊縛、触手、アイマスク中
+SIF TEQUIP:顔面騎乗 || TEQUIP:ラブトラップ || TEQUIP:アイマスク || TEQUIP:拘束 || TEQUIP:シックスナイン || TEQUIP:触手 || TEQUIP:ディープスロート || TEQUIP:PLAYER:自慰する
+	RETURN 0
+;インサート中、絶頂
+SIF INSERT("インサート") || INSERT("挿入中") || NOWEX:絶頂数合計
+	RETURN 0
+
+;ARGが0でないならテキストは出力しない
+VARSET LOCALS
+SIF EQUIP:ボディスーツ && CHECK_BODYS("ずらした")
+	LOCALS = %BODYS(TARGET, 1)%と
+SIF EQUIP:アウター && CHECK_OUTER("ずらした")
+	LOCALS = %LOCALS%%OUTER(TARGET, 1)%と
+SIF EQUIP:パンツ && CHECK_PANTIES("ずらした")
+	LOCALS = %LOCALS%%PANTIES(TARGET, 1)%と
+
+PRINTL 
+PRINTFORMW %CALLNAME:TARGET%は%SUBSTRING(LOCALS, 0, STRLENS(LOCALS) - 2)%のずれをさりげなく直した…
+CALL SETFLAG, "ボトムずれ直し", TARGET
+
+
+@COM_ORDER_COM175, ARG
+VARSET LOCAL
+LOCALS = 
+
+;すべての命令に共通の要素を考慮
+;(従順が高いと命令に従いやすいなど)
+CALL COM_ORDER, ARG
+
+LOCAL = RESULT
+
+;ABL:露出癖
+IF ABL:露出癖
+	LOCAL += ABL:露出癖 * 5
+	LOCALS = %LOCALS% + %ABLNAME:7%LV{ABL:露出癖}({ABL:露出癖 * 5})
+ENDIF
+;恥じらい
+IF TALENT:恥じらい
+	LOCAL -= 30
+	LOCALS = %LOCALS% - %TALENTNAME:35%(30)
+ENDIF
+;恥薄い
+IF TALENT:恥薄い
+	LOCAL += 24
+	LOCALS = %LOCALS% + %TALENTNAME:36%(24)
+ENDIF
+
+;拘束中
+IF TEQUIP:拘束
+	LOCAL += 30
+	LOCALS = %LOCALS% + 拘束中(30)
+ENDIF
+;ビデオ撮影
+IF TEQUIP:ビデオカメラ
+	LOCAL -= 10
+	LOCALS = %LOCALS% - 撮影中(10)
+ENDIF
+;野外or館内露出
+IF TEQUIP:野外プレイ
+	LOCAL -= 10
+	LOCALS = %LOCALS% - 野外プレイ(10)
+ELSEIF TEQUIP:館内露出プレイ
+	LOCAL -= 10
+	LOCALS = %LOCALS% - 館内露出(10)
+ENDIF
+
+;合計を表示(35以上で実行)
+CALL PRINT_COM_ORDER_COM, LOCALS, ARG, LOCAL, 35
+
+RETURN RESULT

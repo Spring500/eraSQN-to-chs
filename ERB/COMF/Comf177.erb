@@ -1,0 +1,211 @@
+﻿@COM177
+;ラブトラップ
+;実行後は調教者の選択可能コマンドが大きく制限される。
+;インサート系コマンドのみ選択可能である点が、押し倒されるコマンドとの違い。
+;実行時にＶ経験判定がつく。
+
+PRINTL ラブトラップ
+
+;-------------------------------------------------
+;実行できるかの判定
+;-------------------------------------------------
+CALL SHOW_COM_ORDER_COM, 177
+
+;実行できない
+SIF TCVAR:28 == 0
+	RETURN 0
+;-------------------------------------------------
+;実行決定
+;-------------------------------------------------
+CALL TRAIN_MESSAGE_B
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+STR:0 = ラブトラップ
+
+;-------------------------------------------------
+;射精チェック
+;-------------------------------------------------
+CALL SAMEN_CHECK
+
+RETURN 1
+
+@FLAG_COM177, ARG
+CALL FLAG_INSERTION, "Ｖインサート", ARG, 100
+
+@SOURCE_COM177, ARG
+CALL SOURCE_INSERTION, "Ｖインサート", ARG, 100
+VARSET LOCAL
+
+LOCAL:20 += 60
+LOCAL:21 += 150
+
+LOCAL:12 = 900
+
+;ABL:奉仕精神をみる
+SELECTCASE ABL:奉仕精神
+CASE 0
+	LOCAL:4 = 200
+	LOCAL:5 = 50
+CASE 1
+	LOCAL:4 = 250
+	LOCAL:5 = 200
+CASE 2
+	LOCAL:4 = 350
+	LOCAL:5 = 550
+CASE 3
+	LOCAL:4 = 450
+	LOCAL:5 = 900
+CASE 4
+	LOCAL:4 = 600
+	LOCAL:5 = 1500
+CASEELSE
+	LOCAL:4 = 750
+	LOCAL:5 = 2200
+ENDSELECT
+
+;ABL:Ｖ感覚をみる
+SELECTCASE ABL:Ｖ感覚
+CASE 0
+	LOCAL:3 = 25
+	TIMES LOCAL:4 , 0.50
+CASE 1
+	LOCAL:3 = 75
+	TIMES LOCAL:4 , 0.80
+CASE 2
+	LOCAL:3 = 125
+	TIMES LOCAL:4 , 1.00
+CASE 3
+	LOCAL:3 = 175
+	TIMES LOCAL:4 , 1.20
+CASE 4
+	LOCAL:3 = 300
+	TIMES LOCAL:4 , 1.50
+CASEELSE
+	LOCAL:3 = 425
+	TIMES LOCAL:4 , 2.00
+ENDSELECT
+
+;PALAM:欲情
+SELECTCASE PALAM:欲情
+CASE IS < PALAMLV:1
+	TIMES LOCAL:3 , 0.30
+CASE IS < PALAMLV:2
+	TIMES LOCAL:3 , 0.60
+CASE IS < PALAMLV:3
+	TIMES LOCAL:3 , 1.00
+CASE IS < PALAMLV:4
+	TIMES LOCAL:3 , 1.50
+CASE IS < PALAMLV:5
+	TIMES LOCAL:3 , 1.80
+CASEELSE
+	TIMES LOCAL:3 , 2.20
+ENDSELECT
+
+;ABL:従順をみる
+SELECTCASE ABL:従順
+CASE 0
+	TIMES LOCAL:3 , 0.60
+	LOCAL:13 += 700
+CASE 1
+	TIMES LOCAL:3 , 0.80
+	LOCAL:13 += 500
+CASE 2
+	TIMES LOCAL:3 , 1.00
+	LOCAL:13 += 300
+CASE 3
+	TIMES LOCAL:3 , 1.20
+	TIMES LOCAL:15 , 0.80
+	LOCAL:13 += 100
+CASE 4
+	TIMES LOCAL:3 , 1.40
+	TIMES LOCAL:15 , 0.60
+	LOCAL:13 += 30
+CASEELSE
+	TIMES LOCAL:3 , 1.60
+	TIMES LOCAL:15 , 0.30
+ENDSELECT
+
+CALL CALC, "調教ソース", LOCAL:0, LOCAL:1, LOCAL:2, LOCAL:3, LOCAL:4, LOCAL:5, LOCAL:6, LOCAL:7, LOCAL:8, LOCAL:9, LOCAL:10, LOCAL:11, LOCAL:12, LOCAL:13, LOCAL:14, LOCAL:15, LOCAL:16, LOCAL:17, LOCAL:18, LOCAL:19, LOCAL:20, LOCAL:21, ARG
+
+
+@TRAIN_MESSAGE_COM177
+PRINTFORMW %CALLNAME:TARGET%は足を大きく広げて誘惑してきた…
+PRINTFORMW %CALLNAME:PLAYER%は湧き上がる劣情を抑えられず、ふらふらと%CALLNAME:TARGET%へと歩み寄る…
+
+
+@EQUIP_COM29
+;ラブトラップ中
+CALL SOURCE_COM177, 20
+
+RETURN 1
+
+@EQUIP_COM29_2
+;ラブトラップ中
+PRINTL ＜ラブトラップ＞
+
+RETURN 1
+
+
+@COM_ORDER_COM177, ARG
+VARSET LOCAL
+LOCALS = 
+
+;すべての命令に共通の要素を考慮
+;(従順が高いと命令に従いやすいなど)
+CALL COM_ORDER, ARG
+
+LOCAL = RESULT
+
+;ABL:Ｖ感覚
+IF ABL:Ｖ感覚
+	LOCAL += ABL:Ｖ感覚 * 2
+	LOCALS = %LOCALS% + %ABLNAME:4%LV{ABL:Ｖ感覚}({ABL:Ｖ感覚 * 2})
+ENDIF
+;ABL:奉仕精神
+IF ABL:奉仕精神
+	LOCAL += ABL:奉仕精神 * 4
+	LOCALS = %LOCALS% + %ABLNAME:6%LV{ABL:奉仕精神}({ABL:奉仕精神 * 4})
+ENDIF
+;ABL:精液中毒
+IF ABL:精液中毒
+	LOCAL += ABL:精液中毒 * 3
+	LOCALS = %LOCALS% + %ABLNAME:11%LV{ABL:精液中毒}({ABL:精液中毒 * 3})
+ENDIF
+;PALAM:Ｖ潤（の不足）
+IF PALAM:Ｖ潤 < PALAMLV:3
+	LOCAL -= 5
+	LOCALS = %LOCALS% - Ｖ潤不足(5)
+ENDIF
+
+;恥じらい
+IF TALENT:恥じらい
+	LOCAL -= 5
+	LOCALS = %LOCALS% - %TALENTNAME:35%(5)
+ENDIF
+;快感の否定
+IF TALENT:快感の否定
+	LOCAL -= 1
+	LOCALS = %LOCALS% - %TALENTNAME:71%(1)
+ENDIF
+;媚薬
+IF TEQUIP:媚薬
+	LOCAL += 6
+	LOCALS = %LOCALS% + %ITEMNAME:31%(6)
+ENDIF
+
+;汚れあり
+IF COM_ORDER_STAIN("Ｐ", "Ｖ")
+	LOCAL -= COM_ORDER_STAIN("Ｐ", "Ｖ")
+	LOCALS = %LOCALS% - 汚れあり
+	;汚臭鈍感
+	SIF TALENT:汚臭鈍感 || TALENT:汚臭敏感
+		LOCALS = %LOCALS%、\@TALENT:汚臭鈍感 ? %TALENTNAME:61% # %TALENTNAME:62%\@
+	LOCALS = %LOCALS%({COM_ORDER_STAIN("Ｐ", "Ｖ")})
+ENDIF
+
+;合計を表示(24以上で実行)
+CALL PRINT_COM_ORDER_COM, LOCALS, ARG, LOCAL, 24
+
+RETURN RESULT

@@ -1,0 +1,163 @@
+﻿@COM265
+;インセンス
+;TEQUIP:インセンスの値で何を用いているかを管理する
+; 0〜 3bit ターン数の管理に用いる
+; 4〜 6bit ムードアップ(小)〜(大)
+; 7〜 9bit 体力回復(小)〜(大)
+;10〜12bit 精力回復(小)〜(大)
+
+PRINTL インセンス
+
+CALL TRAIN_MESSAGE_B
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+SIF TEQUIP:MASTER:インセンス == 0
+	RETURN 0
+
+STR:0 = %TEXTS("インセンス", TEQUIP:MASTER:インセンス)%
+ITEM:(STR:0) -= 1
+
+CALL KOJO_MESSAGE_COM
+PRINTL 
+
+PREVCOM = 265
+
+RETURN 0
+
+@TRAIN_MESSAGE_COM265
+SIF TEQUIP:MASTER:インセンス == 0
+	CALL INCENSE_SELECT
+
+SIF TEQUIP:MASTER:インセンス == 0
+	RETURN 0
+
+PRINTFORML %CALLNAME:PLAYER%は%TEXTS("インセンス", TEQUIP:MASTER:インセンス)%のお香を使った！
+PRINTFORMW あたりに甘い香りがたちこめる！
+
+@INCENSE_SELECT
+PRINTL どのインセンスを使いますか？
+SIF ITEM:ジャスミン
+	PRINTL  [ 0] ジャスミン　　　　ムードアップ(小)
+SIF ITEM:ラヴェンダー
+	PRINTL  [ 1] ラヴェンダー　　　ムードアップ(中)
+SIF ITEM:ムスク
+	PRINTL  [ 2] ムスク　　　　　　ムードアップ(大)
+SIF ITEM:サンダルウッド
+	PRINTL  [ 3] サンダルウッド　　ムードアップ(中)＆体力回復(中)
+SIF ITEM:ローズマリー
+	PRINTL  [ 4] ローズマリー　　　ムードアップ(中)＆精力回復(中)
+SIF ITEM:フランキンセンス
+	PRINTL  [ 9] フランキンセンス　ムードアップ(大)＆体力回復(大)＆精力回復(大)
+PRINTL [100] 戻る
+
+$INPUT_LOOP
+INPUT
+
+IF RESULT == 0 && ITEM:ジャスミン
+	TEQUIP:MASTER:インセンス = 1p4
+ELSEIF RESULT == 1 && ITEM:ラヴェンダー
+	TEQUIP:MASTER:インセンス = 1p5
+ELSEIF RESULT == 2 && ITEM:ムスク
+	TEQUIP:MASTER:インセンス = 1p6
+ELSEIF RESULT == 3 && ITEM:サンダルウッド
+	TEQUIP:MASTER:インセンス = 1p5 + 1p8
+ELSEIF RESULT == 4 && ITEM:ローズマリー
+	TEQUIP:MASTER:インセンス = 1p5 + 1p11
+ELSEIF RESULT == 9 && ITEM:フランキンセンス
+	TEQUIP:MASTER:インセンス = 1p6 + 1p9 + 1p12
+ELSEIF RESULT == 100
+	TEQUIP:MASTER:インセンス = 0
+ELSE
+	GOTO INPUT_LOOP
+ENDIF
+
+@INCENSE
+SIF TEQUIP:MASTER:インセンス && (SELECTCOM == 171 || SELECTCOM == 172 || SELECTCOM == 265) && ASSI <= 0
+	RETURN 0
+
+;インセンスによるムードアップ効果。他の効果は@INCENSE_2で。
+SELECTCASE GETBITS(TEQUIP:MASTER:インセンス, 4, 6)
+CASE 1p4
+	TFLAG:33 += 2
+CASE 1p5
+	TFLAG:33 += 5
+CASE 1p6
+	TFLAG:33 += 10
+ENDSELECT
+
+
+@INCENSE_2
+;インセンス
+IF TEQUIP:MASTER:インセンス && ASSI && (SELECTCOM == 171 || SELECTCOM == 172 || SELECTCOM == 265)
+	PRINTL 
+	PRINTFORML %CALLNAME:ASSI%にお香を持って行くように頼みました。
+ELSEIF TEQUIP:MASTER:インセンス && (SELECTCOM == 171 || SELECTCOM == 172 || SELECTCOM == 265)
+	PRINTL 
+	PRINTFORML 移動するためお香をおいていきます。ああ、こんな時%TEXTS("助手の名称")%がいれば…
+	TEQUIP:MASTER:インセンス = 0
+ENDIF
+
+SIF TEQUIP:MASTER:インセンス == 0
+	RETURN 0
+
+PRINTL ＜インセンス＞
+SETCOLOR DEF_COLOR("ハートピンク")
+;PRINTL インセンス効果！
+PRINTFORM %TEXTS("インセンス", TEQUIP:MASTER:インセンス)%の香りが甘いムードを高める！
+
+VARSET LOCAL
+;体力回復
+SELECTCASE GETBITS(TEQUIP:MASTER:インセンス, 7, 9)
+CASE 1p7
+	LOCAL:0 += 50
+CASE 1p8
+	LOCAL:0 += 100
+CASE 1p9
+	LOCAL:0 += 200
+ENDSELECT
+;精力回復
+SELECTCASE GETBITS(TEQUIP:MASTER:インセンス, 10, 12)
+CASE 1p10
+	LOCAL:1 += 1
+CASE 1p11
+	LOCAL:1 += 2
+CASE 1p12
+	LOCAL:1 += 4
+ENDSELECT
+;インセンスによるムードアップ効果。ここでは表記だけ
+SELECTCASE GETBITS(TEQUIP:MASTER:インセンス, 4, 6)
+CASE 1p4
+	LOCAL:2 += 2
+CASE 1p5
+	LOCAL:2 += 5
+CASE 1p6
+	LOCAL:2 += 10
+ENDSELECT
+
+SETCOLOR DEF_COLOR("ピンク")
+LOCALS = 
+SIF LOCAL:2
+	LOCALS = ムード+{LOCAL:2}
+SIF LOCAL:0
+	LOCALS = %LOCALS%\@ LOCAL:2 ? ＆ # \@体力+{LOCAL:0}
+SIF LOCAL:1
+	LOCALS = %LOCALS%\@ LOCAL:0 + LOCAL:2 ? ＆ # \@精力+{LOCAL:1}
+SIF LOCALS != ""
+	PRINTFORM （%LOCALS%）
+PRINTL 
+
+RESETCOLOR
+
+CALL CALC, "体力回復", LOCAL
+CALL CALC, "精力回復", LOCAL:1
+IF ASSI
+	CALL CALC, "体力回復", LOCAL, ASSI
+	CALL CALC, "精力回復", LOCAL:1, ASSI
+ENDIF
+CALL CALC, "体力回復", LOCAL, MASTER
+CALL CALC, "精力回復", LOCAL:1, MASTER
+
+;インセンスの終了はSOURCE.ERBの最後の方に配置
+TEQUIP:MASTER:インセンス += 1

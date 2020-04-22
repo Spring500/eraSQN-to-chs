@@ -1,0 +1,451 @@
+﻿@COM200
+;触手召喚
+PRINTL 触手召喚
+
+CALL TRAIN_MESSAGE_B
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+STR:0 = 触手召喚
+
+RETURN 1
+
+@TRAIN_MESSAGE_COM200
+IF TEQUIP:触手
+	PRINTFORML 触手を送り還し、%CALLNAME:TARGET%の体を開放した…
+	TEQUIP:触手 = 0
+
+	;触手挿入(バイブ)
+	TEQUIP:バイブ = 0
+	;アナル触手(アナルバイブ)
+	TEQUIP:アナルバイブ = 0
+	;触手クリ責め(クリキャップ)
+	TEQUIP:クリキャップ = 0
+	;触手乳首責め(ニプルキャップ)
+	TEQUIP:ニプルキャップ = 0
+	;触手搾乳(搾乳器)
+	TEQUIP:搾乳機 = 0
+	;触手ペニス責め(オナホ)
+	TEQUIP:オナホール = 0
+	;触手緊縛(縄)
+	TEQUIP:拘束 = 0
+	;触手浣腸(浣腸器)
+	TEQUIP:浣腸 = 0
+	;触手口辱
+	TEQUIP:触手口辱 = 0
+
+ELSE
+	IF CONFIG("触手は主人")
+		PRINTFORML %CALLNAME:PLAYER%は魔法で異型の触手に変身し、%CALLNAME:TARGET%の全身に絡み付いた…
+	ELSE
+		PRINTFORML %CALLNAME:PLAYER%の呼び出した異形の触手が、%CALLNAME:TARGET%の体を絡め取った…
+		;触手用射精ゲージ
+		BASE:MASTER:触手 = 0
+		MAXBASE:MASTER:触手 = 30000
+	ENDIF
+
+	TEQUIP:触手 = 1
+ENDIF
+
+@EQUIP_COM90
+SIF SELECTCOM == 200
+	RETURN 0
+
+;触手調教中
+CALL SOURCE_COM200, 30
+
+@FLAG_COM200, ARG
+
+@SOURCE_COM200, ARG
+VARSET LOCAL
+
+SIF TEQUIP:触手 == 0
+	RETURN 0
+
+LOCAL:30 = 50
+SELECTCASE EXP:触手経験
+CASE IS < EXPLV:1
+	TIMES LOCAL:30 , 3.00
+CASE IS < EXPLV:2
+	TIMES LOCAL:30 , 2.50
+CASE IS < EXPLV:3
+	TIMES LOCAL:30 , 2.00
+CASE IS < EXPLV:4
+	TIMES LOCAL:30 , 1.00
+CASE IS < EXPLV:5
+	TIMES LOCAL:30 , 0.80
+CASEELSE
+	TIMES LOCAL:30 , 0.60
+ENDSELECT
+
+;臆病
+SIF TALENT:臆病
+	TIMES LOCAL:30 , 2.00
+
+;感情乏しい
+SIF TALENT:感情乏しい
+	TIMES LOCAL:30 , 0.60
+
+LOCAL:20 += LOCAL:30
+LOCAL:21 += LOCAL:30 * 2
+
+LOCAL:9 += LOCAL:30 * 40
+LOCAL:8 += LOCAL:30 * 20
+LOCAL:14 += LOCAL:30 * 10
+
+CALL CALC, "調教ソース", LOCAL:0, LOCAL:1, LOCAL:2, LOCAL:3, LOCAL:4, LOCAL:5, LOCAL:6, LOCAL:7, LOCAL:8, LOCAL:9, LOCAL:10, LOCAL:11, LOCAL:12, LOCAL:13, LOCAL:14, LOCAL:15, LOCAL:16, LOCAL:17, LOCAL:18, LOCAL:19, LOCAL:20, LOCAL:21, ARG
+
+
+@SYOKUSYU_SHOOT
+
+SIF TEQUIP:触手 == 0
+	RETURN 0
+;-------------------------------------------------
+;射精チェック
+;-------------------------------------------------
+LOCAL = 1000
+;触手挿入
+SIF TEQUIP:バイブ
+	LOCAL += 2000 + ABL_V(TARGET)*50 + ABL:Ｖ拡張*200
+;アナル触手
+SIF TEQUIP:アナルバイブ
+	LOCAL += 2000 + ABL_A(TARGET)*50 + ABL:Ａ拡張*200
+;触手クリ責め
+SIF TEQUIP:クリキャップ
+	LOCAL += 1000
+;触手乳首責め
+SIF TEQUIP:ニプルキャップ
+	LOCAL += 1000
+;触手搾乳
+SIF TEQUIP:搾乳機
+	LOCAL += 1000
+;触手ペニス責め
+SIF TEQUIP:オナホール
+	LOCAL += 1000
+;触手緊縛
+SIF TEQUIP:拘束
+	LOCAL += 1500
+;触手浣腸
+SIF TEQUIP:浣腸
+	LOCAL += 1000
+;触手口辱
+SIF TEQUIP:触手口辱
+	LOCAL += 1500 + ABL_T(TARGET)*50 + ABL:喉拡張*200
+;ABL:技巧と従順をみる
+LOCAL = MULTIPLY(LOCAL, 100 + ABL:技巧*10 + ABL:従順*5)
+
+;PALAM:欲情をみる
+SELECTCASE PALAM:欲情
+CASE IS < PALAMLV:3
+	TIMES LOCAL , 1.00
+CASE IS < PALAMLV:4
+	TIMES LOCAL , 1.10
+CASE IS < PALAMLV:5
+	TIMES LOCAL , 1.20
+CASEELSE
+	TIMES LOCAL , 1.30
+ENDSELECT
+;触手ピストン
+SIF SELECTCOM == 210
+	TIMES LOCAL , 1.50
+
+IF CONFIG("触手は主人")
+	BASE:MASTER:絶頂 += LOCAL
+	TFLAG:15 = CALCF("絶頂", MASTER)
+ELSE
+	BASE:MASTER:触手 += LOCAL
+	SELECTCASE BASE:MASTER:触手
+	CASE IS >= MAXBASE:MASTER:触手*4
+		TFLAG:15 = 4
+	CASE IS >= MAXBASE:MASTER:触手*3
+		TFLAG:15 = 3
+	CASE IS >= MAXBASE:MASTER:触手*2
+		TFLAG:15 = 2
+	CASE IS >= MAXBASE:MASTER:触手
+		TFLAG:15 = 1
+	CASEELSE
+		TFLAG:15 = 0
+	ENDSELECT
+ENDIF
+
+;射精しないならここまで
+SIF TFLAG:15 == 0
+	RETURN 0
+
+;-------------------------------------------------
+;触手射精処理＆テキスト
+;-------------------------------------------------
+PRINTL 
+;触手大量射精
+IF TFLAG:15 >= 2
+	PRINTFORMW %CALLNAME:TARGET%の全身に絡みついた触手が一斉に粘つく体液を吐き出した…
+	IF RAND:6 == 0
+		PRINTL 『ビュビューッ、ブビュビューッ、ビュルッ、ビューッ』
+	ELSEIF RAND:5 == 0
+		PRINTL 『ぶじゅ、ぐじゅ、ぐじゅぅっ！びぢゃぁっ！』
+	ELSEIF RAND:4 == 0
+		PRINTL 『どぶっ、びゅるるるっ！ びゅっ、びるっ、びゅるっ……どくっ、どくっ、どくん』
+	ELSEIF RAND:3 == 0
+		PRINTL 『びゅるっ！ びゅるるるっ、びゅるるっ、びゅるっ、びゅっ、びゅうっ……』
+	ELSEIF RAND:2 == 0
+		PRINTL 『びゅっ！ びゅるっ、びゅっ、ぴっ、びゅぐっ……』
+	ELSE
+		PRINTL 『びゅるるっ、びゅるびゅるっ、ぶびゅーっ！』
+	ENDIF
+ELSE
+	PRINTFORMW %CALLNAME:TARGET%に絡みついた触手が粘つく体液を吐き出した…
+	IF RAND:3 == 0
+		PRINTL 『ビュルビュルッ、ビューッ』
+	ELSEIF RAND:2 == 0
+		PRINTL 『どぷどぷっ、どぷぅっ！』
+	ELSE
+		PRINTL 『びゅく、びゅくっ！ごぷぅっ！』
+	ENDIF
+ENDIF
+
+;アナル愛撫
+IF SELECTCOM == 2 || SELECTCOM == 207
+	PRINTFORMW 触手の動きがやや鈍くなった次の瞬間、%CALLNAME:TARGET%の肛内に熱い液体が放出された…
+;胸愛撫
+ELSEIF SELECTCOM == 5 || SELECTCOM == 204 || SELECTCOM == 205
+	PRINTFORMW 絡みつく触手が一斉に白濁液を吐き出し、%CALLNAME:TARGET%の胸元を真っ白に染め上げた…
+;触手バイブ
+ELSEIF TEQUIP:バイブ && (RANDIF(2, TEQUIP:アナルバイブ, TEQUIP:触手口辱) || SELECTCOM == 201)
+	PRINTFORMW %CALLNAME:TARGET%の子宮は触手が放った子種汁で満たされた…
+;アナル触手、触手浣腸
+ELSEIF TEQUIP:アナルバイブ && (RANDIF(2, TEQUIP:触手口辱) || SELECTCOM == 202)
+	PRINTFORMW %CALLNAME:TARGET%の肛内は触手が放った子種汁で満たされた…
+;触手クリ責め
+ELSEIF SELECTCOM == 203
+	PRINTFORMW 絡みつく触手が一斉に白濁液を吐き出し、%CALLNAME:TARGET%の股間を真っ白に染め上げた…
+;触手緊縛
+ELSEIF SELECTCOM == 206
+	PRINTFORMW 体中に巻きつく触手から白濁液が染み出し、%CALLNAME:TARGET%はどろどろにされた…
+;触手口辱
+ELSEIF TEQUIP:触手口辱 && (RAND:2 || SELECTCOM == 208)
+	IF RAND:2 == 0
+		PRINTFORMW 絡みつく触手が一斉に白濁液を吐き出し、%CALLNAME:TARGET%の顔面を真っ白に染め上げた…
+	ELSE
+		PRINTFORMW %CALLNAME:TARGET%の口内は触手が放った子種汁で満たされた…
+	ENDIF
+;触手ペニス責め
+ELSEIF SELECTCOM == 209
+	PRINTFORMW 絡みつく触手が一斉に白濁液を吐き出し、%CALLNAME:TARGET%のペニスを真っ白に染め上げた…
+ELSE
+	PRINTFORMW 絡みつく触手が一斉に白濁液を吐き出し、%CALLNAME:TARGET%は真っ白に染め上げられた…
+ENDIF
+
+LOCAL = 1
+SIF TEQUIP:バイブ
+	LOCAL += 5
+SIF TEQUIP:アナルバイブ
+	LOCAL += 5
+SIF TEQUIP:クリキャップ
+	LOCAL += 1
+SIF TEQUIP:ニプルキャップ
+	LOCAL += 1
+SIF TEQUIP:搾乳機
+	LOCAL += 1
+SIF TEQUIP:オナホール
+	LOCAL += 1
+SIF TEQUIP:拘束
+	LOCAL += 1
+SIF TEQUIP:浣腸
+	LOCAL += 1
+SIF TEQUIP:触手口辱
+	LOCAL += 3
+
+;射精処理
+SIF CONFIG("触手は主人")
+	EXP:MASTER:射精経験 += TFLAG:15
+EXP:精液経験 += TFLAG:15 * LOCAL
+PRINT 触手
+SIF TFLAG:15 >= 3
+	PRINT 超
+SIF TFLAG:15 >= 2
+	PRINT 大量
+PRINTL 射精
+PRINTFORMW 精液経験+{TFLAG:15 * LOCAL}
+
+;ゲージが限界超え・マイナスになっていたら修正
+IF CONFIG("触手は主人")
+	BASE:MASTER:絶頂 -= MAXBASE:MASTER:絶頂*TFLAG:15
+	SIF BASE:MASTER:絶頂 >= MAXBASE:MASTER:絶頂
+		BASE:MASTER:絶頂 = MAXBASE:MASTER:絶頂-1
+	SIF BASE:MASTER:絶頂 < 0
+		BASE:MASTER:絶頂 = 0
+
+	;精力を減少
+	BASE:MASTER:精力 -= TFLAG:15 * 2
+	PRINTFORMW 精力-{TFLAG:15 * 2}
+ELSE
+	BASE:MASTER:触手 -= MAXBASE:MASTER:触手*TFLAG:15
+	SIF BASE:MASTER:触手 >= MAXBASE:MASTER:触手
+		BASE:MASTER:触手 = MAXBASE:MASTER:触手-1
+	SIF BASE:MASTER:触手 < 0
+		BASE:MASTER:触手 = 0
+ENDIF
+
+
+;精液汚れ等を加える
+SIF TEQUIP:触手口辱
+	CALL SETFLAG, "精飲経験", TFLAG:15, TARGET, -5
+SIF TEQUIP:オナホール
+	CALL ADD_STAIN, TARGET, "Ｐ", "精液"
+SIF TEQUIP:バイブ
+	CALL SETFLAG, "膣内精液経験", TFLAG:15, TARGET, -5
+
+SIF TEQUIP:アナルバイブ
+	CALL SETFLAG, "肛内精液経験", TFLAG:15, TARGET, -5
+
+SIF TEQUIP:ニプルキャップ || TEQUIP:搾乳機
+	CALL ADD_STAIN, TARGET, "Ｂ", "精液"
+
+;受精確率
+CALL CHECK_NINSHIN
+
+RETURN 1
+
+@EQUIP_COM90_2
+;触手調教中
+PRINTL ＜触手調教中＞
+
+;アソコTEQUIP:バイブ
+;アナルTEQUIP:アナルバイブ
+;クリトリスTEQUIP:クリキャップ
+;乳首TEQUIP:ニプルキャップ
+;搾乳TEQUIP:搾乳機
+;ペニスTEQUIP:オナホール
+;緊縛TEQUIP:拘束
+;浣腸TEQUIP:浣腸
+;口辱TEQUIP:触手口辱
+
+LOCAL = 1
+SIF TEQUIP:バイブ
+	LOCAL += 2
+SIF TEQUIP:アナルバイブ
+	LOCAL += 2
+SIF TEQUIP:クリキャップ
+	LOCAL += 1
+SIF TEQUIP:ニプルキャップ
+	LOCAL += 1
+SIF TEQUIP:搾乳機
+	LOCAL += 1
+SIF TEQUIP:オナホール
+	LOCAL += 1
+SIF TEQUIP:拘束
+	LOCAL += 1
+SIF TEQUIP:浣腸
+	LOCAL += 1
+SIF TEQUIP:触手口辱
+	LOCAL += 3
+
+EXP:触手経験 += LOCAL
+PRINTFORML 触手経験+{LOCAL}
+
+RETURN 1
+
+;触手バイブ
+@COM201
+JUMP COM31
+RETURN 1
+
+@FLAG_COM201, ARG
+CALL FLAG_COM31, ARG
+
+@SOURCE_COM201, ARG
+CALL SOURCE_COM31, ARG
+
+
+;アナル触手
+@COM202
+JUMP COM33
+RETURN 1
+
+@FLAG_COM202, ARG
+CALL FLAG_COM33, ARG
+
+@SOURCE_COM202, ARG
+CALL SOURCE_COM33, ARG
+
+
+;触手クリ責め
+@COM203
+JUMP COM34
+RETURN 1
+
+@FLAG_COM203, ARG
+CALL FLAG_COM34, ARG
+
+@SOURCE_COM203, ARG
+CALL SOURCE_COM34, ARG
+
+
+;触手乳首責め
+@COM204
+JUMP COM35
+RETURN 1
+
+@FLAG_COM204, ARG
+CALL FLAG_COM35, ARG
+
+@SOURCE_COM204, ARG
+CALL SOURCE_COM35, ARG
+
+
+;触手搾乳
+@COM205
+JUMP COM36
+RETURN 1
+
+@FLAG_COM205, ARG
+CALL FLAG_COM36, ARG
+
+@SOURCE_COM205, ARG
+CALL SOURCE_COM36, ARG
+
+
+;触手緊縛
+@COM206
+JUMP COM134
+RETURN 1
+
+@FLAG_COM206, ARG
+CALL FLAG_COM134, ARG
+
+@SOURCE_COM206, ARG
+CALL SOURCE_COM134, ARG
+
+
+;触手浣腸
+@COM207
+JUMP COM136
+RETURN 1
+
+@FLAG_COM207, ARG
+CALL FLAG_COM136, ARG
+
+@SOURCE_COM207, ARG
+CALL SOURCE_COM136, ARG
+
+
+;触手ペニス責め
+@COM209
+JUMP COM37
+RETURN 1
+
+@FLAG_COM209, ARG
+CALL FLAG_COM37, ARG
+
+@SOURCE_COM209, ARG
+CALL SOURCE_COM37, ARG
+
+
+
+@SYOKUSYU_MILK
+;［Ｂ感度］３以上、［母乳体質］無しかつ［小柄体系］で［貧乳］無しかつ［オトコ］無し
+IF ABL:Ｂ感覚 >= 3 && TALENT:母乳体質 == 0 && (TALENT:小柄体型 == 0 || TALENT:貧乳 == 0 ) && TALENT:オトコ == 0
+	PRINTFORMW 触手に乳を吸われるうちに%CALLNAME:TARGET%は母乳が出るようになった。
+	TALENT:母乳体質 = 2
+ENDIF

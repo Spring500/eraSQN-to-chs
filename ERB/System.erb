@@ -1,0 +1,664 @@
+﻿@TARGET_DOWN
+;調教者が夢魔or上位夢魔で夢魔化ＯＮ
+IF (BASE:体力 <= 0 || BASE:精力 <= 0) && COND("夢魔", PLAYER) && COND("夢魔化可能")
+	PRINTFORMW 体力の限界を超えた%CALLNAME:TARGET%は、夢魔となった…
+	IF CONFIG("対象の夢魔化：女体化") && TALENT:オトコ
+		PRINTFORMW 夢魔になった影響で、%CALLNAME:TARGET%は女になった…
+		CALL CHANGE_SEX, TARGET
+	ENDIF
+	CALL CHANGE_SUCCUBUS, TARGET, PLAYER
+;調教対象の体力が0以下である
+ELSEIF BASE:体力 <= 0
+	IF TEQUIP:押し倒し
+		PRINTFORMW %CALLNAME:TARGET%は激しい疲労で肩で息をしている…
+		PRINTFORMW 少々無理をしてしまったようだ…
+	;夢魔or上位夢魔or魔王の欠片である
+	ELSEIF TALENT:夢魔 || TALENT:上位夢魔 || TALENT:魔王のかけら
+		PRINTFORMW %CALLNAME:TARGET%は激しい疲労で息も絶え絶えになっている…
+		PRINTFORMW 少々無理をさせ過ぎてしまったようだ…
+	;それ以外はゲームオーバー
+	ELSE
+		PRINTFORMW ………
+		PRINTFORMW ……
+		PRINTFORMW …
+		PRINTFORMW ★★★%CALLNAME:TARGET%は消えました★★★
+		PRINTFORMW 
+		PRINTFORMW 
+		PRINTFORMW 
+		CALL GAMEOVER
+		RETURN 0
+	ENDIF
+	IF TEQUIP:押し倒し
+	;マゾっ気が3以上
+	ELSEIF ABL:マゾっ気 >= 3
+		PRINTFORMW しかし、%CALLNAME:TARGET%にはどこか歓喜の表情すら見てとれる…。
+	;それ以外で従順Lvが1以上なら1下げる。押し倒しのときは除外
+	ELSEIF ABL:従順 > 0
+		ABL:従順 -= 1
+		JUEL:恭順 = 0
+		JUEL:屈服 = 0
+		PRINTFORML %CALLNAME:TARGET%の従順が１下がった。
+	ENDIF
+	BASE:体力 = 1
+ENDIF
+
+;体力が少ない状態で続行する気が有ってロギンを使えるなら使う
+IF BASE:体力 < LIMIT(MAXBASE:体力/3, 500, 1000) && TALENT:恋慕 + TALENT:淫乱 + TALENT:好色 && USE_MAGIC(236, "コマンド")
+	PRINTFORML 
+	CALL TRAIN_MESSAGE_ARCANA, 236, TARGET, TARGET
+ENDIF
+
+;それでも体力が500未満なら調教を強制終了する
+IF BASE:体力 < 500
+	;ヴィジョン使用中などで発生する消滅予定キャラかどうか
+	IF CEVENT("消滅予定")
+		CALL ASSI_DOWN, TARGET
+	ELSE
+		PRINTFORMW ★\@ BASE:体力 < 500 ? 体 # 精 \@力が限界に来ています、調教を終了します。★
+		BEGIN AFTERTRAIN
+	ENDIF
+ENDIF
+
+
+@EVENTTURNEND_FLAG, ARG
+#DIM LCOUNT
+SELECTCASE ARG
+CASE 1
+	FOR LCOUNT, 1, CHARANUM
+		;状態変化や永続装備の解除
+		VARSET EQUIP:LCOUNT:0, 0, 0, 10
+	NEXT
+
+	;調教中の装備の解除
+	VARSET TEQUIP:MASTER:0, 0, 0, 100
+	IF TARGET
+		VARSET TEQUIP:TARGET:0, 0, 0, 100
+		;服装の状態を初期化
+		CALL RESETFLAG_CLO, TARGET
+		;服装や装備を初期化
+		CALL EVENT_AFTER_TRAIN_COS, TARGET
+	ENDIF
+	IF ASSI
+		VARSET TEQUIP:ASSI:0, 0, 0, 100
+		CALL RESETFLAG_CLO, ASSI
+		CALL EVENT_AFTER_TRAIN_COS, ASSI
+	ENDIF
+
+	;包茎の皮を戻す
+	FOR LCOUNT, 1, CHARANUM
+		CALL SETFLAG, "包茎の皮を戻す", LCOUNT
+	NEXT
+
+	;一時的なCEVENTフラグの操作
+	FOR LCOUNT, 1, CHARANUM
+		CALL DEL_CEVENT_GROUP, "助手で性処理", LCOUNT
+		IF CEVENT("助手設定：下がらせる", LCOUNT)
+			ASSI = LCOUNT
+			CALL DEL_CEVENT, "助手設定：下がらせる", LCOUNT
+		ENDIF
+		SIF CEVENT("消滅予定", LCOUNT)
+			DELCHARA LCOUNT
+	NEXT
+
+	;甘い言葉回数のリセット
+	CVARSET CFLAG, 268, 0
+
+	;お気に入り設定不可能日数を減らす
+	SIF COND("夜") && FLAG:208 >= 1
+		FLAG:208 -= 1
+	;調教知識設定不可能日数を減らす
+	SIF COND("夜") && FLAG:240 >= 1
+		FLAG:240 -= 1
+	;お腹を減らす
+	FLAG:40 = 0
+
+	FOR LCOUNT, 1, CHARANUM
+		;調教で得た経験などをここで一段落
+		CALL SET_FIRSTEXP, LCOUNT
+		CALL RESET_EXP_GAIN, LCOUNT
+		;特技LVに還元
+		CALL GET_EXABL2, LCOUNT
+	NEXT
+
+	;ランダムパンツ
+	IF CONFIG("パンツを夢魔の好きにさせる")
+		FOR LCOUNT, 2, CHARANUM
+			SIF COND("夜") || (ABL:LCOUNT:欲望 >= 3 && TALENT:LCOUNT:濡れやすい + TALENT:LCOUNT:おもらし癖 && RAND:2)
+				CALL RAND_PANTU, LCOUNT
+		NEXT
+	ENDIF
+CASE 2
+	IF COND("夜")
+		FOR LCOUNT, 1, CHARANUM
+			;一晩開放の悪名の軽減処理
+			SELECTCASE CFLAG:LCOUNT:52
+			CASE IS <= 0
+			CASE IS < DAY
+				TIMES CFLAG:LCOUNT:55, 0.95
+				CFLAG:LCOUNT:55 = MAX(CFLAG:LCOUNT:55, CFLAG:LCOUNT:51*CFLAG:LCOUNT:52/DAY )
+			ENDSELECT
+		NEXT
+
+		FOR LCOUNT, 1, CHARANUM
+			;欲求不満ゲージ（一日で２+α程増加）。イかせたり、相手することで減ります
+			IF TALENT:LCOUNT:好色 || TALENT:LCOUNT:淫乱 || TALENT:LCOUNT:嫉妬 || TALENT:LCOUNT:恋慕 || ABL:LCOUNT:欲望 >= 3 || ABL:LCOUNT:精液中毒 >= 3
+				LOCAL = 0
+				SIF TALENT:LCOUNT:恋慕
+					LOCAL += 1
+				SIF TALENT:LCOUNT:相思相愛
+					LOCAL += 2
+				SIF TALENT:LCOUNT:好色
+					LOCAL += 1
+				SIF TALENT:LCOUNT:淫乱
+					LOCAL += 3
+				SIF TALENT:LCOUNT:嫉妬
+					LOCAL += 2
+				IF MARK:LCOUNT:淫紋 && TALENT:LCOUNT:オトコ == 0
+					SELECTCASE COND("胎内の精液量", LCOUNT)
+					CASE IS <= 5000
+						LOCAL += MARK:LCOUNT:淫紋
+					CASE IS <= 20000
+						LOCAL += MAX(MARK:LCOUNT:淫紋 - 1, 0)
+					CASE IS <= 50000
+						LOCAL += MAX(MARK:LCOUNT:淫紋 - 2, 0)
+					CASE IS <= 80000
+						LOCAL += MAX(MARK:LCOUNT:淫紋 - 3, 0)
+					ENDSELECT
+				ENDIF
+				SELECTCASE MAX(ABL:LCOUNT:欲望, ABL:LCOUNT:精液中毒)
+				CASE IS >= 5
+					LOCAL += 1 + RAND:3
+				CASE IS >= 3
+					LOCAL += RAND:3
+				CASE IS >= 1
+					LOCAL += RAND:2
+				ENDSELECT
+				SIF COND("発情期", LCOUNT)
+					LOCAL += 3
+				BASE:LCOUNT:欲求不満 = MIN(BASE:LCOUNT:欲求不満 + LOCAL, 30)
+			ENDIF
+		NEXT
+
+		;日々の身嗜みや陰毛腋毛処理
+		IF CONFIG("陰毛と腋毛")
+			FOR LCOUNT, 1, CHARANUM
+				CALL CALC, "日々の陰毛＆腋毛処理", LCOUNT
+			NEXT
+		ENDIF
+
+		FOR LCOUNT, 1, CHARANUM
+			;常時挿入チェック
+			TALENT:LCOUNT:常時バイブ = COND("身嗜み：Ｖ拡張", LCOUNT)
+			IF TALENT:LCOUNT:常時バイブ
+				SIF EXP:LCOUNT:Ｖ経験 < EXP_LV(TALENT:LCOUNT:常時バイブ + 3)
+					EXP:LCOUNT:Ｖ経験 += EXP_LV(TALENT:LCOUNT:常時バイブ) / 5
+				SIF TALENT:LCOUNT:常時バイブ >= 2 && EXP:LCOUNT:Ｖ拡張経験 < EXP_LV(TALENT:LCOUNT:常時バイブ + 1)
+					EXP:LCOUNT:Ｖ拡張経験 += GET_EXP_LV(EXP:LCOUNT:Ｖ拡張経験) + TALENT:LCOUNT:常時バイブ - 1
+				CALL SETFLAG, "Ｖ受け入れバイブ", TALENT:LCOUNT:常時バイブ, LCOUNT, LCOUNT
+			ENDIF
+
+			TALENT:LCOUNT:常時Ａプラグ = COND("身嗜み：Ａ拡張", LCOUNT)
+			IF TALENT:LCOUNT:常時Ａプラグ
+				SIF EXP:LCOUNT:Ａ経験 < EXP_LV(TALENT:LCOUNT:常時Ａプラグ + 3)
+					EXP:LCOUNT:Ａ経験 += EXP_LV(TALENT:LCOUNT:常時Ａプラグ) / 5
+				SIF TALENT:LCOUNT:常時Ａプラグ >= 2 && EXP:LCOUNT:Ａ拡張経験 < EXP_LV(TALENT:LCOUNT:常時Ａプラグ + 1)
+					EXP:LCOUNT:Ａ拡張経験 += GET_EXP_LV(EXP:LCOUNT:Ａ拡張経験) + TALENT:LCOUNT:常時Ａプラグ - 1
+				CALL SETFLAG, "Ａ受け入れプラグ", TALENT:LCOUNT:常時Ａプラグ, LCOUNT, LCOUNT
+			ENDIF
+			IF COND("身嗜み：尿道拡張", LCOUNT)
+				EXP:LCOUNT:尿道経験 += 1 + TALENT:LCOUNT:尿道狂い
+
+				SELECTCASE CALCF("尿道径", LCOUNT)
+				CASE IS >= CALCF("尿道拡張の限界", LCOUNT)*6/5
+
+				CASE IS >= CALCF("尿道拡張の限界", LCOUNT)
+					SIF RAND:2
+						CALL SETFLAG, "尿道拡張", MIN_STR(CONDS("尿道拡張度", LCOUNT) ) + 1 + TALENT:LCOUNT:尿道狂い, LCOUNT
+				CASE IS >= CALCF("尿道拡張の壁", LCOUNT)
+					SIF RAND:3
+						CALL SETFLAG, "尿道拡張", MIN_STR(CONDS("尿道拡張度", LCOUNT) ) + 1 + TALENT:LCOUNT:尿道狂い, LCOUNT
+				CASEELSE
+					CALL SETFLAG, "尿道拡張", MIN_STR(CONDS("尿道拡張度", LCOUNT) ) + 1 + TALENT:LCOUNT:尿道狂い, LCOUNT
+				ENDSELECT
+			ENDIF
+		NEXT
+	ENDIF
+
+	;自慰
+	FOR LCOUNT, 1, CHARANUM
+		;自慰禁止中だとしない
+		SIF COND("身嗜み：自慰禁止", LCOUNT)
+			CONTINUE
+		SIF RAND:(ABL:LCOUNT:自慰中毒 + 1) == 0 || BASE:LCOUNT:体力 < MAX(500, MAXBASE:LCOUNT:気力 / 2 ) || BASE:LCOUNT:精力 < MAXBASE:LCOUNT:精力 / 2
+			CONTINUE
+
+		LOCAL = RAND:(ABL:LCOUNT:欲望 + ABL:LCOUNT:自慰中毒 + TIME*2) / 2
+		EXP:LCOUNT:自慰経験 += LOCAL
+
+		;欲求不満を少し解消
+		SIF LOCAL && RAND:2
+			CALL CALC, "欲求不満解消", LCOUNT, (LOCAL + 1)/2
+	NEXT
+CASE 3
+	;MASTERだけは、夜這いの前に少しだけ回復
+	CALL CALC, "体力回復上限まで", 200, MASTER
+	CALL CALC, "精力回復上限まで", MAXBASE:MASTER:精力/5, MASTER
+
+	;3サイズと身長
+	FOR LCOUNT, 1, CHARANUM
+		CALL SET_3SIZE, LCOUNT
+	NEXT
+CASE 4
+	;回復は夜這いなどのあと
+	FOR LCOUNT, 1, CHARANUM
+		;気力の回復
+		BASE:LCOUNT:気力 = MAXBASE:LCOUNT:気力
+
+		SIF BASE:LCOUNT:体力 == MAXBASE:LCOUNT:体力
+			CONTINUE
+
+		;体力の回復（午後の調教後は夜の休みが入るので回復大きい）
+		IF COND("夜")
+			LOCAL = MAX(MAXBASE:LCOUNT:体力/3, 500)
+			SIF TALENT:LCOUNT:吸血鬼 || TALENT:LCOUNT:月光浴
+				LOCAL += 200
+		ELSE
+			LOCAL = MAX(MAXBASE:LCOUNT:体力/10, 300) + TALENT:LCOUNT:日光浴*200
+		ENDIF
+
+		;休憩フラグ（「休憩」を選択、もしくは調教対象でない）
+		SIF FLAG:0 || TARGET != LCOUNT
+			LOCAL += 400
+
+		;回復早い、回復遅い、吸血鬼
+		IF TALENT:LCOUNT:回復早い || TALENT:LCOUNT:吸血鬼
+			LOCAL *= 2
+		ELSEIF TALENT:LCOUNT:回復遅い
+			LOCAL /= 2
+		ENDIF
+
+		;治療
+		SIF TALENT:MASTER:治療 && TARGET == LCOUNT
+			LOCAL += 500
+		SIF ASSI && TALENT:ASSI:治療 && TARGET == LCOUNT
+			LOCAL += 500
+		SIF TALENT:LCOUNT:治療 || TALENT:LCOUNT:調合知識
+			LOCAL += 200
+
+		CALL CALC, "体力回復上限まで", LOCAL, LCOUNT
+	NEXT
+
+	FOR LCOUNT, 1, CHARANUM
+		;精力の回復（午後の調教後は夜の休みが入るので回復大きい）
+		IF COND("夜") || FLAG:0
+			LOCAL = MAXBASE:LCOUNT:精力
+		ELSE
+			LOCAL = MAX(MAXBASE:LCOUNT:精力/2, 10)
+		ENDIF
+		;夢魔は回復量がかなり多い
+		LOCAL += TALENT:LCOUNT:夢魔*10 + TALENT:LCOUNT:上位夢魔*20
+
+		SELECTCASE LCOUNT
+		CASE MASTER
+			;主人は精力が全快ならストックが１つ回復する
+			SIF BASE:LCOUNT:精力 >= MAXBASE:LCOUNT:精力
+				BASE:MASTER:ストック = MIN(BASE:MASTER:ストック + 1, MAXBASE:MASTER:ストック)
+			;休憩を選択してもストックが１つ回復
+			SIF FLAG:0
+				BASE:MASTER:ストック = MIN(BASE:MASTER:ストック + 1, MAXBASE:MASTER:ストック)
+		ENDSELECT
+		CALL CALC, "精力回復上限まで", LOCAL, LCOUNT
+	NEXT
+
+	;HARD？だと全快
+	IF CONFIG("ＨＡＲＤ")
+		BASE:MASTER:精力 = MAXBASE:MASTER:精力
+		BASE:MASTER:ストック = MAXBASE:MASTER:ストック
+	ENDIF
+
+	;排泄物
+	FOR LCOUNT, 1, CHARANUM
+		IF TALENT:LCOUNT:魔導人形
+			BASE:LCOUNT:排泄物 = 0
+			CONTINUE
+		ENDIF
+
+		BASE:LCOUNT:排泄物 += 1
+		;Ａプラグしている場合にはある程度溜める
+		SIF TALENT:LCOUNT:常時Ａプラグ && BASE:LCOUNT:排泄物 <= 4
+			CONTINUE
+		;溜まるほどに排泄しやすい（Ａ拡張LV > Ａ使いLVだと溜まりづらい）。最低でも１残る
+		SIF RAND:2 && BASE:LCOUNT:排泄物 > MAX(RAND:10 - MAX(ABL:LCOUNT:Ａ拡張 - ABL:LCOUNT:Ａ使い, 0), 1)
+			BASE:LCOUNT:排泄物 = MAX(BASE:LCOUNT:排泄物/2 - 1 - RAND:(ABL:LCOUNT:Ａ拡張/3 + 2), 1)
+	NEXT
+
+	;老廃物（今のところ、ＶとＰの汚れだけ）
+	FOR LCOUNT, 1, CHARANUM
+		IF PENIS(LCOUNT)
+			SETBIT BASE:LCOUNT:老廃物, 0
+
+			;普通は掃除するが…
+			SIF COND("身嗜み：Ｐ掃除", LCOUNT)
+				CLEARBIT BASE:LCOUNT:老廃物, 0
+		ENDIF
+		IF TALENT:LCOUNT:オトコ == 0
+			SETBIT BASE:LCOUNT:老廃物, 1
+
+			;普通は掃除するが…
+			SIF COND("身嗜み：Ｖ掃除", LCOUNT)
+				CLEARBIT BASE:LCOUNT:老廃物, 1
+		ENDIF
+	NEXT
+
+	IF COND("夜")
+		FOR LCOUNT, 1, CHARANUM
+			;ＶＡ損傷の回復
+			IF TALENT:LCOUNT:Ｖ損傷 + TALENT:LCOUNT:Ａ損傷 && BASE:LCOUNT:体力 >= MAXBASE:LCOUNT:体力
+				LOCAL = 7
+
+				SIF FLAG:0 || TARGET != LCOUNT
+					LOCAL -= 1
+
+				;回復早い、回復遅い、吸血鬼
+				IF TALENT:LCOUNT:回復早い || TALENT:LCOUNT:吸血鬼
+					LOCAL -= 1
+				ELSEIF TALENT:LCOUNT:回復遅い
+					LOCAL += 2
+				ENDIF
+
+				;治療
+				SIF TALENT:MASTER:治療 && TARGET == LCOUNT
+					LOCAL -= 1
+				IF ASSI
+					SIF TALENT:ASSI:治療 && TARGET == LCOUNT
+						LOCAL -= 1
+				ENDIF
+				SIF LOCAL <= 1
+					LOCAL = 1
+
+				SIF TALENT:LCOUNT:Ｖ損傷 > 0 && RAND:LOCAL == 0
+					TALENT:LCOUNT:Ｖ損傷 -= 1
+				SIF TALENT:LCOUNT:Ａ損傷 > 0 && RAND:LOCAL == 0
+					TALENT:LCOUNT:Ａ損傷 -= 1
+			ENDIF
+		NEXT
+	ENDIF
+
+	;休憩フラグ初期化
+	FLAG:0 = 0
+ENDSELECT
+
+
+@EVENTTURNEND
+#PRI
+#DIM LCOUNT
+
+;主人と助手の夢魔化チェック
+IF CONFIG("主人・助手の夢魔化") && TARGET && COND("夢魔")
+	;助手からチェック
+	IF ASSI && STATE("撃沈", ASSI) && COND("夢魔化可能", ASSI)
+		PRINTFORML 
+		PRINTFORMW %CALLNAME:ASSI%の様子がおかしい…
+		IF CONFIG("主人・助手の夢魔化：キャンセル可")
+			PRINTL [0] 見守る
+			PRINTL [1] 声を掛ける
+			CALL INPUT_SELECT, 2
+			IF RESULT == 0
+				PRINTFORMW 体力の限界を超えた%CALLNAME:ASSI%は、夢魔となった…
+				CALL CHANGE_SUCCUBUS, ASSI, TARGET
+				IF CONFIG("主人・助手の夢魔化：女体化") && TALENT:ASSI:オトコ
+					PRINTL 
+					PRINTW …まだ様子がおかしい
+					PRINTL [0] 見守る
+					PRINTL [1] 危険そうであれば止める
+					PRINTL [2] 声を掛ける
+					CALL INPUT_SELECT, 2
+					IF RESULT == 0
+						PRINTFORMW 夢魔になった影響で、%CALLNAME:ASSI%は女になった…
+						CALL CHANGE_SEX, ASSI
+					ELSEIF RESULT == 1
+						PRINTFORMW 危うい気配を察した%CALLNAME:MASTER%が声をかけると、%CALLNAME:ASSI%は調子を取り戻したようだ…
+						PRINTFORMW しかし、どうにも、男の格好でいることに違和感を感じてしまっているようだ…
+						PRINTFORMW 夢魔になった影響で、%CALLNAME:ASSI%は男の娘になってしまった…！
+						CALL CALC, "小柄体型化", ASSI
+						CALL CALC, "男乳化", ASSI
+						TALENT:ASSI:男の娘 = 1
+					ELSEIF RESULT == 2
+						PRINTFORMW 声を掛けると、%CALLNAME:ASSI%は調子を取り戻したようだ
+					ENDIF
+				ENDIF
+			ELSEIF RESULT == 1
+				PRINTFORMW 声を掛けると、%CALLNAME:ASSI%は調子を取り戻したようだ
+			ENDIF
+		ELSE
+			PRINTFORMW 体力の限界を超えた%CALLNAME:ASSI%は、夢魔となった…
+			CALL CHANGE_SUCCUBUS, ASSI, TARGET
+			IF CONFIG("主人・助手の夢魔化：女体化") && TALENT:ASSI:オトコ
+				PRINTFORMW 夢魔になった影響で、%CALLNAME:ASSI%は女になった…
+				CALL CHANGE_SEX, ASSI
+			ENDIF
+		ENDIF
+	ENDIF
+	;主人をチェック
+	IF STATE("撃沈", MASTER) && COND("夢魔化可能", MASTER)
+		PRINTFORML 
+		PRINTFORMW %CALLNAME:MASTER%の中で何かが変わろうとしている…
+		IF CONFIG("主人・助手の夢魔化：キャンセル可")
+			PRINTL [0] 受け入れる
+			PRINTL [1] 抵抗する
+			CALL INPUT_SELECT, 2
+			IF RESULT == 0
+				PRINTFORMW 体力の限界を超えた%CALLNAME:MASTER%は、夢魔となった…
+				CALL CHANGE_SUCCUBUS, MASTER, TARGET
+				IF CONFIG("主人・助手の夢魔化：女体化") && TALENT:MASTER:オトコ
+					PRINTL 
+					PRINTW …まだ変化が続く気がする…
+					PRINTL [0] 受け入れる
+					PRINTL [1] 抵抗する
+					PRINTL [2] 断固抵抗する
+					CALL INPUT_SELECT, 3
+					IF RESULT == 0
+						PRINTFORMW 夢魔になった影響で、%CALLNAME:MASTER%は女になった…
+						CALL CHANGE_SEX, MASTER
+					ELSEIF RESULT == 1
+						PRINTFORMW 気を強く持つとそれは徐々に治まっていったが、どうにも、男の格好でいることに違和感を感じてしまう…
+						PRINTFORMW 夢魔になった影響で、%CALLNAME:MASTER%は男の娘になってしまった…！
+						CALL CALC, "小柄体型化", MASTER
+						CALL CALC, "男乳化", MASTER
+						TALENT:MASTER:男の娘 = 1
+					ELSEIF RESULT == 2
+						PRINTFORMW 気を強く持つと、それは徐々に治まっていった…
+					ENDIF
+				ENDIF
+			ELSEIF RESULT == 1
+				PRINTFORMW 気を強く持つと、それは徐々に治まっていった…
+			ENDIF
+		ELSE
+			PRINTFORMW 体力の限界を超えた%CALLNAME:MASTER%は、夢魔となった…
+			CALL CHANGE_SUCCUBUS, MASTER, TARGET
+			IF CONFIG("主人・助手の夢魔化：女体化") && TALENT:MASTER:オトコ
+				PRINTFORMW 夢魔になった影響で、%CALLNAME:MASTER%は女になった…
+				CALL CHANGE_SEX, MASTER
+			ENDIF
+		ENDIF
+	ENDIF
+ENDIF
+
+;フラグ変更その1
+CALL EVENTTURNEND_FLAG, 1
+
+;アルバイト
+SIF NUM("運営店舗")
+	CALL CAFE
+
+;外出
+SIF COND("夜") && CHARA_NUM("一晩開放実行予定")
+	CALL NIGHTWALKER
+
+;フラグ変更その2
+CALL EVENTTURNEND_FLAG, 2
+
+
+;温泉の予定ならば前日準備の模様
+IF FLAG:60 && TEXTS("曜日") == "金" && TEXTS("時間") == "夜"
+	LOCAL = TARGET
+	LOCAL:1 = ASSI
+	CALL EVENT_TRAVEL_PRE
+	TARGET = LOCAL
+	ASSI = LOCAL:1
+;日常メッセージ
+ELSEIF FLAG:205 == 1 || (FLAG:205 == 0 && FLAG:0 == 1)
+	LOCAL = TARGET
+	CALL DAILY_LIFE
+	TARGET = LOCAL
+	DRAWLINE
+ENDIF
+
+FOR LCOUNT, 1, CHARANUM
+	;妊娠判定&妊娠イベントカウント処理
+	CALL EVENT_N1, LCOUNT
+NEXT
+
+;妊娠イベント
+IF COND("夜") && CONFIG("妊娠パッチ")
+	;妊娠発覚＆出産予定報告処理
+	FOR LCOUNT, 1, CHARANUM
+		SIF BASE:LCOUNT:胎児 + BASE:LCOUNT:育児中
+			CALL EVENT_N2, LCOUNT
+	NEXT
+	;その他の妊娠イベント処理
+	FOR LCOUNT, 1, CHARANUM
+		SIF BASE:LCOUNT:胎児 + BASE:LCOUNT:育児中
+			CALL EVENT_N3, LCOUNT
+	NEXT
+ENDIF
+
+;フラグ変更その3
+CALL EVENTTURNEND_FLAG, 3
+
+
+;日付変更時のイベント呼び出し
+SIF COND("夜")
+	CALL YOBAI_ASAGAKE
+
+;お漏らし癖などの取得
+CALL EVENT_NEXTTIME
+
+;フラグ変更その4
+CALL EVENTTURNEND_FLAG, 4
+
+;午後なら次の日、午前なら午後にする
+IF COND("夜")
+	DAY += 1
+	PRINTW 一日が終わった・・・
+
+	;胡蝶の夢
+	CALL EVENT_KOTYOUNOYUME
+
+	TIME = 0
+ELSE
+	TIME = 1
+ENDIF
+
+;まだ作られてない→やっと試作版だよ！
+CALL BIRTHDAY_GROW
+
+;温泉予定のときには無し
+SIF FLAG:60 == 0
+	CALL EVENT_YAKIMOCHI
+
+
+
+;暫定資金獲得処理
+;7日おきに資金$1500を加算する
+IF DAYEV("日曜", "ゲーム内") && TIME == 0
+	DRAWLINE
+	CALL ABLUP_MASTER, "週末"
+	DRAWLINE
+	PRINTW １週間が過ぎ、日の行の朝がやってきた。
+	IF MONEY:7 > 0
+		PRINTFORMW 喫茶店の収入と合わせて、資金%MONEY_C(1500 + MONEY:7)%を獲得した。
+		MONEY += MONEY:7
+	ELSE
+		PRINTW 資金$1500を獲得した。
+	ENDIF
+	MONEY += 1500
+	MONEY:7 = 0
+ENDIF
+
+;エスト様用タレント変化by>>347.08/10/27
+IF TARGET && NO:TARGET == 48
+	IF MARK:機嫌 == 3
+		CALL DELETE_CHARA, TARGET
+	ELSEIF MARK:機嫌
+		MARK:機嫌 = 0
+	ENDIF
+ENDIF
+
+BEGIN SHOP
+
+
+;-------------------------------------------------
+;夜這いなどの相手を決定して、イベントを管理する
+;TARGETがイベント相手、TARGET:1が複数イベント時の登場キャラとなる
+;-------------------------------------------------
+@YOBAI_ASAGAKE
+#DIM LCOUNT
+#DIM MEMO_TARGET
+;コンフィグで禁止しているなら当然発生しない
+SIF CONFIG("夜這い朝駆け禁止")
+	RETURN 0
+;MASTERしか居ないor身体の入れ替え中は発生しない
+SIF CHARANUM <= MASTER + 1
+	RETURN 0
+;温泉に行く日の朝は発生しない
+SIF FLAG:60 && TIME == 0
+	RETURN 0
+
+;MASTER争奪戦
+MEMO_TARGET = TARGET
+VARSET TARGET
+
+;昨夜はお楽しみでしたね
+IF TIME == 0 && COND("一緒に寝た", MASTER)
+	TARGET = COND("一緒に寝た", MASTER)
+	;念のためここで初期化
+	CVARSET CFLAG, 96, 0
+;同衾
+ELSEIF COND("夜") && COND("同衾イベント", MASTER)
+	TARGET = FIND_COND("同衾イベント")
+;夜這い可能か判定
+ELSEIF COND("夜")
+	TARGET = FIND_COND("夜這い可能")
+ELSE
+	TARGET = FIND_COND("朝駆け可能")
+ENDIF
+
+;候補が居る
+IF TARGET
+	VARSET TCVAR, 0, 0, 30
+
+	SELECTCASE TIME
+	CASE 1
+		CALL EVENT_YOBAI
+	CASE 0
+		CALL EVENT_NEWDAY
+	ENDSELECT
+
+	FOR LCOUNT, 0, 4
+		SIF TARGET:LCOUNT > 0
+			CALL SETFLAG, "夜這い朝駆け終了", TARGET:LCOUNT
+	NEXT
+ENDIF
+
+VARSET TARGET
+TARGET = MEMO_TARGET
+
+@GAMEOVER
+DRAWLINE
+PRINTL ------------------------------------GAMEOVER-----------------------------------
+DRAWLINE
+
+PRINTW ここで再起動しないならば、ゲームを終了します
+QUIT
+

@@ -1,0 +1,200 @@
+﻿@COM81
+;強制パイズリ(胸の谷間を犯す)
+
+PRINTL 胸の谷間を犯す
+
+CALL TRAIN_MESSAGE_B
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+STR:0 = 胸の谷間を犯す
+
+;-------------------------------------------------
+;射精チェック
+;-------------------------------------------------
+CALL SAMEN_CHECK
+
+RETURN 1
+
+@FLAG_COM81, ARG
+;対象のＢ⇔調教者のＰの汚れが移動
+CALL EQ_STAIN, TARGET, PLAYER, 5, 2
+SIF ASSIPLAY == 0 && ABL:Ｂ感覚 >= 3
+	TFLAG:30 += 1
+
+
+@SOURCE_COM81, ARG
+VARSET LOCAL
+
+LOCAL:20 += 50
+LOCAL:21 += 100
+
+LOCAL:13 = 3000
+LOCAL:14 = 900
+
+;ABL:奉仕精神をみる
+SELECTCASE ABL:奉仕精神
+CASE 0
+	LOCAL:4 = 420
+	LOCAL:5 = 150
+	LOCAL:8 = 400
+CASE 1
+	LOCAL:4 = 500
+	LOCAL:5 = 300
+	LOCAL:8 = 300
+CASE 2
+	LOCAL:4 = 580
+	LOCAL:5 = 600
+	LOCAL:8 = 150
+CASE 3
+	LOCAL:4 = 660
+	LOCAL:5 = 900
+	LOCAL:8 = 50
+CASE 4
+	LOCAL:4 = 740
+	LOCAL:5 = 1500
+	LOCAL:8 = 20
+CASEELSE
+	LOCAL:4 = 820
+	LOCAL:5 = 2200
+ENDSELECT
+
+;ABL:Ｂ感覚をみる
+LOCAL:17 = CALCF("Ｂ刺激", 2, 70)
+LOCAL:17 = SOURCE_EXABL(LOCAL:17, 31, PLAYER)
+
+CALL CALC, "調教ソース", LOCAL:0, LOCAL:1, LOCAL:2, LOCAL:3, LOCAL:4, LOCAL:5, LOCAL:6, LOCAL:7, LOCAL:8, LOCAL:9, LOCAL:10, LOCAL:11, LOCAL:12, LOCAL:13, LOCAL:14, LOCAL:15, LOCAL:16, LOCAL:17, LOCAL:18, LOCAL:19, LOCAL:20, LOCAL:21, ARG
+
+
+@TRAIN_MESSAGE_COM81
+IF SELECTCOM == PREVCOM
+	PRINTFORMW %CALLNAME:PLAYER%は%CALLNAME:TARGET%の胸を犯し続けた…
+	RETURN 0
+ENDIF
+
+IF TALENT:巨乳 && CONFIG("３サイズ") && RAND:3 == 0
+	LOCALS = %TOFULL(CONDS("バストカップ") )%カップの%TALENT_NAME(110, TALENT:巨乳)%
+ELSEIF RAND:2
+	IF TALENT:巨乳
+		IF TALENT:巨乳 >= 2 && RAND:2
+			IF RAND:2
+				LOCALS = 圧倒的な大きさの乳房
+			ELSE
+				LOCALS = たっぷりとした重そうな乳房
+			ENDIF
+		ELSE
+			IF RAND:2
+				LOCALS = 魅力的な大きさの乳房
+			ELSE
+				LOCALS = たわわに実った乳房
+			ENDIF
+		ENDIF
+	ELSE
+		LOCALS = 乳房
+	ENDIF
+ELSE
+	LOCALS = 胸
+ENDIF
+
+;胸元が露出しているなら、そこではさむ
+IF CHECK_CLO("谷間露出")
+;はだけられるのに、胸元をはだけていないなら、ずらす
+ELSEIF CHECK_CLO("はだけ可")
+	CALL SETFLAG, "胸をはだける", TARGET
+ENDIF
+
+PRINTFORM %CALLNAME:PLAYER%は
+;前回はパイズリ
+IF PREVCOM == 92 && COND("前Ｔと同ペア")
+	;汚れてますか？汚臭鈍感で無いならば、実行値の10分の一の値とRAND:5を比べて判定
+	IF CHECK_STAIN(STAIN:PLAYER:Ｐ, "Ｖ", "Ａ") && TALENT:汚臭鈍感 == 0 && RAND:6 > TCVAR:28/10
+		PRINTFORM %TEXTS("匂い")%に眉根を寄せつつ
+	;恋慕or献身的or奉仕精神3以上or汚臭鈍感
+	ELSEIF (TALENT:恋慕 || TALENT:献身 || ABL:奉仕精神 >= 3 || TALENT:汚臭鈍感) && RAND:2 == 0
+		PRINT 嬉しそうに
+	;恥じらい
+	ELSEIF TALENT:恥じらい && RAND:3 == 0
+		PRINT 恥ずかしそうに
+	;欲情4以上
+	ELSEIF PALAM:欲情 >= PALAMLV:4 && RAND:3 == 0
+		SIF TALENT:倒錯的 && RAND:3 == 0
+			PRINTFORM %TEXTS("匂い")%に
+		PRINT 興奮しつつ
+	;恋慕かつ奉仕精神5or献身的かつ奉仕精神3以上
+	ELSEIF ( (TALENT:恋慕 && ABL:奉仕精神 >= 5) || (TALENT:献身 && ABL:奉仕精神 >= 3) ) && RAND:3 == 0
+		PRINT 熱心に
+	;恋慕or献身的or奉仕精神3以上
+	ELSEIF TALENT:恋慕 || TALENT:献身 || ABL:奉仕精神 >= 3
+		PRINT 楽しそうに
+	ELSEIF RAND:2 == 0 && ABL:技巧 < 2
+		PRINT ぎこちなさの残る手つきで
+	ENDIF
+	PRINTFORM 奉仕している%CALLNAME:TARGET%の%LOCALS%を\@ RAND:2 ? 左右から # 両手で \@\@ RAND:2 ? 掴んで # 押さえて \@、
+;ベッドに拘束しているなら相手に跨る
+ELSE
+	IF BIND("ベッド", TEQUIP:拘束)
+		PRINTFORM ベッドに拘束されている%CALLNAME:TARGET%の
+		IF AGE(TARGET) >= 3
+			SELECTCASE CONDS("体型")
+			CASE "太め"
+				PRINTFORM 油断気味の
+			CASE "細め"
+				IF TALENT:力持ち
+					PRINTFORM 引き締まった
+				ELSE
+					PRINTFORM ほっそりとした
+				ENDIF
+			CASEELSE
+				SIF TALENT:力持ち
+					PRINTFORM 引き締まった
+			ENDSELECT
+		ENDIF
+		PRINTFORM お腹に跨って
+	ELSE
+		PRINTFORM %CALLNAME:TARGET%の
+	ENDIF
+	IF RAND:4 == 0
+		PRINTFORM %LOCALS%の谷間にペニスを滑り込ませると、
+	ELSEIF RAND:3 == 0
+		PRINTFORM %LOCALS%の谷間にペニスを突き刺すと、
+	ELSEIF RAND:2
+		PRINTFORM %LOCALS%の間に向かって腰を突き出すと、
+	ELSE
+		PRINTFORM %LOCALS%でペニスを挟み込むと、
+	ENDIF
+	PRINTFORM \@ RAND:2 ? 左右から # 両手で \@\@ RAND:2 ? 掴んで # 押さえて \@
+ENDIF
+
+;快楽を与える
+IF RAND:2
+	IF RAND:3 == 0 && CALCF("Ｂ発情")
+		PRINTFORM 乳首を指で扱きながら
+	ELSEIF RAND:2
+		PRINTFORM 乳輪を親指でくすぐりながら
+	ELSE
+		PRINTFORM 揉みしだきながら
+	ENDIF
+ELSE
+	IF RAND:4 == 0
+		PRINTFORM 内側に寄せながら
+	ELSEIF RAND:3 == 0
+		PRINTFORM 密着させながら
+	ELSEIF RAND:2
+		PRINTFORM 締め付けながら
+	ELSE
+		PRINTFORM 圧迫しながら
+	ENDIF
+ENDIF
+
+;SIF EXP:PLAYER:Ｖ挿入経験 + EXP:PLAYER:Ａ挿入経験
+;	PRINT セックスする時のように
+
+IF ABL:PLAYER:サドっ気 && RAND:3 == 0
+	PRINTFORMW 荒々しく腰を動かした…
+ELSEIF RAND:2
+	PRINTFORMW 腰を激しく動かした…
+ELSE
+	PRINTFORMW 腰を前後に動かした…
+ENDIF
+

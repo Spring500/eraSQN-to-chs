@@ -1,0 +1,530 @@
+﻿;-------------------------------------------------
+;シャツなどを着せる関数
+;指定番号によって名前がCSTR:42に代入される。
+;99番までは、その番号の夢魔の下着。
+;EQUIP:上着はシャツの特徴フラグ。ビット管理する
+;-------------------------------------------------
+@SET_SHIRT, ARG, ARG:1, ARG:2
+;ARGのシャツをARG:1番のものにする。ARG:1==0ならシャツを脱がす
+;基本的にはスカートがセット。ARG:2で個別化はいずれ。
+;汚れ＆ずれたりしたフラグ等を初期化して新品にする	
+
+STAIN:ARG:服 = 0
+TCVAR:ARG:26 = 0
+
+IF ARG:1 == 0
+	EQUIP:ARG:上着 = 0
+	CSTR:ARG:42 = 
+	EQUIP:ARG:スカート = 0
+	CSTR:ARG:43 = 
+	IF CHECK_OUTER("つなぎ", ARG)
+		EQUIP:ARG:アウター = 0
+		CSTR:ARG:45 = 
+	ENDIF
+	RETURN 0
+ENDIF
+
+;名前記録
+CSTR:ARG:42 = %PALAM_SHIRT(ARG:1, ARG, 1)%
+CSTR:ARG:43 = %PALAM_SKIRT(ARG:1, ARG)%
+
+;SIF EQUIP:ARG:ボディスーツ
+;	CALL SET_BODYS, ARG
+
+TCVAR:ARG:26 = 0
+RETURN ARG:1
+;-------------------------------------------------
+;ARGのシャツの名前。ARG:1==0なら正式名称 by CSTR。ARG:1==2なら色要素なし
+;ARG:1==1なら短縮名称 by EQUIP。
+;-------------------------------------------------
+@SHIRT(ARG, ARG:1)
+#FUNCTIONS
+SELECTCASE ARG:1
+CASE 0
+	LOCALS = %CSTR:ARG:42%
+CASE 1
+	IF CHECK_SHIRT("鎧", ARG)
+		LOCALS = 鎧
+	ELSEIF CHECK_SHIRT("パジャマ", ARG)
+		LOCALS = パジャマ
+	ELSEIF CHECK_SHIRT("ゴスロリドレス", ARG)
+		LOCALS = ゴスロリドレス
+	ELSEIF CHECK_SHIRT("ベビードール", ARG)
+		LOCALS = ベビードール
+	ELSEIF CHECK_SHIRT("ビスチェ", ARG)
+		LOCALS = ビスチェ
+	ELSEIF CHECK_SHIRT("修道服", ARG)
+		LOCALS = 修道服
+	ELSEIF CHECK_SHIRT("ドレス", ARG)
+		LOCALS = ドレス
+	ELSEIF CHECK_SHIRT("巫女服", ARG)
+		LOCALS = 巫女服
+	ELSEIF CHECK_SHIRT("セーラー服", ARG)
+		LOCALS = セーラー服
+	ELSEIF CHECK_SHIRT("チャイナ服", ARG)
+		LOCALS = チャイナ服
+	ELSEIF CHECK_SHIRT("ナース服", ARG)
+		LOCALS = ナース服
+	ELSEIF CHECK_SHIRT("体操服", ARG)
+		LOCALS = 体操服
+	ELSEIF CHECK_SHIRT("メイド服", ARG)
+		LOCALS = メイド服
+	ELSEIF CHECK_SHIRT("着物", ARG)
+		LOCALS = 着物
+	ELSEIF CHECK_SHIRT("スーツ", ARG)
+		LOCALS = スーツ
+	ELSEIF CHECK_SHIRT("Ｙシャツ", ARG)
+		LOCALS = Ｙシャツ
+	ELSEIF CHECK_SHIRT("ウェイトレス", ARG)
+		LOCALS = ウェイトレス
+	ELSE
+		LOCALS = 服
+	ENDIF
+CASE 2
+	LOCALS = %CSTR:ARG:42%
+ENDSELECT
+RETURNF LOCALS
+
+;-------------------------------------------------
+;ARG番のシャツの正式名称
+;ARG:1 > 0ならARG:1はキャラ番号として働く
+;-------------------------------------------------
+@NAME_SHIRT(ARG, ARG:1)
+#FUNCTIONS
+LOCALS = %PALAM_SHIRT(ARG, ARG:1)%
+RETURNF LOCALS
+
+;-------------------------------------------------
+;ARG番の服の詳細パラ
+;ARG:1 > 0ならARG:1はキャラ番号として働き、ARG:1 > 0 && ARG:2 > 0ならEQUIPを定める
+;-------------------------------------------------
+@PALAM_SHIRT(ARG, ARG:1, ARG:2)
+#FUNCTIONS
+VARSET LOCAL
+VARSET LOCALS
+
+SELECTCASE ARG
+CASE 2
+	IF CFLAG:(ARG:1):8 == 2
+		LOCALS = 小悪魔の服
+		LOCAL = SETFLAG_SHIRT("ズリ不可", "腋露出", "薄緑")
+	ELSEIF CFLAG:(ARG:1):8 == 4
+		LOCALS = 小悪魔の服
+		LOCAL = SETFLAG_SHIRT("ズリ不可", "腋露出", "紫")
+	ELSE
+		LOCALS = 小悪魔の服
+		LOCAL = SETFLAG_SHIRT("ズリ不可", "腋露出", "赤")
+	ENDIF
+CASE 3
+	IF CFLAG:(ARG:1):8 == 2
+		LOCALS = 樹精のビスチェ
+		LOCAL = SETFLAG_SHIRT("ビスチェ", "谷間露出", "腋露出", "薄桃")
+		LOCAL:1 = SETFLAG_SKIRT("ビスチェ", "ミニ", "フレア", "薄桃")
+	ELSEIF CFLAG:(ARG:1):8 == 3
+		LOCALS = 樹精のビスチェ
+		LOCAL = SETFLAG_SHIRT("ビスチェ", "谷間露出", "腋露出", "緑")
+		LOCAL:1 = SETFLAG_SKIRT("ビスチェ", "ミニ", "フレア", "緑")
+	ELSE
+		LOCALS = 樹精のビスチェ
+		LOCAL = SETFLAG_SHIRT("ビスチェ", "谷間露出", "腋露出", "薄緑")
+		LOCAL:1 = SETFLAG_SKIRT("ビスチェ", "ミニ", "フレア", "薄緑")
+	ENDIF
+CASE 5
+	IF CFLAG:(ARG:1):8 != 1
+		LOCALS = 風精のワンピ
+		LOCAL = SETFLAG_SHIRT("ワンピース", "ズリ不可", "腋露出", "シースルー", "薄緑")
+		LOCAL:1 = SETFLAG_SKIRT("ワンピース", "フレア", "シースルー", "薄緑")
+	ENDIF
+CASE 8, 9, 32
+	IF CFLAG:(ARG:1):8 == 2
+		LOCALS = バンシーの外套
+		LOCAL = SETFLAG_SHIRT("ワンピース", "谷間露出", "腋露出")
+	ELSE
+		LOCALS = 村娘の服
+		LOCAL = SETFLAG_SHIRT("ワンピース", "ズリ不可")
+	ENDIF
+	LOCAL:1 = SETFLAG_SKIRT("ワンピース", "エプロン")
+CASE 10
+	IF CFLAG:(ARG:1):8 == 2
+		LOCALS = ゴシックドレス
+		LOCAL = SETFLAG_SHIRT("ワンピース", "はだけ不可", "ドレス", "シルク", "黒", "谷間露出")
+		LOCAL:1 = SETFLAG_SKIRT("ワンピース", "フレア", "ドレス", "シルク", "黒")
+	ELSEIF CFLAG:(ARG:1):8 == 4
+		LOCALS = 娼蛇のパレオ
+		LOCAL = SETFLAG_SHIRT("ワンピース", "紺", "谷間露出", "腋露出")
+		LOCAL:1 = SETFLAG_SKIRT("ワンピース", "エプロン", "紺")
+	ELSE
+		LOCALS = 娼蛇のパレオ
+		LOCAL = SETFLAG_SHIRT("ワンピース", "赤", "谷間露出", "腋露出")
+		LOCAL:1 = SETFLAG_SKIRT("ワンピース", "エプロン", "赤")
+	ENDIF
+CASE 11
+	IF CFLAG:(ARG:1):8 == 2
+		LOCALS = セーラーワンピ
+		LOCAL = SETFLAG_SHIRT("ズリ不可", "腋露出", "セーラー")
+		LOCAL:1 = SETFLAG_SKIRT("ワンピース", "超ミニ", "セーラー")
+	ENDIF
+CASE 12
+	IF CFLAG:(ARG:1):8 == 4
+		LOCALS = 宝竜のスケールアーマー
+		LOCAL = SETFLAG_SHIRT("ワンピース", "はだけ不可", "ズリ不可", "鎧", "腋露出", "黒")
+		LOCAL:1 = SETFLAG_SKIRT("ワンピース", "ミニ", "鎧", "黒")
+	ELSE
+		LOCALS = 亜竜人のスケールアーマー
+		LOCAL = SETFLAG_SHIRT("ワンピース", "はだけ不可", "ズリ不可", "鎧", "腋露出", "薄緑")
+		LOCAL:1 = SETFLAG_SKIRT("ワンピース", "ミニ", "鎧", "薄緑")
+	ENDIF
+CASE 14
+	LOCALS = 水の羽衣
+	LOCAL = SETFLAG_SHIRT("スカート着用", "薄青", "谷間露出", "腋露出")
+	LOCAL:1 = SETFLAG_SKIRT("ミニ", "巻きスカート")
+CASE 15
+	IF CFLAG:(ARG:1):8 == 2
+		LOCALS = 修道服
+		LOCAL = SETFLAG_SHIRT("ワンピース", "はだけ不可", "ズリ不可", "修道服", "青")
+		LOCAL:1 = SETFLAG_SKIRT("ワンピース", "超ロング", "青")
+	ELSE
+		LOCALS = 魔蛸のワンピース
+		LOCAL = SETFLAG_SHIRT("ワンピース", "ズリ不可", "腋露出", "橙")
+		LOCAL:1 = SETFLAG_SKIRT("ワンピース", "フレア", "橙")
+	ENDIF
+CASE 16
+	IF CFLAG:(ARG:1):8 == 2
+		LOCALS = ミニスカチャイナ
+		LOCAL = SETFLAG_SHIRT("ワンピース", "ズリ不可", "チャイナ服", "黒")
+		LOCAL:1 = SETFLAG_SKIRT("ワンピース", "ミニ", "タイト", "スリット", "黒")
+	ELSEIF CFLAG:(ARG:1):8 == 3
+		LOCALS = 十二単
+		LOCAL = SETFLAG_SHIRT("ワンピース", "ズリ不可", "着物")
+		LOCAL:1 = SETFLAG_SKIRT("ワンピース", "着物")
+	ELSE
+		LOCALS = 狐の巫女服
+		LOCAL = SETFLAG_SHIRT("ズリ不可", "巫女服", "スカート着用", "純白")
+		LOCAL:1 = SETFLAG_SKIRT("袴", "赤")
+	ENDIF
+CASE 17
+	IF CFLAG:(ARG:1):8 == 1
+		LOCALS = マジシャンズスーツ
+		LOCAL = SETFLAG_BODYS("黒", "谷間露出", "腋露出")
+	ENDIF
+CASE 18
+	LOCALS = 編み上げドレス
+	LOCAL = SETFLAG_SHIRT("ワンピース", "ドレス", "黒", "谷間露出", "腋露出")
+	LOCAL:1 = SETFLAG_SKIRT("ワンピース", "超ミニ", "黒")
+CASE 19, 47
+	LOCALS = 魔女のローブ
+	LOCAL = SETFLAG_SHIRT("ワンピース", "谷間露出", "腋露出")
+	LOCAL:1 = SETFLAG_SKIRT("ワンピース", "ロング")
+CASE 20
+	IF CFLAG:(ARG:1):8 == 2
+		LOCALS = エンジェルワンピ
+		LOCAL = SETFLAG_SHIRT("ワンピース", "シースルー", "薄青", "谷間露出", "腋露出")
+		LOCAL:1 = SETFLAG_SKIRT("ワンピース", "超ミニ", "シースルー", "薄青")
+	ELSE
+		LOCALS = エンジェルワンピ
+		LOCAL = SETFLAG_SHIRT("ワンピース", "シースルー", "純白", "谷間露出", "腋露出")
+		LOCAL:1 = SETFLAG_SKIRT("ワンピース", "超ミニ", "シースルー", "純白")
+	ENDIF
+CASE 21
+	LOCALS = 堕天使のワンピ
+	LOCAL = SETFLAG_SHIRT("ワンピース", "シースルー", "紫", "谷間露出", "腋露出")
+	LOCAL:1 = SETFLAG_SKIRT("ワンピース", "超ミニ", "シースルー", "紫")
+CASE 22
+	IF CFLAG:(ARG:1):8 == 2
+		LOCALS = 忍装束
+		LOCAL = SETFLAG_SHIRT("ワンピース", "ズリ不可", "着物", "薄緑")
+		LOCAL:1 = SETFLAG_SKIRT("ワンピース", "ミニ", "着物ー", "スリット", "薄緑")
+	ELSE
+		LOCALS = 忍装束
+		LOCAL = SETFLAG_SHIRT("ワンピース", "ズリ不可", "着物", "薄青")
+		LOCAL:1 = SETFLAG_SKIRT("ワンピース", "ミニ", "着物ー", "スリット", "薄青")
+	ENDIF
+CASE 24
+	LOCALS = 七枚のヴェール
+	LOCAL = SETFLAG_SHIRT("ワンピース", "ズリ不可", "ドレス", "腋露出")
+	LOCAL:1 = SETFLAG_SKIRT("ワンピース", "ミニ", "ドレスー")
+CASE 25
+	LOCALS = ナイトドレス
+	LOCAL = SETFLAG_SHIRT("ワンピース", "ドレス", "黒", "谷間露出", "腋露出")
+	LOCAL:1 = SETFLAG_SKIRT("ワンピース", "超ロング", "ドレス", "スリット", "黒")
+CASE 27
+	LOCALS = 予言者のローブ
+	LOCAL = SETFLAG_SHIRT("ワンピース", "ドレス", "薄緑", "谷間露出", "腋露出")
+	LOCAL:1 = SETFLAG_SKIRT("ワンピース", "ミニ", "ドレス", "スリット", "薄緑")
+CASE 28
+	LOCALS = ラミエルの鎧
+	LOCAL = SETFLAG_SHIRT("スカート着用", "はだけ不可", "ズリ不可", "鎧", "赤", "腋露出")
+	LOCAL:1 = SETFLAG_SKIRT("ミニ", "フレア", "スリット", "紫")
+CASE 30
+	LOCALS = 巻きつけた布
+	LOCAL = SETFLAG_SHIRT("ワンピース", "布切れ", "純白", "谷間露出", "腋露出")
+	LOCAL:1 = SETFLAG_SKIRT("ワンピース", "超ミニ", "巻きスカート", "純白")
+CASE 33
+	LOCALS = プリティ☆ドレス
+	IF CFLAG:(ARG:1):8 == 4
+		LOCAL = SETFLAG_SHIRT("ワンピース", "ズリ不可", "ドレス", "薄青")
+		LOCAL:1 = SETFLAG_SKIRT("ワンピース", "ミニ", "フレア", "ドレス", "薄青")
+	ELSE
+		LOCAL = SETFLAG_SHIRT("ワンピース", "ズリ不可", "ドレス", "薄桃")
+		LOCAL:1 = SETFLAG_SKIRT("ワンピース", "ミニ", "フレア", "ドレス", "薄桃")
+	ENDIF
+CASE 34
+	LOCALS = セクシービスチェ
+	;LOCALS = ストゥーナのビスチェ
+	LOCAL = SETFLAG_SHIRT("ビスチェ", "薄青", "谷間露出", "腋露出")
+CASE 38
+	LOCALS = フェザードレス
+	;LOCALS = エスプラーナのスリップ
+	LOCAL = SETFLAG_SHIRT("ワンピース", "ズリ不可", "薄緑", "谷間露出", "腋露出")
+	LOCAL:1 = SETFLAG_SKIRT("ワンピース", "超ミニ", "フリル", "薄緑")
+CASE 39
+	LOCALS = ブルーワンピ
+	;LOCALS = リズ・ラズのワンピース
+	LOCAL = SETFLAG_SHIRT("ワンピース", "ズリ不可", "青", "腋露出")
+	LOCAL:1 = SETFLAG_SKIRT("ワンピース", "超ミニ", "フリル", "青")
+CASE 40
+	LOCALS = ピンクワンピ
+	;LOCALS = ロッコ・バロッコのドレス
+	LOCAL = SETFLAG_SHIRT("ワンピース", "ズリ不可", "薄桃", "谷間露出", "腋露出")
+	LOCAL:1 = SETFLAG_SKIRT("ワンピース", "超ミニ", "フリル", "薄桃")
+CASE 42
+	IF CFLAG:(ARG:1):209 == 2
+		LOCALS = ワンダープレート
+		LOCAL = SETFLAG_SHIRT("鎧","谷間露出","脇露出","黒")
+	ENDIF
+CASE 43
+	LOCALS = ワンダードレス
+	LOCAL = SETFLAG_SHIRT("ワンピース", "はだけ不可", "ズリ不可", "腋露出", "薄青")
+	LOCAL:1 = SETFLAG_SKIRT("ワンピース", "薄青")
+CASE 44
+	IF CFLAG:(ARG:1):209 == 3
+		LOCALS = キャミソールドレス
+		LOCAL = SETFLAG_SHIRT("ワンピース", "フリル", "シースルー", "腋露出")
+		LOCAL:1 = SETFLAG_SKIRT("ワンピース", "ミニ", "フリル", "シースルー")
+	ENDIF
+CASE 46
+	LOCALS = ホロス式メイド服
+	LOCAL = SETFLAG_SHIRT("ワンピース", "ズリ不可", "メイド服", "黒")
+	LOCAL:1 = SETFLAG_SKIRT("ワンピース", "エプロン", "フリル", "黒")
+CASE 49
+	LOCALS = 雪のドレス
+	LOCAL = SETFLAG_SHIRT("ワンピース", "はだけ不可", "ドレス", "薄青", "谷間露出")
+	LOCAL:1 = SETFLAG_SKIRT("ワンピース", "超ロング", "ヒップボーンドレス", "薄青")
+CASE 50
+	LOCALS = ファンシードレス
+	LOCAL = SETFLAG_SHIRT("ドレス", "スカート着用", "紫", "谷間露出", "腋露出")
+	LOCAL:1 = SETFLAG_SKIRT("ミニ", "ドレス", "フリル", "紫")
+CASE 52
+	LOCALS = アルケインドレス
+	LOCAL = SETFLAG_SHIRT("ワンピース", "はだけ不可", "ズリ不可", "ドレス", "腋露出", "薄青")
+	LOCAL:1 = SETFLAG_SKIRT("ワンピース", "スリット", "薄青")
+CASE 54
+	LOCALS = 司書の服
+	LOCAL = SETFLAG_SHIRT("ワンピース", "はだけ不可", "ズリ不可", "薄緑")
+	LOCAL:1 = SETFLAG_SKIRT("ワンピース", "ロング", "スリット", "薄緑")
+CASE 55
+	LOCALS = プリティブラウス
+	LOCAL = SETFLAG_SHIRT("ワンピース", "ズリ不可", "赤")
+	LOCAL:1 = SETFLAG_SKIRT("ワンピース", "ロング", "エプロン", "赤")
+CASE 57
+	LOCALS = 真紅のワンピース
+	;LOCALS = サフィのドレス
+	LOCAL = SETFLAG_SHIRT("ワンピース", "はだけ不可", "腋露出", "赤")
+	LOCAL:1 = SETFLAG_SKIRT("ワンピース", "フレア", "エプロン", "赤")
+CASE 60
+	LOCALS = 蜂柄キャミソール
+	LOCAL = SETFLAG_BRA("スカート着用", "縞々", "谷間露出", "腋露出")
+	LOCAL:1 = SETFLAG_SKIRT("ミニ")
+CASE 61
+	LOCALS = 戦乙女の鎧
+	LOCAL = SETFLAG_SHIRT("はだけ不可", "ズリ不可", "鎧", "白")
+CASE 100
+	LOCALS = %CALLNAME:MASTER%のＹシャツ
+	LOCAL = SETFLAG_SHIRT("ワンピース", "ズリ不可", "Ｙシャツ")
+	LOCAL:1 = SETFLAG_SKIRT("ワンピース", "超ミニ", "スリット", "Ｙシャツ")
+CASE 101
+	IF ITEM:女教師
+		LOCALS = 女教師
+		LOCAL = SETFLAG_SHIRT("スカート着用", "ズリ不可", "女教師")
+		LOCAL:1 = SETFLAG_SKIRT("タイト")
+	ENDIF
+CASE 102
+	IF ITEM:和服
+		LOCALS = 和服
+		LOCAL = SETFLAG_SHIRT("ワンピース", "ズリ不可", "和服")
+		LOCAL:1 = SETFLAG_SKIRT("ワンピース", "和服")
+	ENDIF
+CASE 103
+	IF ITEM:メイド服
+		LOCALS = メイド服
+		LOCAL = SETFLAG_SHIRT("スカート着用", "ズリ不可", "メイド服")
+		LOCAL:1 = SETFLAG_SKIRT("ロング", "エプロン", "フリル")
+	ENDIF
+CASE 104
+	IF ITEM:体操服
+		LOCALS = 体操服
+		LOCAL = SETFLAG_SHIRT("ズリ不可", "体操服")
+	ENDIF
+CASE 105
+	IF ITEM:ナース服
+		LOCALS = ナース服
+		LOCAL = SETFLAG_SHIRT("スカート着用", "ズリ不可", "ナース服", "薄桃")
+		LOCAL:1 = SETFLAG_SKIRT("薄桃")
+	ENDIF
+CASE 106
+	IF ITEM:チャイナ服
+		LOCALS = チャイナ服
+		LOCAL = SETFLAG_SHIRT("ワンピース", "ズリ不可", "チャイナ服")
+		LOCAL:1 = SETFLAG_SKIRT("ワンピース", "タイト", "スリット", "黒")
+	ENDIF
+CASE 107
+	IF ITEM:セーラー服
+		LOCALS = セーラー服
+		LOCAL = SETFLAG_SHIRT("スカート着用", "ズリ不可", "セーラー服")
+		LOCAL:1 = SETFLAG_SKIRT("プリーツ")
+	ENDIF
+CASE 108
+	IF ITEM:巫女服
+		LOCALS = 巫女服
+		LOCAL = SETFLAG_SHIRT("スカート着用", "ズリ不可", "巫女服", "純白")
+		LOCAL:1 = SETFLAG_SKIRT("袴", "赤")
+	ENDIF
+CASE 109
+	IF ITEM:ベビードール
+		LOCALS = ベビードール
+		LOCAL = SETFLAG_SHIRT("ワンピース", "ズリ不可", "ベビードール", "腋露出", "シースルー")
+		LOCAL:1 = SETFLAG_SKIRT("ワンピース", "超ミニ", "ベビードール", "シースルー")
+	ENDIF
+CASE 110
+	IF ITEM:ウェディングドレス
+		LOCALS = ウェディングドレス
+		LOCAL = SETFLAG_SHIRT("ワンピース", "ズリ不可", "ウェディングドレス", "純白")
+		LOCAL:1 = SETFLAG_SKIRT("ワンピース", "超ロング", "ヒップボーンドレス", "純白")
+	ENDIF
+CASE 111
+	IF ITEM:ゴスロリドレス
+		LOCALS = ゴスロリドレス
+		LOCAL = SETFLAG_SHIRT("ワンピース", "ズリ不可", "ゴスロリドレス", "黒")
+		LOCAL:1 = SETFLAG_SKIRT("ワンピース", "フリル", "黒")
+	ENDIF
+CASE 112
+	IF ITEM:チアリーダー
+		LOCALS = チアリーダー
+		LOCAL = SETFLAG_SHIRT("スカート着用", "チアリーダー")
+		LOCAL:1 = SETFLAG_SKIRT("ミニ", "プリーツ")
+	ENDIF
+CASE 113
+	IF ITEM:パジャマ && TALENT:(ARG:1):小柄体型
+		LOCALS = パジャマ
+		LOCAL = SETFLAG_SHIRT("はだけ不可", "パジャマ")
+	ENDIF
+CASE 114
+	IF ITEM:パジャマ && TALENT:(ARG:1):小柄体型 && COND("脚の使用", ARG:1)
+		LOCALS = 怪獣パジャマ
+		LOCAL = SETFLAG_SHIRT("つなぎ", "はだけ不可", "パジャマ")
+		LOCAL:2 = SETFLAG_OUTER("つなぎ", "ずれ不可", "コキ不可", "パジャマ", "ズボン", "ファスナー")
+	ENDIF
+CASE 130
+	IF FLAG:401
+		LOCALS = ウェイトレス
+		LOCAL = SETFLAG_SHIRT("スカート着用", "ズリ不可", "ウェイトレス")
+		IF GETBIT(FLAG:401, 10)
+			LOCAL:1 = SETFLAG_SKIRT("エプロン", "フリル", "ミニ")
+		ELSEIF GETBIT(FLAG:401, 11)
+			LOCAL:1 = SETFLAG_SKIRT("エプロン", "フリル", "ロング")
+		ELSE
+			LOCAL:1 = SETFLAG_SKIRT("エプロン", "フリル")
+		ENDIF
+	ENDIF
+ENDSELECT
+
+IF ARG:1 > 0 && ARG:2 > 0
+	EQUIP:(ARG:1):上着 = LOCAL
+	EQUIP:(ARG:1):スカート = LOCAL:1
+	EQUIP:(ARG:1):アウター = LOCAL:2
+ENDIF
+
+RETURNF LOCALS
+
+;-------------------------------------------------
+;指示されたとおりのシャツのフラグを設定するために使う
+;-------------------------------------------------
+@SETFLAG_SHIRT(ARGS:1, ARGS:2, ARGS:3, ARGS:4, ARGS:5, ARGS:6, ARGS:7, ARGS:8, ARGS:9, ARGS:10)
+#FUNCTION
+#DIM LCOUNT
+
+LOCAL = 0
+FOR LCOUNT, 1, 11
+	ARGS = %ARGS:LCOUNT%
+	SELECTCASE ARGS
+	CASE "Ｙシャツ"
+		SETBIT LOCAL, 0
+	CASE "女教師", "スーツ"
+		SETBIT LOCAL, 1
+	CASE "着物", "和服"
+		SETBIT LOCAL, 2
+	CASE "メイド", "メイド服"
+		SETBIT LOCAL, 3
+	CASE "体操服"
+		SETBIT LOCAL, 4
+	CASE "看護婦", "ナース", "ナース服"
+		SETBIT LOCAL, 5
+	CASE "チャイナ", "チャイナ服"
+		SETBIT LOCAL, 6
+		LOCAL |= SETFLAG_COMMON("ワンピース")
+	CASE "セーラー", "セーラー服"
+		SETBIT LOCAL, 7
+	CASE "巫女", "巫女服"
+		SETBIT LOCAL, 8
+	CASE "ドレス"
+		SETBIT LOCAL, 9
+	CASE "ウェディング", "ウェディングドレス"
+		SETBIT LOCAL, 10
+		SETBIT LOCAL, 9
+	CASE "シスター", "修道服"
+		SETBIT LOCAL, 11
+	CASE "布切れ"
+		SETBIT LOCAL, 12
+	CASE "ビスチェ"
+		SETBIT LOCAL, 13
+	CASE "ベビードール"
+		SETBIT LOCAL, 14
+	CASE "スカート着用"
+		SETBIT LOCAL, 15
+	CASE "ウェイトレス"
+		SETBIT LOCAL, 16
+	CASE "ゴスロリドレス"
+		SETBIT LOCAL, 17
+	CASE "チアリーダー"
+		SETBIT LOCAL, 18
+	CASE "パジャマ"
+		SETBIT LOCAL, 19
+	CASEELSE
+		SIF STRLENS(ARGS)
+			LOCAL |= SETFLAG_COMMON(ARGS)
+	ENDSELECT
+	SIF STRLENS(ARGS:(LCOUNT + 1) ) == 0
+		RETURNF LOCAL
+NEXT
+RETURNF LOCAL
+
+;-------------------------------------------------
+;ARGのシャツが条件ARGSを満たすか確認する
+;-------------------------------------------------
+@CHECK_SHIRT(ARGS, ARG)
+#FUNCTION
+SIF ARG == 0 && TARGET
+	ARG = TARGET
+SIF EQUIP:ARG:上着 == 0
+	RETURNF 0
+IF ARGS == "はだけ可"
+	SIF SETFLAG_SHIRT("はだけた")&EQUIP:ARG:上着
+		RETURNF 0
+	SIF SETFLAG_SHIRT("はだけ不可")&EQUIP:ARG:上着
+		RETURNF 0
+	RETURNF 1
+ELSEIF (SETFLAG_SHIRT(ARGS)&EQUIP:ARG:上着) == SETFLAG_SHIRT(ARGS)
+	RETURNF 1
+ENDIF
+RETURNF 0
+

@@ -1,0 +1,382 @@
+﻿@COM145
+;剃毛
+;露出癖やマゾ度が高い場合、かなり興奮する
+
+PRINTL 剃毛
+
+;-------------------------------------------------
+;実行できるかの判定
+;-------------------------------------------------
+CALL SHOW_COM_ORDER_COM, 145
+
+;実行できない
+SIF TCVAR:28 == 0
+	RETURN 0
+;-------------------------------------------------
+;実行決定
+;-------------------------------------------------
+SIF TEQUIP:拘束
+	TCVAR:28 = MAX(TCVAR:28 - 30, 0)
+
+CALL TRAIN_MESSAGE_B
+
+;どのように剃ったか
+SELECTCASE TFLAG:16
+CASE 1
+	BASE:陰毛 = 300
+CASE 2
+	BASE:陰毛 = 200
+CASE 3
+	BASE:陰毛 = 500
+ENDSELECT
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+STR:0 = 剃毛
+
+RETURN 1
+
+
+@FLAG_COM145, ARG
+CALL SETFLAG, "剃毛フラグ", TARGET
+;対象のＶ⇔調教者の指の汚れが移動
+CALL EQ_STAIN, TARGET, PLAYER, 3, 1
+;アソコを露出させる
+CALL SETFLAG, "ボトムを露出：テキスト無し", TARGET
+;日付を5にする。上手だと日付が0になります。ツルツルに剃った場合も。
+SIF ABL:PLAYER:技巧 < 4 && COND("陰毛") > 3
+	BASE:陰毛 += 5
+
+@SOURCE_COM145, ARG
+VARSET LOCAL
+
+LOCAL:20 += 50
+LOCAL:21 += 100
+
+;欲情
+LOCAL:11 = 2000
+;露出
+LOCAL:12 = 6000
+;屈従
+LOCAL:13 = 1000
+;逸脱
+LOCAL:14 = 1000
+
+;縛って無理やり剃ると…
+SIF TEQUIP:拘束 && TCVAR:28 <= 0
+	LOCAL:14 += 3000
+
+SELECTCASE COND("陰毛")
+CASE 3
+	LOCAL:20 += 50
+	LOCAL:21 += 100
+	LOCAL:12 += 4000
+	LOCAL:13 += 1000
+	LOCAL:14 += 1000
+CASE 2
+	LOCAL:20 += 150
+	LOCAL:21 += 200
+	LOCAL:12 += 6000
+	LOCAL:13 += 1500
+	LOCAL:14 += 2000
+ENDSELECT
+
+;ABL:露出癖とマゾっ気をみる
+SELECTCASE ABL:露出癖 + ABL:マゾっ気
+CASE IS >= 9
+	LOCAL:11 += 5000
+	TIMES LOCAL:11 , 1.50
+	TIMES LOCAL:13 , 0.30
+	TIMES LOCAL:14 , 0.10
+CASE IS >= 7
+	LOCAL:11 += 3000
+	TIMES LOCAL:11 , 1.20
+	TIMES LOCAL:13 , 0.60
+	TIMES LOCAL:14 , 0.40
+CASE IS >= 5
+	LOCAL:11 += 1000
+	TIMES LOCAL:13 , 0.70
+	TIMES LOCAL:14 , 0.70
+CASE IS >= 3
+	TIMES LOCAL:11 , 0.50
+CASE 1
+	TIMES LOCAL:11 , 0.10
+	TIMES LOCAL:13 , 1.20
+	TIMES LOCAL:14 , 1.50
+CASEELSE
+	TIMES LOCAL:11 , 0.00
+	TIMES LOCAL:13 , 1.50
+	TIMES LOCAL:14 , 2.00
+ENDSELECT
+
+;PALAM:欲情をみる
+SELECTCASE PALAM:欲情
+CASE IS < 1000
+	TIMES LOCAL:14 , 1.20
+CASE IS < 3000
+	TIMES LOCAL:14 , 1.00
+CASE IS < 10000
+	TIMES LOCAL:14 , 0.90
+CASEELSE
+	TIMES LOCAL:14 , 0.80
+ENDSELECT
+
+;ビデオ撮影、館内露出、野外プレイは経験等にプラス
+IF TEQUIP:ビデオカメラ
+	TIMES LOCAL:12 , 1.50
+	TIMES LOCAL:13 , 1.50
+	TIMES LOCAL:14 , 1.50
+ENDIF
+IF TEQUIP:館内露出プレイ || TEQUIP:野外プレイ
+	TIMES LOCAL:12 , 1.50
+	TIMES LOCAL:13 , 1.50
+	TIMES LOCAL:14 , 1.50
+ENDIF
+
+CALL SOURCE_SMPLAY, "剃毛", ARG
+
+CALL CALC, "調教ソース", LOCAL:0, LOCAL:1, LOCAL:2, LOCAL:3, LOCAL:4, LOCAL:5, LOCAL:6, LOCAL:7, LOCAL:8, LOCAL:9, LOCAL:10, LOCAL:11, LOCAL:12, LOCAL:13, LOCAL:14, LOCAL:15, LOCAL:16, LOCAL:17, LOCAL:18, LOCAL:19, LOCAL:20, LOCAL:21, ARG
+
+
+@TRAIN_MESSAGE_COM145
+SELECTCASE CONDS("陰毛")
+CASE "剃り跡"
+	LOCALS = ジョリジョリした陰毛
+CASE "生えかけ"
+	LOCALS = 淡い茂み
+CASEELSE
+	IF PENIS(TARGET)
+		LOCALS = 陰毛
+	ELSE
+		LOCALS = アソコの毛
+	ENDIF
+ENDSELECT
+IF PREVCOM == 13
+	PRINTFORM %CALLNAME:PLAYER%に向けて大事な所を押し開いて\@ CHECK("陰毛管理") ? 待ち構え # 見せ \@ている
+;緊縛中
+ELSEIF GETBIT(TEQUIP:拘束, 21)
+	PRINTFORM 大きく股を開いた格好で
+	IF BIND("縄", TEQUIP:拘束)
+		PRINT 縛られている
+	ELSE
+		PRINT 拘束されている
+	ENDIF
+ELSEIF CHECK("陰毛管理") && MARK:反発刻印 < 3 && COND("脚が無い") == 0
+	PRINTFORM 股を広げて準備している
+ENDIF
+PRINTFORMW %CALLNAME:TARGET%の股間の毛を剃ります。
+PRINTFORML さて、現在の状態は[%CONDS("陰毛")%]ですが……今回はどうしよう？
+
+PRINTL  [ 0] ツルツルに剃る
+PRINTL  [ 1] 脱毛処理を施す
+SIF COND("陰毛") >= 6
+	PRINTL  [ 2] 陰毛の形を整える
+PRINTL [100] 戻る
+
+$INPUT_LOOP
+INPUT
+
+TFLAG:16 = RESULT + 1
+
+IF RESULT == 100
+	TFLAG:14 = 1
+	TFLAG:16 = 0
+	RETURN 0
+ELSEIF RESULT == 0 || RESULT == 1
+	IF PENIS(TARGET)
+		PRINTFORM %CALLNAME:PLAYER%は%CALLNAME:TARGET%の%LOCALS%を
+		IF TFLAG:16 == 2
+			PRINTFORMW \@ABL:PLAYER:技巧 >= 4 ? 念入りに #  \@脱毛した…
+		ELSE
+			PRINTFORMW \@ABL:PLAYER:技巧 >= 4 ? 綺麗に # \@剃り落とした…
+		ENDIF
+	ELSE
+		PRINTFORM %CALLNAME:PLAYER%は%CALLNAME:TARGET%の%LOCALS%を
+		IF TFLAG:16 == 2
+			PRINTFORM \@ABL:PLAYER:技巧 >= 4 ? 念入りに #  \@脱毛し、
+		ELSE
+			PRINTFORM \@ABL:PLAYER:技巧 >= 4 ? 綺麗に # 丁寧に \@剃り落とし、
+		ENDIF
+		IF TALENT:クリピアス + TALENT:ラビアピアス && COND("陰毛") >= 6 && RAND:3 == 0
+			IF TALENT:恥じらい && RAND:3 == 0
+				PRINT 恥ずかしい
+			ELSEIF RAND:3 == 0
+				IF TALENT:クリピアス && RANDIF(1, TALENT:ラビアピアス)
+					IF PENIS(TARGET)
+						PRINT 陰茎を装飾している
+					ELSE
+						PRINT クリトリスを貫いている
+					ENDIF
+				ELSE
+					PRINT 陰唇を
+					IF AGE(TARGET) >= 4
+						PRINT 垂れ下げている
+					ELSE
+						PRINT 飾っている
+					ENDIF
+				ENDIF
+			ELSEIF RAND:2
+				PRINT 普通ではありえない場所につけられた
+			ELSE
+				PRINT 淫靡な
+			ENDIF
+			PRINTFORMW ピアスがよく見えるようにした…
+		ELSEIF TALENT:恥じらい && COND("陰毛") >= 6 && COND("脚が無い") == 0 && RAND:3 == 0
+			PRINTFORMW 脚をちょっと開いただけで恥ずかしい部分が丸見えになってしまう状態にした…
+		ELSEIF RAND:2 || COND("陰毛") < 6
+			IF RAND:2
+				IF AGE(TARGET) <= 2
+					PRINT 剥き卵のように
+				ELSE
+					PRINT 子供のように
+				ENDIF
+				PRINTFORMW ツルツルにした…
+			ELSE
+				IF TALENT:小柄体型
+					PRINT 小さな身体によく似合う
+				ELSEIF AGE(TARGET) >= 4
+					PRINT 成熟した性器とのアンバランスさが興奮する
+				ELSE
+					PRINT 美しい曲線を観賞しやすい
+				ENDIF
+				PRINTFORMW ツルツルの状態にした…
+			ENDIF
+		ELSE
+			IF AGE(TARGET) >= 4
+				IF EXP:Ｖ経験 >= 1000
+					PRINT 陰唇のはみ出る
+				ELSEIF EXP:Ｖ経験 >= 300
+					PRINT 僅かに陰唇のはみ出る
+				ELSE
+					PRINT ふっくらとした
+				ENDIF
+			ELSEIF TALENT:小柄体型 && RAND:3
+				PRINT ぷにぷにの
+			ELSE
+				PRINT 可愛い
+			ENDIF
+			PRINTFORMW 割れ目がよく見えるようにした…
+		ENDIF
+		IF TALENT:力持ち && AGE(TARGET) >= 2 && COND("脚が無い") == 0
+			PRINTFORM 同時に視界に入ってくる
+			IF RAND:2
+				PRINTFORM 引き締まった
+			ELSE
+				PRINTFORM しなやかな
+			ENDIF
+			IF RAND:2
+				PRINTFORM 下腹部
+			ELSE
+				PRINTFORM フトモモ
+			ENDIF
+			PRINTFORM との相乗効果か、
+			IF RAND:2
+				PRINTFORMW なんとも素晴らしい眺めです
+			ELSE
+				PRINTFORMW つい触りたくなってしまうような魅力に溢れています
+			ENDIF
+		ENDIF
+	ENDIF
+ELSEIF RESULT == 2 && COND("陰毛") >= 6
+	;陰毛の状態リセット
+	CALL DEL_CEVENT_GROUP, "陰毛の形"
+	CALL DEL_CEVENT_GROUP, "陰毛の名称"
+
+	IF PENIS(TARGET)
+		PRINTFORMW %CALLNAME:PLAYER%は%CALLNAME:TARGET%の陰毛の形を\@ABL:PLAYER:技巧 >= 4 ? 綺麗に #  \@整えた…
+	ELSE
+		PRINTFORML どのような形にしますか？
+		PRINTFORML  [ 0] ▼ 逆三角形
+		PRINTFORML  [ 1] ● 卵型
+		PRINTFORML  [ 2] ■ 四角形
+		PRINTFORM  [ 3] 
+		CALL HEARTMARK
+		PRINTFORML  ハート型
+		PRINTFORML  [90] 直接入力する
+		PRINTFORML [100] 特にこだわらない（記述しません）
+
+		CALL INPUT_SELECT, 4, 90, 100
+
+		SELECTCASE RESULT
+		CASE 100
+
+		CASE 0
+			CALL SET_CEVENT, "陰毛の形：▼"
+			CALL SET_CEVENT, "陰毛の名称：逆三角形"
+		CASE 1
+			CALL SET_CEVENT, "陰毛の形：●"
+			CALL SET_CEVENT, "陰毛の名称：卵型"
+		CASE 2
+			CALL SET_CEVENT, "陰毛の形：■"
+			CALL SET_CEVENT, "陰毛の名称：四角形"
+		CASE 3
+			CALL SET_CEVENT, "陰毛の形：HEARTMARK"
+			CALL SET_CEVENT, "陰毛の名称：ハート型"
+		CASE 90
+			PRINTL 全角で８文字以下（半角なら16文字まで）の文字列を入力してください
+			PRINTL ("〜に剃り整えられた"等のように使われても違和感が無いもの推奨)
+			PRINTL また、何も入力しない場合は特にこだわらない事とします
+			CALL INPUTS_SELECT, 16
+
+			LOCALS = 陰毛の形：%RESULTS%
+			CALL SET_CEVENT, LOCALS
+		ENDSELECT
+
+		PRINTFORMW %CALLNAME:PLAYER%は%CALLNAME:TARGET%の大陰唇を覆う毛をしっかり剃り落とし、恥丘を飾る陰毛の形を\@ STRLENS(CEVENTS("陰毛の名称") ) ? %CEVENTS("陰毛の名称")% # 綺麗 \@に剃り整えた…
+	ENDIF
+ELSE
+	GOTO INPUT_LOOP
+ENDIF
+
+
+@COM_ORDER_COM145, ARG
+VARSET LOCAL
+LOCALS = 
+
+;すべての命令に共通の要素を考慮
+;(従順が高いと命令に従いやすいなど)
+CALL COM_ORDER, ARG
+
+LOCAL = RESULT
+
+;ABL:露出癖
+IF ABL:露出癖
+	LOCAL += ABL:露出癖 * 5
+	LOCALS = %LOCALS% + %ABLNAME:7%LV{ABL:露出癖}({ABL:露出癖 * 5})
+ENDIF
+;ABL:マゾっ気
+IF ABL:マゾっ気
+	LOCAL += ABL:マゾっ気 * 5
+	LOCALS = %LOCALS% + %ABLNAME:8%LV{ABL:マゾっ気}({ABL:マゾっ気 * 5})
+ENDIF
+;恥じらい
+IF TALENT:恥じらい
+	LOCAL -= 15
+	LOCALS = %LOCALS% - %TALENTNAME:35%(15)
+ENDIF
+;恥薄い
+IF TALENT:恥薄い
+	LOCAL += 5
+	LOCALS = %LOCALS% + %TALENTNAME:36%(5)
+ENDIF
+;倒錯的
+IF TALENT:倒錯的
+	LOCAL += 10
+	LOCALS = %LOCALS% + %TALENTNAME:80%(10)
+ENDIF
+;縄
+IF TEQUIP:拘束
+	LOCAL += 30
+	LOCALS = %LOCALS% + 拘束中(30)
+ENDIF
+;ビデオ撮影
+IF TEQUIP:ビデオカメラ
+	LOCAL -= 20
+	LOCALS = %LOCALS% - 撮影中(20)
+ENDIF
+
+;合計を表示(60以上で実行)
+CALL PRINT_COM_ORDER_COM, LOCALS, ARG, LOCAL, 60
+
+RETURN RESULT

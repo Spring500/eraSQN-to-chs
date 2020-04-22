@@ -1,0 +1,602 @@
+﻿;-----------------------------------------------------------
+;キャラの登録番号・名前・体力・その他ステータスの整形表示を行う
+;-----------------------------------------------------------
+@PRINT_NUM_NAME, ARGS, ARG
+;登録番号付き名前表示
+SELECTCASE ARG
+CASE ASSI
+	PRINT ○
+CASE TARGET
+	PRINT ＞
+CASEELSE
+	PRINT 　
+ENDSELECT
+
+LOCALS = 
+SELECTCASE ARGS
+CASE "助手変更"
+	IF (CONFIG("助手への指示") && ABL:ARG:助手 == 0) || COND("助手可能", ARG) == 0
+		LOCALS = ×
+		SETCOLOR DEF_COLOR("灰色")
+	ENDIF
+CASE "売却"
+	IF TALENT:ARG:相思相愛
+		LOCALS = 相
+	ELSEIF TALENT:ARG:誓約
+		LOCALS = 誓
+	ELSEIF COND("売却可能", ARG) == 0
+		LOCALS = ×
+	ENDIF
+CASE "淫紋"
+	SIF COND("淫紋刻印可能", ARG) == 0
+		LOCALS = ×
+CASE "巨根薬", "縮根薬", "剥皮薬", "伸皮薬", "豊胸薬", "貧乳薬", "桃尻薬", "小尻薬", "巨人の薬", "小人の薬"
+	SIF COND(ARGS, ARG) == 0
+		LOCALS = ×
+ENDSELECT
+SIF LOCALS == ""
+	LOCALS = {ARG, 2}
+
+PRINTFORM [%LOCALS%]
+
+SELECTCASE ARGS
+CASE "誓約の指輪"
+	RESULT = 0
+	TRYCALLFORM IS_SINGLE_ENDING_K{NO:ARG}_{CFLAG:ARG:209}
+	SIF RESULT
+		SETCOLOR DEF_COLOR("ハートピンク")
+CASE "能力表示", "３サイズ閲覧"
+	IF STATE("悪酔い", ARG)
+		SETCOLOR DEF_COLOR("青")
+	ELSEIF STATE("ドランク", ARG)
+		SETCOLOR DEF_COLOR("ハートピンク")
+	ENDIF
+ENDSELECT
+
+PRINTFORM %TEXT_LJ(NAME:ARG, 17)%
+
+RESETCOLOR
+
+SELECTCASE ARGS
+CASE "体力", "能力表示", "調教対象変更"
+	;体力の表示
+	SIF BASE:ARG:体力 < 0
+		BASE:ARG:体力 = 0
+	CALL PRINT_BAR, "減少ゲージ", BASE:ARG:体力, MAXBASE:ARG:体力, 5
+	PRINTFORM {100*BASE:ARG:体力/MAXBASE:ARG:体力, 3}\%
+CASE "体力と精力"
+	;体力の表示
+	SIF BASE:ARG:体力 < 0
+		BASE:ARG:体力 = 0
+	PRINTPLAINFORM {BASE:ARG:体力, 5}/{MAXBASE:ARG:体力, 5}
+	CALL PRINT_BAR, "減少ゲージ", BASE:ARG:体力, MAXBASE:ARG:体力, 5
+	PRINTFORM {100*BASE:ARG:体力/MAXBASE:ARG:体力, 3}\% 
+	;精力の表示
+	SIF BASE:ARG:精力 < 0
+		BASE:ARG:精力 = 0
+	PRINTFORM {BASE:ARG:精力, 3}/{MAXBASE:ARG:精力, 3}
+	CALL PRINT_BAR, "減少ゲージ", BASE:ARG:精力, MAXBASE:ARG:精力, 5
+	PRINTFORM {100*BASE:ARG:精力/MAXBASE:ARG:精力, 3}\%
+	SIF MAXBASE:ARG:ストック
+		PRINTFORM ×({BASE:ARG:ストック}/{MAXBASE:ARG:ストック})
+	PRINTL 
+	RETURN 0
+CASE "３サイズ閲覧"
+	CALL NEW_PRINT_3SIZE, ARG, "一覧表示"
+	RETURN 0
+CASE "探索"
+	CALL TEXT, "探索能力", ARG
+	RETURN 0
+CASE "売却"
+	;PRINTFORM  \@ TALENT:ARG:恋慕 ? 恋 # -- \@ \@ TALENT:ARG:淫乱 ? 淫 # -- \@ 
+
+	;価値表示
+	LOCAL = TARGET
+
+	TARGET = ARG
+	CALL PRIZE_CHARA, 1
+
+	TARGET = LOCAL
+	PRINTL 
+	RETURN 0
+CASE "助手変更"
+	SIF (CONFIG("助手への指示") && ABL:ARG:助手 == 0) || COND("助手可能", ARG) == 0
+		SETCOLOR DEF_COLOR("灰色")
+	IF CONFIG("助手への指示")
+		CALL ASSI_LIST_INDICATE, ARG
+		PRINTL 
+	ELSEIF CONFIG("助手の探索能力表示")
+		CALL TEXT, "探索能力", ARG
+	ELSE
+		CALL ASSI_LIST_ABL, ARG
+		PRINTL 
+	ENDIF
+	RESETCOLOR
+	RETURN 0
+CASE "コス確認"
+	CALL PRINT_DRESS, ARG, "短縮表示"
+	PRINTL 
+	RETURN 0
+CASE "避妊措置"
+	CALL PRINT_N, ARG
+	IF TALENT:ARG:避妊の護符
+		SETCOLOR DEF_COLOR("イエロー")
+		PRINTFORM  避妊の護符　　 
+		RESETCOLOR
+	ELSE
+		PRINTFORM  避妊薬:\@ TALENT:ARG:避妊薬服用 ? {TALENT:ARG:避妊薬服用, 3}日分 # ------- \@ 
+	ENDIF
+	PRINTFORM \@ TALENT:ARG:処女 ? 処女 # ---- \@
+	CALL PRINT_E, ARG, ARGS
+	PRINTL 
+	RETURN 0
+CASE "喫茶店"
+	SELECTCASE CFLAG:ARG:31
+	CASE 0
+		PRINT  自由にさせる
+	CASE 1
+		PRINT  　フェラまで
+	CASE 2
+		PRINT  おさわりまで
+	CASE 3
+		PRINT  パンチラまで
+	CASE 10
+		PRINT  Ｈなこと禁止
+	CASE 99
+		PRINT  バイトは禁止
+	ENDSELECT
+CASE "ふたなり薬"
+	PRINTFORM  \@ TALENT:ARG:ふたなり ? ふたなり # オンナ　 \@
+CASE "青いドロップ"
+	PRINTFORM  \@ TALENT:ARG:母乳体質 ? 母乳 # ---- \@
+	IF COND("真性陥没乳首", ARG)
+		PRINTFORM  真性陥没
+	ELSEIF COND("仮性陥没乳首", ARG)
+		PRINTFORM  仮性陥没
+	ELSE
+		PRINTFORM  --------
+	ENDIF
+CASE "赤いドロップ"
+	PRINTFORM  \@ TALENT:ARG:処女 ? ------ # 非処女 \@ \@ TALENT:ARG:母乳体質 ? 母乳 # ---- \@
+CASE "黒いドロップ"
+	IF TALENT:ARG:ふたなり
+		PRINT  ふたなり
+	ELSEIF TALENT:ARG:オトコ
+		PRINT  オトコ　
+	ELSE
+		PRINT  オンナ　
+	ENDIF
+CASE "白いドロップ"
+	PRINTFORM  \@ TALENT:ARG:おもらし癖 ? 尿 # -- \@ \@ TALENT:ARG:Ｖ損傷 ? Ｖ傷 # ---- \@ \@ TALENT:ARG:Ａ損傷 ? Ａ傷 # ---- \@
+CASE "淫紋"
+	SELECTCASE MARK:ARG:淫紋
+	CASE 1 TO 4
+		SETCOLOR DEF_COLOR("ハートピンク")
+	;ちょっと目に優しくない色かもしれない
+	;CASE 4
+	;	SETCOLOR DEF_COLOR("ショッキングピンク")
+	ENDSELECT
+
+	IF TALENT:ARG:オトコ
+		PRINTFORM  -------
+	ELSE
+		PRINTFORM  淫紋LV{MARK:ARG:淫紋}
+	ENDIF
+
+	RESETCOLOR
+
+	PRINTFORM  \@ TALENT:ARG:処女 ? 処女 # ---- \@
+CASE "調教知識"
+	IF TALENT:ARG:調教知識
+		PRINTFORML %TALENT_NAME(185, TALENT:ARG:調教知識, ARG)%
+	ELSE
+		PRINTFORML 無し
+	ENDIF
+	RETURN 0
+CASE "ペニス", "巨根薬", "縮根薬", "剥皮薬", "伸皮薬"
+	IF GETBIT(TALENT:ARG:ペニス, 5)
+		PRINT  竜並
+	ELSEIF GETBIT(TALENT:ARG:ペニス, 4)
+		PRINT  腕並
+	ELSEIF GETBIT(TALENT:ARG:ペニス, 3)
+		PRINT  馬並
+	ELSEIF GETBIT(TALENT:ARG:ペニス, 2)
+		PRINT  巨根
+	ELSEIF GETBIT(TALENT:ARG:ペニス, 1)
+		PRINT  短小
+	ELSEIF GETBIT(TALENT:ARG:ペニス, 0)
+		PRINT  普通
+	ENDIF
+	IF GETBIT(TALENT:ARG:ペニス, 12)
+		PRINT  真性包茎
+	ELSEIF GETBIT(TALENT:ARG:ペニス, 11)
+		PRINT  仮性包茎
+	ELSE
+		PRINT  ズル剥け
+	ENDIF
+CASE "バスト", "豊胸薬", "貧乳薬"
+	IF TALENT:ARG:巨乳 >= 3
+		PRINT  超乳 
+	ELSEIF TALENT:ARG:巨乳 == 2
+		PRINT  爆乳 
+	ELSEIF TALENT:ARG:巨乳
+		PRINT  巨乳 
+	ELSEIF TALENT:ARG:貧乳
+		PRINT  貧乳 
+	ELSE
+		PRINT  並乳 
+	ENDIF
+	IF CONFIG("３サイズ")
+		CALL NEW_PRINT_3SIZE, ARG, "一覧表示"
+		RETURN 0
+	ENDIF
+CASE "ヒップ", "桃尻薬", "小尻薬"
+	IF COND("巨尻", ARG) >= 3
+		PRINT 超尻 
+	ELSEIF COND("巨尻", ARG) == 2
+		PRINT 爆尻 
+	ELSEIF COND("巨尻", ARG)
+		PRINT 巨尻 
+	ELSEIF COND("小尻", ARG)
+		PRINT 小尻 
+	ELSE
+		PRINT 並尻 
+	ENDIF
+	IF CONFIG("３サイズ")
+		CALL NEW_PRINT_3SIZE, ARG, "一覧表示"
+		RETURN 0
+	ENDIF
+CASE "身長", "巨人の薬", "小人の薬"
+	IF TALENT:ARG:長身
+		PRINT  長身 
+	ELSEIF TALENT:ARG:小柄体型
+		PRINT  小柄 
+	ELSE
+		PRINT  平均 
+	ENDIF
+	IF CONFIG("３サイズ")
+		CALL NEW_PRINT_3SIZE, ARG, "一覧表示"
+		RETURN 0
+	ENDIF
+CASE "肌の色", "虹の薬"
+	IF TALENT:ARG:肌の色
+		PRINTFORM  %TEXT_RJ(CONDS("肌の色", ARG), 6)%
+	ELSE
+		PRINTFORM    普通
+	ENDIF
+CASE "繰越キャラ"
+	PRINT  
+	IF CFLAG:ARG:6
+		SETCOLOR DEF_COLOR("ハートピンク")
+		CALL HEARTMARK
+		RESETCOLOR
+	ELSE
+		PRINT -
+	ENDIF
+CASE "アナライズ"
+	SELECTCASE COND("欲求不満", ARG)
+	CASE 2
+		CALL PRINT_BAR, "桃色ゲージ", BASE:ARG:欲求不満, 30, 5
+	CASE 1
+		CALL PRINT_BAR, "黄色ゲージ", BASE:ARG:欲求不満, 30, 5
+	CASEELSE
+		CALL PRINT_BAR, "白色ゲージ", BASE:ARG:欲求不満, 30, 5
+	ENDSELECT
+
+	;好感度が2500以上
+	SIF CFLAG:ARG:2 >= 2500
+		SETCOLOR DEF_COLOR("ハートピンク")
+	PRINTFORM  {CFLAG:ARG:2, 8} 
+	RESETCOLOR
+
+	SIF COND("ご無沙汰", ARG)
+		SETCOLOR DEF_COLOR("暗黄色")
+	PRINTFORM {COND("調教空白期間", ARG), 4}日 
+	RESETCOLOR
+
+	LOCAL = TARGET
+	TARGET = ARG
+	CALL ANALYSIS_CALC_SB, 1
+	TARGET = LOCAL
+	RETURN 0
+CASE "一晩開放許可"
+	SELECTCASE COND("外出許可", ARG)
+	CASE 0
+		PRINTFORM 　　外出させない
+	CASE 1
+		SETCOLOR DEF_COLOR("ハートピンク")
+		PRINTFORM 好きに外出させる
+	CASE 2
+		SETCOLOR DEF_COLOR("黄色")
+		PRINTFORM 避妊状態ならＯＫ
+	CASE 3
+		SETCOLOR DEF_COLOR("イエロー")
+		PRINTFORM 　危険な日はダメ
+	CASE 4
+		SETCOLOR DEF_COLOR("ピンク")
+		PRINTFORM 危険な日のみ許す
+	ENDSELECT
+	RESETCOLOR
+CASE "陰毛＆腋毛"
+	PRINTFORML 陰毛：%TEXT_LJ(CONDS("陰毛", ARG), 10)%　\@ CONFIG("腋毛") ? %TEXTS("腋")%毛：%CONDS("腋毛", ARG)% # \@
+	RETURN 0
+CASE "乳首選択"
+	SELECTCASE COND("乳首肥大", ARG)
+	CASE 3
+		SETCOLOR DEF_COLOR("ショッキングピンク")
+		LOCALS = 乳首肥大LV３/{ARG}
+		PRINTBUTTON " LV３", LOCALS
+	CASE 2
+		SETCOLOR DEF_COLOR("ピンク")
+		LOCALS = 乳首肥大LV２/{ARG}
+		PRINTBUTTON " LV２", LOCALS
+	CASE 1
+		SETCOLOR DEF_COLOR("ハートピンク")
+		LOCALS = 乳首肥大LV１/{ARG}
+		PRINTBUTTON " LV１", LOCALS
+	CASE 0
+		LOCALS = 乳首肥大無し/{ARG}
+		PRINTBUTTON " 無し", LOCALS
+	ENDSELECT
+	RESETCOLOR
+
+	IF COND("真性陥没乳首", ARG)
+		SETCOLOR DEF_COLOR("ピンク")
+		LOCALS = 真性陥没/{ARG}
+		PRINTBUTTON " 真性", LOCALS
+	ELSEIF COND("仮性陥没乳首", ARG)
+		SETCOLOR DEF_COLOR("ハートピンク")
+		LOCALS = 仮性陥没/{ARG}
+		PRINTBUTTON " 仮性", LOCALS
+	ELSE
+		LOCALS = 普通乳首/{ARG}
+		PRINTBUTTON " 露出", LOCALS
+	ENDIF
+	RESETCOLOR
+
+	SELECTCASE COND("巨乳輪", ARG)
+	CASE 3
+		SETCOLOR DEF_COLOR("ショッキングピンク")
+		LOCALS = 巨乳輪LV３/{ARG}
+		PRINTBUTTON " LV３", LOCALS
+	CASE 2
+		SETCOLOR DEF_COLOR("ピンク")
+		LOCALS = 巨乳輪LV２/{ARG}
+		PRINTBUTTON " LV２", LOCALS
+	CASE 1
+		SETCOLOR DEF_COLOR("ハートピンク")
+		LOCALS = 巨乳輪LV１/{ARG}
+		PRINTBUTTON " LV１", LOCALS
+	CASE 0
+		LOCALS = 巨乳輪無し/{ARG}
+		PRINTBUTTON " 普通", LOCALS
+	ENDSELECT
+	RESETCOLOR
+
+	CALL PRINT_T, ARG
+	CALL PRINT_N, ARG
+	PRINTL 
+	RETURN 0
+ENDSELECT
+
+CALL PRINT_T, ARG
+
+CALL PRINT_E, ARG, ARGS
+
+CALL PRINT_N, ARG
+
+PRINTL 
+
+;-----------------------------------------------------------
+;キャラのステータス表示2
+;-----------------------------------------------------------
+@PRINT_T, ARG
+IF TALENT:ARG:オンナ
+	PRINT  ♀
+ELSEIF TALENT:ARG:ふたなり
+	PRINT  双
+ELSEIF TALENT:ARG:オトコ
+	PRINT  ♂
+ENDIF
+
+;助手・売却の表示
+;IF COND("助手可能", ARG)
+;	PRINT 助
+;ELSEIF COND("売却可能", ARG)
+;	PRINT 売
+;ELSE
+;	PRINT --
+;ENDIF
+
+;恋慕・淫乱の表示
+IF TALENT:ARG:相思相愛
+	PRINT 愛
+ELSEIF TALENT:ARG:恋慕
+	PRINT 恋
+ELSE
+	PRINT --
+ENDIF
+
+IF TALENT:ARG:淫乱
+	PRINT 淫
+ELSE
+	PRINT --
+ENDIF
+
+;特化部位の表示
+IF TALENT:ARG:淫壷
+	PRINT 壷
+ELSE
+	PRINT --
+ENDIF
+IF TALENT:ARG:尻穴狂い
+	PRINT 尻
+ELSE
+	PRINT --
+ENDIF
+IF TALENT:ARG:淫乳
+	PRINT 乳
+ELSE
+	PRINT --
+ENDIF
+IF TALENT:ARG:淫核
+	PRINT 核
+ELSE
+	PRINT --
+ENDIF
+IF TALENT:ARG:蕩唇
+	PRINT 唇
+ELSE
+	PRINT --
+ENDIF
+IF TALENT:ARG:尿道狂い
+	PRINT 尿
+ELSE
+	PRINT --
+ENDIF
+IF MARK:ARG:淫紋
+	PRINT 紋
+ELSE
+	PRINT --
+ENDIF
+
+
+@PRINT_E, ARG, ARGS
+SELECTCASE ARGS
+CASE "体力"
+	PRINTFORM  \@ COND("フロア店員", ARG) ? 喫 # -- \@ \@ COND("外出許可", ARG) ? 外 # -- \@
+	PRINTFORM  \@ COND("温泉旅行同行可能", ARG) ? 旅 # -- \@ \@ TALENT:ARG:お気に入り ? ☆ # -- \@
+CASE "調教対象変更", "避妊措置"
+	SIF ARGS == "調教対象変更"
+		PRINTFORM  \@ TALENT:ARG:お気に入り ? ☆ # -- \@
+	SELECTCASE COND("欲求不満", ARG)
+	CASE 2
+		SETCOLOR DEF_COLOR("ハートピンク")
+		PRINTFORM  欲求不満
+	CASE 1
+		SETCOLOR DEF_COLOR("イエロー")
+		PRINTFORM  欲求不満
+	CASEELSE
+		IF COND("ご無沙汰", ARG)
+			SETCOLOR DEF_COLOR("暗黄色")
+			PRINTFORM  ご無沙汰
+		ELSE
+			PRINTFORM  --------
+		ENDIF
+	ENDSELECT
+	RESETCOLOR
+CASE "一晩開放許可"
+	PRINTFORM  \@ COND("フロア店員", ARG) ? 喫 # -- \@ \@ TALENT:ARG:お気に入り ? ☆ # -- \@
+CASEELSE
+	PRINTFORM  \@ COND("フロア店員", ARG) ? 喫 # -- \@ \@ COND("外出許可", ARG) ? 外 # -- \@ \@ TALENT:ARG:お気に入り ? ☆ # -- \@
+ENDSELECT
+
+@PRINT_N, ARG
+IF CONFIG("妊娠パッチ")
+	;表示ズレ対策（「＋危」が黄色版）
+	SETCOLOR SETCOLOR_DUMMY()
+	IF TALENT:ARG:オトコ
+		PRINTFORM  ------
+	ELSEIF BASE:ARG:育児中
+		PRINTFORM  子
+		IF TALENT:ARG:妊娠 == 3
+			PRINTFORM ＋産
+		ELSEIF TALENT:ARG:妊娠 == 2
+			PRINTFORM ＋臨
+		ELSEIF TALENT:ARG:妊娠
+			PRINTFORM ＋妊
+		;ELSEIF COND("妊娠中", ARG)
+		;	PRINTFORM ＋潜
+		ELSEIF COND("発情期", ARG)
+			SETCOLOR DEF_COLOR("ハートピンク")
+			PRINTFORM ＋発
+		ELSEIF COND("着床確認", ARG)
+			SETCOLOR DEF_COLOR("ハートピンク")
+			PRINTFORM ＋着
+		ELSEIF COND("避妊中", ARG)
+			PRINTFORM ＋避
+		ELSEIF COND("安全日", ARG)
+			PRINTFORM ＋安
+		ELSEIF COND("排卵中", ARG)
+			PRINT ＋
+			SETCOLOR DEF_COLOR("ハートピンク")
+			PRINTFORM 危
+		ELSEIF COND("危険日", ARG)
+			PRINT ＋
+			SETCOLOR DEF_COLOR("イエロー")
+			PRINTFORM 危
+		ELSE
+			PRINTFORM 育て
+		ENDIF
+	ELSEIF TALENT:ARG:妊娠 == 3
+		PRINTFORM  出産日
+	ELSEIF TALENT:ARG:妊娠 == 2
+		PRINTFORM   臨月 
+	ELSEIF TALENT:ARG:妊娠
+		PRINTFORM  妊娠中
+	;ELSEIF COND("妊娠中", ARG)
+	;	PRINTFORM  潜伏期
+	;ELSEIF TALENT:ARG:魔導人形
+	;	PRINTFORM  ×妊娠
+	ELSEIF COND("発情期", ARG)
+		SETCOLOR DEF_COLOR("ハートピンク")
+		PRINTFORM  発情期
+	ELSEIF COND("着床確認", ARG)
+		SETCOLOR DEF_COLOR("ハートピンク")
+		PRINTFORM  着床
+		CALL HEARTMARK
+		PRINT  
+	ELSEIF COND("避妊中", ARG)
+		PRINTFORM  避妊中
+	ELSEIF COND("安全日", ARG)
+		PRINTFORM  安全日
+	ELSEIF COND("排卵中", ARG)
+		SETCOLOR DEF_COLOR("ハートピンク")
+		PRINTFORM  危険日
+	ELSEIF COND("危険日", ARG)
+		SETCOLOR DEF_COLOR("イエロー")
+		PRINTFORM  危険日
+	ELSE
+		PRINTFORM  ------
+	ENDIF
+	RESETCOLOR
+ENDIF
+
+;胎内の精液量
+IF TALENT:ARG:オトコ == 0
+	PRINT  
+	CALL PRINT_BAR, "白色ゲージ",COND("胎内の精液量", ARG), 100000, 5
+	;PRINTFORM {COND("胎内の精液量", ARG)}p
+ENDIF
+
+;妊娠デバッグ用表示
+IF 0
+	IF BASE:ARG:育児中
+		PRINTFORM {GETBITS(BASE:ARG:育児中, 0, 5), 3}
+		IF COND("育児中：育児終了", ARG)
+			PRINT / 0
+		ELSE
+			PRINT /14
+		ENDIF
+	ELSE
+		PRINTFORM  --/--
+	ENDIF
+	IF COND("妊娠中", ARG)
+		PRINTFORM {COND("妊娠中：各イベント進行度", ARG), 3}
+		IF COND("妊娠中：分娩", ARG)
+			PRINTFORM / 0
+		ELSEIF COND("妊娠中：分娩直前", ARG)
+			PRINTFORM / 1
+		ELSEIF COND("妊娠中：臨月", ARG)
+			PRINTFORM / 3
+		ELSEIF COND("妊娠中：妊娠発覚済み", ARG)
+			PRINTFORM /11
+		ELSEIF COND("妊娠中：妊娠発覚直前", ARG)
+			PRINTFORM / 0
+		ELSE
+			PRINTFORM / 4
+		ENDIF
+	ELSE
+		PRINTFORM  --/--
+	ENDIF
+ENDIF

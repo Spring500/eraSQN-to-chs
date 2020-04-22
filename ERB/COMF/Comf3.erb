@@ -1,0 +1,1184 @@
+﻿@COM3
+;自慰
+;バイブ、アナルバイブ、ビデオ撮影の時に内容変化
+CALL PRINT_TRAIN_NAME(SELECTCOM)
+
+;-------------------------------------------------
+;実行できるかの判定
+;-------------------------------------------------
+CALL SHOW_COM_ORDER_COM, 3
+
+;実行できない
+IF TCVAR:28 == 0
+	PRINTFORML %CALLNAME:TARGET%に自慰を命令してみたが拒否された。もう少し調教が必要なようだ。
+	RETURN 0
+ENDIF
+;-------------------------------------------------
+;実行決定
+;-------------------------------------------------
+CALL TRAIN_MESSAGE_B
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+STR:0 = %STR:2%
+
+;-------------------------------------------------
+;射精チェック
+;-------------------------------------------------
+IF CHECK_COM("フェラ自慰")
+	SELECTCOM = 91
+	CALL SAMEN_CHECK, 10
+	SELECTCOM = 3
+ENDIF
+
+RETURN 1
+
+@FLAG_COM3, ARG
+SIF CHECK_COM("フェラ自慰")
+	CALL FLAG_COM91, 10
+CALL SETFLAG, "自慰フラグ", TARGET
+IF GETBIT(CHECK_ONANIE(SELECTCOM), 0)
+	CALL EQ_STAIN, TARGET, TARGET, 1, 3
+	SIF PENIS(TARGET)
+		CALL EQ_STAIN, TARGET, TARGET, 1, 2
+ENDIF
+SIF GETBIT(CHECK_ONANIE(SELECTCOM), 3)
+	CALL EQ_STAIN, TARGET, TARGET, 1, 5
+IF GETBIT(CHECK_ONANIE(SELECTCOM), 1)
+	SIF TEQUIP:バイブ
+		CALL FLAG_COM31, 30
+	CALL EQ_STAIN, TARGET, TARGET, 1, 3
+ENDIF
+IF GETBIT(CHECK_ONANIE(SELECTCOM), 2)
+	SIF TEQUIP:アナルバイブ
+		CALL SOURCE_COM33, 30
+	CALL EQ_STAIN, TARGET, TARGET, 1, 4
+ENDIF
+;シャワーオナニーの場合汚れをリセット、各種潤滑半分。
+IF TEQUIP:シャワー == 1
+	CALL RESET_STAIN_EX, "全部", TARGET
+	PALAM:Ｖ潤 /= 2
+	PALAM:Ａ潤 /= 2
+	PALAM:Ｐ潤 /= 2
+ENDIF
+
+@SOURCE_COM3, ARG
+SIF CHECK_COM("フェラ自慰")
+	CALL SOURCE_COM91, 10
+
+VARSET LOCAL
+
+LOCAL:20 += 30
+LOCAL:21 += 80
+
+;ABL:技巧をみる
+LOCAL:4 = 100 + ABL:技巧*100
+
+;ABL:露出癖をみる
+SELECTCASE ABL:露出癖
+CASE 0
+	LOCAL:12 = 2000
+	LOCAL:13 = 500
+	LOCAL:14 = 800
+CASE 1
+	LOCAL:12 = 2300
+	LOCAL:13 = 800
+	LOCAL:14 = 600
+CASE 2
+	LOCAL:12 = 2600
+	LOCAL:13 = 1200
+	LOCAL:14 = 400
+CASE 3
+	LOCAL:12 = 2900
+	LOCAL:13 = 1900
+	LOCAL:14 = 200
+CASE 4
+	LOCAL:12 = 3200
+	LOCAL:13 = 2500
+	LOCAL:14 = 50
+CASEELSE
+	LOCAL:12 = 3500
+	LOCAL:13 = 3000
+	LOCAL:14 = 0
+ENDSELECT
+;公開のときは露出のSOURCE増加
+SIF TEQUIP:ビデオカメラ
+	TIMES LOCAL:12, 1.50
+
+IF GETBIT(CHECK_ONANIE(SELECTCOM), 0)
+	LOCAL:0 = CALCF("Ｃ刺激", 1)
+	;シャワー使用中
+	SIF TEQUIP:シャワー
+		LOCAL:0 += 200
+	;オナホ自慰
+	SIF GETBIT(CHECK_ONANIE(SELECTCOM), 14)
+		CALL SOURCE_COM37, 30
+ENDIF
+
+SIF GETBIT(CHECK_ONANIE(SELECTCOM), 3)
+	LOCAL:17 = CALCF("Ｂ刺激", 1)
+
+IF GETBIT(CHECK_ONANIE(SELECTCOM), 1)
+	LOCAL:1 = CALCF("Ｖ刺激", 1)
+	SIF TEQUIP:バイブ
+		CALL SOURCE_COM31, 30
+ENDIF
+
+IF GETBIT(CHECK_ONANIE(SELECTCOM), 2)
+	LOCAL:2 = CALCF("Ａ刺激", 1)
+	SIF TEQUIP:アナルバイブ
+		CALL SOURCE_COM33, 30
+	;アナルプレイなら腸液分泌
+	LOCAL:19 = 100 * ABL:自慰中毒
+ENDIF
+
+;ここから下は快ＣＶＡＢに対する補正が大量に来るので、それをLOCAL:30に代入して短く表す
+LOCAL:30 = ABL:技巧*10 - 100
+
+;ABL:自慰中毒をみる
+SELECTCASE ABL:自慰中毒
+CASE 1
+	LOCAL:7 = 100
+	LOCAL:30 += 10
+CASE 2
+	LOCAL:7 = 300
+	LOCAL:30 += 20
+CASE 3
+	LOCAL:7 = 600
+	LOCAL:30 += 30
+CASE 4
+	LOCAL:7 = 800
+	LOCAL:30 += 50
+CASEELSE
+	LOCAL:7 = 1000
+	LOCAL:30 += 70
+ENDSELECT
+
+;ABL:露出癖をみる
+SELECTCASE ABL:露出癖
+CASE 0
+	LOCAL:30 -= 50
+CASE 1
+	LOCAL:7 += 100
+	LOCAL:30 -= 30
+CASE 2
+	LOCAL:7 += 300
+	LOCAL:30 -= 10
+CASE 3
+	LOCAL:7 += 500
+	LOCAL:30 += 10
+CASE 4
+	LOCAL:7 += 700
+	LOCAL:30 += 30
+CASEELSE
+	LOCAL:7 += 1000
+	LOCAL:30 += 50
+ENDSELECT
+
+;TARGETの指使いをみる
+IF ABL:指使い
+	SIF LOCAL:0
+		LOCAL:0 = SOURCE_EXABL(LOCAL:0, 31, TARGET)
+	SIF LOCAL:1
+		LOCAL:1 = SOURCE_EXABL(LOCAL:1, 31, TARGET)
+	SIF LOCAL:2
+		LOCAL:2 = SOURCE_EXABL(LOCAL:2, 31, TARGET)
+	SIF LOCAL:17
+		LOCAL:17 = SOURCE_EXABL(LOCAL:17, 31, TARGET)
+
+	LOCAL:30 += ABL:指使い * 10
+ENDIF
+
+;自慰経験
+SELECTCASE EXP:自慰経験
+CASE IS < 5
+	LOCAL:30 -= 20
+CASE IS < 20
+	LOCAL:30 -= 10
+CASE IS < 50
+CASEELSE
+	LOCAL:30 += EXP:自慰経験/5
+ENDSELECT
+
+;最低でも10％
+LOCAL:30 = MAX(LOCAL:30, -90)
+
+LOCAL:0 = LOCAL:0*(100 + LOCAL:30)/100
+LOCAL:1 = LOCAL:1*(100 + LOCAL:30)/100
+LOCAL:2 = LOCAL:2*(100 + LOCAL:30)/100
+LOCAL:17 = LOCAL:17*(100 + LOCAL:30)/100
+
+;自慰中毒が無いなら、自慰で得た中毒充足のSOURCEは０にする
+SIF ABL:自慰中毒 == 0
+	LOCAL:7 = 0
+
+CALL CALC, "調教ソース", LOCAL:0, LOCAL:1, LOCAL:2, LOCAL:3, LOCAL:4, LOCAL:5, LOCAL:6, LOCAL:7, LOCAL:8, LOCAL:9, LOCAL:10, LOCAL:11, LOCAL:12, LOCAL:13, LOCAL:14, LOCAL:15, LOCAL:16, LOCAL:17, LOCAL:18, LOCAL:19, LOCAL:20, LOCAL:21, ARG
+
+
+@TRAIN_MESSAGE_COM3
+
+VARSET LOCAL
+;自慰箇所の判定。0bit Ｃ自慰, 1bit Ｖ自慰, 2bit Ａ自慰, 3bit Ｂ自慰
+SIF GETBIT(CHECK_ONANIE(SELECTCOM), 0)
+	LOCAL:0 = ABL:Ｃ感覚 + TALENT:淫核 + 1
+SIF GETBIT(CHECK_ONANIE(SELECTCOM), 1)
+	LOCAL:1 = ABL:Ｖ感覚 + TALENT:淫壷 + 1
+SIF GETBIT(CHECK_ONANIE(SELECTCOM), 2)
+	LOCAL:2 = ABL:Ａ感覚 + TALENT:尻穴狂い + 1
+SIF GETBIT(CHECK_ONANIE(SELECTCOM), 3)
+	LOCAL:3 = ABL:Ｂ感覚 + TALENT:淫乳 + 1
+SIF GETBIT(CHECK_ONANIE(SELECTCOM), 4)
+	LOCAL:0 = ABL:Ｃ感覚 + TALENT:尿道狂い + 1
+;eratohoから引用
+IF PREVCOM != SELECTCOM
+	;手加減は終了
+	IF TEQUIP:てかげん
+		PRINTW （手加減を止めます）
+		PRINTL
+		TEQUIP:てかげん = 0
+	ENDIF
+	PRINTFORM %CALLNAME:TARGET%は
+	IF INSERT("インサート")
+		IF INSERT("Ｖインサート")
+			LOCALS = 膣
+		ELSEIF INSERT("Ａインサート")
+			LOCALS = アナル
+		ELSEIF INSERT("尿道インサート")
+			LOCALS = 尿道
+		ENDIF
+		IF INSERT("騎乗位")
+			PRINTFORM %CALLNAME:PLAYER%に跨って%LOCALS%に%NAMES("ペニス", PLAYER)%を咥え込んだまま、
+		ELSEIF INSERT("背面座位")
+			PRINTFORM %LOCALS%で%NAMES("ペニス", PLAYER)%を締め付けたまま%CALLNAME:PLAYER%にもたれ掛かって、
+		ELSEIF INSERT("屈曲位")
+			PRINTFORM %LOCALS%に%NAMES("ペニス", PLAYER)%を捻じ込まれた窮屈な体勢のまま、
+		ELSE
+			PRINTFORM %LOCALS%に挿入した体勢で腰の動きを止めている%CALLNAME:PLAYER%に従って、
+		ENDIF
+	ELSE
+		SELECTCASE TCVAR:28
+		;やる気満々
+		CASE IS >= 40
+			IF CHECK_COM("フェラ自慰")
+				PRINTFORM %CALLNAME:PLAYER%のペニス
+				IF RAND:2
+					PRINTFORM にキスをしながら、
+				ELSE
+					PRINTFORM をぺろぺろ舐めながら、
+				ENDIF
+			ELSEIF TEQUIP:ビデオカメラ && RANDIF(3, ABL:露出癖 >= 3, TEQUIP:媚薬)
+				PRINTFORM レンズに目線を送りながら、
+			ELSEIF TEQUIP:媚薬 && RANDIF(2, ABL:露出癖 >= 3)
+				PRINTFORM 媚薬で身体を高ぶらせながら、
+				SIF ABL:自慰中毒 >= 3
+					PRINTFORM 貪るように
+			ELSEIF ABL:露出癖 >= 3 && RAND:2
+				PRINTFORM %CALLNAME:PLAYER%に見せつけながら、
+			ELSEIF RAND:2
+				PRINTFORM 嫌がるそぶりも見せず、
+			ELSE
+				PRINTFORM 頬を薄っすらと朱に染め、
+			ENDIF
+		;抵抗なし
+		CASE IS >= 20
+			PRINTFORM %CALLNAME:PLAYER%に従って、
+		;仕方なく
+		CASEELSE
+			IF TALENT:高慢 && RANDIF(1, TALENT:反抗的)
+				PRINTFORM プライドの高さを見せながら睨んできたが、再度の言葉に渋々
+			ELSEIF TALENT:反抗的
+				PRINTFORM 目に反抗的な色を滲ませながら睨んできたが、再度の言葉に渋々
+			ENDIF
+		ENDSELECT
+	ENDIF
+
+	;オナホ自慰
+	IF GETBIT(CHECK_ONANIE(SELECTCOM), 14)
+		PRINTFORM オナホールでペニスを扱いて
+	;シャワー自慰
+	ELSEIF GETBIT(CHECK_ONANIE(SELECTCOM), 10)
+		PRINTFORM 強めのシャワーで股間を刺激して
+	ELSEIF GETBIT(CHECK_ONANIE(SELECTCOM), 13)
+		IF COND("アナルパール")
+			PRINTFORM 咥え込んだ%NAMES("バイブ", TARGET)%とアナルパールを自ら出し入れ
+		ELSEIF SIZE("バイブ", TARGET) >= 2 && SIZE("Ａバイブ", TARGET) >= 2
+			PRINTFORM 咥え込んだ２本の大きなバイブを自ら抜き挿し
+		ELSE
+			PRINTFORM 咥え込んだ２本のバイブを自ら抜き挿し
+		ENDIF
+		IF NOWEX:絶頂数合計 && RAND:2
+			PRINTFORM して物凄い%TEXTS("匂い")%を漂わせつつ
+		ELSE
+			PRINTFORM して
+		ENDIF
+	ELSEIF GETBIT(CHECK_ONANIE(SELECTCOM), 11)
+		PRINTFORM ヴァギナに入れられた%NAMES("バイブ", TARGET)%を自ら抜き挿しして
+	ELSEIF GETBIT(CHECK_ONANIE(SELECTCOM), 12)
+		IF COND("アナルパール")
+			PRINTFORM アナルから伸びるパールを自ら出し入れして
+		ELSE
+			PRINTFORM お尻に突っ込まれている%NAMES("Ａバイブ", TARGET)%を自ら抜き挿しして
+		ENDIF
+	ELSEIF TEQUIP:尿道ブジー
+		LOCAL:0 = CALCF("尿道刺激", 0)
+		TIMES LOCAL:0, 0.20
+		CALL SETFLAG, "尿道性感フラグ", TARGET
+		SELECTCASE GET_EXP_LV(EXP:尿道拡張経験) - (TEQUIP:尿道ブジー - MIN_STR(LOCALS) )
+			CASE 1
+				TIMES LOCAL:9, 0.50
+			CASE 2
+				TIMES LOCAL:9, 0.30
+			CASE IS >= 3
+				TIMES LOCAL:9, 0.15
+			ENDSELECT
+
+			SELECTCASE EXP:尿道経験 + MIN(EXP:PLAYER:尿道責め経験, 50)
+			CASE IS < 5
+			CASE IS < 20
+				TIMES LOCAL:6, 0.80
+				TIMES LOCAL:9, 0.80
+			CASE IS < 50
+				TIMES LOCAL:0, 1.20
+				TIMES LOCAL:6, 0.60
+				TIMES LOCAL:9, 0.60
+			CASE IS < 150
+				TIMES LOCAL:0, 1.35
+				TIMES LOCAL:6, 0.40
+				TIMES LOCAL:9, 0.40
+			CASEELSE
+				TIMES LOCAL:0, 1.50
+				TIMES LOCAL:6, 0.20
+				TIMES LOCAL:9, 0.20
+			ENDSELECT
+
+			;PALAM:欲情をみる
+			SELECTCASE PALAM:欲情
+			CASE IS < PALAMLV:1
+				TIMES LOCAL:14, 1.50
+			CASE IS < PALAMLV:2
+				TIMES LOCAL:14, 1.00
+			CASE IS < PALAMLV:3
+				TIMES LOCAL:14, 0.90
+			CASE IS < PALAMLV:4
+				TIMES LOCAL:14, 0.70
+			CASE IS >= PALAMLV:4
+				TIMES LOCAL:14, 0.50
+			ENDSELECT
+
+			;ABL:マゾっ気をみる
+			SELECTCASE ABL:マゾっ気
+			CASE 0
+				TIMES LOCAL:11, 0.05
+			CASE 1
+				TIMES LOCAL:9, 0.90
+				TIMES LOCAL:11, 0.50
+			CASE 2
+				TIMES LOCAL:9, 0.80
+			CASE 3
+				TIMES LOCAL:9, 0.70
+				TIMES LOCAL:11, 1.50
+			CASE 4
+				TIMES LOCAL:9, 0.60
+				TIMES LOCAL:11, 2.00
+			CASEELSE
+				TIMES LOCAL:9, 0.50
+				TIMES LOCAL:11, 3.00
+			ENDSELECT
+
+			;快Ｃについては既に参照済み
+			IF TALENT:尿道狂い
+				TIMES LOCAL:6, 0.10
+				TIMES LOCAL:9, 0.10
+				LOCAL:7 += 10000 + SIZE("ペニスの直径", PLAYER)*200
+				LOCAL:11 += LOCAL:14
+				TIMES LOCAL:14, 0.05
+			ELSEIF TALENT:尿道性感
+				TIMES LOCAL:6, 0.20
+				TIMES LOCAL:9, 0.20
+				LOCAL:7 += 5000 + SIZE("ペニスの直径", PLAYER)*100
+				LOCAL:11 += LOCAL:14
+				TIMES LOCAL:14, 0.20
+			ENDIF
+
+			SELECTCASE EXP:放尿経験 + EXP:お漏らし経験
+			CASE IS < EXPLV:1
+				TIMES LOCAL:14, 3.00
+			CASE IS < EXPLV:2
+				TIMES LOCAL:14, 2.50
+			CASE IS < EXPLV:3
+				TIMES LOCAL:14, 2.00
+			CASE IS < EXPLV:4
+				TIMES LOCAL:14, 1.00
+			CASE IS < EXPLV:5
+				TIMES LOCAL:14, 0.80
+			CASEELSE
+				TIMES LOCAL:14, 0.60
+			ENDSELECT
+
+			;筋弛緩剤
+			SIF GETBIT(TEQUIP:筋弛緩剤, 1)
+				TIMES LOCAL:6, 0.20
+
+		IF RAND:1 && TALENT:尿道狂い
+			PRINTFORM 尿道に突き刺さっているブジーをとろけた顔を晒しながら自ら抜き差しして
+		ELSE
+			PRINTFORM 尿道に突き刺さっているブジーを自ら抜き差しして
+		ENDIF
+	ELSEIF TEQUIP:尿道バイブ
+		LOCAL:0 = CALCF("尿道刺激", 0)
+		TIMES LOCAL:0, 0.20
+		CALL SETFLAG, "尿道性感フラグ", TARGET
+		SELECTCASE GET_EXP_LV(EXP:尿道拡張経験) - (TEQUIP:尿道バイブ - SIZE("尿道バイブ", TARGET) )
+			CASE 1
+				TIMES LOCAL:9, 0.50
+			CASE 2
+				TIMES LOCAL:9, 0.30
+			CASE IS >= 3
+				TIMES LOCAL:9, 0.15
+			ENDSELECT
+
+			SELECTCASE EXP:尿道経験 + MIN(EXP:PLAYER:尿道責め経験, 50)
+			CASE IS < 5
+			CASE IS < 20
+				TIMES LOCAL:6, 0.80
+				TIMES LOCAL:9, 0.80
+			CASE IS < 50
+				TIMES LOCAL:0, 1.20
+				TIMES LOCAL:6, 0.60
+				TIMES LOCAL:9, 0.60
+			CASE IS < 150
+				TIMES LOCAL:0, 1.35
+				TIMES LOCAL:6, 0.40
+				TIMES LOCAL:9, 0.40
+			CASEELSE
+				TIMES LOCAL:0, 1.50
+				TIMES LOCAL:6, 0.20
+				TIMES LOCAL:9, 0.20
+			ENDSELECT
+
+			;PALAM:欲情をみる
+			SELECTCASE PALAM:欲情
+			CASE IS < PALAMLV:1
+				TIMES LOCAL:14, 1.50
+			CASE IS < PALAMLV:2
+				TIMES LOCAL:14, 1.00
+			CASE IS < PALAMLV:3
+				TIMES LOCAL:14, 0.90
+			CASE IS < PALAMLV:4
+				TIMES LOCAL:14, 0.70
+			CASE IS >= PALAMLV:4
+				TIMES LOCAL:14, 0.50
+			ENDSELECT
+
+			;ABL:マゾっ気をみる
+			SELECTCASE ABL:マゾっ気
+			CASE 0
+				TIMES LOCAL:11, 0.05
+			CASE 1
+				TIMES LOCAL:9, 0.90
+				TIMES LOCAL:11, 0.50
+			CASE 2
+				TIMES LOCAL:9, 0.80
+			CASE 3
+				TIMES LOCAL:9, 0.70
+				TIMES LOCAL:11, 1.50
+			CASE 4
+				TIMES LOCAL:9, 0.60
+				TIMES LOCAL:11, 2.00
+			CASEELSE
+				TIMES LOCAL:9, 0.50
+				TIMES LOCAL:11, 3.00
+			ENDSELECT
+
+			;快Ｃについては既に参照済み
+			IF TALENT:尿道狂い
+				TIMES LOCAL:6, 0.10
+				TIMES LOCAL:9, 0.10
+				LOCAL:7 += 10000 + SIZE("ペニスの直径", PLAYER)*200
+				LOCAL:11 += LOCAL:14
+				TIMES LOCAL:14, 0.05
+			ELSEIF TALENT:尿道性感
+				TIMES LOCAL:6, 0.20
+				TIMES LOCAL:9, 0.20
+				LOCAL:7 += 5000 + SIZE("ペニスの直径", PLAYER)*100
+				LOCAL:11 += LOCAL:14
+				TIMES LOCAL:14, 0.20
+			ENDIF
+
+			SELECTCASE EXP:放尿経験 + EXP:お漏らし経験
+			CASE IS < EXPLV:1
+				TIMES LOCAL:14, 3.00
+			CASE IS < EXPLV:2
+				TIMES LOCAL:14, 2.50
+			CASE IS < EXPLV:3
+				TIMES LOCAL:14, 2.00
+			CASE IS < EXPLV:4
+				TIMES LOCAL:14, 1.00
+			CASE IS < EXPLV:5
+				TIMES LOCAL:14, 0.80
+			CASEELSE
+				TIMES LOCAL:14, 0.60
+			ENDSELECT
+
+			;筋弛緩剤
+			SIF GETBIT(TEQUIP:筋弛緩剤, 1)
+				TIMES LOCAL:6, 0.20
+
+		IF SIZE("尿道バイブ", TARGET) == 5
+			IF TALENT:尿道狂い
+				PRINTFORMW 膀胱に鎮座しているパールを一気に抜き出し、
+			ELSE
+				PRINTFORMW 膀胱に鎮座しているパールを恐る恐る抜き出し
+			ENDIF
+		ELSEIF RAND:1 && TALENT:尿道狂い
+			PRINTFORM 尿道に突き刺さっているバイブをとろけた顔を晒しながら自ら抜き差しして
+		ELSE
+			PRINTFORM 尿道に突き刺さっているバイブを自ら抜き差しして
+		ENDIF
+	ELSE
+		IF LOCAL:0 && (RANDIF(1, LOCAL:1, LOCAL:2, LOCAL:3) || LOCAL:0 > MAX(LOCAL:1, LOCAL:2, LOCAL:3) )
+			IF PENIS(TARGET)
+				SIF PALAM:欲情 >= 3000
+					PRINTFORM %TEXTS("ペニス：視覚", TARGET)%
+				PRINTFORM ペニスを扱いて
+			ELSE
+				PRINTFORM クリトリスを自らの%NAMES("指")%で
+				IF RAND:3 == 0
+					PRINTFORM 擦って
+				ELSEIF RAND:2 == 0
+					PRINTFORM 弄って
+				ELSE
+					PRINTFORM 捏ね回して
+				ENDIF
+			ENDIF
+		ELSEIF LOCAL:1 && (RANDIF(1, LOCAL:2, LOCAL:3) || LOCAL:1 > MAX(LOCAL:0, LOCAL:2, LOCAL:3) )
+			IF RAND:2 == 0
+				PRINTFORM アソコ
+			ELSE
+				PRINTFORM 秘所
+			ENDIF
+			IF RAND:3 == 0
+				PRINTFORM を自らの指で弄って
+			ELSEIF RAND:2 == 0
+				PRINTFORM を自らの指で掻き回して
+			ELSE
+				PRINTFORM に自らの指を出し入れして
+			ENDIF
+		ELSEIF LOCAL:2 && (RANDIF(1, LOCAL:3) || LOCAL:2 > MAX(LOCAL:0, LOCAL:1, LOCAL:3) )
+			IF RAND:2 == 0
+				PRINTFORM アナル
+			ELSE
+				PRINTFORM お尻の穴
+			ENDIF
+			IF RAND:3 == 0 || !CHECK_CLO("Ａ露出")
+				PRINTFORM を自らの指で弄って
+			ELSEIF RAND:2 == 0
+				PRINTFORM を自らの指で掻き回して
+			ELSE
+				PRINTFORM に自らの指を出し入れして
+			ENDIF
+		ELSEIF LOCAL:3
+			IF RAND:2 && CALCF("Ｂ発情")
+				PRINTFORM 乳首
+			ELSE
+				PRINTFORM 胸
+			ENDIF
+			PRINTFORM を自らの%NAMES("指")%で
+			IF RAND:3 == 0
+				PRINTFORM 擦って
+			ELSEIF RAND:2 == 0
+				PRINTFORM 弄って
+			ELSE
+				PRINTFORM 捏ね回して
+			ENDIF
+		ENDIF
+	ENDIF
+	IF SIZE("尿道バイブ", TARGET) == 5
+		PRINTFORMW 空いてしまった膀胱へ再びパールを飲み込ませている…
+	ELSE
+		PRINTW 快感を味わっている…
+	ENDIF
+ELSE
+	IF TEQUIP:バイブ && TEQUIP:アナルバイブ && ABL:Ｖ感覚 >= 5 && ABL:Ａ感覚 >= 5 && ABL:Ｃ感覚 >= 5 && ABL:Ｂ感覚 >= 5 && PALAM:欲情 >= PALAMLV:4
+		PRINTFORML %CALLNAME:TARGET%はよだれをふきこぼし、ビクビクと身体を痙攣させながら鳴き叫んでいる
+		PRINTFORMW どうやら絶頂から降りられず、イキっぱなしになっているようだ…
+	ELSEIF TEQUIP:バイブ && ABL:Ｖ感覚 >= 5 && ABL:Ｃ感覚 >= 5 && ABL:Ｂ感覚 >= 5 && PALAM:欲情 >= PALAMLV:4
+		PRINTFORML %CALLNAME:TARGET%は愛液が飛び散るのもお構いなしに、バイブを激しく出し入れしている
+		PRINTFORMW どうやらもうほかの事を気にする余裕も無いようだ…
+	ELSEIF TEQUIP:アナルバイブ && COND("アナルパール") == 0 && ABL:Ａ感覚 >= 5 && ABL:Ｃ感覚 >= 5 && ABL:Ｂ感覚 >= 5 && PALAM:欲情 >= PALAMLV:4
+		PRINTFORML %CALLNAME:TARGET%はガクガク身体を震わせながら、アヌスにバイブを突きこんでいる
+		PRINTFORMW どうやら襞をえぐられるたびに何度も絶頂してしまっているようだ…
+	ELSEIF TEQUIP:尿道バイブ && PALAM:欲情 >= PALAMLV:4
+		LOCAL:0 = CALCF("尿道刺激", 0)
+		TIMES LOCAL:0, 0.20
+		CALL SETFLAG, "尿道性感フラグ", TARGET
+		SELECTCASE GET_EXP_LV(EXP:尿道拡張経験) - (TEQUIP:尿道バイブ - SIZE("尿道バイブ", TARGET) )
+			CASE 1
+				TIMES LOCAL:9, 0.50
+			CASE 2
+				TIMES LOCAL:9, 0.30
+			CASE IS >= 3
+				TIMES LOCAL:9, 0.15
+			ENDSELECT
+
+			SELECTCASE EXP:尿道経験 + MIN(EXP:PLAYER:尿道責め経験, 50)
+			CASE IS < 5
+			CASE IS < 20
+				TIMES LOCAL:6, 0.80
+				TIMES LOCAL:9, 0.80
+			CASE IS < 50
+				TIMES LOCAL:0, 1.20
+				TIMES LOCAL:6, 0.60
+				TIMES LOCAL:9, 0.60
+			CASE IS < 150
+				TIMES LOCAL:0, 1.35
+				TIMES LOCAL:6, 0.40
+				TIMES LOCAL:9, 0.40
+			CASEELSE
+				TIMES LOCAL:0, 1.50
+				TIMES LOCAL:6, 0.20
+				TIMES LOCAL:9, 0.20
+			ENDSELECT
+
+			;PALAM:欲情をみる
+			SELECTCASE PALAM:欲情
+			CASE IS < PALAMLV:1
+				TIMES LOCAL:14, 1.50
+			CASE IS < PALAMLV:2
+				TIMES LOCAL:14, 1.00
+			CASE IS < PALAMLV:3
+				TIMES LOCAL:14, 0.90
+			CASE IS < PALAMLV:4
+				TIMES LOCAL:14, 0.70
+			CASE IS >= PALAMLV:4
+				TIMES LOCAL:14, 0.50
+			ENDSELECT
+
+			;ABL:マゾっ気をみる
+			SELECTCASE ABL:マゾっ気
+			CASE 0
+				TIMES LOCAL:11, 0.05
+			CASE 1
+				TIMES LOCAL:9, 0.90
+				TIMES LOCAL:11, 0.50
+			CASE 2
+				TIMES LOCAL:9, 0.80
+			CASE 3
+				TIMES LOCAL:9, 0.70
+				TIMES LOCAL:11, 1.50
+			CASE 4
+				TIMES LOCAL:9, 0.60
+				TIMES LOCAL:11, 2.00
+			CASEELSE
+				TIMES LOCAL:9, 0.50
+				TIMES LOCAL:11, 3.00
+			ENDSELECT
+
+			;快Ｃについては既に参照済み
+			IF TALENT:尿道狂い
+				TIMES LOCAL:6, 0.10
+				TIMES LOCAL:9, 0.10
+				LOCAL:7 += 10000 + SIZE("ペニスの直径", PLAYER)*200
+				LOCAL:11 += LOCAL:14
+				TIMES LOCAL:14, 0.05
+			ELSEIF TALENT:尿道性感
+				TIMES LOCAL:6, 0.20
+				TIMES LOCAL:9, 0.20
+				LOCAL:7 += 5000 + SIZE("ペニスの直径", PLAYER)*100
+				LOCAL:11 += LOCAL:14
+				TIMES LOCAL:14, 0.20
+			ENDIF
+
+			SELECTCASE EXP:放尿経験 + EXP:お漏らし経験
+			CASE IS < EXPLV:1
+				TIMES LOCAL:14, 3.00
+			CASE IS < EXPLV:2
+				TIMES LOCAL:14, 2.50
+			CASE IS < EXPLV:3
+				TIMES LOCAL:14, 2.00
+			CASE IS < EXPLV:4
+				TIMES LOCAL:14, 1.00
+			CASE IS < EXPLV:5
+				TIMES LOCAL:14, 0.80
+			CASEELSE
+				TIMES LOCAL:14, 0.60
+			ENDSELECT
+
+			;筋弛緩剤
+			SIF GETBIT(TEQUIP:筋弛緩剤, 1)
+				TIMES LOCAL:6, 0.20
+
+		IF SIZE("尿道バイブ", TARGET) == 5
+			IF TALENT:尿道狂い
+				PRINTFORML %CALLNAME:TARGET%は膀胱でカチャカチャと音を立てているパールを一息に引きずりだし、
+				PRINTFORML 尿道口をパールが一つ抜けるたび絶頂している
+				PRINTFORMW どうやら%CALLNAME:TARGET%は手が止められない様子で、吐き出したパールを再び飲み込んでいる…
+			ELSE
+				PRINTFORML %CALLNAME:TARGET%は恐る恐る膀胱に眠るパールを引きずり出している
+				PRINTFORML どうやらパールが尿道口を擦りあげていく刺激に痛みが押さえ込まれ
+				PRINTFORMW 脳が快楽を受け取りすっかりとろけた表情で出し切ったパールを再び飲み込み始めた…
+			ENDIF
+		ELSEIF RAND:2 && TALENT:尿道狂い
+			PRINTFORML %CALLNAME:TARGET%は膀胱を突き破らんばかりの勢いで、バイブを激しく出し入れしている
+			PRINTFORMW どうやら膀胱を突き上げる衝撃が快楽として脳へ届いてる様子だ…
+		ELSEIF RAND:1 && TALENT:尿道狂い
+			PRINTFORML %CALLNAME:TARGET%は尿道が引き裂けそうな勢いでバイブをかき回している
+			PRINTFORMW どうやら粘膜をゴリゴリと削り上げるたび絶頂してしまっているようだ…
+		ELSE
+			PRINTFORML %CALLNAME:TARGET%は震えるバイブで尿道と膀胱を満遍なく出し入れしている
+			PRINTFORMW どうやら快楽が痛みに勝ったようで手をとめる事ができないようだ…
+		ENDIF
+	ELSEIF TEQUIP:尿道ブジー && PALAM:欲情 >= PALAMLV:4
+		LOCAL:0 = CALCF("尿道刺激", 0)
+		TIMES LOCAL:0, 0.20
+		CALL SETFLAG, "尿道性感フラグ", TARGET
+		SELECTCASE GET_EXP_LV(EXP:尿道拡張経験) - (TEQUIP:尿道ブジー - MIN_STR(LOCALS) )
+			CASE 1
+				TIMES LOCAL:9, 0.50
+			CASE 2
+				TIMES LOCAL:9, 0.30
+			CASE IS >= 3
+				TIMES LOCAL:9, 0.15
+			ENDSELECT
+
+			SELECTCASE EXP:尿道経験 + MIN(EXP:PLAYER:尿道責め経験, 50)
+			CASE IS < 5
+			CASE IS < 20
+				TIMES LOCAL:6, 0.80
+				TIMES LOCAL:9, 0.80
+			CASE IS < 50
+				TIMES LOCAL:0, 1.20
+				TIMES LOCAL:6, 0.60
+				TIMES LOCAL:9, 0.60
+			CASE IS < 150
+				TIMES LOCAL:0, 1.35
+				TIMES LOCAL:6, 0.40
+				TIMES LOCAL:9, 0.40
+			CASEELSE
+				TIMES LOCAL:0, 1.50
+				TIMES LOCAL:6, 0.20
+				TIMES LOCAL:9, 0.20
+			ENDSELECT
+
+			;PALAM:欲情をみる
+			SELECTCASE PALAM:欲情
+			CASE IS < PALAMLV:1
+				TIMES LOCAL:14, 1.50
+			CASE IS < PALAMLV:2
+				TIMES LOCAL:14, 1.00
+			CASE IS < PALAMLV:3
+				TIMES LOCAL:14, 0.90
+			CASE IS < PALAMLV:4
+				TIMES LOCAL:14, 0.70
+			CASE IS >= PALAMLV:4
+				TIMES LOCAL:14, 0.50
+			ENDSELECT
+
+			;ABL:マゾっ気をみる
+			SELECTCASE ABL:マゾっ気
+			CASE 0
+				TIMES LOCAL:11, 0.05
+			CASE 1
+				TIMES LOCAL:9, 0.90
+				TIMES LOCAL:11, 0.50
+			CASE 2
+				TIMES LOCAL:9, 0.80
+			CASE 3
+				TIMES LOCAL:9, 0.70
+				TIMES LOCAL:11, 1.50
+			CASE 4
+				TIMES LOCAL:9, 0.60
+				TIMES LOCAL:11, 2.00
+			CASEELSE
+				TIMES LOCAL:9, 0.50
+				TIMES LOCAL:11, 3.00
+			ENDSELECT
+
+			;快Ｃについては既に参照済み
+			IF TALENT:尿道狂い
+				TIMES LOCAL:6, 0.10
+				TIMES LOCAL:9, 0.10
+				LOCAL:7 += 10000 + SIZE("ペニスの直径", PLAYER)*200
+				LOCAL:11 += LOCAL:14
+				TIMES LOCAL:14, 0.05
+			ELSEIF TALENT:尿道性感
+				TIMES LOCAL:6, 0.20
+				TIMES LOCAL:9, 0.20
+				LOCAL:7 += 5000 + SIZE("ペニスの直径", PLAYER)*100
+				LOCAL:11 += LOCAL:14
+				TIMES LOCAL:14, 0.20
+			ENDIF
+
+			SELECTCASE EXP:放尿経験 + EXP:お漏らし経験
+			CASE IS < EXPLV:1
+				TIMES LOCAL:14, 3.00
+			CASE IS < EXPLV:2
+				TIMES LOCAL:14, 2.50
+			CASE IS < EXPLV:3
+				TIMES LOCAL:14, 2.00
+			CASE IS < EXPLV:4
+				TIMES LOCAL:14, 1.00
+			CASE IS < EXPLV:5
+				TIMES LOCAL:14, 0.80
+			CASEELSE
+				TIMES LOCAL:14, 0.60
+			ENDSELECT
+
+			;筋弛緩剤
+			SIF GETBIT(TEQUIP:筋弛緩剤, 1)
+				TIMES LOCAL:6, 0.20
+		IF RAND:2 && TALENT:尿道狂い
+			PRINTFORML %CALLNAME:TARGET%は膀胱を突き破らんばかりの勢いで、プジーを激しく出し入れしている
+			PRINTFORMW どうやら膀胱を突き上げる衝撃が快楽として脳へ届いてる様子だ…
+		ELSEIF RAND:1 && TALENT:尿道狂い
+			PRINTFORML %CALLNAME:TARGET%は尿道が引き裂けそうな勢いでプジーをかき回している
+			PRINTFORMW どうやら粘膜をゴリゴリと削り上げるたび絶頂してしまっているようだ…
+		ELSE
+			PRINTFORML %CALLNAME:TARGET%はプジーで尿道と膀胱を満遍なく出し入れしている
+			PRINTFORMW どうやら快楽が痛みに勝ったようで手をとめる事ができないようだ…
+		ENDIF
+	ELSEIF ABL:自慰中毒 >= 3
+		IF TALENT:オトコ || (TALENT:ふたなり && RAND:2 == 0)
+			PRINTFORML %CALLNAME:TARGET%は乱暴とも言える手つきで硬く勃起したペニスを扱き続けている
+		ELSE
+			PRINTFORML %CALLNAME:TARGET%は嬌声をあげながら一心不乱に自らの秘部をまさぐり続けている
+		ENDIF
+		PRINTFORMW どうやら止めたくても手が勝手に動いて止まらないようだ…
+	ELSE
+		PRINTFORML %CALLNAME:TARGET%は声を押し殺しながら、気持ちのいい場所をまさぐり続けている
+		PRINTFORMW ……人に見られながらだと、いまいち没頭はできないようだ
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;どの種類のオナニーをしているかを決定する
+;ARGにはどのSELECTCOMの時かを代入する。省略した場合にはSELECTCOMが代入されるが非推奨
+;内容が複雑かつ#FUNCTIONを多数用いるため独立
+;-------------------------------------------------
+@CHECK_ONANIE(ARG)
+#FUNCTION
+;自慰に使える手の本数
+#DIM USE_HAND
+
+;コマンド選択時の表示ではARG == 3となっている
+;0bit Ｃ自慰, 1bit Ｖ自慰, 2bit Ａ自慰, 3bit Ｂ自慰
+;10bit シャワー自慰, 11bit Ｖバイブ自慰, 12bit Ａバイブ自慰, 13bit 両穴バイブ自慰, 14bit オナホ自慰
+USE_HAND = CALCF("自由な手", ARG)
+SIF USE_HAND == 0
+	RETURNF 0
+
+LOCAL = CALCF("好みの自慰", ARG)
+
+SIF ARG == 0
+	ARG = SELECTCOM
+
+IF INSERT("インサート") && CHECK_COM("インサート自慰")
+ELSEIF USE_HAND >= 2
+	IF CHECK_COM("オナホ自慰")
+		SETBIT LOCAL, 0
+	ELSEIF TEQUIP:シャワー
+		SETBIT LOCAL, 0
+	ELSEIF TEQUIP:バイブ && TEQUIP:アナルバイブ && COND("アナルパール") == 0
+		;どっちかのバイブを弄ってるなら両穴バイブオナニー
+		IF GETBIT(LOCAL, 1) || GETBIT(LOCAL, 2)
+			SETBIT LOCAL, 1
+			SETBIT LOCAL, 2
+		ELSEIF TALENT:オトコ == 0 && (ABL:Ｖ感覚 >= ABL:Ａ感覚 || ABL:Ａ感覚 < 3)
+			SETBIT LOCAL, 1
+		ELSE
+			SETBIT LOCAL, 2
+		ENDIF
+	ELSEIF ARG == 3
+		IF TEQUIP:バイブ && !GETBIT(LOCAL, 1) && ABL:Ｖ感覚 >= 3
+			SETBIT LOCAL, 1
+		ELSEIF TEQUIP:アナルバイブ && COND("アナルパール") == 0 && !GETBIT(LOCAL, 2) && ABL:Ａ感覚 >= 3
+			SETBIT LOCAL, 2
+		ELSEIF GETBIT(LOCAL, 3)
+			IF ABL:Ｃ感覚 >= MAX(ABL:Ｖ感覚, ABL:Ａ感覚)
+				SETBIT LOCAL, 0
+			ELSEIF TALENT:オトコ == 0 && ABL:Ｖ感覚 >= ABL:Ａ感覚
+				SETBIT LOCAL, 1
+			ELSE
+				SETBIT LOCAL, 2
+			ENDIF
+		ELSE
+			SETBIT LOCAL, 3
+		ENDIF
+	ENDIF
+ENDIF
+IF CHECK_COM("オナホ自慰") && GETBIT(LOCAL, 0)
+	SETBIT LOCAL, 14
+ELSEIF TEQUIP:シャワー && GETBIT(LOCAL, 0)
+	SETBIT LOCAL, 10
+ELSEIF TEQUIP:バイブ && TEQUIP:アナルバイブ && COND("アナルパール") == 0 && GETBIT(LOCAL, 1) && GETBIT(LOCAL, 2)
+	SETBIT LOCAL, 13
+	SETBIT LOCAL, 11
+	SETBIT LOCAL, 12
+ELSEIF TEQUIP:バイブ && GETBIT(LOCAL, 1)
+	SETBIT LOCAL, 11
+ELSEIF TEQUIP:アナルバイブ && COND("アナルパール") == 0 && GETBIT(LOCAL, 2)
+	SETBIT LOCAL, 12
+ENDIF
+RETURNF LOCAL
+
+@PLAY_ONANIE
+SIF COND("調教中") == 0
+	RETURN 0
+;自慰禁止中
+SIF COND("身嗜み：自慰禁止")
+	RETURN 0
+;自慰中毒0LV
+SIF ABL:自慰中毒 == 0
+	RETURN 0
+;苦痛あり、性欲満足、Ｗ押し倒し中、手が余ってない
+SIF TEQUIP:Ｗ押し倒し || CUP:苦痛 > PALAM_LV(ABL:マゾっ気) || BASE:性欲 >= MAXBASE:性欲 || CALCF("自由な手") <= 0
+	RETURN 0
+;TARGETが挿入奉仕している側
+SIF INSERT("挿入中")
+	RETURN 0
+;欲望、従順、奉仕精神も判定に使用
+;前のターンに自慰しているorこのターンに何もしないなら高確率で自慰しちゃう
+IF PREVCOM == 3 && ABL:自慰中毒 >= RAND:4
+ELSEIF SELECTCOM == 139 && ABL:自慰中毒 >= RAND:5
+ELSEIF ABL:自慰中毒 <= RAND:8 || ABL:自慰中毒*3 + ABL:欲望 + RAND:5 < ABL:従順 + ABL:奉仕精神*2
+	RETURN 0
+ENDIF
+;SOURCEの増加
+CALL SOURCE_COM3,30
+CALL FLAG_COM3, 30
+
+CALL SETFLAG, "ながらオナニーフラグ", TARGET
+
+
+@PLAY_ONANIE_2
+SIF COND("ながらオナニーフラグ") == 0
+	RETURN 0
+
+SELECTCASE SELECTCOM
+CASE 60 TO 79
+	PRINTL ＜自慰中毒＞
+	IF SELECTCOM == 65 || SELECTCOM == 75 || TEQUIP:押し倒し
+		PRINTFORM %CALLNAME:TARGET%は腰を振りながら%NAMES("指")%先を
+	ELSE
+		PRINTFORM %CALLNAME:TARGET%は犯されながら%NAMES("指")%先を
+	ENDIF
+	LOCALS = 伸ばし
+;何もしない
+CASE 139
+	PRINTL ＜自慰中毒＞
+	PRINTFORM %CALLNAME:TARGET%の%NAMES("指")%先は\@ ABL:自慰中毒 >= 3 ? 無意識に # \@
+	LOCALS = 伸び
+CASEELSE
+	PRINTFORM その%NAMES("指")%先は
+	LOCALS = 伸び
+ENDSELECT
+
+SELECTCASE CALCF("好みの自慰", SELECTCOM)
+CASE 1
+	IF PENIS(TARGET)
+		IF CHECK_COM("オナホ自慰")
+			PRINTFORMW 股間に%LOCALS%、%TEXTR("ガシガシと激しくオナホールを上下させている", "オナホールで思う存分ペニスを扱いている")%…
+		ELSE
+			PRINTFORMW ペニスに%LOCALS%、%TEXTR("敏感な亀頭を撫で回している", "ガシガシと激しく扱いている")%…
+		ENDIF
+		CALL EQ_STAIN, TARGET, TARGET, 1, 2
+	ELSE
+		PRINTFORM 股間に%LOCALS%、
+		IF RAND:2 == 0 || (SELECTCOM >= 60 && SELECTCOM <= 79)
+			IF CALCF("Ｃ発情") >= 3
+				PRINTFORM 肥大した
+			ELSE
+				SIF CALCF("Ｃ発情") <= 1
+					PRINTFORM 包皮越しに
+				PRINTFORM 敏感な
+			ENDIF
+			PRINTFORM 突起を
+			IF TALENT:クリピアス && RAND:2 == 0
+				PRINTW 貫くピアスを弄っている…
+			ELSE
+				PRINTW こねくり回している…
+			ENDIF
+		ELSE
+			IF TALENT:クリピアス && RAND:2 == 0
+				IF RAND:2
+					PRINTFORMW ピアスを捻りあげてクリトリスを虐めている…
+				ELSE
+					PRINTFORMW 淫核に付けられたピアスを弄んでいる…
+				ENDIF
+			ELSEIF CALCF("Ｃ発情") < 3 && RAND:2
+				PRINTW 徐々に尖っていくクリトリスを弄くり回している…
+			ELSE
+				PRINTW くちゅくちゅと淫靡な音をさせている…
+			ENDIF
+		ENDIF
+		CALL EQ_STAIN, TARGET, TARGET, 1, 3
+	ENDIF
+CASE 2
+	PRINTFORM 股間に%LOCALS%、
+	IF TEQUIP:バイブ
+		IF SIZE("バイブ", TARGET) >= 2
+			PRINTFORM 膣を押し広げている
+		ELSE
+			PRINTFORM 咥え込んでいる
+		ENDIF
+		SIF SIZE("バイブ", TARGET) == 2
+			PRINTFORM 大きな
+		SIF SIZE("バイブ", TARGET) >= 3
+			PRINTFORM 野太い
+		PRINTW バイブを出し入れさせて楽しんでいる…
+	ELSEIF INSERT("正常位") + INSERT("屈曲位") && ABL:露出癖 >= 3 && RAND:2
+		PRINTFORMW 時折秘部を押し開いたりしながら自慰を楽しんでいる…
+	ELSE
+		PRINTW くちゅくちゅと淫靡な音をさせている…
+		CALL EQ_STAIN, TARGET, TARGET, 1, 3
+	ENDIF
+	EXP:Ｖ経験 += 1
+	PRINTFORML Ｖ経験＋1
+CASE 4
+	PRINTFORM 股間に%LOCALS%、
+	IF TEQUIP:アナルバイブ
+		PRINTW アナルから顔を出しているおもちゃを弄って楽しんでいる…
+	ELSE
+		PRINTW 柔らかいお尻の穴を弄っているようだ…
+		CALL EQ_STAIN, TARGET, TARGET, 1, 4
+	ENDIF
+	EXP:Ａ経験 += 1
+	PRINTFORML Ａ経験＋1
+CASEELSE
+	IF TALENT:巨乳
+		IF RAND:2
+			PRINTFORM 豊満な
+		ELSE
+			PRINTFORM 柔らかな
+		ENDIF
+	ELSEIF TALENT:貧乳
+		PRINTFORM 小さな
+	ENDIF
+	PRINTFORM 胸に%LOCALS%、
+	IF RAND:2 == 0 && TALENT:巨乳
+		SIF ABL:Ｂ感覚 >= 4 && TALENT:ハーピー == 0 && RAND:2
+			PRINTFORM 指を沈ませながら
+		PRINTW 乳房を揉みしだいている…
+	ELSE
+		LOCAL = 0
+		IF TALENT:ニプルピアス && RAND:2 == 0
+			PRINTFORM %TEXTS("ニプルピアス")%で飾られた
+			LOCAL = 1
+		ELSEIF CALCF("Ｂ発情") >= 3
+			PRINTFORM 快感でふくれた
+		ELSEIF CALCF("Ｂ発情") >= 2
+			PRINTFORM ツンと上向いた
+		ELSEIF CALCF("Ｂ発情")
+			PRINTFORM 勃起しかけの
+		ELSE
+			PRINTFORM ピンクの
+		ENDIF
+		PRINTFORM 突起
+		IF TALENT:ニプルピアス && RAND:3 == 0 && LOCAL == 0
+			PRINTW を貫くピアスを弄っている…
+		ELSE
+			IF RAND:2
+				PRINTW をしごいている…
+			ELSE
+				PRINTW をこねくり回している…
+			ENDIF
+		ENDIF
+	ENDIF
+	CALL EQ_STAIN, TARGET, TARGET, 1, 5
+ENDSELECT
+
+EXP:自慰経験 += 1
+PRINTFORML 自慰経験＋1
+
+
+@COM_ORDER_COM3, ARG
+VARSET LOCAL
+LOCALS =
+
+;すべての命令に共通の要素を考慮
+;(従順が高いと命令に従いやすいなど)
+CALL COM_ORDER, ARG
+
+LOCAL = RESULT
+
+;ABL:露出癖
+IF ABL:露出癖
+	LOCAL += ABL:露出癖 * 4
+	LOCALS = %LOCALS% + %ABLNAME:7%LV{ABL:露出癖}({ABL:露出癖 * 4})
+ENDIF
+;ABL:自慰中毒
+IF ABL:自慰中毒
+	LOCAL += ABL:自慰中毒 * 3
+	LOCALS = %LOCALS% + %ABLNAME:10%LV{ABL:自慰中毒}({ABL:自慰中毒 * 3})
+ENDIF
+
+;強気
+IF TALENT:強気
+	LOCAL -= 5
+	LOCALS = %LOCALS% - %TALENTNAME:18%(5)
+ENDIF
+;自制心
+IF TALENT:冷静
+	LOCAL -= 5
+	LOCALS = %LOCALS% - %TALENTNAME:20%(5)
+ENDIF
+;恥じらい
+IF TALENT:恥じらい
+	LOCAL -= 15
+	LOCALS = %LOCALS% - %TALENTNAME:35%(15)
+ENDIF
+;恥薄い
+IF TALENT:恥薄い
+	LOCAL += 2
+	LOCALS = %LOCALS% + %TALENTNAME:36%(2)
+ENDIF
+;自慰しやすい
+IF TALENT:自慰しやすい
+	LOCAL += 5
+	LOCALS = %LOCALS% + %TALENTNAME:60%(5)
+ENDIF
+;快感に素直
+IF TALENT:快感に素直
+	LOCAL += 5
+	LOCALS = %LOCALS% + %TALENTNAME:70%(5)
+ENDIF
+;快感の否定
+IF TALENT:快感の否定
+	LOCAL -= 5
+	LOCALS = %LOCALS% - %TALENTNAME:71%(5)
+ENDIF
+;媚薬
+IF TEQUIP:媚薬
+	LOCAL += 6
+	LOCALS = %LOCALS% + %ITEMNAME:31%(6)
+ENDIF
+;シャワー
+IF TEQUIP:シャワー
+	LOCAL -= 3
+	LOCALS = %LOCALS% - シャワー(3)
+ENDIF
+;バイブ
+IF TEQUIP:バイブ
+	LOCAL -= 5
+	LOCALS = %LOCALS% - %ITEMNAME:1%(5)
+ENDIF
+;Ａバイブ
+IF TEQUIP:アナルバイブ && COND("アナルパール") == 0
+	LOCAL -= 10
+	LOCALS = %LOCALS% - %ITEMNAME:3%(10)
+ENDIF
+;ビデオ撮影
+IF TEQUIP:ビデオカメラ
+	LOCAL -= 20
+	LOCALS = %LOCALS% - 撮影中(20)
+ENDIF
+IF TEQUIP:野外プレイ
+	LOCAL -= 10
+	LOCALS = %LOCALS% - 野外プレイ(10)
+ENDIF
+
+;合計を表示(33以上で実行)
+CALL PRINT_COM_ORDER_COM, LOCALS, ARG, LOCAL, 33
+
+RETURN RESULT

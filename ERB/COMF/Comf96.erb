@@ -1,0 +1,228 @@
+﻿@COM96
+;アナル奉仕
+CALL PRINT_TRAIN_NAME(SELECTCOM)
+
+;-------------------------------------------------
+;実行できるかの判定
+;-------------------------------------------------
+CALL SHOW_COM_ORDER_COM, 96
+
+;実行できない
+SIF TCVAR:28 == 0
+	RETURN 0
+;-------------------------------------------------
+;実行決定
+;-------------------------------------------------
+CALL TRAIN_MESSAGE_B
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+STR:0 = %STR:2%
+
+;-------------------------------------------------
+;射精チェック
+;-------------------------------------------------
+IF CHECK_COM("Ａ責め手コキ")
+	CALL SAMEN_CHECK, 70
+	SELECTCOM = PREVCOM
+	CALL SAMEN_CHECK, 50
+	SELECTCOM = 96
+ELSE
+	CALL SAMEN_CHECK
+ENDIF
+
+RETURN 1
+
+@FLAG_COM96, ARG
+SIF TEQUIP:押し倒し == 0
+	CALL SETFLAG, "Ａ奉仕フラグ", TARGET
+SIF CHECK_COM("Ａ責め手コキ") == 96
+	CALL FLAG_COM90, 50
+;対象の口⇔調教者のAの汚れが移動
+CALL EQ_STAIN, TARGET, PLAYER, 0, 4
+
+@SOURCE_COM96, ARG
+SIF CHECK_COM("Ａ責め手コキ") == 96
+	CALL SOURCE_COM90, 50
+
+VARSET LOCAL
+
+LOCAL:20 += 10
+LOCAL:21 += 100
+
+LOCAL:8 = COM_ORDER_STAIN("Ａ", "Ｍ")*100 + 100
+LOCAL:11 = CALCF("実行値による欲情追加")
+LOCAL:14 = 3000
+
+;汚れデータを元に、LOCAL:8は上で決定
+
+;ABL:奉仕精神をみる
+SELECTCASE ABL:奉仕精神
+CASE 0
+	LOCAL:4 = 250
+	LOCAL:5 = 50
+CASE 1
+	LOCAL:4 = 300
+	LOCAL:5 = 100
+CASE 2
+	LOCAL:4 = 350
+	LOCAL:5 = 200
+CASE 3
+	LOCAL:4 = 400
+	LOCAL:5 = 300
+CASE 4
+	LOCAL:4 = 450
+	LOCAL:5 = 500
+CASEELSE
+	LOCAL:4 = 500
+	LOCAL:5 = 750
+ENDSELECT
+
+IF TEQUIP:押し倒し
+	LOCAL:4 += 1000
+ELSE
+	LOCAL:13 = 5000
+ENDIF
+
+;ABL:技巧をみる
+SELECTCASE ABL:技巧
+CASE 0
+	TIMES LOCAL:4 , 0.50
+	TIMES LOCAL:5 , 0.50
+CASE 1
+	TIMES LOCAL:4 , 0.80
+	TIMES LOCAL:5 , 0.80
+CASE 2
+CASE 3
+	TIMES LOCAL:4 , 1.20
+	TIMES LOCAL:5 , 1.20
+CASE 4
+	TIMES LOCAL:4 , 1.50
+	TIMES LOCAL:5 , 1.50
+CASEELSE
+	TIMES LOCAL:4 , 2.00
+	TIMES LOCAL:5 , 2.00
+ENDSELECT
+
+
+CALL CALC, "調教ソース", LOCAL:0, LOCAL:1, LOCAL:2, LOCAL:3, LOCAL:4, LOCAL:5, LOCAL:6, LOCAL:7, LOCAL:8, LOCAL:9, LOCAL:10, LOCAL:11, LOCAL:12, LOCAL:13, LOCAL:14, LOCAL:15, LOCAL:16, LOCAL:17, LOCAL:18, LOCAL:19, LOCAL:20, LOCAL:21, ARG
+
+
+@TRAIN_MESSAGE_COM96
+;同時押し倒し
+IF TEQUIP:Ｗ押し倒し
+	PRINTFORM %CALLNAME:TARGET%は
+	;助手が前回と同じ行動(違う行動の時は、ここでなく、EQUIP_COM32で記述)
+	SIF SELECTCOM:1 == PREVCOM:1 && SELECTCOM:1 >= 0
+		PRINTFORM %TEXTS("Ｗ押し倒し中")%
+	IF SELECTCOM == PREVCOM
+		PRINTFORMW %CALLNAME:MASTER%のアナルに、舌を這わせて舐めまわし続けている…
+	ELSE
+		IF ABL:奉仕精神 >= 3 && ABL:サドっ気 >= 3 && RAND:2 == 0
+			PRINTFORMW %CALLNAME:MASTER%のお尻の穴を、尖らせた舌で中まで舐めてきた…
+		ELSEIF ABL:奉仕精神 >= 3
+			PRINTFORMW %CALLNAME:MASTER%のアナルを、しっかりと舌で舐め清めた…
+			STAIN:MASTER:Ａ = SET_STAIN(0, "Ａ")
+		ELSE
+			PRINTFORMW %CALLNAME:MASTER%のお尻の穴を、チロチロと舌で責めてきた…
+		ENDIF
+	ENDIF
+ELSEIF CHECK_COM("３Ｐ奉仕")
+	CALL TRAIN_MESSAGE_3P
+ELSE
+	PRINTFORM %CALLNAME:TARGET%は
+	;前回逆アナル
+	IF PREVPLAY("Ａインサート", PLAYER)
+		PRINTFORM 、埋めるものが無くなっても口を僅かに開いたままの%CALLNAME:PLAYER%のアナル
+		IF ABL:奉仕精神 >= 3 && RAND:2 == 0
+			PRINTW を舌で労わった…
+		ELSE
+			PRINTW に舌を這わせた…
+		ENDIF
+	ELSE
+		IF CHECK_COM("Ａ責め手コキ")
+			IF PREVCOM == 97
+				LOCALS = %CLO("ぱんつコキ")%
+				LOCALS:1 = %LOCALS%
+			ELSE
+				LOCALS = 手
+				LOCALS:1 = 掌
+			ENDIF
+			IF TALENT:恋慕 && RAND:4 == 0
+				PRINTFORM ペニスを愛しそうに%LOCALS%で扱きながら、
+			ELSEIF ABL:技巧 >= 3 && ABL:奉仕精神 >= 3 && RAND:3 == 0
+				PRINTFORM 亀頭を%LOCALS:1%でこね回しながら、
+			ELSEIF ABL:技巧 >= 3 && RAND:2 == 0
+				PRINTFORM ペニスを絶妙な力加減で刺激しながら、
+			ELSEIF RAND:2 == 0
+				PRINTFORM ペニスをゆっくりと%LOCALS%で扱きながら、
+			ELSE
+				PRINTFORM ペニスを%LOCALS%で扱きながら、
+			ENDIF
+		ENDIF
+		IF ABL:奉仕精神 >= 3 && ABL:サドっ気 >= 3 && RAND:2 == 0
+			PRINTFORMW %CALLNAME:PLAYER%のお尻の穴を尖らせた舌で中まで舐めてきた…
+		ELSEIF ABL:奉仕精神 >= 3
+			PRINTFORMW しっかりとアナルを舌で舐め清めはじめた…
+			STAIN:PLAYER:Ａ = SET_STAIN(0, "Ａ")
+		ELSEIF ABL:サドっ気 >= 3 || TEQUIP:押し倒し
+			PRINTFORMW %CALLNAME:PLAYER%のお尻の穴を舌で責めてきた…
+		ELSE
+			PRINTFORMW %CALLNAME:PLAYER%のアナルをおそるおそる舐めてきた…
+		ENDIF
+	ENDIF
+ENDIF
+
+
+@COM_ORDER_COM96, ARG
+VARSET LOCAL
+LOCALS = 
+
+;すべての命令に共通の要素を考慮
+;(従順が高いと命令に従いやすいなど)
+CALL COM_ORDER, ARG
+
+LOCAL = RESULT
+
+;ABL:サドっ気
+IF ABL:サドっ気
+	LOCAL += ABL:サドっ気 * 5
+	LOCALS = %LOCALS% + %ABLNAME:15%LV{ABL:サドっ気}({ABL:サドっ気 * 5})
+ENDIF
+;ABL:奉仕精神
+IF ABL:奉仕精神
+	LOCAL += ABL:奉仕精神 * 4
+	LOCALS = %LOCALS% + %ABLNAME:6%LV{ABL:奉仕精神}({ABL:奉仕精神 * 4})
+ENDIF
+
+;恥じらい
+IF TALENT:恥じらい
+	LOCAL -= 5
+	LOCALS = %LOCALS% - %TALENTNAME:35%(5)
+ENDIF
+;献身的
+IF TALENT:献身
+	LOCAL += 6
+	LOCALS = %LOCALS% + %TALENTNAME:63%(6)
+ENDIF
+;快感の否定
+IF TALENT:快感の否定
+	LOCAL -= 1
+	LOCALS = %LOCALS% - %TALENTNAME:71%(1)
+ENDIF
+
+;汚れあり
+IF COM_ORDER_STAIN("Ａ", "Ｍ")
+	LOCAL -= COM_ORDER_STAIN("Ａ", "Ｍ")
+	LOCALS = %LOCALS% - 汚れあり
+	;汚臭鈍感
+	SIF TALENT:汚臭鈍感 || TALENT:汚臭敏感
+		LOCALS = %LOCALS%、\@TALENT:汚臭鈍感 ? %TALENTNAME:61% # %TALENTNAME:62%\@
+	LOCALS = %LOCALS%({COM_ORDER_STAIN("Ａ", "Ｍ")})
+ENDIF
+
+;合計を表示(40以上で実行)
+CALL PRINT_COM_ORDER_COM, LOCALS, ARG, LOCAL, 40
+
+RETURN RESULT

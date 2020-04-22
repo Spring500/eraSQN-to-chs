@@ -1,0 +1,627 @@
+﻿;-------------------------------------------------
+;書類仕事をしているあなたを暇を持て余した夢魔が襲う
+;ヴァンパイア２口上作者のIRC>>あねふぁさんに凄いいっぱい手伝ってもらいました！感謝！！
+;-------------------------------------------------
+@EVENT_DESKWORK
+#DIM LCOUNT
+;イベント対象
+#DIM ACTOR
+;該当するキャラの人数
+#DIM NUM_FIND
+
+;まず、メインキャラを選ぶ
+ACTOR = 0
+NUM_FIND = 0
+FOR LCOUNT, 2, CHARANUM
+	;登場できるかどうか
+	SELECTCASE NO:LCOUNT
+	;マーメイドは脚無いから…
+	CASE 13, 37
+		CONTINUE
+	;息子は…誰か書いて！
+	CASE 94
+		CONTINUE
+	ENDSELECT
+
+
+	;夜這い可能ぐらいが条件か
+	SIF COND("夜這い可能", LCOUNT) == 0
+		CONTINUE
+
+	NUM_FIND += 1
+	SIF RAND:NUM_FIND == 0
+		ACTOR = LCOUNT
+NEXT
+
+SIF ACTOR == 0
+	RETURN 0
+
+CALL EVENT_DESKWORK_MAIN, ACTOR
+
+;お仕事フラグON
+FLAG:12 = 1
+
+;-------------------------------------------------
+;こちらが本編
+;-------------------------------------------------
+@EVENT_DESKWORK_MAIN, ARG
+#DIM MEMO_LINECOUNT
+#DIM CHOICE
+;稼いだ額
+#DIM EARN_MONEY
+
+PRINTL 
+
+IF CEVENT("書類仕事：導入", ARG) == 0
+	DRAWLINE
+	;セリフがあるかの判定
+	MEMO_LINECOUNT = LINECOUNT
+
+	TRYCALLFORM GUEST_KOJO_K{NO:ARG}_{CFLAG:ARG:209}, "書類仕事：導入", ARG
+
+	;喋らない場合には汎用
+	IF LINECOUNT == MEMO_LINECOUNT
+		PRINTFORM %CALLNAME:MASTER%が書類仕事をしていると、
+		;条件で分岐してフラグ設定
+		IF COND("ご無沙汰", ARG)
+			PRINTL 
+			PRINTFORM 難しい表情をした
+		ENDIF
+		PRINTFORMW %CALLNAME:ARG%が様子を伺ってきました
+	ENDIF
+	PRINTL 
+	PRINTFORML …どうしますか？
+	PRINTFORML [ 0] 手伝わせる
+	;PRINTFORML [ 1] キスする
+	;PRINTFORML [ 2] セクハラする
+	PRINTFORML [ 1] 構わず仕事を続ける
+
+	CALL SET_CEVENT, "書類仕事：導入", ARG
+ELSEIF CEVENT("書類仕事：無視", ARG)
+	PRINTFORML ……どうしますか？！
+	PRINTFORML [ 0] 手伝わせる
+	;PRINTFORML [ 1] キスする
+	;PRINTFORML [ 2] セクハラする
+	PRINTFORML [ 1] 仕事をする！
+ENDIF
+;PRINTL [ 9] スルー
+CALL INPUT_SELECT, 2
+
+CHOICE = RESULT
+
+;セリフがあるかの判定
+MEMO_LINECOUNT = LINECOUNT
+
+SELECTCASE CHOICE
+;手伝わせる
+CASE 0
+	;専用セリフ有ったとしても汎用口上もいいよね
+	SIF CFLAG:ARG:71 && RAND:3 == 0
+		CALL KOJO_EVENT_DESKWORK, "書類仕事：お手伝い", ARG
+	SIF LINECOUNT == MEMO_LINECOUNT
+		TRYCALLFORM GUEST_KOJO_K{NO:ARG}_{CFLAG:ARG:209}, "書類仕事：お手伝い", ARG
+	;喋らない場合には汎用口上
+	SIF LINECOUNT == MEMO_LINECOUNT
+		CALL KOJO_EVENT_DESKWORK, "書類仕事：お手伝い", ARG
+
+	EARN_MONEY = 100 + ABL:MASTER:技巧 * RAND:100 + ABL:ARG:技巧 * RAND:100 + RAND:100
+	MONEY += EARN_MONEY
+
+	PRINTL 
+	PRINTFORMW ……資金%MONEY_C(EARN_MONEY)%を獲得した。
+;キス。怒った相手をごまかしたりなんなり
+;CASE 1
+;	TRYCALLFORM GUEST_KOJO_K{NO:ARG}_{CFLAG:ARG:209}, "書類仕事：キス", ARG
+;各種セクハラ取り揃えております
+;CASE 2
+;	TRYCALLFORM GUEST_KOJO_K{NO:ARG}_{CFLAG:ARG:209}, "書類仕事：セクハラ", ARG
+;本当に無視しちゃっていいのかい
+CASE 1
+	;専用セリフ有ったとしても汎用口上もいいよね
+	SIF CFLAG:ARG:71 && RAND:3 == 0
+		CALL KOJO_EVENT_DESKWORK, "書類仕事：無視", ARG
+	SIF LINECOUNT == MEMO_LINECOUNT
+		TRYCALLFORM GUEST_KOJO_K{NO:ARG}_{CFLAG:ARG:209}, "書類仕事：無視", ARG
+
+	;喋らない場合には汎用口上
+	SIF LINECOUNT == MEMO_LINECOUNT
+		CALL KOJO_EVENT_DESKWORK, "書類仕事：無視", ARG
+
+	;最初に無視をした時の反応を見たらフラグＯＮ
+	;一回無視したら退室しちゃうキャラの場合にはセリフの方で"書類仕事：退室"フラグをＯＮにすればＯＫ
+	IF CEVENT("書類仕事：無視", ARG) == 0 && CEVENT("書類仕事：退室", ARG) == 0
+		CALL SET_CEVENT, "書類仕事：無視", ARG
+		RESTART
+	;無視できないフラグがあると無限ループ
+	ELSEIF CEVENT("書類仕事：無視できない", ARG) && CEVENT("書類仕事：退室", ARG) == 0
+		RESTART
+	;無視できた場合にはわずかばかりの金策成功
+	ELSE
+		EARN_MONEY = 300 + ABL:MASTER:技巧 * RAND:100 + RAND:100
+		MONEY += EARN_MONEY
+
+		PRINTL 
+		PRINTFORMW %CALLNAME:MASTER%の働きにより、資金%MONEY_C(EARN_MONEY)%を獲得した。
+	ENDIF
+ENDSELECT
+
+CALL DEL_CEVENT_GROUP, "書類仕事", ARG
+
+DRAWLINE
+
+;-------------------------------------------------
+;汎用セリフ置き場。似た性格でまとめてあります
+;-------------------------------------------------
+@KOJO_EVENT_DESKWORK, ARGS, ARG
+#DIM MEMO_LINECOUNT
+
+;セリフがあるかの判定
+MEMO_LINECOUNT = LINECOUNT
+
+SELECTCASE ARGS
+;現在用意されているのは、お菓子、
+CASE "書類仕事：お手伝い"
+	;キャラ番号で分岐
+	SELECTCASE NO:ARG
+	;サキュバス、ラミア、アプサラス、アルケニー、ベルナドット、エスト、黒サフィ
+	CASE 1, 10, 14, 18, 47, 48, 57
+		IF RAND:4 == 0
+			PRINTFORMW 少し疲れた%CALLNAME:MASTER%は、%CALLNAME:ARG%に膝枕をお願いしてみました
+			PRINTL 
+			PRINTFORMW 「ふふふ甘えん坊さんねぇ……いいわ、こっちに来なさい」
+			PRINTFORMW %CALLNAME:ARG%は膝に乗せた%CALLNAME:MASTER%の頭を撫でながら、静かに歌を歌い始めました……
+			PRINTFORMW 「……こんな事で良いなら、いつだってしてあげるわよ♪」
+			PRINTFORML ………
+			PRINTFORML ……
+			PRINTFORMW …
+			PRINTFORMW 十分にリフレッシュした%CALLNAME:MASTER%は書類仕事に戻りました。
+		ELSEIF RAND:3 == 0
+			PRINTFORMW %CALLNAME:MASTER%は%CALLNAME:ARG%に書類仕事のお手伝いをお願いしてみました
+			PRINTL 
+			PRINTFORMW 「これを片付ければ良いのね？ いいわ、任せなさい」
+			PRINTFORMW %CALLNAME:ARG%は目の前の書類を適当に掴み、それらに目を通し始めました……
+			PRINTFORML ………
+			PRINTFORML ……
+			PRINTFORMW …
+			PRINTFORMW %CALLNAME:ARG%が手伝ってくれたお陰で、%CALLNAME:MASTER%は予定の半分の時間で仕事を終えました。
+			PRINTFORMW 「ふふ、こんなので良かったらいつでも手伝ってあげるわ」
+			PRINTFORMW 「つまらないコトはさっさと終わらせて、もっと楽しいコトしましょう♪」
+		ELSEIF RAND:2
+			PRINTFORMW %CALLNAME:MASTER%は%CALLNAME:ARG%にお茶を淹れてもらうことにしました
+			PRINTL 
+			PRINTFORMW 「あら。なんか珍しい事頼まれちゃったわ……、でもそうね、いいわよ♪」
+			PRINTFORML ………
+			PRINTFORML ……
+			PRINTFORMW …
+			PRINTFORML 「はい、どうかしら……えっ、渋い？ ｽﾞｽﾞ……！」
+			PRINTFORMW 「う、うーん、ほら、ミルクと…そう！蜂蜜も入れてみてくれないかしら……どう？」
+			PRINTFORMW 色々足したおかげか何とか飲める味になって、%CALLNAME:ARG%も胸を撫で下ろしています…
+			PRINTL 
+			PRINTFORMW %CALLNAME:MASTER%がまた御馳走してくれと言うと、%CALLNAME:ARG%は笑顔で頷きました。
+		ELSE
+			PRINTFORMW %CALLNAME:MASTER%は%CALLNAME:ARG%に手招きして、お茶菓子を食べるのを手伝ってと誘いました
+			PRINTL 
+			PRINTFORMW 「ぷっ、…クスクス……アハハっ♪ 面白いこと言うわねぇ……いいわよ、手伝ってあげる♪」
+			PRINTFORMW 妙な誘い文句が功を奏したか、%CALLNAME:ARG%は%CALLNAME:MASTER%と二人きりでのお茶会に嬉しそうです…
+			PRINTL 
+			PRINTFORMW 穏やかなやり取りでリフレッシュした%CALLNAME:MASTER%は書類仕事に戻りました。
+		ENDIF
+	;インプ、ゴブリン、ロッコ、ステラ、ドロレス、娘
+	CASE 2, 31, 40, 50, 59, 97
+		IF RAND:5 == 0
+			PRINTFORMW 少し疲れた%CALLNAME:MASTER%は、%CALLNAME:ARG%に膝枕をお願いしてみました
+			PRINTL 
+			PRINTFORMW 「…ぷっ♪ きゃははっ、%CNAMET(ARG, "二人称")%子供みた〜い♪」
+			PRINTFORM 「でもねー、いいよっ、大好きな%CNAMET(ARG, "二人称")%のおねがいだもんね
+			CALL HEARTMARK_E
+			PRINTFORM 「ほらほら〜、%CALLNAME:ARG%ママの膝、か・し・た・げ・る
+			CALL HEARTMARK_E
+			PRINTFORML ………
+			PRINTFORML ……
+			PRINTFORMW …
+			PRINTFORMW 肉付きの薄い枕でしたが、十分にリフレッシュした%CALLNAME:MASTER%は書類仕事に戻りました。
+		ELSEIF RAND:4 == 0
+			PRINTFORMW %CALLNAME:MASTER%は%CALLNAME:ARG%を膝の上にのせて能率ＵＰを図ることにしました
+			PRINTL 
+			IF RAND:2
+				PRINTFORMW 「ねー%CNAMET(ARG, "二人称")%。 %CNAMET(ARG, "一人称")%のお尻になんか硬いの当たってるんだけど……これ、なぁに♪」
+				PRINTFORMW 笑顔で勃起したペニスを弄ぶ%CALLNAME:ARG%の無邪気な様に、疲れが嘘のように引いていく…
+			ELSE
+				PRINTFORMW 「んふふっ♪ %CNAMET(ARG, "二人称")%は、本当にあまえんぼさんなんだから〜♪」
+				PRINTFORMW 上機嫌で体を擦り付ける%CALLNAME:ARG%の良い匂いに、疲れが嘘のように引いていく…
+			ENDIF
+			PRINTL 
+			PRINTFORMW リフレッシュした%CALLNAME:MASTER%は書類仕事に戻りました。
+		ELSEIF RAND:3 == 0
+			PRINTFORMW %CALLNAME:MASTER%は%CALLNAME:ARG%に書類仕事のお手伝いをお願いしてみました
+			PRINTL 
+			PRINTFORML 「うんいいよ、いっぱいお手伝いするね♪」
+			PRINTFORMW 「えっと……とりあえずこれを読むんだよね」
+			PRINTFORMW %CALLNAME:ARG%は%CALLNAME:MASTER%の隣に座り、書類とにらめっこを始めました……
+			PRINTFORML ………
+			PRINTFORML ……
+			PRINTFORMW …
+			PRINTFORMW 「ねーねー%CNAMET(ARG, "二人称")%、これってどういう意味？」
+			PRINTFORMW %CALLNAME:ARG%がたくさん質問してくるので仕事は進みませんでしたが、%CALLNAME:MASTER%には良い気分転換になりました。
+		ELSEIF RAND:2
+			PRINTFORMW 疲れのたまった%CALLNAME:MASTER%は、%CALLNAME:ARG%にマッサージをお願いしてみました
+			PRINTL 
+			PRINTFORMW 「んふふ、いいよっ♪」
+			PRINTFORMW 「とんとんおかたをたたきましょー♪ とんとん、とんとん、とんとんとん♪」
+			PRINTFORMW %CALLNAME:ARG%はニコニコしながら上手に肩叩きしてきました…
+			PRINTFORML ………
+			PRINTFORML ……
+			PRINTFORMW …
+			PRINTFORMW 肩凝りに別れを告げた%CALLNAME:MASTER%は、%CALLNAME:ARG%の頭を撫でて書類仕事に戻りました。
+		ELSE
+			PRINTFORMW %CALLNAME:MASTER%は%CALLNAME:ARG%に手招きして、お茶菓子を食べるのを手伝ってと誘いました
+			PRINTL 
+			IF RAND:2
+				PRINTFORMW 「えっ、お仕事中なのに……いいの？ ……んふふ♪」
+				PRINTFORML 「%CNAMET(ARG, "一人称")%、%CNAMET(ARG, "二人称")%だ〜〜〜〜い好き！」
+				PRINTFORMW お菓子の事が気になっていた様子の%CALLNAME:ARG%は、%CALLNAME:MASTER%とのお茶会に物凄く嬉しそうです…
+			ELSE
+				PRINTFORML 「これ食べていいの？ えっと……%CNAMET(ARG, "一人称")%もこれあげるっ♪」
+				PRINTFORMW %CALLNAME:ARG%はポケットからハニービスケットを取り出し、%CALLNAME:MASTER%に差し出しました。
+				PRINTFORMW 「どう？ おいしい？ じゃあ次はね〜」
+				PRINTFORMW %CALLNAME:ARG%からお菓子を貰って食べていると、何だか幸せな気分になりました……
+			ENDIF
+			PRINTL 
+			PRINTFORMW 穏やかなやり取りでリフレッシュした%CALLNAME:MASTER%は書類仕事に戻りました。
+		ENDIF
+	;ドライアド、ヴァンパイア、プロフェテス、ユニコーン、フィムブルヴェト、メルヤ、ヴァルキリー
+	CASE 3, 25, 27, 30, 49, 54, 61
+		PRINTFORMW %CALLNAME:MASTER%は%CALLNAME:ARG%に手招きして、お茶菓子を食べるのを手伝ってと誘いました
+		PRINTL 
+		PRINTFORMW 「えっ？ は、はぁ……そんなことで宜しければ……失礼します」
+		PRINTFORMW 困惑気味の%CALLNAME:ARG%でしたが、%CALLNAME:MASTER%と二人きりでのお茶会に嬉しそうです…
+		PRINTL 
+		PRINTFORMW 穏やかなやり取りでリフレッシュした%CALLNAME:MASTER%は書類仕事に戻りました。
+	;ピクシー、ハニービー
+	CASE 4, 60
+		IF RAND:2
+			PRINTFORMW %CALLNAME:MASTER%は%CALLNAME:ARG%を膝の上にのせて能率ＵＰを図ることにしました
+			PRINTL 
+			IF RAND:2
+				PRINTFORMW 「ねー%CNAMET(ARG, "二人称")%。 %CNAMET(ARG, "一人称")%のお尻になんか硬いの当たってるんだけど……これ、なぁに♪」
+				PRINTFORMW 笑顔で勃起したペニスを弄ぶ%CALLNAME:ARG%の無邪気な様に、疲れが嘘のように引いていく…
+			ELSE
+				PRINTFORMW 「んふふっ♪ %CNAMET(ARG, "二人称")%は、本当にあまえんぼさんなんだから〜♪」
+				PRINTFORMW 上機嫌で体を擦り付ける%CALLNAME:ARG%の良い匂いに、疲れが嘘のように引いていく…
+			ENDIF
+			PRINTL 
+			PRINTFORMW リフレッシュした%CALLNAME:MASTER%は書類仕事に戻りました。
+		ELSE
+			PRINTFORMW %CALLNAME:MASTER%は%CALLNAME:ARG%に手招きして、お茶菓子を食べるのを手伝ってと誘いました
+			PRINTL 
+			PRINTFORMW 「……ぶぷっ♪ %CNAMET(ARG, "二人称")%、言うこと面白〜い♪」
+			PRINTFORMW 「じゃあね………このクッキー１枚だけなら、手伝ってあげる♪」
+			PRINTFORMW 妙な誘い文句が功を奏したか、%CALLNAME:ARG%は%CALLNAME:MASTER%と二人きりでのお茶会に嬉しそうです…
+			PRINTL 
+			PRINTFORMW 穏やかなやり取りでリフレッシュした%CALLNAME:MASTER%は書類仕事に戻りました。
+		ENDIF
+	;シルフ、ミミック、ジャブジャブ
+	CASE 5, 33, 43
+		IF RAND:2
+			PRINTFORMW %CALLNAME:MASTER%は%CALLNAME:ARG%にお茶を淹れてもらうことにしました
+			PRINTL 
+			PRINTFORMW 「んふっ、まっかせて〜♪ 凄い美味しいの飲ませてあげちゃうんだから！」
+			PRINTFORML ………
+			PRINTFORML ……
+			PRINTFORMW …
+			PRINTFORMW 「おまたせしました〜♪ さ、飲んでっ飲んでっほーらグイっと！♪」
+			PRINTFORMW 「どう？ 美味しい？ ……%CNAMET(ARG, "一人称")%のこと、も〜っと大好きになっちゃった？♪」
+			PRINTL 
+			PRINTFORMW 勢いに押された%CALLNAME:MASTER%が惚れ直したと言うと、%CALLNAME:ARG%は笑顔で頷きました。
+		ELSE
+			PRINTFORMW %CALLNAME:MASTER%は%CALLNAME:ARG%に手招きして、お茶菓子を食べるのを手伝ってと誘いました
+			PRINTL 
+			PRINTFORML 「いいわよ♪ じゃあこれ貰うわね………ひゃい♪」
+			PRINTFORMW ノリノリの%CALLNAME:ARG%は棒状のお菓子を咥えて、反対側を差し出してきた。
+			PRINTFORMW どうやら、こっち側から食べ始めろということらしい……
+			PRINTL 
+			PRINTFORMW 穏やかなやり取りでリフレッシュした%CALLNAME:MASTER%は書類仕事に戻りました。
+		ENDIF
+	;村娘、スキュラ、ドラグーン、マーシャ
+	CASE 8, 9, 15, 24, 26, 32, 44, 55
+		IF RAND:3 == 0
+			PRINTFORMW %CALLNAME:MASTER%は%CALLNAME:ARG%に書類仕事のお手伝いをお願いしてみました
+			PRINTL 
+			PRINTFORMW （わ…わわわ……これ、エッチの記録だぁ……）
+			PRINTFORMW （他の人って、こ、こんなことしてるんだぁ……♪）
+			PRINTL 
+			PRINTFORMW %CALLNAME:ARG%は終始上の空でしたが、思ったよりは役に立ちました。
+		ELSEIF RAND:2
+			PRINTFORM %CALLNAME:MASTER%は%CALLNAME:ARG%に、
+			PRINTFORMW 座りっぱなしでお尻が痛くなってきたから椅子になってくれないか？と冗談を言ってみました
+			PRINTL 
+			PRINTFORMW 「えっ…え？ えーと………い、いーっす、よ…？」
+			PRINTFORMW 「ご、ごめんなさい、今の無しでお願いします……」
+			PRINTFORMW  %CALLNAME:ARG%は真っ赤になって、俯きながら所在なく手を動かしている……
+			PRINTL 
+			PRINTFORMW 少しだけ心が癒された%CALLNAME:MASTER%は、%CALLNAME:ARG%にお礼を言って仕事に戻りました。
+		ELSE
+			PRINTFORMW %CALLNAME:MASTER%は%CALLNAME:ARG%に手招きして、お茶菓子を食べるのを手伝ってと誘いました
+			PRINTL 
+			PRINTFORMW 「えっ？ う、うん……%CNAMET(ARG, "一人称")%でいいなら……隣、座っていい？」
+			PRINTFORMW 困惑気味の%CALLNAME:ARG%でしたが、%CALLNAME:MASTER%と二人きりでのお茶会に嬉しそうです…
+			PRINTL 
+			PRINTFORMW 穏やかなやり取りでリフレッシュした%CALLNAME:MASTER%は書類仕事に戻りました。
+		ENDIF
+	;ハーピー、メイブ、エスプラーナ
+	CASE 11, 17, 38
+		IF RAND:2
+			PRINTFORM %CALLNAME:MASTER%は%CALLNAME:ARG%に、
+			PRINTFORMW 座りっぱなしでお尻が痛くなってきたから椅子になってくれないか？と冗談を言ってみました
+			PRINTL 
+			PRINTFORML 「はアァぁぁア〜？」
+			PRINTFORMW 「まったく、お行儀の悪い口ねぇ……誰がご主人様なのか改めて教えてあげないとダメなのかしら？」
+			PRINTFORMW 「ほら、なにいつまでも椅子に座ってんのよ…さっさと床に降りなさい」
+			PRINTFORMW %CALLNAME:ARG%は床に正座した%CALLNAME:MASTER%の前で仁王立ちになり…頬にピシャリと極弱い平手打ちをしてきた
+			PRINTFORMW 「なにしてるの？ こういう時には言われなくても%CNAMET(ARG, "一人称")%のココにキスするって分からないの？」
+			PRINTFORMW 「ほんっと…出来の悪い下僕を持つと気苦労が絶えないわね……今日は念入りに覚え込ませてアゲルから感謝なさい？」
+			PRINTL 
+			EXP:PLAYER:クンニ経験 += 5
+			PRINTFORML クンニ経験＋5（%CALLNAME:MASTER%）
+			PRINTL 
+			PRINTFORM %CALLNAME:MASTER%は…たっぷりと躾けられてしまった……
+			CALL HEARTMARK_W
+		ELSE
+			PRINTFORMW %CALLNAME:MASTER%は%CALLNAME:ARG%に手招きして、お茶菓子を食べるのを手伝ってと誘いました
+			PRINTL 
+			PRINTFORML 「ハァ？ ………ぷっ、アハハハっ♪ 舐める以外でも、なかなか上手な使い方じゃない……いいわよ、つきあってあげる♪」
+			PRINTFORMW 妙な誘い文句が功を奏したか、%CALLNAME:ARG%は%CALLNAME:MASTER%と二人きりでのお茶会に嬉しそうです…
+			PRINTL 
+			PRINTFORMW 穏やかなやり取りでリフレッシュした%CALLNAME:MASTER%は書類仕事に戻りました。
+		ENDIF
+	;リザードマン、ソルジャー、リズ・ラズ、ルヴィッサ
+	CASE 12, 28, 39, 52
+		IF RAND:3 == 0
+			PRINTFORM %CALLNAME:MASTER%は%CALLNAME:ARG%に、
+			PRINTFORMW 座りっぱなしでお尻が痛くなってきたから椅子になってくれないか？と冗談を言ってみました
+			PRINTL 
+			PRINTFORMW 「はぁ？ ちょっと、%CNAMET(ARG, "二人称")%……頭おかしいんじゃない？」
+			PRINTFORMW %CALLNAME:ARG%相手に、この冗談を使うのは早すぎたようだ…完全に馬鹿を見る目で見られている……
+			PRINTL 
+			PRINTFORMW すっかり呆れた様子の%CALLNAME:ARG%は、長めの溜息をつきながら部屋から出て行ってしまった。
+		ELSEIF RAND:2
+			PRINTFORMW 疲れのたまった%CALLNAME:MASTER%は、%CALLNAME:ARG%にマッサージをお願いしてみました
+			PRINTL 
+			PRINTFORMW 「マッサージして欲しいって%CNAMET(ARG, "二人称")%、結構年寄り臭いわね」
+			PRINTFORMW 「ま、%CNAMET(ARG, "一人称")%は別にいいけど」
+			PRINTFORMW 反射的に嫌味を言ってしまう%CALLNAME:ARG%だったが、行為自体にはむしろ乗り気な様子だ…
+			PRINTFORML ………
+			PRINTFORML ……
+			PRINTFORMW …
+			PRINTFORMW 「ふふ…どう？ 上手いもんでしょ」
+			PRINTFORMW 「%CNAMET(ARG, "二人称")%がどこをどうして欲しいかなんて、%CNAMET(ARG, "一人称")%には丸分かりなんだから」
+			PRINTFORML ………
+			PRINTFORML ……
+			PRINTFORMW …
+			PRINTFORMW 「ハイ、おしまい」
+			PRINTFORML %CALLNAME:MASTER%が椅子から立ち上がり、軽くなった体を伸ばしながら労うと、
+			PRINTFORMW 「…疲れたんじゃないかって？ バカね、そんなことないわよ」
+			PRINTFORMW 「むしろ、頼ってもらえてちょっとだけ……ううん、なんでもないわ」
+			PRINTFORMW %CALLNAME:ARG%は表情を悟られないよう、フイっと顔を逸らした。
+		ELSE
+			PRINTFORMW %CALLNAME:MASTER%は%CALLNAME:ARG%に手招きして、お茶菓子を食べるのを手伝ってと誘いました
+			PRINTL 
+			PRINTFORMW 「……何言ってんの？ そんなことに手伝うも何もないでしょうに……ほら、そこ座るんだからちょっとずれて」
+			PRINTFORMW 口では呆れた風だが、%CALLNAME:ARG%は少し嬉しそうな顔で%CALLNAME:MASTER%とのお茶会を満喫している…
+			PRINTL 
+			PRINTFORMW 穏やかなやり取りでリフレッシュした%CALLNAME:MASTER%は書類仕事に戻りました。
+		ENDIF
+	;うぃっち、バンダースナッチ？
+	CASE 19, 42
+		PRINTFORMW %CALLNAME:MASTER%は%CALLNAME:ARG%に手招きして、お茶菓子を食べるのを手伝ってと誘いました
+		PRINTL 
+		PRINTFORMW 「ふーん……あら、お菓子だけ？ お茶が無いじゃない」
+		PRINTFORMW 「ちょっと待ってて、%CNAMET(ARG, "一人称")%が取って置きの淹れてあげるから」
+		PRINTFORMW %CALLNAME:ARG%のお茶……については敢えて言及を避けるが、二人で楽しい一時を過ごした……
+		PRINTL 
+		PRINTFORMW 穏やかなやり取りでリフレッシュした%CALLNAME:MASTER%は書類仕事に戻りました。
+	;セリフが多いキャラは汎用地の文には流さない
+	CASE 1, 6, 19, 21, 22, 34, 35, 41, 46, 58
+
+	CASEELSE
+		IF RAND:3 == 0
+			PRINTFORMW 少し疲れた%CALLNAME:MASTER%は、%CALLNAME:ARG%に膝枕をお願いしてみました
+			PRINTL 
+			PRINTFORMW %CALLNAME:ARG%は膝に乗せた%CALLNAME:MASTER%の頭を撫でながら、静かに歌を歌い始めました……
+			PRINTFORML ………
+			PRINTFORML ……
+			PRINTFORMW …
+			PRINTFORMW 十分にリフレッシュした%CALLNAME:MASTER%は書類仕事に戻りました。
+		ELSEIF RAND:2
+			PRINTFORMW 疲れのたまった%CALLNAME:MASTER%は、%CALLNAME:ARG%にマッサージをお願いしてみました
+			PRINTL 
+			PRINTFORMW %CALLNAME:ARG%はニコニコしながら上手に肩叩きしてきました…
+			PRINTFORML ………
+			PRINTFORML ……
+			PRINTFORMW …
+			PRINTFORMW 肩凝りに別れを告げた%CALLNAME:MASTER%は、%CALLNAME:ARG%の頭を撫でて書類仕事に戻りました。
+		ELSE
+			PRINTFORMW %CALLNAME:MASTER%は%CALLNAME:ARG%に手招きして、お茶菓子を食べるのを手伝ってと誘いました
+			PRINTL 
+			PRINTFORMW 妙な誘い文句が功を奏したか、%CALLNAME:ARG%は%CALLNAME:MASTER%と二人きりでのお茶会に嬉しそうです…
+			PRINTL 
+			PRINTFORMW 穏やかなやり取りでリフレッシュした%CALLNAME:MASTER%は書類仕事に戻りました。
+		ENDIF
+	ENDSELECT
+
+CASE "書類仕事：無視"
+
+	;最初に無視をした時の反応
+	IF CEVENT("書類仕事：無視", ARG) == 0
+		;キャラ番号で分岐
+		SELECTCASE NO:ARG
+		;サキュバス、ラミア、アプサラス、アルケニー、ベルナドット、エスト、黒サフィ
+		CASE 1, 10, 14, 18, 47, 48, 57
+			PRINTFORMW %CALLNAME:MASTER%は黙々と机に向かっている…
+			PRINTL 
+			IF TALENT:巨乳 && RAND:3
+				PRINTFORMW 「ふぅ……この部屋、ちょっと暑くないかしら」
+				PRINTFORMW %CALLNAME:ARG%は胸元を緩め、谷間を見せつけつつパタパタ扇いでいます…
+			ELSE
+				PRINTFORMW 「ねぇ…仕事ばっかしてないで？ %CNAMET(ARG, "一人称")%と…遊びましょ……♪」
+				IF TALENT:淫乱 && RAND:2
+					PRINTFORMW %CALLNAME:ARG%は%CALLNAME:MASTER%の股間に手を伸ばして、優しく撫で回してきた…
+				ELSE
+					PRINTFORMW %CALLNAME:ARG%は後ろから抱き付いて耳元で甘い言葉を囁きながら、%CALLNAME:MASTER%の胸を撫で回してきた…
+				ENDIF
+			ENDIF
+		;インプ、ゴブリン、ロッコ、ステラ、ドロレス、娘
+		;ピクシー、ハニービー
+		CASE 2, 4, 31, 40, 50, 59, 60, 97
+			PRINTFORMW %CALLNAME:MASTER%は黙々と机に向かっている…
+			PRINTL 
+			PRINTFORMW 「ね〜ね〜、%CNAMET(ARG, "二人称", "甘え")%…♪」
+			IF TALENT:妖精
+				PRINTFORMW %CALLNAME:ARG%は%CALLNAME:MASTER%の肩に腰かけて、ニコニコと笑いかけてきた…
+			ELSEIF RAND:2
+				PRINTFORMW %CALLNAME:ARG%は、ぎゅ〜っと抱きついて\@ TALENT:巨乳 ? 胸の谷間で腕を挟んで # 甘えて \@きた…
+			ELSE
+				PRINTFORMW %CALLNAME:ARG%は後ろから抱き付いて甘えながら、%CALLNAME:MASTER%の胸を撫で回してきた…
+			ENDIF
+		;ドライアド、ヴァンパイア、プロフェテス、ユニコーン、フィムブルヴェト、メルヤ、ヴァルキリー
+		CASE 3, 25, 27, 30, 49, 54, 61
+			PRINTFORMW 「…少しお話したいことが有ったんですけど、今はお忙しいみたいですね」
+			PRINTFORMW 「残念ですけど、出直すことにします……あまり根を詰めないでくださいね？」
+			PRINTFORMW %CALLNAME:ARG%は一言%CALLNAME:MASTER%を労わり、ぺこりと一礼してから静かに退室しました。
+			CALL SET_CEVENT, "書類仕事：退室", ARG
+		;シルフ、ミミック、ジャブジャブ
+		CASE 5, 33, 43
+			PRINTFORMW %CALLNAME:MASTER%は黙々と机に向かっている…
+			PRINTL 
+			PRINTFORM 「んふふっ…♪ お仕事してる%CNAMET(ARG, "主人")%もステキねっ
+			CALL HEARTMARK_E
+			PRINTFORMW 「ねっ、ねっ、これってどういう意味なの？ %CNAMET(ARG, "一人称")%にも教えてっ♪」
+			IF RAND:2
+				PRINTFORMW %CALLNAME:ARG%は、ぎゅっと抱きついて\@ TALENT:巨乳 ? 胸の谷間で腕を挟んで # \@きた…
+			ELSE
+				PRINTFORMW %CALLNAME:ARG%は後ろから抱き付いて、%CALLNAME:MASTER%の胸を撫で回しながら甘えてきた…
+			ENDIF
+		;村娘、スキュラ、ドラグーン、マーシャ
+		CASE 8, 9, 15, 24, 26, 32, 44, 55
+			PRINTFORMW %CALLNAME:MASTER%は黙々と机に向かっている…
+			PRINTL 
+			PRINTFORMW 「あの〜……よければ%CNAMET(ARG, "一人称")%、手伝いましょうか？」
+			PRINTFORMW %CALLNAME:ARG%は肩越しに覗き込みながら、控えめに手伝いを申し出ている…
+		;ハーピー、メイブ、エスプラーナ
+		CASE 11, 17, 38
+
+		;リザードマン、ソルジャー、リズ・ラズ、ルヴィッサ
+		CASE 12, 28, 39, 52
+
+		;うぃっち、バンダースナッチ？
+		CASE 19, 42
+
+		CASEELSE
+
+		ENDSELECT
+
+		;喋らない場合には無言の地の文だが喋ったならここで終わり
+		SIF LINECOUNT != MEMO_LINECOUNT
+			RETURN 1
+
+		PRINTFORMW %CALLNAME:MASTER%は黙々と机に向かっている…
+		PRINTL 
+		PRINTFORMW 「…………」
+		IF TALENT:ARG:強気 + TALENT:ARG:高慢 && TALENT:ARG:素直 == 0 && RANDIF(3, TALENT:ARG:しっぽ, TALENT:ARG:巨乳 >= 2, TALENT:ARG:内気 + TALENT:ARG:臆病) == 0
+			PRINTFORMW %CALLNAME:ARG%は腕を組んでそっぽを向きながら、ちらっちらっと%CALLNAME:MASTER%の様子を伺っている…
+		ELSEIF TALENT:ARG:内気 + TALENT:ARG:臆病 && RANDIF(3, TALENT:ARG:しっぽ, TALENT:ARG:巨乳 >= 2) == 0
+			PRINTFORMW %CALLNAME:ARG%は%CALLNAME:MASTER%のシャツの裾を掴んで、弱々しく引っ張ってきた…
+		ELSEIF TALENT:ARG:巨乳 >= 2 && RANDIF(3, TALENT:ARG:しっぽ) == 0
+			PRINTFORM %CALLNAME:ARG%は胸の下で腕を組んで、おっぱいを強調して見せつけながら佇んでいます…
+		ELSEIF TALENT:ARG:しっぽ && RAND:3
+			PRINTFORM %CALLNAME:ARG%は緊張した空気を醸しながら、
+			;=1猫、=2狼、=3キツネ、=4ウサギ、=5ウマ、=6悪魔の尻尾、=7トカゲ、=8ジャバウォック、=13蜂
+			SELECTCASE TALENT:ARG:しっぽ
+			CASE 1, 6
+				PRINTFORMW 尻尾をうねうねと動かしている…
+			CASE 2, 3, 5
+				PRINTFORMW 尻尾をパタッ…パタッ…と動かしている…
+			CASE 4, 13
+				PRINTFORMW 尻尾をピクピクと動かしている…
+			CASEELSE
+				PRINTFORMW 所在なさそうに尻尾を自らの足にペチペチぶつけたりしている…
+			ENDSELECT
+		ELSE
+			PRINTFORM %CALLNAME:ARG%は%CALLNAME:MASTER%に後ろから
+			IF TALENT:ARG:巨乳 >= 2 && RANDIF(1, AGE(ARG) == 1, TALENT:ARG:魅力, TALENT:ARG:小柄体型)
+				PRINTFORM 豊満な乳房
+			ELSEIF TALENT:ARG:小柄体型 && RANDIF(1, AGE(ARG) == 1, TALENT:ARG:魅力)
+				PRINTFORM ちっちゃい身体
+			ELSEIF TALENT:ARG:魅力 && RANDIF(1, AGE(ARG) == 1)
+				PRINTFORM 魅力的な身体
+			ELSEIF AGE(ARG) == 1
+				PRINTFORM 幼い身体
+			ELSE
+				PRINTFORM 身体
+			ENDIF
+			PRINTFORM を押し付け
+			IF TALENT:ARG:冷静 + TALENT:ARG:感情乏しい
+				PRINTW ながら、ジッと見つめています…
+			ELSE
+				PRINTW て、無言で甘えています…
+			ENDIF
+		ENDIF
+	;無視してしまった…
+	ELSE
+		SELECTCASE NO:ARG
+		;サキュバス、ラミア、アプサラス、アルケニー、エスト、黒サフィ
+		CASE 1, 10, 14, 18, 48, 57
+			PRINTFORML 「……邪魔したわね。 ふーんだ」
+			PRINTFORMW %CALLNAME:ARG%は乱れた着衣のまま、ヅカヅカ！と足音を立てて部屋から出ていきました……
+		;インプ、ゴブリン、ミミック、ロッコ、ステラ、ドロレス、娘
+		;ピクシー、ハニービー
+		CASE 2, 4, 31, 33, 40, 50, 59, 60, 97
+			IF COND("ご無沙汰", ARG) && COND("欲求不満", ARG)
+				PRINTFORMW 「…%CNAMET(ARG, "二人称")%。 %CNAMET(ARG, "一人称")%のこと………キライになっちゃった？」
+				PRINTFORMW 「最近あんまりお部屋に来てくれないし、%CNAMET(ARG, "一人称")%ね…」
+				PRINTL 
+				PRINTL 
+				PRINTFORMW 「え、えへへ。 今のはね、冗談なの」
+				PRINTFORMW 「はくしんの演技が凄くて、びっくりしちゃったでしょ！ ……」
+				PRINTFORMW 「%CNAMET(ARG, "一人称")%……、帰るね！」
+				PRINTFORMW %CALLNAME:ARG%は小走りで部屋を出て行ってしまった…
+			ELSE
+				PRINTFORMW 「……今日のところは引き下がってあげるけど、次は%CNAMET(ARG, "一人称")%と遊んでね？」
+				PRINTFORMW 「%CNAMET(ARG, "二人称")%……お仕事がんばってね！」
+				PRINTFORMW ワガママ言われるかと思いきや、励まされてしまった。
+			ENDIF
+		;ドライアド、ヴァンパイア、プロフェテス、ユニコーン、フィムブルヴェト、メルヤ、ヴァルキリー
+		CASE 3, 25, 27, 30, 49, 54, 61
+			PRINTFORMW 「…少しお話したいことが有ったんですけど、今はお忙しいみたいですね」
+			PRINTFORMW 「残念ですけど、出直すことにします……あまり根を詰めないでくださいね？」
+			PRINTFORMW %CALLNAME:ARG%は一言%CALLNAME:MASTER%を労わり、ぺこりと一礼してから静かに退室しました。
+			CALL SET_CEVENT, "書類仕事：退室", ARG
+		;シルフ、ジャブジャブ
+		CASE 5, 43
+			PRINTFORM 「♪〜〜♪〜〜♪〜〜
+			CALL HEARTMARK_E
+			PRINTFORMW %CALLNAME:ARG%は%CALLNAME:MASTER%に抱きついたまま、楽しそうに鼻歌を歌って呼ばれるのを待っている…
+			CALL SET_CEVENT, "書類仕事：無視できない", ARG
+		;村娘、スキュラ、サロメ、ドラグーン、マーシャ、リン、少女
+		CASE 8, 9, 15, 24, 26, 32, 44, 55
+			PRINTFORMW 「邪魔して……ごめんね」
+			PRINTFORMW %CALLNAME:ARG%は下を向いてトボトボと部屋を出ていきました…
+		;ハーピー、メイブ、エスプラーナ
+		CASE 11, 17, 38
+			PRINTFORMW 「ほーんと、グズなんだから。 ほら、さっさと終わらせて%CNAMET(ARG, "一人称")%の相手なさい？」
+			PRINTFORMW %CALLNAME:ARG%は%CALLNAME:MASTER%を小馬鹿にした物言いをしているものの、椅子に座ってお行儀よく待っている…
+			CALL SET_CEVENT, "書類仕事：無視できない", ARG
+		;マーチヘア
+		CASE 58
+			CALL R3
+			CALL RDD
+		;他の誰がしゃべるか未定（雛形置き場）
+		CASEELSE
+			PRINTFORMW 「……はぁ」
+			PRINTFORMW %CALLNAME:ARG%は下を向いてトボトボと部屋を出ていきました…
+		ENDSELECT
+
+		PRINTL 
+		PRINTFORMW ……もうちょっと構ってあげるべきだったかもしれないが今は仕事だ！
+	ENDIF
+ENDSELECT

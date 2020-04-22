@@ -1,0 +1,284 @@
+﻿@COM82
+;ニプルファック
+CALL PRINT_TRAIN_NAME(SELECTCOM)
+
+CALL TRAIN_MESSAGE_B
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+STR:0 = %STR:2%
+
+;-------------------------------------------------
+;射精チェック
+;-------------------------------------------------
+CALL SAMEN_CHECK
+
+RETURN 1
+
+@FLAG_COM82, ARG
+;胸元が露出しているなら、そこではさむ
+IF CHECK_CLO("乳首露出")
+;はだけられるのに、胸元をはだけていないなら、ずらす
+ELSEIF CHECK_CLO("はだけ可")
+	CALL SETFLAG, "胸をはだける", TARGET
+ENDIF
+;対象のＢ⇔調教者のＰの汚れが移動
+CALL EQ_STAIN, TARGET, PLAYER, 5, 2
+SIF ASSIPLAY == 0 && ABL:Ｂ感覚 >= 3
+	TFLAG:30 += 1
+
+
+@SOURCE_COM82, ARG
+VARSET LOCAL
+
+LOCAL:20 += 50
+LOCAL:21 += 120
+
+LOCAL:13 = 2000
+LOCAL:14 = 3000
+
+;ABL:奉仕精神をみる
+SELECTCASE ABL:奉仕精神
+CASE 0
+	LOCAL:4 = 420
+	LOCAL:5 = 150
+	LOCAL:8 = 400
+CASE 1
+	LOCAL:4 = 500
+	LOCAL:5 = 300
+	LOCAL:8 = 300
+CASE 2
+	LOCAL:4 = 580
+	LOCAL:5 = 600
+	LOCAL:8 = 150
+CASE 3
+	LOCAL:4 = 660
+	LOCAL:5 = 900
+	LOCAL:8 = 50
+CASE 4
+	LOCAL:4 = 740
+	LOCAL:5 = 1500
+	LOCAL:8 = 20
+CASEELSE
+	LOCAL:4 = 820
+	LOCAL:5 = 2200
+ENDSELECT
+
+;ABL:Ｂ感覚をみる
+LOCAL:17 = CALCF("Ｂ刺激", 3)
+SIF TEQUIP:押し倒し == 0
+	LOCAL:17 = SOURCE_EXABL(LOCAL:17, 33, PLAYER)
+
+CALL CALC, "調教ソース", LOCAL:0, LOCAL:1, LOCAL:2, LOCAL:3, LOCAL:4, LOCAL:5, LOCAL:6, LOCAL:7, LOCAL:8, LOCAL:9, LOCAL:10, LOCAL:11, LOCAL:12, LOCAL:13, LOCAL:14, LOCAL:15, LOCAL:16, LOCAL:17, LOCAL:18, LOCAL:19, LOCAL:20, LOCAL:21, ARG
+
+
+@TRAIN_MESSAGE_COM82
+;胸元が露出しているなら、そこではさむ
+IF CHECK_CLO("乳首露出")
+;はだけられるのに、胸元をはだけていないなら、ずらす
+ELSEIF CHECK_CLO("はだけ可")
+	CALL SETFLAG, "胸をはだける", TARGET
+ENDIF
+
+IF CHECK_COM("左右ニプルファック")
+	;同じコマンドの組み合わせで連続実行
+	IF SELECTCOM:2 == PREVCOM:2 && SELECTCOM == PREVCOM
+		PRINTFORM %CALLNAME:PLAYER%と%CALLNAME:(PLAYER:1)%は
+		IF RAND:4 == 0
+			PRINTFORM 内部の粘膜を擦り上げながら
+		ELSEIF RAND:3 == 0
+			PRINTFORM \@ RAND:2 ? 激しい # ゆっくりとした \@腰の動きで
+		ELSEIF RAND:2
+			PRINTFORM 長いストロークで
+		ELSE
+			PRINTFORM タイミングを%TEXTR("合わせて", "ずらして")%
+		ENDIF
+		PRINTFORM %CALLNAME:TARGET%の%TEXTR("左右", "両方")%の乳房を
+		IF RAND:2
+			PRINTW 犯し続けた…
+		ELSE
+			PRINTW 掻き回し続けた…
+		ENDIF
+	ELSE
+		IF RAND:2
+			PRINTFORM %CALLNAME:PLAYER%は
+			IF RAND:2
+				PRINTFORM %CALLNAME:TARGET%の乳首を使っている
+			ELSE
+				PRINTFORM ニプルファックを愉しんでいる
+			ENDIF
+			PRINTFORMW %CALLNAME:(PLAYER:1)%に並び、%TEXTR("空いている", "余った方の")%乳房をペニスで犯しはじめた…
+		ELSE
+			PRINTFORMW %CALLNAME:PLAYER%と%CALLNAME:(PLAYER:1)%は%CALLNAME:TARGET%の両方の胸を犯しはじめた…
+		ENDIF
+	ENDIF
+	RETURN 1
+ELSEIF CHECK_COM("３Ｐ奉仕")
+	CALL TRAIN_MESSAGE_3P
+	RETURN 1
+ELSEIF TEQUIP:押し倒し
+	IF SELECTCOM == PREVCOM
+		PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%のペニスを%TEXTS("おっぱい")%で犯し続けている…
+	ELSE
+		;各調教初回選択時はニプルピアスをはずす
+		SIF TALENT:ニプルピアス && CHOSECOM(SELECTCOM) == 0
+			PRINTFORM ニプルピアスを外した
+		PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%のペニスを拡げた乳首で呑み込み、まるでオナホールでするかのように%TEXTR("激しく", "巧みに", "、緩急をつけて")%扱き上げた…
+	ENDIF
+	RETURN 1
+ELSEIF PREVPLAY("乳内浴尿")
+	PRINTFORMW トイレを済ませてすっきりした%CALLNAME:PLAYER%は、再び%CALLNAME:TARGET%の胸を犯しはじめた…
+	RETURN 1
+ELSEIF SELECTCOM == PREVCOM
+	PRINTFORMW %CALLNAME:PLAYER%は%CALLNAME:TARGET%の胸を犯し続けた…
+	RETURN 1
+ENDIF
+
+PRINTFORM %CALLNAME:PLAYER%は
+;前回はパイズリ
+IF PREVCOM == 92 && COND("前Ｔと同ペア")
+	;汚れてますか？汚臭鈍感で無いならば、実行値の10分の一の値とRAND:5を比べて判定
+	IF CHECK_STAIN(STAIN:PLAYER:Ｐ, "Ｖ", "Ａ") && TALENT:汚臭鈍感 == 0 && RAND:6 > TCVAR:28/10
+		PRINTFORM %TEXTS("匂い")%に眉根を寄せつつ
+	;恋慕or献身的or奉仕精神3以上or汚臭鈍感
+	ELSEIF (TALENT:恋慕 || TALENT:献身 || ABL:奉仕精神 >= 3 || TALENT:汚臭鈍感) && RAND:2 == 0
+		PRINT 嬉しそうに
+	;恥じらい
+	ELSEIF TALENT:恥じらい && RAND:3 == 0
+		PRINT 恥ずかしそうに
+	;欲情4以上
+	ELSEIF PALAM:欲情 >= PALAMLV:4 && RAND:3 == 0
+		SIF TALENT:倒錯的 && RAND:3 == 0
+			PRINTFORM %TEXTS("匂い")%に
+		PRINT 興奮しつつ
+	;恋慕かつ奉仕精神5or献身的かつ奉仕精神3以上
+	ELSEIF ( (TALENT:恋慕 && ABL:奉仕精神 >= 5) || (TALENT:献身 && ABL:奉仕精神 >= 3) ) && RAND:3 == 0
+		PRINT 熱心に
+	;恋慕or献身的or奉仕精神3以上
+	ELSEIF TALENT:恋慕 || TALENT:献身 || ABL:奉仕精神 >= 3
+		PRINT 楽しそうに
+	ELSEIF RAND:2 == 0 && ABL:技巧 < 2
+		PRINT ぎこちなさの残る手つきで
+	ENDIF
+	PRINTFORM 奉仕している%CALLNAME:TARGET%の
+;ベッドに拘束しているなら相手に跨る
+ELSE
+	IF BIND("ベッド", TEQUIP:拘束)
+		PRINTFORM ベッドに拘束されている%CALLNAME:TARGET%の
+		IF AGE(TARGET) >= 3
+			SELECTCASE CONDS("体型")
+			CASE "太め"
+				PRINTFORM 油断気味の
+			CASE "細め"
+				IF TALENT:力持ち
+					PRINTFORM 引き締まった
+				ELSE
+					PRINTFORM ほっそりとした
+				ENDIF
+			CASEELSE
+				SIF TALENT:力持ち
+					PRINTFORM 引き締まった
+			ENDSELECT
+		ENDIF
+		PRINTFORM お腹に跨って
+	ELSE
+		PRINTFORM %CALLNAME:TARGET%の
+	ENDIF
+ENDIF
+;各調教初回選択時はニプルピアスをはずす
+IF TALENT:ニプルピアス && CHOSECOM(SELECTCOM) == 0
+	PRINTFORM 乳首を貫くピアスを外して
+ELSE
+	PRINTFORM %TEXTS("乳首：描写")%乳首に
+	;直前の調教と汚れで分岐
+	SIF CHECK_STAIN(STAIN:PLAYER:Ｐ, "Ｖ", "Ａ")
+		CALL TEXT, "追加地の文：穴から穴へ"
+ENDIF
+PRINTFORM ペニスを%TEXTR("添える", "合わせる", "押し付ける")%と、
+IF EXP:PLAYER:Ｖ挿入経験 + EXP:PLAYER:Ａ挿入経験 && RAND:4 == 0
+	PRINTFORM セックスする時のような動きで
+ELSEIF ABL:PLAYER:サドっ気 && RAND:3 == 0
+	PRINTFORM 荒々しい動きで
+ELSEIF RAND:2
+	PRINTFORM 激しく
+ELSE
+	PRINTFORM 力強く腰を突き出して
+ENDIF
+PRINTFORMW 乳房の中を犯しはじめた
+
+PRINTFORM %CALLNAME:TARGET%の
+IF TALENT:巨乳 && CONFIG("３サイズ") && RAND:3 == 0
+	PRINTFORM %TOFULL(CONDS("バストカップ") )%カップの%TALENT_NAME(110, TALENT:巨乳)%は
+ELSEIF RAND:2
+	IF TALENT:巨乳 >= 2 && RAND:2
+		IF RAND:2
+			PRINTFORM 圧倒的な大きさの乳房は
+		ELSE
+			PRINTFORM たっぷりとした重そうな乳房は
+		ENDIF
+	ELSE
+		IF RAND:2
+			PRINTFORM 魅力的な大きさの乳房は
+		ELSE
+			PRINTFORM たわわに実った乳房は
+		ENDIF
+	ENDIF
+ELSE
+	PRINTFORM 胸は
+ENDIF
+PRINTFORM %TEXTR("侵入してくる", "容赦なく突き込まれる")%ペニス
+SELECTCASE TALENT:巨乳 - SIZE("ペニス", PLAYER)
+CASE IS >= 1
+	PRINTFORM を余裕で受け止め、
+CASE 0
+	PRINTFORM を根元まで飲み込み、
+CASEELSE
+	PRINTFORM を半ばまでしか受け入れられないものの、
+ENDSELECT
+IF RAND:2 && ABL:Ｂ感覚 >= 5
+	IF RAND:3 == 0 && TALENT:淫乳
+		PRINTFORM \@ ABL:Ｂ感覚 >= 7 ? モグモグと # \@咀嚼するように
+	ELSEIF RAND:3 == 0
+		PRINTFORM ざわめくように
+	ELSEIF RAND:2
+		PRINTFORM 活発に
+	ELSE
+		PRINTFORM うねうねと
+	ENDIF
+	IF RAND:2
+		PRINTFORM 蠕動しながら
+	ELSE
+		PRINTFORM 蠢き続けながら
+	ENDIF
+ELSE
+	IF TALENT:淫乳 && RAND:2
+		IF RAND:2
+			PRINTFORM ドロドロに
+		ELSE
+			PRINTFORM 熱く
+		ENDIF
+		PRINTFORM 蕩けた媚肉を
+	ELSE
+		PRINTFORM 熱を持った襞を
+	ENDIF
+	IF ABL:Ｂ感覚 >= 7 && RAND:3 == 0
+		PRINTFORM きゅっきゅっと締めながら
+	ELSEIF ABL:Ｂ感覚 >= 5 && RAND:2
+		PRINTFORM 収縮させながら
+	ELSE
+		PRINTFORM ざわめかせながら
+	ENDIF
+ENDIF
+IF RAND:3 == 0 && TALENT:淫乳
+	IF ABL:Ｂ感覚 >= 5 && RAND:3 == 0
+		PRINTFORM 貪欲に
+	ELSEIF RAND:2
+		PRINTFORM 隙間なく
+	ENDIF
+	PRINTW 絡みついてくる…
+ELSEIF RAND:2
+	PRINTW 刺激してくる…
+ELSE
+	PRINTW 撫で回してくる…
+ENDIF

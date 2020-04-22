@@ -1,0 +1,514 @@
+﻿@COM134
+;縄・拘束
+CALL PRINT_TRAIN_NAME(SELECTCOM)
+
+CALL TRAIN_MESSAGE_B
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+STR:0 = %STR:2%
+
+RETURN 1
+
+@FLAG_COM134, ARG
+
+@SOURCE_COM134, ARG
+VARSET LOCAL
+
+;体勢などで消費変動
+IF TEQUIP:拘束
+	LOCAL:20 += 30
+	LOCAL:21 += 20
+	;20bit 手が使えない, 21bit 足が使えない, 22bit 体勢が変えられない, 23bit 無理な姿勢, 24bit 胸, 25bit 股間
+	IF GETBIT(TEQUIP:拘束, 25)
+		LOCAL:20 += 10
+		LOCAL:21 += 10
+	ENDIF
+	IF GETBIT(TEQUIP:拘束, 24)
+		LOCAL:20 += 5
+		LOCAL:21 += 5
+	ENDIF
+	IF GETBIT(TEQUIP:拘束, 23)
+		LOCAL:20 += 80
+		LOCAL:21 += 60
+	ENDIF
+	IF GETBIT(TEQUIP:拘束, 22)
+		LOCAL:20 += 60
+		LOCAL:21 += 40
+	ENDIF
+	IF GETBIT(TEQUIP:拘束, 21)
+		LOCAL:20 += 40
+		LOCAL:21 += 20
+	ENDIF
+	IF GETBIT(TEQUIP:拘束, 20)
+		LOCAL:20 += 20
+		LOCAL:21 += 10
+	ENDIF
+ELSE
+	LOCAL:20 = 20
+	LOCAL:21 = 20
+ENDIF
+
+;緊縛経験が高いと消費減少
+IF EXP:緊縛経験 >= 300
+	TIMES LOCAL:20 , 0.30
+	TIMES LOCAL:21 , 0.30
+ELSEIF EXP:緊縛経験 >= 50
+	TIMES LOCAL:20 , 0.70
+	TIMES LOCAL:21 , 0.70
+ENDIF
+
+SIF GETBIT(TEQUIP:拘束, 24)
+	LOCAL:17 = CALCF("Ｂ刺激", 0, 10)
+SIF GETBIT(TEQUIP:拘束, 25)
+	LOCAL:0 = CALCF("Ｃ刺激", 0, 10)
+
+LOCAL:6 = 100
+LOCAL:9 = 100
+LOCAL:12 = 500
+LOCAL:13 = 1000
+LOCAL:14 = 500
+
+;0bit 苦痛を伴う, 1bit 強い苦痛を伴う, 2bit 非常に強い苦痛を伴う 
+IF GETBIT(TEQUIP:拘束, 0)
+	LOCAL:6 += 500
+	LOCAL:13 += 500
+	LOCAL:14 += 500
+ELSEIF GETBIT(TEQUIP:拘束, 1)
+	LOCAL:6 += 2000
+	LOCAL:13 += 1500
+	LOCAL:14 += 1500
+ELSEIF GETBIT(TEQUIP:拘束, 2)
+	LOCAL:6 += 6000
+	LOCAL:13 += 3000
+	LOCAL:14 += 3000
+ENDIF
+
+;3bit 羞恥を伴う, 4bit 強い羞恥を伴う, 5bit 非常に強い羞恥を伴う
+IF GETBIT(TEQUIP:拘束, 3)
+	LOCAL:12 += 500
+	LOCAL:13 += 500
+	LOCAL:14 += 500
+ELSEIF GETBIT(TEQUIP:拘束, 4)
+	LOCAL:12 += 2000
+	LOCAL:13 += 1500
+	LOCAL:14 += 1500
+ELSEIF GETBIT(TEQUIP:拘束, 5)
+	LOCAL:12 += 6000
+	LOCAL:13 += 3000
+	LOCAL:14 += 3000
+ENDIF
+
+;6bit 恐怖を伴う, 7bit 強い恐怖を伴う, 8bit 非常に強い恐怖を伴う
+IF GETBIT(TEQUIP:拘束, 6)
+	LOCAL:9 += 500
+	LOCAL:13 += 500
+	LOCAL:14 += 500
+ELSEIF GETBIT(TEQUIP:拘束, 7)
+	LOCAL:9 += 2000
+	LOCAL:13 += 1500
+	LOCAL:14 += 1500
+ELSEIF GETBIT(TEQUIP:拘束, 8)
+	LOCAL:9 += 6000
+	LOCAL:13 += 3000
+	LOCAL:14 += 3000
+ENDIF
+
+;ABL:マゾっ気をみる
+SELECTCASE ABL:マゾっ気
+CASE 0
+CASE 1
+	TIMES LOCAL:14 , 0.80
+CASE 2
+	TIMES LOCAL:14 , 0.60
+CASE 3
+	TIMES LOCAL:14 , 0.40
+CASE 4
+	TIMES LOCAL:14 , 0.20
+CASEELSE
+	TIMES LOCAL:14 , 0.05
+ENDSELECT
+
+;マゾ
+SIF TALENT:マゾ
+	TIMES LOCAL:14 , 0.50
+
+CALL SOURCE_SMPLAY, "拘束", ARG
+
+CALL CALC, "調教ソース", LOCAL:0, LOCAL:1, LOCAL:2, LOCAL:3, LOCAL:4, LOCAL:5, LOCAL:6, LOCAL:7, LOCAL:8, LOCAL:9, LOCAL:10, LOCAL:11, LOCAL:12, LOCAL:13, LOCAL:14, LOCAL:15, LOCAL:16, LOCAL:17, LOCAL:18, LOCAL:19, LOCAL:20, LOCAL:21, ARG
+
+
+@EQUIP_COM44
+SIF SELECTCOM == 134
+	RETURN 0
+CALL SOURCE_COM134, 20
+
+RETURN 1
+
+;ビット演算の説明。
+;0bit 苦痛を伴う, 1bit 強い苦痛を伴う, 2bit 非常に強い苦痛を伴う 
+;3bit 羞恥を伴う, 4bit 強い羞恥を伴う, 5bit 非常に強い羞恥を伴う
+;6bit 恐怖を伴う, 7bit 強い恐怖を伴う, 8bit 非常に強い恐怖を伴う
+;20bit 手が使えない, 21bit 足が使えない, 22bit 体勢が変えられない, 23bit 無理な姿勢, 24bit 胸, 25bit 股間
+;30bit アルカナで手を拘束, 31bit アルカナで足を拘束
+;40bit 縄, 41bit 手首足首縛り, 42bit 亀甲縛り, 43bit 逆海老縛り, 44bit 足吊り
+;50bit 拘束, 51bit 手枷, 52bit 吊るし, 53bit Ｍ字開脚台, 54bit ベッド拘束, 55bit 四つん這い拘束
+;ARGSに拘束のジャンルを入れる
+;ARGは0未満が代入されている時には拘束のジャンルのbitフラグを返し、TEQUIP:拘束が代入されているなら拘束のジャンルがARGSかどうかを判定する
+;例)TEQUIP:拘束 = BIND("縄", -1) , IF BIND("縄", TEQUIP:拘束)
+@BIND(ARGS, ARG)
+#FUNCTION
+VARSET LOCALS
+SELECTCASE ARGS
+CASE "縄"
+	IF ARG >= 0
+		SIF GETBIT(ARG, 40)
+			RETURNF 1
+	ELSE
+		LOCAL = 1p0 + 1p3 + 1p6 + 1p20 + 1p21 + 1p40
+		RETURNF LOCAL
+	ENDIF
+CASE "縄：手首足首縛り"
+	IF ARG >= 0
+		SIF GETBIT(ARG, 41)
+			RETURNF 1
+	ELSE
+		LOCAL = 1p0 + 1p3 + 1p6 + 1p20 + 1p21 + 1p40 + 1p41
+		RETURNF LOCAL
+	ENDIF
+CASE "縄：亀甲縛り"
+	IF ARG >= 0
+		SIF GETBIT(ARG, 42)
+			RETURNF 1
+	ELSE
+		LOCAL = 1p1 + 1p4 + 1p6 + 1p20  + 1p24  + 1p25 + 1p40 + 1p42
+		RETURNF LOCAL
+	ENDIF
+CASE "縄：逆海老"
+	IF ARG >= 0
+		SIF GETBIT(ARG, 43)
+			RETURNF 1
+	ELSE
+		LOCAL = 1p0 + 1p3 + 1p6 + 1p20 + 1p21 + 1p22 + 1p23 + 1p40 + 1p43
+		RETURNF LOCAL
+	ENDIF
+CASE "縄：足吊り"
+	IF ARG >= 0
+		SIF GETBIT(ARG, 44)
+			RETURNF 1
+	ELSE
+		LOCAL = 1p0 + 1p5 + 1p6 + 1p20 + 1p21 + 1p22 + 1p23 + 1p40 + 1p44
+		RETURNF LOCAL
+	ENDIF
+CASE "手枷"
+	IF ARG >= 0
+		SIF GETBIT(ARG, 51)
+			RETURNF 1
+	ELSE
+		LOCAL = 1p3 + 1p6 + 1p20 + 1p50 + 1p51
+		RETURNF LOCAL
+	ENDIF
+CASE "吊り"
+	IF ARG >= 0
+		SIF GETBIT(ARG, 52)
+			RETURNF 1
+	ELSE
+		LOCAL = 1p1 + 1p3 + 1p7 + 1p20 + 1p22 + 1p50 + 1p52
+		RETURNF LOCAL
+	ENDIF
+CASE "Ｍ字開脚"
+	IF ARG  >= 0
+		SIF GETBIT(ARG, 53)
+			RETURNF 1
+	ELSE
+		LOCAL = 1p5 + 1p6 + 1p21 + 1p22 + 1p50 + 1p53
+		RETURNF LOCAL
+	ENDIF
+CASE "ベッド"
+	IF ARG >= 0
+		SIF GETBIT(ARG, 54)
+			RETURNF 1
+	ELSE
+		LOCAL = 1p4 + 1p6 + 1p20 + 1p21 + 1p22 + 1p50 + 1p54
+		RETURNF LOCAL
+	ENDIF
+CASE "四つん這い"
+	IF ARG >= 0
+		SIF GETBIT(ARG, 55)
+			RETURNF 1
+	ELSE
+		LOCAL = 1p5 + 1p7 + 1p21 + 1p22 + 1p50 + 1p55
+		RETURNF LOCAL
+	ENDIF
+CASE "触手"
+	IF ARG >= 0
+		SIF TEQUIP:触手
+			RETURNF 1
+	ELSE
+		LOCAL = 1p0 + 1p8 + 1p20 + 1p21 + 1p22 + 1p50
+		RETURNF LOCAL
+	ENDIF
+ENDSELECT
+RETURNF 0
+
+;現在の拘束の名称
+@BINDS(ARG)
+#FUNCTIONS
+
+;緊縛中
+IF TEQUIP:触手
+	LOCALS = 触手緊縛中
+ELSEIF BIND("縄：手首足首縛り", TEQUIP:拘束)
+	LOCALS = 手首足首縛り中
+ELSEIF BIND("縄：亀甲縛り", TEQUIP:拘束)
+	LOCALS = 亀甲縛り中
+ELSEIF BIND("縄：逆海老", TEQUIP:拘束)
+	LOCALS = 逆海老縛り中
+ELSEIF BIND("縄：足吊り", TEQUIP:拘束)
+	LOCALS = 足吊り縛り中
+ELSEIF BIND("縄", TEQUIP:拘束)
+	LOCALS = 縄で緊縛中
+ELSEIF BIND("四つん這い", TEQUIP:拘束)
+	LOCALS = 拘束テーブル
+ELSEIF BIND("ベッド", TEQUIP:拘束)
+	LOCALS = 拘束ベッド
+ELSEIF BIND("Ｍ字開脚", TEQUIP:拘束)
+	LOCALS = Ｍ字拘束中
+ELSEIF BIND("吊り", TEQUIP:拘束)
+	LOCALS = 吊り拘束中
+ELSE
+	LOCALS = 拘束中
+ENDIF
+
+RETURNF LOCALS
+
+@TRAIN_MESSAGE_COM134
+;縄の着脱
+IF TEQUIP:拘束
+	TFLAG:16 = TEQUIP:拘束
+	IF BIND("手枷", TEQUIP:拘束)
+		PRINTFORMW %CALLNAME:TARGET%の手枷を外した
+	ELSEIF BIND("縄", TEQUIP:拘束)
+		PRINTFORMW %CALLNAME:TARGET%から縄をほどいた
+	ELSE
+		PRINTFORMW %CALLNAME:TARGET%の拘束を解いた
+	ENDIF
+	TEQUIP:拘束 = 0
+;拘束
+ELSE
+	PRINTFORML %CALLNAME:PLAYER%は%CALLNAME:TARGET%を…
+	PRINTFORML  [ 0] 縄で縛る　　　　　(身動きできないように緊縛)
+	PRINTFORML  [ 1] ミスリルアイアン　(手枷で\@ TALENT:多腕 ? 腕 # 両手 \@を拘束)
+	PRINTFORML  [ 2] ミスリルチェーン　(手を鎖で縛り、吊るす)
+	PRINTFORML  [ 3] カースドテーブル　(脚を開いて拘束≒分娩台)
+	PRINTFORML  [ 4] カースドベッド　　(ベッドに仰向けに寝かせ、手足を拘束)
+	PRINTFORML  [ 5] ミスリルテーブル　(四つん這いにさせて、足も拘束)
+	PRINTFORML [100] 拘束するのは止める
+
+	CALL INPUT_SELECT, 6, 100
+
+	IF RESULT == 100
+		TFLAG:14 = 1
+		RETURN 0
+	ELSEIF RESULT == 0
+		IF COND("脚が無い")
+			PRINTFORM %CALLNAME:TARGET%を
+			IF RAND:2 == 0
+				PRINTFORMW 身動き出来ないように縄で縛った
+			ELSE
+				PRINTFORMW 抵抗出来ないように縄で縛った
+			ENDIF
+			TEQUIP:拘束 = BIND("縄", -1)
+		ELSE
+			PRINTFORML 縛り方は…
+			PRINTFORML  [ 0] 手首足首縛り　(手首と足首を縛り合わせる)
+			PRINTFORML  [ 1] 亀甲縛り　　　(全身を縄で締め付け、胸や恥丘などを強調する縛り)
+			PRINTFORML  [ 2] 逆海老責め　　(\@ TALENT:多腕 ? 手足 # 両手足 \@を背面で縛り合わせ、海老反りの状態を強制する縛り)
+			PRINTFORML  [ 3] 足吊り　　　　(上半身を拘束し、片足だけ吊って性器を隠せなくする縛り)
+			PRINTFORML [100] 拘束するのは止める
+			CALL INPUT_SELECT, 4, 100
+			IF RESULT == 100
+				TFLAG:14 = 1
+				RETURN 0
+			ELSEIF RESULT == 0
+				IF RAND:2 == 0
+					PRINTFORM %CALLNAME:TARGET%の股間を全開にさせて、
+				ELSE
+					PRINTFORM %CALLNAME:TARGET%の脚をＭ字に開いて、
+				ENDIF
+				IF RAND:2 == 0
+					PRINTFORM 手首を足首に固定し、
+					IF RAND:2 == 0
+						PRINTFORMW 身動き出来ないように縄で縛った
+					ELSE
+						PRINTFORMW 抵抗出来ないように縄で縛った
+					ENDIF
+				ELSE
+					PRINTFORM 手首と足首を縛り付け、
+					IF RAND:2 == 0
+						PRINTFORMW 身動き出来ないようにした
+					ELSE
+						PRINTFORMW 抵抗出来ないようにした
+					ENDIF
+				ENDIF
+				TEQUIP:拘束 = BIND("縄：手首足首縛り", -1)
+			ELSEIF RESULT == 1
+				PRINTFORM %CALLNAME:TARGET%の首にかけた縄から
+				IF RAND:2 == 0
+					PRINTFORM 何箇所か結び目を作りながら
+				ELSE
+					PRINTFORM 胸、みぞおち、下腹部に結び目を作りながら
+				ENDIF
+				PRINTFORMW 股の間を通して背中まで縄を通す
+				PRINTFORM そのまま背中まで通した縄を首にかけた縄にひっかけ、
+				IF RAND:2 == 0
+					PRINTFORMW 結び目と結び目の間に縄を通していく…
+				ELSE
+					PRINTFORMW 結び目にひっかけながら菱形の網目を形作る…
+				ENDIF
+				IF RAND:2 == 0
+					PRINTFORMW さらに、\@ TALENT:多腕 ? 腕 # 両手 \@を後ろ手に拘束して胸を強調する姿勢をとらせた…
+				ELSE
+					PRINTFORMW さらに、\@ TALENT:多腕 ? 腕 # 両手 \@を後ろ手に縛り上げて胸を張る姿勢をさせた…
+				ENDIF
+				PRINTFORM 縛り終えてみると、%CALLNAME:TARGET%の
+				IF RAND:3 == 0
+					IF TALENT:巨乳
+						PRINTFORMW ふくよかな胸がさらに強調するかのように絞り上げられ、淫靡な縄による美しさを魅せている…
+					ELSEIF TALENT:貧乳
+						PRINTFORMW 縛り上げられ僅かに膨らんだ乳房が痛々しく、それでいて甘美な嗜虐心をそそらせている…
+					ELSE
+						PRINTFORMW ほどよく張りのある乳房が絞り上げられ、健康的な美しさと緊縛による背徳感の絶妙な彩りを魅せている…
+					ENDIF
+				ELSEIF RAND:2 == 0
+					IF TALENT:長身
+						PRINTFORMW 長身な身体は、規則的な縄の模様がよく映えるキャンパスとして縄と女体の美しさをよく引き立てている…
+					ELSEIF TALENT:小柄体型
+						PRINTFORMW 未成熟な身体が複雑に絡み合う縄の餌食になっており、%CALLNAME:PLAYER%の嗜虐心をよく満たしている…
+					ELSE
+						PRINTFORMW 健康的な身体には、食い込む縄とそれによって寄せ上げられた肉が縄によってのみ表現できる彩りを魅せている…
+					ENDIF
+				ELSE
+					PRINTFORM 股間の縄は
+					IF TALENT:オンナ
+						PRINTFORMW 女性器の中心部を避けて通してあるが、縄が大陰唇を外から引っ張って広げる形になっているおかげで正面からはクリトリスがまる見えになっている…
+					ELSEIF TALENT:ふたなり
+						PRINTFORMW ペニスを縛りつつ、それでいて陰唇を広げる形になっており、膣口などは外気に晒されるがままになっている…
+					ELSE
+						PRINTFORMW ペニスの根本を縛り付け、ペニスを硬い一本の棒としての直立を維持しつつ、それでいて射精の妨げをするようになっている…
+					ENDIF
+				ENDIF
+				TEQUIP:拘束 = BIND("縄：亀甲縛り", -1)
+			ELSEIF RESULT == 2
+				PRINTFORMW %CALLNAME:TARGET%の\@ TALENT:多腕 ? 腕 # 両手 \@と両足をそれぞれ縛り上げ、さらに手足を背中で合わせた状態で緊縛する
+				PRINTFORMW すると、%CALLNAME:TARGET%は海老反りの格好をせざるを得なくなった
+				PRINTFORM %CALLNAME:TARGET%は縄による緊縛感と、負担のかかる格好を強制され続けることに
+				IF TALENT:マゾ
+					PRINTFORMW よる苦痛の喘ぎ声をあげながらも、どこか恍惚とした表情が見て取れる…
+				ELSE
+					PRINTFORMW 苦悶の表情を見せている…
+				ENDIF
+				TEQUIP:拘束 = BIND("縄：逆海老", -1)
+			ELSEIF RESULT == 3
+				PRINTFORM %CALLNAME:TARGET%の
+				IF TALENT:巨乳
+					PRINTFORMW 大きな胸を、そのまま母乳が吹き出しそうなくらいに縄でパンパンに絞り上げつつ縛り上げた
+				ELSEIF TALENT:貧乳
+					PRINTFORMW 僅かな膨らみを無理やり寄せ上げ、痛々しいくらいに縄を食い込ませつつ縛り上げた
+				ELSE
+					PRINTFORMW 胸の谷間とアンダーバストが強調するように大きく絞り上げつつ縛り上げた
+				ENDIF
+				PRINTFORMW さらに背中から伸びる縄を用いて%CALLNAME:TARGET%の手を後手に縛り上げる
+				PRINTFORM このままでもなかなか見栄えはよいが、さらに%CALLNAME:PLAYER%はサプライズとして片足の足首を縛り、
+				IF COND("人里")
+					PRINT 街頭
+				ELSEIF COND("森林")
+					PRINT 木の枝
+				ELSEIF TEQUIP:野外プレイ
+					PRINT 近く
+				ELSEIF TEQUIP:館内露出プレイ
+					PRINT 階段の手すり
+				ELSE
+					PRINT コート掛け
+				ENDIF
+				PRINTFORMW に縄を引っ掛けた…
+				PRINTFORM 足を大きく開かされながら片足立ちすることを強制された%CALLNAME:TARGET%は、
+				IF TALENT:オンナ
+					PRINT 女性器
+				ELSE
+					PRINT ペニス
+				ENDIF
+				IF TALENT:恥じらい == 0 && ABL:露出癖 >= 3
+					PRINTFORMW が丸見えのせいか興奮した様子で甘い吐息を吐いている…
+				ELSE
+					PRINTFORMW を隠せない羞恥心からか顔を真っ赤に染めている…
+				ENDIF
+				TEQUIP:拘束 = BIND("縄：足吊り", -1)
+			ENDIF
+		ENDIF
+	ELSEIF RESULT == 1
+		PRINTFORMW %CALLNAME:TARGET%の\@ TALENT:多腕 ? 腕を拘束具で束縛 # 両手を揃えて、アイアンで拘束 \@した
+		TEQUIP:拘束 = BIND("手枷", -1)
+	ELSEIF RESULT == 2
+		PRINTFORMW %CALLNAME:TARGET%の手をチェーンで縛り上げ、吊るす事にした
+		TEQUIP:拘束 = BIND("吊り", -1)
+	ELSEIF RESULT == 3
+		PRINTFORMW %CALLNAME:TARGET%を拘束台にのせ、足をＭ字に開かせ固定した
+		TEQUIP:拘束 = BIND("Ｍ字開脚", -1)
+	ELSEIF RESULT == 4
+		PRINTFORMW %CALLNAME:TARGET%をベッドに寝かせ、手足を大の字で拘束した
+		TEQUIP:拘束 = BIND("ベッド", -1)
+	ELSEIF RESULT == 5
+		PRINTFORMW %CALLNAME:TARGET%を四つん這いにさせて、足を拘束した
+		TEQUIP:拘束 = BIND("四つん這い", -1)
+	ENDIF
+ENDIF
+
+@TRAIN_MESSAGE_COM206
+IF TEQUIP:拘束
+	TEQUIP:拘束 = 0
+	PRINTFORMW 触手は%CALLNAME:TARGET%の拘束を解いた
+ELSE
+	TEQUIP:拘束 = BIND("触手", -1)
+	IF TEQUIP:バイブ + TEQUIP:アナルバイブ
+		PRINTFORMW 激しく突き上げられて喘いでいる%CALLNAME:TARGET%の手足を、別の触手が巻きつきながら吊り上げた…
+	ELSE
+		IF RAND:2 == 0
+			PRINTFORMW 触手が%CALLNAME:TARGET%の手足を絡め取り、自由を奪った…
+		ELSE
+			PRINTFORMW 無数の触手が%CALLNAME:TARGET%の体を縛りあげた
+		ENDIF
+	ENDIF
+	CALL ADD_STAIN, TARGET, "Ｂ", "触手"
+ENDIF
+
+
+@EQUIP_COM44_2
+SIF SELECTCOM == 134
+	RETURN 0
+
+;緊縛中
+PRINTFORML ＜%BINDS(TEQUIP:拘束)%＞
+
+LOCAL = 0
+;20bit 手が使えない, 21bit 足が使えない, 22bit 体勢が変えられない, 23bit 無理な姿勢, 24bit 胸, 25bit 股間
+SIF GETBIT(TEQUIP:拘束, 20)
+	LOCAL += 1
+SIF GETBIT(TEQUIP:拘束, 21)
+	LOCAL += 1
+SIF GETBIT(TEQUIP:拘束, 22)
+	LOCAL += 1
+SIF GETBIT(TEQUIP:拘束, 23)
+	LOCAL += 1
+SIF GETBIT(TEQUIP:拘束, 24)
+	LOCAL += 1
+SIF GETBIT(TEQUIP:拘束, 25)
+	LOCAL += 1
+LOCAL = MAX(LOCAL, 1)
+
+EXP:緊縛経験 += LOCAL
+PRINTFORML 緊縛経験＋{LOCAL}
+
+SIF ASSIPLAY == 0 && ABL:マゾっ気 >= 2
+	TFLAG:30 += 1

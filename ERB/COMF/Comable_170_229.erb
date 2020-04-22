@@ -1,0 +1,390 @@
+﻿;-------------------------------------------------
+;170〜199番,〜プレイ等舞台作成コマンド
+;-------------------------------------------------
+@COM_ABLE170
+;ビデオ撮影実行判定
+SIF COMABLE_DEF(170)
+	RETURN 0
+;解除はいつでも可能
+SIF TEQUIP:ビデオカメラ
+	RETURN 1
+;押し倒しの時には解除のみ可能
+SIF TEQUIP:押し倒し && TEQUIP:ビデオカメラ == 0
+	RETURN 0
+;一回に付き一本まで
+SIF CSTR:81 != ""
+	RETURN 0
+;カメラとテープのアイテムを持っているか、アイテムなし設定でないとダメ
+SIF ( ITEM:ビデオカメラ == 0 || ITEM:ビデオテープ == 0 ) && NOITEM == 0
+	RETURN 0
+RETURN 1
+
+@COM_ABLE171
+;野外プレイ実行判定
+SIF COMABLE_DEF(171)
+	RETURN 0
+;解除はいつでも可能
+SIF TEQUIP:野外プレイ
+	RETURN 1
+;アイテム｢首輪｣を持っているか、アイテムなし設定、もしくは屈服刻印3LVか恋慕でないとダメ
+SIF ITEM:首輪 == 0 && NOITEM == 0 && TALENT:恋慕 == 0 && MARK:屈服刻印 < 3
+	RETURN 0
+;従順かマゾっ気が3以上ないとダメ
+SIF ABL:従順 <= 2 && ABL:マゾっ気 <= 2
+	RETURN 0
+;対象か助手が吸血鬼で、時間が昼だとダメ。夜の日傘があるならＯＫ
+IF TIME == 0 && ITEM:夜の日傘 == 0
+	SIF TALENT:吸血鬼 || (ASSI && TALENT:ASSI:吸血鬼)
+		RETURN 0
+ENDIF
+;浣腸使用中はプラグがなければ不可
+SIF TEQUIP:浣腸 && COND("アナル栓") == 0
+	RETURN 0
+RETURN 1
+
+@COM_ABLE172
+;お風呂場プレイ実行判定
+SIF COMABLE_DEF(172)
+	RETURN 0
+;解除はいつでも可能
+SIF TEQUIP:お風呂プレイ
+	RETURN 1
+;対象が動物耳で、従順が3未満だとダメ
+SIF TALENT:動物耳 && ABL:従順 < 3
+	RETURN 0
+;羞恥プレイ中はダメ
+SIF TEQUIP:羞恥プレイ
+	RETURN 0
+RETURN 1
+
+@COM_ABLE173
+;新妻プレイ実行判定
+SIF COMABLE_DEF(173)
+	RETURN 0
+;解除はいつでも可能
+SIF TEQUIP:新妻プレイ
+	RETURN 1
+;アイテム｢エプロン｣を持っているか、アイテムなし設定でないとダメ
+SIF ITEM:エプロン == 0 && NOITEM == 0
+	RETURN 0
+;助手じゃダメ
+SIF ASSIPLAY
+	RETURN 0
+;従順が3以上ないとダメ
+SIF ABL:従順 < 3
+	RETURN 0
+;羞恥プレイ中はダメ
+SIF TEQUIP:羞恥プレイ
+	RETURN 0
+RETURN 1
+
+@COM_ABLE174
+;館内露出プレイ
+SIF COMABLE_DEF(174)
+	RETURN 0
+;解除はいつでも可能
+SIF TEQUIP:館内露出プレイ
+	RETURN 1
+;従順かマゾっ気が3以上ないとダメ
+SIF ABL:従順 <= 2 && ABL:マゾっ気 <= 2
+	RETURN 0
+;羞恥プレイ中はダメ
+SIF TEQUIP:羞恥プレイ
+	RETURN 0
+RETURN 1
+
+@COM_ABLE175
+;着せ替え実行判定
+SIF COMABLE_DEF(175)
+	RETURN 0
+;恍惚状態だとダメ
+SIF STATE("恍惚", PLAYER)
+	RETURN 0
+;通常状態以外は脱ぐことのみ可能
+IF TEQUIP:押し倒し || TEQUIP:拘束 || TEQUIP:館内露出プレイ || TEQUIP:野外プレイ
+	SIF CHECK_CLO("ハダカ")
+		RETURN 0
+ENDIF
+;野外プレイor館内露出プレイ中は、露出癖3Lvか従順4Lvが無いとダメ
+SIF (TEQUIP:館内露出プレイ || TEQUIP:野外プレイ) && ABL:従順 < 4 && ABL:露出癖 < 3
+	RETURN 0
+;実行値フィルタ
+IF CONFIG("実行値フィルタ") || FLAG:10
+	CALL COM_ORDER_COM175, 1
+	RETURN LIMIT(RESULT, 0, 1)
+ENDIF
+RETURN 1
+
+@COM_ABLE176
+;押し倒されるコマンド実行判定
+SIF COMABLE_DEF(176)
+	RETURN 0
+;気力が無いと奉仕精神がないとダメ
+SIF BASE:気力 == 0 && ABL:奉仕精神 < 3
+	RETURN 0
+;てかげん中はダメ
+SIF TEQUIP:てかげん
+	RETURN 0
+;バイブ挿入中はダメ
+SIF TEQUIP:バイブ || TEQUIP:アナルバイブ
+	RETURN 0
+;ローター挿入中はダメ
+SIF TEQUIP:ローター挿入
+	RETURN 0
+;妖精だとダメ（調教者がミニマムならＯＫ）
+;SIF TALENT:妖精
+;	RETURN 0
+;実行値フィルタ
+IF CONFIG("実行値フィルタ") || FLAG:10
+	CALL COM_ORDER_COM176, 1
+	RETURN LIMIT(RESULT, 0, 1)
+ENDIF
+RETURN 1
+
+@COM_ABLE177
+;ラブトラップコマンド実行判定
+SIF COMABLE_DEF(177)
+	RETURN 0
+;相手がミミックでないとダメ
+SIF BASE:種族思考 != 33
+	RETURN 0
+;調教者がオトコかふたなりじゃないとダメ
+SIF PENIS(PLAYER) == 0
+	RETURN 0
+;実行値フィルタ
+IF CONFIG("実行値フィルタ") || FLAG:10
+	CALL COM_ORDER_COM177, 1
+	RETURN LIMIT(RESULT, 0, 1)
+ENDIF
+RETURN 1
+
+@COM_ABLE178
+;二人に押し倒されるコマンド実行判定
+SIF COMABLE_DEF(178)
+	RETURN 0
+;MASTER調教中で無いとダメ
+SIF ASSIPLAY
+	RETURN 0
+;気力が無いとダメ
+SIF BASE:気力 == 0
+	RETURN 0
+;てかげん中はダメ
+SIF TEQUIP:てかげん
+	RETURN 0
+;バイブ挿入中はダメ
+SIF TEQUIP:バイブ || TEQUIP:アナルバイブ
+	RETURN 0
+;ローター挿入中はダメ
+SIF TEQUIP:ローター挿入
+	RETURN 0
+;演奏中はダメ
+SIF TEQUIP:演奏中
+	RETURN 0
+;以下、助手の条件など
+IF ASSI
+	;妖精だとダメ（調教者がミニマムならＯＫ）
+	;SIF TALENT:ASSI:妖精
+	;	RETURN 0
+	;恋慕、淫乱、誓約、相思相愛状態ならＯＫとする
+	IF TALENT:ASSI:恋慕 || TALENT:ASSI:淫乱 || TALENT:ASSI:誓約 || TALENT:ASSI:相思相愛
+	;それ以外なら、助手とTARGETが仲良くないとダメ。
+	ELSE
+		SIF RELATION:(NO:ASSI) < 120
+			RETURN 0
+	ENDIF
+ENDIF
+;実行値フィルタ
+IF CONFIG("実行値フィルタ") || FLAG:10
+	CALL COM_ORDER_COM178, 1
+	RETURN LIMIT(RESULT, 0, 1)
+ENDIF
+RETURN 1
+
+@COM_ABLE179
+;羞恥プレイ実行判定
+SIF COMABLE_DEF(179)
+	RETURN 0
+;解除はいつでも可能
+SIF TEQUIP:羞恥プレイ
+	RETURN 1
+;館内露出プレイ中はダメ
+SIF TEQUIP:館内露出プレイ
+	RETURN 0
+;アイテム｢大鏡｣を持っているか、アイテムなし設定でないとダメ
+SIF ITEM:大鏡 == 0 && NOITEM == 0
+	RETURN 0
+;アイマスクをつけているとダメ
+SIF TEQUIP:アイマスク
+	RETURN 0
+RETURN 1
+
+@COM_ABLE180
+;3P実行判定
+RETURN 0
+SIF COMABLE_DEF(180)
+	RETURN 0
+;MASTER調教中で無いとダメ
+SIF PLAYER != MASTER
+	RETURN 0
+;演奏中はダメ
+SIF TEQUIP:演奏中
+	RETURN 0
+;押し倒し中は駄目
+SIF TEQUIP:押し倒し
+	RETURN 0
+;お風呂場プレイ中はプレイマットが無いとダメ
+IF TEQUIP:お風呂プレイ
+	SIF ITEM:プレイマット == 0 && NOITEM == 0
+		RETURN 0
+ENDIF
+RETURN 1
+
+@COM_ABLE181
+RETURN 0
+
+@COM_ABLE182
+RETURN 0
+
+@COM_ABLE183
+RETURN 0
+
+@COM_ABLE184
+RETURN 0
+
+@COM_ABLE185
+RETURN 0
+
+;-------------------------------------------------
+;200〜229番,触手系コマンド
+;-------------------------------------------------
+@COM_ABLE200
+;触手召喚実行判定
+SIF COMABLE_DEF(200)
+	RETURN 0
+;MASTERでないとダメ
+SIF PLAYER != MASTER
+	RETURN 0
+;てかげん中はダメ
+SIF TEQUIP:てかげん
+	RETURN 0
+;調教者が禁断の知識をもっていないとダメ
+SIF TALENT:PLAYER:禁断の知識 == 0
+	RETURN 0
+;アイテムを持っているか、アイテムなし設定でないとダメ
+SIF ITEM:触手使役術 == 0 && NOITEM == 0
+	RETURN 0
+;道具使用中はダメ
+SIF TEQUIP:触手 == 0 && (TEQUIP:バイブ || TEQUIP:アナルバイブ || TEQUIP:クリキャップ || TEQUIP:ニプルキャップ || TEQUIP:搾乳機 || TEQUIP:オナホール || TEQUIP:ローター挿入 || TEQUIP:拘束 || TEQUIP:浣腸 ||TEQUIP:拡張バルーン)
+	RETURN 0
+RETURN 1
+
+@COM_ABLE201
+;触手挿入
+SIF COMABLE_DEF(201)
+	RETURN 0
+;アソコ使用判定
+SIF USE_V(TARGET, 11) == 0
+	RETURN 0
+RETURN 1
+
+@COM_ABLE202
+;アナル触手
+SIF COMABLE_DEF(202)
+	RETURN 0
+;アナル使用判定
+SIF USE_A(TARGET, 13) == 0
+	RETURN 0
+;触手浣腸中は不可
+SIF TEQUIP:浣腸
+	RETURN 0
+RETURN 1
+
+@COM_ABLE203
+;触手クリ責め
+SIF COMABLE_DEF(203)
+	RETURN 0
+;オトコだとダメ
+SIF TALENT:オトコ
+	RETURN 0
+RETURN 1
+
+@COM_ABLE204
+;触手乳首責め
+SIF COMABLE_DEF(204)
+	RETURN 0
+;乳首を剥き出しにできないとダメ
+SIF CHECK_CLO("乳首露出") + CHECK_CLO("はだけ可") == 0
+	RETURN 0
+;触手搾乳中は不可
+SIF TEQUIP:搾乳機
+	RETURN 0
+RETURN 1
+
+@COM_ABLE205
+;触手搾乳
+SIF COMABLE_DEF(205)
+	RETURN 0
+;乳首を剥き出しにできないとダメ
+SIF CHECK_CLO("乳首露出") + CHECK_CLO("はだけ可") == 0
+	RETURN 0
+;触手乳首責め中は不可
+SIF TEQUIP:ニプルキャップ
+	RETURN 0
+;オトコだとダメ
+SIF TALENT:オトコ
+	RETURN 0
+RETURN 1
+
+@COM_ABLE206
+;触手緊縛
+SIF COMABLE_DEF(206)
+	RETURN 0
+RETURN 1
+
+@COM_ABLE207
+;触手浣腸
+SIF COMABLE_DEF(207)
+	RETURN 0
+;アナル使用判定
+SIF USE_A(TARGET, 46) == 0
+	RETURN 0
+RETURN 1
+
+@COM_ABLE208
+;触手口辱
+SIF COMABLE_DEF(208)
+	RETURN 0
+;ボールギャグ使用中は不可
+SIF TEQUIP:口枷 == 1
+	RETURN 0
+RETURN 1
+
+@COM_ABLE209
+;触手ペニス責め
+SIF COMABLE_DEF(209)
+	RETURN 0
+;オトコかふたなりじゃないとダメ
+SIF PENIS(TARGET) == 0
+	RETURN 0
+RETURN 1
+
+@COM_ABLE210
+;触手ピストン
+SIF COMABLE_DEF(210)
+	RETURN 0
+;口かＶＡのどれかに挿入中
+SIF TEQUIP:バイブ || TEQUIP:アナルバイブ || TEQUIP:触手口辱
+	RETURN 1
+RETURN 0
+
+@COM_ABLE211
+RETURN 0
+
+@COM_ABLE212
+RETURN 0
+
+@COM_ABLE213
+RETURN 0
+
+@COM_ABLE214
+RETURN 0

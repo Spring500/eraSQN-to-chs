@@ -1,0 +1,176 @@
+﻿@COM64
+;背面座位
+CALL PRINT_TRAIN_NAME(SELECTCOM)
+
+CALL TRAIN_MESSAGE_B
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+STR:0 = %STR:2%
+
+;-------------------------------------------------
+;射精チェック
+;-------------------------------------------------
+CALL SAMEN_CHECK
+
+RETURN 1
+
+@FLAG_COM64, ARG
+CALL FLAG_INSERTION, "Ｖインサート", ARG, 60
+CALL FLAG_COM5, 30
+CALL FLAG_COM7, 20
+
+
+@SOURCE_COM64, ARG
+CALL SOURCE_INSERTION, "Ｖインサート", ARG, 60
+CALL SOURCE_COM5, 30
+;アソコ愛撫
+CALL SOURCE_COM7, 20
+
+VARSET LOCAL
+
+LOCAL:20 += 40
+LOCAL:21 += 40
+
+LOCAL:12 = 500
+
+;ABL:Ｖ感覚をみる
+SELECTCASE ABL:Ｖ感覚
+CASE 0
+	LOCAL:3 = 100
+CASE 1
+	LOCAL:3 = 150
+CASE 2
+	LOCAL:3 = 300
+CASE 3
+	LOCAL:3 = 500
+CASE 4
+	LOCAL:3 = 700
+CASEELSE
+	LOCAL:3 = 1000
+ENDSELECT
+
+;PALAM:欲情をみる
+SELECTCASE PALAM:欲情
+CASE IS < PALAMLV:1
+	TIMES LOCAL:3 , 0.30
+CASE IS < PALAMLV:2
+	TIMES LOCAL:3 , 0.60
+CASE IS < PALAMLV:3
+	TIMES LOCAL:3 , 1.00
+CASE IS < PALAMLV:4
+	TIMES LOCAL:3 , 1.50
+CASE IS >= PALAMLV:4
+	TIMES LOCAL:3 , 1.80
+ENDSELECT
+
+CALL CALC, "調教ソース", LOCAL:0, LOCAL:1, LOCAL:2, LOCAL:3, LOCAL:4, LOCAL:5, LOCAL:6, LOCAL:7, LOCAL:8, LOCAL:9, LOCAL:10, LOCAL:11, LOCAL:12, LOCAL:13, LOCAL:14, LOCAL:15, LOCAL:16, LOCAL:17, LOCAL:18, LOCAL:19, LOCAL:20, LOCAL:21, ARG
+
+
+@TRAIN_MESSAGE_COM64
+;ラブトラップ
+IF TEQUIP:ラブトラップ
+	;前回と今回の調教者が同じで、抜かないフラグがある場合
+	IF INSERT("インサート") && COND("前Ｔ調教者") == PLAYER
+		;体位が背面座位
+		IF INSERT("背面座位")
+			PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%の首に腕を回し、身体を密着させながら再び腰を揺すり始めた…
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%は膣内からペニスを解放することなく%CALLNAME:PLAYER%に身体を預けながら、腰を揺すり始めた…
+		ENDIF
+	ELSE
+		PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%に身体を預け、奥深くまでペニスを呑みこみながら腰を揺すり始めた…
+	ENDIF
+ELSEIF CHECK_COM("３Ｐ奉仕")
+	CALL TRAIN_MESSAGE_3P
+ELSE
+	;前回と今回の調教者が同じで、抜かないフラグがある場合
+	IF INSERT("Ｖインサート") && COND("前Ｔ調教者") == PLAYER
+		IF INSERT("背面座位")
+			IF TEQUIP:羞恥プレイ
+				PRINTFORMW %CALLNAME:TARGET%の結合部と胸に再び手を這わせ、見せ付けるように腰を動かした…
+			ELSEIF TEQUIP:キス
+				PRINTFORMW %CALLNAME:PLAYER%は%CALLNAME:TARGET%%TEXTS("キス継続助詞付き")%、背後から抱きしめつつ再び腰を動かし始めた…
+				CALL SETFLAG, "追加キスフラグ", TARGET
+			ELSE
+				PRINTFORMW %CALLNAME:TARGET%を背後から抱きしめ、再び%CALLNAME:TARGET%の身体を揺らし始めた…
+			ENDIF
+		ELSE
+			PRINTFORM 膣内から抜き去ることなく%CALLNAME:TARGET%の身体を背中から抱き寄せ、
+			IF TEQUIP:羞恥プレイ
+				PRINTFORMW 脚を大きく開かせた…
+			ELSEIF TEQUIP:キス
+				PRINTFORMW %TEXTS("キス継続")%身体を揺さぶり始めた…
+				CALL SETFLAG, "追加キスフラグ", TARGET
+			ELSE
+				PRINTFORMW 身体を揺さぶり始めた…
+			ENDIF
+		ENDIF
+
+	ELSEIF INSERT("Ａインサート") && COND("前Ｔ調教者") == PLAYER
+		PRINTFORM %CALLNAME:TARGET%を
+		SIF INSERT("正常位") || INSERT("屈曲位") || INSERT("対面座位")
+			PRINTFORM 背中から
+		PRINTFORM 抱き寄せ、アナルを犯していた%NAMES("ペニス", PLAYER)%を秘裂に
+		SIF TALENT:妊娠 == 0 || TALENT:PLAYER:サド
+			PRINT 深々と
+		PRINTFORM 呑み込ませ
+		SIF TEQUIP:羞恥プレイ
+			PRINTFORM て脚を大きく広げさせ
+		PRINTFORMW た…
+	ELSE
+		;前回、挿入前に暴発してしまった
+		IF PREVCOM == 511 && COND("前Ｔ調教者") == PLAYER
+			PRINTFORM 気を取り直した%CALLNAME:PLAYER%は、
+		ELSE
+			PRINTFORM %CALLNAME:PLAYER%は
+		ENDIF
+		IF COND("前Ｔから対象のみ変更") && PREVCOM:1 >= 60 && PREVCOM:1 <= 79
+			CALL TEXT, "追加地の文：穴から穴へ"
+			PRINTFORM %CALLNAME:TARGET%に身体をもたれかけさせながら%TEXTS("Ｖ挿入前")%
+		;穴開きでないパンツをはいていて、ずらされていないなら、必ずずらす
+		ELSEIF !CHECK_CLO("Ｖ露出") && CHECK_CLO("Ｖ露出可")
+			PRINTFORM %CALLNAME:TARGET%の
+			CALL SETFLAG, "ボトムを露出：テキスト有り", TARGET
+			PRINTFORM 、身体をもたれかけさせながら%TEXTS("Ｖ挿入前")%
+		ELSE
+			PRINTFORM %CALLNAME:TARGET%に身体をもたれかけさせながら%TEXTS("Ｖ挿入前")%
+		ENDIF
+
+		IF TEQUIP:羞恥プレイ
+			PRINTFORMW にペニスをゆっくりと呑み込ませ、脚を大きく開かせた…
+		ELSEIF (TALENT:淫乱 || ABL:露出癖 >= 3) && RAND:2 == 0
+			PRINTFORM にペニスをゆっくりと呑み込ませ、
+			IF TEQUIP:キス
+				PRINTFORMW 唇を奪った…
+				CALL SETFLAG, "追加キスフラグ", TARGET
+			ELSE
+				PRINTFORMW 脚を大きく開かせた…
+			ENDIF
+		ELSEIF TEQUIP:キス
+			PRINTFORMW を待ち構えていたペニスでゆっくりと貫き、唇を奪った…
+			CALL SETFLAG, "追加キスフラグ", TARGET
+		ELSE
+			PRINTFORMW を待ち構えていたペニスでゆっくりと貫いた…
+		ENDIF
+	ENDIF
+	IF COND("挿入前暴発フラグ", PLAYER) == 0
+		IF TALENT:妊娠 && RAND:2 == 0
+			PRINTFORMW %CALLNAME:PLAYER%が大きなお腹を撫でてあげると、%CALLNAME:TARGET%はくすぐったそうな声を出して身体をよじらせる…
+		;羞恥プレイ中
+		ELSEIF TEQUIP:羞恥プレイ && SELECTCOM != PREVCOM
+			IF ABL:露出癖 >= 5
+				PRINTFORMW %CALLNAME:TARGET%は鏡に映る痴態を蕩けた目で見つめながら歓喜の声を上げている…
+			ELSEIF ABL:露出癖 >= 3
+				PRINTFORMW %CALLNAME:TARGET%は羞恥と快楽に溺れたような表情で鏡の中の痴態を凝視している…
+			ELSEIF ABL:露出癖 >= 1
+				PRINTFORMW %CALLNAME:TARGET%は顔を羞恥に染めながら時折艶っぽい声を上げている…
+			ELSEIF TALENT:恥薄い == 0 && COND("指の使用")
+				PRINTFORMW %CALLNAME:TARGET%は%NAMES("手")%で顔を覆い隠しながら羞恥に身体を震わせている…
+			ELSE
+				PRINTFORMW 目の前の鏡には、%CALLNAME:TARGET%の痴態がはっきりと映し出されている…
+			ENDIF
+		ENDIF
+	ENDIF
+ENDIF

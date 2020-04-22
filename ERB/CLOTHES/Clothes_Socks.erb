@@ -1,0 +1,291 @@
+﻿;-------------------------------------------------
+;靴下の関数
+;指定番号によって名前がCSTR:46に代入される。
+;99番までは、その番号の夢魔の靴下。
+;EQUIP:靴下は靴下の特徴フラグ。ビット管理する
+;-------------------------------------------------
+@SET_SOCKS, ARG, ARG:1
+;ARGの靴下をARG:1番のものにする。ARG:1==0なら靴下を脱がす
+;汚れ＆ずれたりしたフラグ等を初期化して新品にする
+STAIN:ARG:ソックス = 0
+TCVAR:ARG:26 = 0
+
+IF ARG:1 == 0 || COND("脚の使用", ARG) == 0
+	EQUIP:ARG:靴下 = 0
+	CSTR:ARG:46 = 
+	RETURN 0
+ENDIF
+
+;名前記録
+CSTR:ARG:46 = %PALAM_SOCKS(ARG:1, ARG, 1)%
+
+SIF EQUIP:ARG:靴下 && EQUIP:ARG:アウター && CHECK_OUTER("パンスト", ARG)
+	CALL SET_OUTER, ARG
+
+TCVAR:ARG:26 = 0
+RETURN ARG:1
+;-------------------------------------------------
+;ARGの穿いている靴下の名前。ARG:1==0なら正式名称 by CSTR。ARG:1==1なら短縮名称 by EQUIP。
+;-------------------------------------------------
+@SOCKS(ARG, ARG:1)
+#FUNCTIONS
+IF ARG:1 == 0
+	LOCALS = %CSTR:ARG:46%
+	SIF CONFIG("衣装の細かい色表示の禁止")
+		RETURNF LOCALS
+	IF CHECK_SOCKS("ストッキング", ARG)
+		LOCALS:1 = %TEXTS("衣装の色", EQUIP:ARG:靴下)%
+		IF LOCALS:1 != "" && (SUBSTRING(CSTR:ARG:46, 0, 2) != SUBSTRING(LOCALS:1, 0, 2) )
+			SIF CHECK_SOCKS("ガーター", ARG)
+				LOCALS = ガーター
+			LOCALS = %LOCALS%(%LOCALS:1%)
+		ENDIF
+	ENDIF
+ELSE
+	IF CHECK_SOCKS("足袋", ARG)
+		LOCALS = 足袋
+	ELSEIF CHECK_SOCKS("ストッキング", ARG)
+		LOCALS = ストッキング
+	ELSEIF CHECK_SOCKS("ニーソ", ARG)
+		LOCALS = ニーソ
+	ELSE
+		LOCALS = 靴下
+	ENDIF
+ENDIF
+RETURNF LOCALS
+
+;-------------------------------------------------
+;ARG番の靴下の正式名称
+;ARG:1 > 0ならARG:1はキャラ番号として働く
+;-------------------------------------------------
+@NAME_SOCKS(ARG, ARG:1)
+#FUNCTIONS
+LOCALS = %PALAM_SOCKS(ARG, ARG:1)%
+RETURNF LOCALS
+
+;-------------------------------------------------
+;ARG番の靴下の詳細パラ
+;ARG:1 > 0ならARG:1はキャラ番号として働き、ARG:1 > 0 && ARG:2 > 0ならEQUIPを定める
+;-------------------------------------------------
+@PALAM_SOCKS(ARG, ARG:1, ARG:2)
+#FUNCTIONS
+VARSET LOCAL
+VARSET LOCALS
+
+IF ARG:1 > 0 && COND("脚の使用", ARG:1) == 0
+	SIF ARG:2 > 0
+		EQUIP:(ARG:1):靴下 = LOCAL
+	RETURNF LOCALS
+ENDIF
+
+SELECTCASE ARG
+CASE 2
+	LOCALS = ハイソックス
+	LOCAL = SETFLAG_SOCKS("ハイソックス")
+CASE 4
+	IF CFLAG:(ARG:1):8 == 3
+		LOCALS = フリルニーソ
+		LOCAL = SETFLAG_SOCKS("ニーソ", "フリル", "紫")
+	ELSE
+		LOCALS = フリルニーソ
+		LOCAL = SETFLAG_SOCKS("ニーソ", "フリル", "純白")
+	ENDIF
+CASE 6
+	IF CFLAG:(ARG:1):8 == 2
+		LOCALS = 縞々猫足
+		LOCAL = SETFLAG_SOCKS("ハイソックス", "レッグウォーマー", "縞々", "毛皮", "青")
+	ELSEIF CFLAG:(ARG:1):8 == 3
+		LOCALS = 縞々猫足
+		LOCAL = SETFLAG_SOCKS("ハイソックス", "レッグウォーマー", "縞々", "毛皮", "黒")
+	ELSEIF CFLAG:(ARG:1):8 == 4
+		LOCALS = 縞々猫足
+		LOCAL = SETFLAG_SOCKS("ハイソックス", "レッグウォーマー", "縞々", "毛皮", "黄")
+	ELSE
+		LOCALS = 縞々猫足
+		LOCAL = SETFLAG_SOCKS("ハイソックス", "レッグウォーマー", "縞々", "毛皮", "赤")
+	ENDIF
+CASE 12
+	IF CFLAG:(ARG:1):8 == 3
+		LOCALS = ニーソックス
+		LOCAL = SETFLAG_SOCKS("ニーソ", "黒")
+	ELSEIF CFLAG:(ARG:1):8 != 2
+		LOCALS = ニーソックス
+		LOCAL = SETFLAG_SOCKS("ニーソ", "薄緑")
+	ENDIF
+CASE 16
+	IF CFLAG:(ARG:1):8 != 2
+		LOCALS = 足袋
+		LOCAL = SETFLAG_SOCKS("足袋", "純白")
+	ENDIF
+CASE 17
+	IF CFLAG:(ARG:1):8 != 1
+		LOCALS = 黒レッグウォーマー
+		LOCAL = SETFLAG_SOCKS("ハイソックス", "レッグウォーマーー", "黒")
+	ENDIF
+CASE 18
+	LOCALS = 網ストッキング
+	LOCAL = SETFLAG_SOCKS("ストッキング", "レース", "黒", "足露出")
+CASE 22
+	IF CFLAG:(ARG:1):8 == 2
+		LOCALS = 脚絆
+		LOCAL = SETFLAG_SOCKS("ニーソ", "脚絆", "橙色", "足露出")
+	ELSE
+		LOCALS = 脚絆
+		LOCAL = SETFLAG_SOCKS("ニーソ", "脚絆", "薄緑", "足露出")
+	ENDIF
+CASE 26
+	LOCALS = 竜騎兵のガーター
+	LOCAL = SETFLAG_SOCKS("ガーター", "ストッキング", "鎧", "赤")
+CASE 31
+	LOCALS = レッグウォーマー
+	LOCAL = SETFLAG_SOCKS("レッグウォーマー")
+CASE 32
+	LOCALS = ニーソックス
+	LOCAL = SETFLAG_SOCKS("ニーソ", "純白")
+CASE 33
+	LOCALS = ニーソックス
+	IF CFLAG:(ARG:1):8 == 4
+		LOCAL = SETFLAG_SOCKS("ニーソ", "青")
+	ELSE
+		LOCAL = SETFLAG_SOCKS("ニーソ", "赤")
+	ENDIF
+CASE 34
+	LOCALS = ニーストッキング
+	LOCAL = SETFLAG_SOCKS("ストッキング", "薄青")
+CASE 35
+	LOCALS = フリルニーソ
+	LOCAL = SETFLAG_SOCKS("ニーソ", "フリル", "縞々", "赤")
+CASE 42
+	IF CFLAG:(ARG:1):209 == 2
+		LOCALS = サイハイソックス
+		LOCAL = SETFLAG_SOCKS("サイハイソックス","黒")
+	ENDIF
+CASE 44
+	LOCALS = ニーソックス
+	LOCAL = SETFLAG_SOCKS("ニーソ", "黒")
+CASE 46
+	LOCALS = フリルニーソ
+	LOCAL = SETFLAG_SOCKS("ニーソ", "フリル", "純白")
+CASE 48
+	LOCALS = ナイトストッキング
+	LOCAL = SETFLAG_SOCKS("ストッキング", "フリル", "足露出")
+CASE 50
+	LOCALS = 縞々ニーソ
+	LOCAL = SETFLAG_SOCKS("ニーソ", "縞々", "赤")
+CASE 52
+	LOCALS = ゲートル
+	LOCAL = SETFLAG_SOCKS("ゲートル", "薄青")
+CASE 54
+	LOCALS = 足出しストッキング
+	LOCAL = SETFLAG_SOCKS("ストッキング", "黒", "足露出")
+CASE 55
+	LOCALS = フリルニーソ
+	LOCAL = SETFLAG_SOCKS("ニーソ", "フリル", "純白")
+CASE 60
+	LOCALS = ソックス
+	LOCAL = SETFLAG_SOCKS("足首まで", "毛皮")
+CASE 100
+	LOCALS = ソックス
+	LOCAL = SETFLAG_SOCKS("足首まで")
+CASE 101
+	LOCALS = ハイソックス
+	LOCAL = SETFLAG_SOCKS("ハイソックス")
+CASE 102
+	LOCALS = ニーソックス
+	LOCAL = SETFLAG_SOCKS("ニーソ")
+CASE 103
+	LOCALS = サイハイソックス
+	LOCAL = SETFLAG_SOCKS("サイハイソックス")
+CASE 104
+	LOCALS = ストッキング
+	LOCAL = SETFLAG_SOCKS("ストッキング", "ストッキングカラー")
+CASE 105
+	LOCALS = 網ストッキング
+	LOCAL = SETFLAG_SOCKS("ストッキング", "レース", "ストッキングカラー")
+CASE 106
+	LOCALS = ガーターストッキング
+	LOCAL = SETFLAG_SOCKS("ストッキング", "ガーター", "ガーターカラー")
+CASE 107
+	LOCALS = 足袋
+	LOCAL = SETFLAG_SOCKS("足袋", "白")
+CASE 108
+	LOCALS = フリルニーソ
+	LOCAL = SETFLAG_SOCKS("ニーソ", "フリル", "黒")
+ENDSELECT
+
+SIF ARG:1 > 0 && ARG:2 > 0
+	EQUIP:(ARG:1):靴下 = LOCAL
+
+RETURNF LOCALS
+
+;-------------------------------------------------
+;指示されたとおりの靴下のフラグを設定するために使う
+;-------------------------------------------------
+@SETFLAG_SOCKS(ARGS:1, ARGS:2, ARGS:3, ARGS:4, ARGS:5, ARGS:6, ARGS:7, ARGS:8, ARGS:9, ARGS:10)
+#FUNCTION
+#DIM LCOUNT
+
+LOCAL = 0
+FOR LCOUNT, 1, 11
+	ARGS = %ARGS:LCOUNT%
+	SELECTCASE ARGS
+	CASE "足首まで"
+		SETBIT LOCAL, 0
+	CASE "ハイソックス"
+		SETBIT LOCAL, 1
+	CASE "ニーソ", "ニーソックス"
+		SETBIT LOCAL, 2
+	CASE "サイハイソックス"
+		SETBIT LOCAL, 3
+	CASE "ゲートル"
+		SETBIT LOCAL, 4
+		LOCAL |= SETFLAG_COMMON("足露出")
+	CASE "レッグウォーマー"
+		SETBIT LOCAL, 5
+		LOCAL |= SETFLAG_COMMON("足露出")
+	CASE "和風"
+		SETBIT LOCAL, 6
+	CASE "足袋"
+		SETBIT LOCAL, 6
+		SETBIT LOCAL, 0
+	CASE "脚絆"
+		SETBIT LOCAL, 6
+		SETBIT LOCAL, 4
+	CASE "ストッキング"
+		SETBIT LOCAL, 7
+	CASE "ガーター"
+		SETBIT LOCAL, 8
+	CASE "ストッキングカラー"
+		IF RAND:2
+			LOCAL |= SETFLAG_COMMON("白")
+		ELSE
+			LOCAL |= SETFLAG_COMMON("黒")
+		ENDIF
+	CASE "ガーターカラー"
+		IF RAND:3 == 0
+			LOCAL |= SETFLAG_COMMON("純白")
+		ELSE
+			LOCAL |= SETFLAG_COMMON("Ｈめの色")
+		ENDIF
+	CASEELSE
+		SIF STRLENS(ARGS)
+			LOCAL |= SETFLAG_COMMON(ARGS)
+	ENDSELECT
+	SIF STRLENS(ARGS:(LCOUNT + 1) ) == 0
+		RETURNF LOCAL
+NEXT
+RETURNF LOCAL
+
+;-------------------------------------------------
+;ARGの靴下が条件ARGSを満たすか確認する
+;-------------------------------------------------
+@CHECK_SOCKS(ARGS, ARG)
+#FUNCTION
+SIF ARG == 0 && TARGET
+	ARG = TARGET
+SIF EQUIP:ARG:靴下 == 0
+	RETURNF 0
+SIF (SETFLAG_SOCKS(ARGS)&EQUIP:ARG:靴下) == SETFLAG_SOCKS(ARGS)
+	RETURNF 1
+RETURNF 0
+

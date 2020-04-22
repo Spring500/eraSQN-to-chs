@@ -1,0 +1,542 @@
+﻿@COM0
+;愛撫
+CALL PRINT_TRAIN_NAME(SELECTCOM)
+;PLAYERの技巧に応じてフラート発動（初回はてかげん効果もあり）
+SIF TRAIN_NAME(SELECTCOM) == "フラート"
+	TEQUIP:フラート = 1
+
+CALL TRAIN_MESSAGE_B
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+STR:0 = %STR:2%
+
+RETURN 1
+
+@FLAG_COM0, ARG
+SIF CHECK_COM("ローションマッサージ", SELECTCOM) == 1
+	CALL FLAG_COM260, 100
+
+;アソコ愛撫
+CALL FLAG_COM7, 30
+
+;顔面騎乗orシックスナイン状態でないなら胸も愛撫
+IF TEQUIP:シックスナイン + TEQUIP:顔面騎乗 == 0 && CHECK_COM("ローションマッサージ", SELECTCOM) == 0
+	CALL FLAG_COM5, 30
+
+	IF TEQUIP:触手
+		;対象に触手の汚れがつく
+		CALL ADD_STAIN, TARGET, "Ｂ", "触手"
+	ELSE
+		;対象のＢ⇔調教者の指の汚れが移動
+		CALL EQ_STAIN, TARGET, PLAYER, 3, 1
+	ENDIF
+ENDIF
+
+@SOURCE_COM0, ARG
+SIF CHECK_COM("ローションマッサージ", SELECTCOM) == 1
+	CALL SOURCE_COM260, 100
+
+VARSET LOCAL
+LOCAL:20 += 5
+LOCAL:21 += 10
+
+IF TEQUIP:フラート == 1
+	LOCAL:20 += 45
+	LOCAL:21 += 30
+ENDIF
+
+;アソコ愛撫
+CALL SOURCE_COM7, 30
+
+;顔面騎乗orシックスナイン状態でないなら胸も愛撫
+SIF TEQUIP:シックスナイン + TEQUIP:顔面騎乗 == 0 && CHECK_COM("ローションマッサージ", SELECTCOM) == 0
+	CALL SOURCE_COM5, 30
+
+CALL CALC, "調教ソース", LOCAL:0, LOCAL:1, LOCAL:2, LOCAL:3, LOCAL:4, LOCAL:5, LOCAL:6, LOCAL:7, LOCAL:8, LOCAL:9, LOCAL:10, LOCAL:11, LOCAL:12, LOCAL:13, LOCAL:14, LOCAL:15, LOCAL:16, LOCAL:17, LOCAL:18, LOCAL:19, LOCAL:20, LOCAL:21, ARG
+
+
+@EQUIP_COM34_2
+SIF TEQUIP:フラート == 0
+	RETURN 0
+
+PRINTFORML ＜フラート効果発揮中＞
+
+RETURN 1
+
+@TRAIN_MESSAGE_COM0
+IF CHECK_COM("ローションマッサージ", SELECTCOM)
+	CALL TRAIN_MESSAGE_COM260
+ELSEIF TALENT:オトコ
+	PRINTFORMW %CALLNAME:TARGET%の全身を焦らすように愛撫した…
+;シックスナイン
+ELSEIF TEQUIP:シックスナイン
+	PRINTFORM %CALLNAME:PLAYER%は%CALLNAME:TARGET%
+	IF TEQUIP:押し倒し
+		PRINT に股間を貪られながら、
+	ELSE
+		PRINT に奉仕させながら、
+	ENDIF
+	PRINT 目の前
+	IF RAND:2
+		PRINTW の柔らかい尻肉を捏ね回した…
+	ELSE
+		PRINTW に広がる景色を堪能した…
+	ENDIF
+;押し倒し
+ELSEIF TEQUIP:押し倒し
+	IF INSERT("インサート")
+		IF INSERT("尿道インサート")
+			IF (EXP:尿道経験 >= 150 || TALENT:尿道狂い) && RAND:3
+				IF RAND:4 == 0
+					PRINTFORM 涎を垂らしながら腰を動かす
+				ELSEIF RAND:3 == 0
+					PRINTFORM 腰を振って禁断の快感を貪っている
+				ELSEIF RAND:2 == 0
+					PRINTFORM 使い込まれた尿道の虜になっている
+				ELSE
+					PRINTFORM 潤んだ瞳で%CALLNAME:PLAYER%を見つめる
+				ENDIF
+			ELSEIF EXP:尿道経験 >= 50 || TALENT:尿道性感 || TALENT:倒錯的
+				IF PENIS(PLAYER) && ABL:奉仕精神 >= 3 && RANDIF(3, TALENT:尿道性感)
+					PRINTFORM 尿道での奉仕に躍起になっている
+				ELSEIF PENIS(PLAYER) && RANDIF(2, TALENT:尿道性感)
+					PRINTFORM 根元までペニスを呑み込んでゾクゾクしている
+				ELSEIF TALENT:尿道性感 && RAND:2
+					PRINTFORM 尿道性感の虜になっている
+				ELSEIF RAND:2
+					PRINTFORM 敏感な粘膜を%TEXTR("擦られる", "押し広げられる")%感覚を%TEXTR("味わって", "満喫して")%いる
+				ELSE
+					PRINTFORM 紅潮した顔で%CALLNAME:PLAYER%を見つめる
+				ENDIF
+			ELSE
+				IF RAND:2 == 0
+					PRINTFORM 未知の感覚に翻弄されている
+				ELSE
+					PRINTFORM 慣れない異物感に息を乱している
+				ENDIF
+			ENDIF
+		ELSEIF INSERT("Ｖインサート")
+			IF (EXP:Ｖ経験 >= 300 || ABL:Ｖ感覚 >= 4) && RAND:3
+				IF PREVCOM == 67 && PENIS(PLAYER) && RAND:3 == 0
+					PRINTFORM %CALLNAME:PLAYER%のペニスで子宮口を撫で回すのに夢中になっている
+				ELSEIF PREVCOM == 66 && PENIS(PLAYER) && RAND:3 == 0
+					PRINTFORM 浅ましくペニスにＧスポットを擦りつける
+				ELSEIF RAND:4 == 0
+					PRINTFORM 調教されきった膣の与える快楽に蕩けきった顔をしている
+				ELSEIF RAND:3 == 0
+					PRINTFORM だらしなく涎を垂らしながら腰を動かす
+				ELSEIF RAND:2 == 0
+					PRINTFORM 深い息をつきながらお腹の中の感触を味わっている
+				ELSE
+					PRINTFORM 潤んだ瞳で%CALLNAME:PLAYER%を見つめる
+				ENDIF
+			ELSEIF EXP:Ｖ経験 >= 150 || ABL:Ｖ感覚 >= 3 || TALENT:好色
+				IF PREVCOM == 67 && PENIS(PLAYER) && RAND:2 == 0
+					PRINTFORM 膣奥までペニスを呑み込んでゾクゾクしている
+				ELSEIF PREVCOM == 66 && RAND:2 == 0
+					PRINTFORM Ｇスポットの与える感覚の虜になっている
+				ELSEIF RAND:2 == 0
+					PRINTFORM 膣を押し広げられる感覚を満喫している
+				ELSE
+					PRINTFORM 紅潮した顔で%CALLNAME:PLAYER%を見つめる
+				ENDIF
+			ELSE
+				IF PREVCOM == 67 && PENIS(PLAYER) && RAND:2 == 0
+					PRINTFORM 敏感な子宮口を腰を逃がし気味にペニスで刺激している
+				ELSEIF PREVCOM == 66
+					PRINTFORM 不慣れなＧスポットを恐る恐る擦っている
+				ELSEIF RAND:2 == 0
+					PRINTFORM 腰を振って快感を貪っている
+				ELSE
+					PRINTFORM 突き上げに翻弄されている
+				ENDIF
+			ENDIF
+		ELSE
+			IF (EXP:Ａ経験 >= 300 || ABL:Ａ感覚 >= 4) && RAND:3
+				IF PENIS(PLAYER) && RAND:6 == 0
+					PRINTFORM 顔を蕩けさせてアナルでフェラチオをしている
+				ELSEIF PENIS(PLAYER) && RAND:5 == 0
+					PRINTFORM 根元まで呑み込んだペニスの大きさをアナルで味わっている
+				ELSEIF RAND:4 == 0
+					PRINTFORM 涎を垂らしながら腰を動かす
+				ELSEIF RAND:3 == 0
+					PRINTFORM 腰を振ってアナルの快感を貪っている
+				ELSEIF RAND:2 == 0
+					PRINTFORM 使い込まれた肛門の虜になっている
+				ELSE
+					PRINTFORM 潤んだ瞳で%CALLNAME:PLAYER%を見つめる
+				ENDIF
+			ELSEIF EXP:Ａ経験 >= 150 || ABL:Ａ感覚 >= 3
+				IF PENIS(PLAYER) && ABL:奉仕精神 >= 3 && RAND:4 == 0
+					PRINTFORM アナルでの奉仕に躍起になっている
+				ELSEIF RAND:3 == 0
+					PRINTFORM アナルに深く埋められて体をビクッとさせた
+				ELSEIF RAND:2 == 0
+					PRINTFORM 敏感な粘膜を擦られる感覚を味わっている
+				ELSE
+					PRINTFORM 紅潮した顔で%CALLNAME:PLAYER%を見つめる
+				ENDIF
+			ELSE
+				IF PENIS(PLAYER) && RAND:2 == 0
+					PRINTFORM アナルでペニスを扱いている
+				ELSE
+					PRINTFORM 埋め込まれた異物感に息を乱している
+				ENDIF
+			ENDIF
+		ENDIF
+		PRINTFORM %CALLNAME:TARGET%の、
+		IF RAND:3 == 0
+			IF TALENT:巨乳
+				PRINT 大迫力で弾む
+			ELSEIF TALENT:貧乳 && TALENT:小柄体型
+				PRINT つるぺたの
+			ELSEIF TALENT:貧乳
+				PRINT 可愛く揺れる
+			ELSE
+				PRINT 揺れる
+			ENDIF
+			PRINTFORMW 胸を揉みしだいた…
+		ELSEIF RAND:2 == 0
+			IF TALENT:妊娠 && RAND:2 == 0
+				PRINT 大きなお腹
+			ELSEIF TALENT:小柄体型
+				PRINT 未発達な体
+			ELSEIF TALENT:巨乳
+				PRINT 豊満な体
+			ELSE
+				PRINT 柔らかな体
+			ENDIF
+			PRINTFORMW を愛撫した…
+		ELSE
+			IF INSERT("Ｖインサート") == 0 && TALENT:オトコ == 0 && RAND:2
+				PRINTFORMW 寂しそうにしているアソコに悪戯した…
+			ELSEIF PENIS(TARGET)
+				PRINTFORMW 勃起したペニスを弄んだ…
+			ELSEIF CALCF("Ｃ発情") >= 2
+				PRINTFORMW 充血したクリトリスを弄んだ…
+			ELSE
+				PRINTFORMW 小さなクリトリスを指の腹で擦った…
+			ENDIF
+		ENDIF
+	ELSEIF RAND:(ABL:技巧 + 1) >= 2
+		PRINTFORM %CALLNAME:TARGET%は
+		IF RAND:2 == 0
+			IF TALENT:巨乳
+				PRINT 豊満な
+			ELSEIF TALENT:貧乳 && TALENT:小柄体型
+				PRINT ぺったんこな
+			ELSEIF TALENT:貧乳
+				PRINT 小ぶりな
+			ENDIF
+			PRINTFORMW 胸を強調したポーズで%CALLNAME:PLAYER%を誘ってきた。
+			PRINTFORM %CALLNAME:PLAYER%は誘われるままに、%CALLNAME:TARGET%の胸を
+			IF TALENT:貧乳 || RAND:3 == 0
+				PRINTFORMW 撫でさすった…
+			ELSE
+				PRINTFORMW 揉みしだいた…
+			ENDIF
+		ELSE
+			PRINTFORM %CALLNAME:PLAYER%に
+			IF TALENT:小柄体型
+				PRINT 未発達な体
+			ELSEIF TALENT:巨乳
+				PRINT 豊満な体
+			ELSE
+				PRINT 体
+			ENDIF
+			PRINTFORMW をすりよせて、愛撫をねだってきた…
+		ENDIF
+	ELSE
+		PRINTFORM %CALLNAME:TARGET%の
+		IF TALENT:小柄体型
+			PRINT 未発達な体
+		ELSEIF TALENT:巨乳
+			PRINT 豊満な体
+		ELSE
+			PRINT 体
+		ENDIF
+		PRINTW を抱き寄せて、丹念に愛撫した…
+	ENDIF
+ELSEIF TEQUIP:触手
+	PRINTFORM %CALLNAME:TARGET%の
+		SIF TALENT:小柄体型
+			PRINT 未発達な
+	PRINTW 体の上を大小さまざまな触手が這いずり回る…
+ELSEIF TEQUIP:フラート == 1
+	IF TEQUIP:キス
+		PRINTFORMW %CALLNAME:PLAYER%はキスをしながら%CALLNAME:TARGET%の全身を焦らすように愛撫した…
+		CALL SETFLAG, "追加キスフラグ", TARGET
+	ELSE
+		PRINTFORMW %CALLNAME:PLAYER%は%CALLNAME:TARGET%の全身を焦らすように愛撫した…
+	ENDIF
+ELSE
+	PRINTFORM %CALLNAME:PLAYER%は
+	;インサート中
+	IF INSERT("合体中")
+		PRINTFORM %TEXTS("合体中", PLAYER)%%CALLNAME:TARGET%の
+		IF COND("脚に弱い", PLAYER) && INSERT("屈曲位") && RAND:3
+			IF CHECK_CLO("足露出") && RAND:3
+				PRINTFORMW %TEXTR("足の指を舐めしゃぶった", "脚に舌を這わせた")%…
+				CALL SETFLAG, "足舐めフラグ", TARGET
+			ELSE
+				PRINTFORM %TEXTR("脚に舌を這わせ", "脚に頬ずりし", "敏感な膝の裏にキスの雨を降らせ")%つつ
+				IF TALENT:妊娠 && RAND:2 == 0
+					PRINT 大きなお腹
+				ELSEIF TALENT:小柄体型
+					PRINT 未発達な体
+				ELSEIF TALENT:巨乳
+					PRINT 豊満な体
+				ELSE
+					PRINT 身体
+				ENDIF
+				IF TALENT:妊娠 || RAND:3 == 0
+					PRINT を優しく
+				ELSEIF RAND:2
+					PRINT を念入りに
+				ELSE
+					PRINT を丹念に
+				ENDIF
+				PRINTFORMW %TEXTR("撫で回し", "愛撫し")%た…
+			ENDIF
+			RETURN 1
+		ELSEIF CHECK_CLO("腋露出") && COND("性癖：腋", PLAYER) && INSERT("正常位") + INSERT("屈曲位") && RAND:3
+			PRINTFORM %TEXTS("腋：視覚")%
+			IF RAND:3 == 0
+				PRINTFORM を舌先でくすぐりつつ
+			ELSEIF RAND:2
+				PRINTFORM を舌で味わいつつ
+			ELSEIF PALAM:欲情 >= 30000 && RAND:2
+				PRINTFORM に舌を這わせて汗を舐め取りつつ
+			ELSE
+				PRINTFORM に舌を這わせつつ
+			ENDIF
+			IF TALENT:妊娠 && RAND:2 == 0
+				PRINT 大きなお腹
+			ELSEIF TALENT:小柄体型
+				PRINT 未発達な体
+			ELSEIF TALENT:巨乳
+				PRINT 豊満な体
+			ELSE
+				PRINT 身体
+			ENDIF
+			IF TALENT:妊娠 || RAND:3 == 0
+				PRINT を優しく
+			ELSEIF RAND:2
+				PRINT を念入りに
+			ELSE
+				PRINT を丹念に
+			ENDIF
+			PRINTFORMW %TEXTR("撫で回し", "愛撫し")%た…
+			CALL SETFLAG, "腋舐めフラグ", TARGET
+			RETURN 1
+		ENDIF
+	;においフェチ分岐
+	ELSEIF PLAYER == MASTER && COND("性癖：においフェチ", PLAYER) && TALENT:お気に入り + TALENT:相思相愛 && (CHOSECOM(SELECTCOM) == 0 || RAND:3 == 0)
+		;腋
+		IF CHECK_CLO("腋露出") && COND("性癖：腋", PLAYER) && RAND:3 == 0
+			SIF TALENT:恥じらい
+				PRINT 恥ずかしがる
+			IF RAND:2
+				PRINTFORMW %CALLNAME:TARGET%の%TEXTS("腋")%に鼻を近づけ、汗の%TEXTS("匂い")%を堪能してから舌で舐め取った…
+				CALL SETFLAG, "腋舐めフラグ", TARGET
+				RETURN 1
+			ELSE
+				PRINTFORM %CALLNAME:TARGET%の%TEXTS("腋")%の%TEXTS("匂い")%を嗅ぎながら、
+			ENDIF
+		;汗ばんだ…とりあえず欲情かな
+		ELSEIF PALAM:欲情 >= 3000 && RAND:2
+			SIF TALENT:恥じらい
+				PRINT 恥ずかしがる
+			IF RAND:3 == 0
+				PRINTFORM %CALLNAME:TARGET%の体臭を嗅ぎながら、汗ばんだ身体を%TEXTR("撫で回し", "愛撫し")%た…
+			ELSEIF RAND:2
+				PRINTFORMW %CALLNAME:TARGET%の全身を愛撫し、汗ばんだ身体の%TEXTS("匂い")%を楽しんだ…
+			ELSE
+				PRINTFORM %CALLNAME:TARGET%の
+				IF CHECK_CLO("腋露出") && COND("性癖：腋", PLAYER) && RAND:3 == 0
+					PRINTFORM %TEXTS("腋")%の%TEXTS("匂い")%
+				ELSEIF COND("脚の使用") && COND("靴の着用") == 0 && RAND:2
+					PRINTFORM 足の%TEXTS("匂い")%
+				ELSEIF CHECK_OUTER("ズボン") == 0
+					PRINTFORM 股間の%TEXTS("匂い")%
+				ELSE
+					PRINTFORM 髪の匂い
+				ENDIF
+				PRINTFORMW を嗅ぎながら優しく%TEXTR("撫で回し", "愛撫し")%た。
+				PRINTFORMW %CALLNAME:PLAYER%が全身を刺激する程に、むせ返るような蒸れた%TEXTS("匂い")%が立ち昇ってくる…
+			ENDIF
+			RETURN 1
+		;髪は多分みんなある！
+		ELSE
+			IF RAND:2
+				PRINTFORM %CALLNAME:TARGET%抱き寄せて、髪の匂いを嗅ぎながら
+			ELSE
+				PRINTFORM %CALLNAME:TARGET%の髪の匂いを嗅ぎながら、
+			ENDIF
+		ENDIF
+	ELSEIF CHECK_CLO("腋露出") && COND("性癖：腋", PLAYER) && RAND:3
+		PRINTFORM %CALLNAME:TARGET%の%TEXTS("腋：視覚")%
+		IF RAND:3 == 0
+			PRINTFORM を舌先でくすぐりながら、
+		ELSEIF RAND:2
+			PRINTFORM を舌で味わいながら、
+		ELSEIF PALAM:欲情 >= 30000 && RAND:2
+			PRINTFORM に舌を這わせて汗を舐め取りながら、
+		ELSE
+			PRINTFORM に舌を這わせながら、
+		ENDIF
+		CALL SETFLAG, "腋舐めフラグ", TARGET
+	ELSE
+		IF CHECK_COM("キス") || TEQUIP:キス
+			PRINTFORM %TEXTS("キス継続")%
+			CALL SETFLAG, "追加キスフラグ", TARGET
+		ENDIF
+		IF RAND:3 == 0
+			IF CHECK_SHIRT("和服")
+				PRINT 着物の合わせ目へと手を滑り込ませて、
+			ELSEIF CHECK_SHIRT("チャイナ服")
+				PRINT チャイナドレスのスリットの中へと手を這わせて、
+			ELSEIF CHECK_SHIRT("セーラー服")
+				PRINT お腹の隙間に手を滑り込ませて、
+			ELSEIF CHECK_SHIRT("ベビードール")
+				PRINT 薄手のベビードール越しに、
+			ELSEIF CHECK_SHIRT("Ｙシャツ")
+				PRINT Ｙシャツの隙間へと手を滑り込ませて、
+			ELSEIF CHECK_BODYS("スク水")
+				PRINT 水抜き穴に手を突っ込んで、
+			ELSEIF CHECK_BODYS("エナメル")
+				PRINT スベスベしたスーツに手を這わせ、
+			ELSEIF CHECK_SHIRT("鎧")
+				PRINT 鎧の隙間に手を這わせて、
+			ELSEIF EQUIP:アウター && !CHECK_OUTER("ズボン")
+				PRINT ほんのりと汗ばんだ内腿に手を這わせて、
+			ENDIF
+		ENDIF
+		PRINTFORM %CALLNAME:TARGET%の
+	ENDIF
+
+	;妊娠中？
+	IF TALENT:妊娠 && RAND:2 == 0
+		PRINT 大きなお腹
+	ELSEIF TALENT:小柄体型
+		PRINT 未発達な体
+	ELSEIF TALENT:巨乳
+		PRINT 豊満な体
+	ELSE
+		PRINT 身体
+	ENDIF
+	;お尻好きなあなたへ
+	IF COND("性癖：尻", PLAYER) && INSERT("正常位") + INSERT("屈曲位") + INSERT("背面座位") == 0 && RAND:3
+		PRINTFORM と%TEXTS("お尻：感触")%
+	;モノは試しの弱点突き。専用コマンドに分化するのも良いかも。
+	;角 
+	ELSEIF TALENT:ツノ && RANDIF(3, TALENT:旧支配者の名残, TALENT:動物耳, TALENT:マーメイド, TALENT:しっぽ, TALENT:翼)
+		SELECTCASE TALENT:ツノ
+		CASE 5
+			PRINT と長い角
+		CASE 9
+			PRINT とちっちゃな角
+		CASEELSE
+			PRINT とスベスベした角
+		ENDSELECT
+	;翼or羽
+	ELSEIF TALENT:翼 && RANDIF(3, TALENT:旧支配者の名残, TALENT:動物耳, TALENT:マーメイド, TALENT:しっぽ)
+		IF RAND:2 == 0
+			PRINTFORM と敏感そうな%TALENT_NAME(161, TALENT:翼)%の付け根
+		ELSE
+			SELECTCASE TALENT:翼
+			CASE 6
+				PRINTFORM と蝙蝠のような翼
+			CASE 10
+				PRINTFORM と蝶々のような羽
+			CASE 12
+				PRINTFORM と天使の風格を備えた羽
+			;ハニービー
+			CASE 13
+				PRINTFORM と虫のような薄い羽
+			CASEELSE
+				PRINTFORM と猛禽のような翼
+			ENDSELECT
+		ENDIF
+	;尻尾
+	ELSEIF TALENT:しっぽ && RANDIF(3, TALENT:旧支配者の名残, TALENT:動物耳, TALENT:マーメイド)
+		SELECTCASE TALENT:しっぽ
+		;悪魔
+		CASE 6
+			IF RAND:2 == 0
+				PRINT とクネクネ動く尻尾
+			ELSE
+				PRINT とハート型の尻尾の先っちょ
+			ENDIF
+		;トカゲorジャバウォック
+		CASE 7, 8
+			;メローナ
+			IF BASE:種族 == 35 && RAND:2
+				PRINT と先端が燃え盛る尻尾
+			ELSEIF RAND:2 == 0
+				PRINT とゆらゆら動く尻尾
+			ELSE
+				PRINT と鱗に覆われた尻尾
+			ENDIF
+		;ハニービー
+		CASE 13
+			PRINTFORM と縞々模様の蜂のお腹
+		CASEELSE
+			;ウサギ
+			IF TALENT:しっぽ == 4 || RAND:2
+				PRINT とふさふさした尻尾
+			ELSE
+				IF TALENT:しっぽ == 2 || TALENT:しっぽ == 3 || TALENT:しっぽ == 5
+					PRINT とパタパタ動く尻尾
+				ELSE
+					PRINT とクネクネ動く尻尾
+				ENDIF
+			ENDIF
+		ENDSELECT
+	;ヒレ？鱗？
+	ELSEIF TALENT:マーメイド && RANDIF(3, TALENT:旧支配者の名残, TALENT:動物耳)
+		PRINT と敏感そうなヒレ
+	;獣耳
+	ELSEIF TALENT:動物耳 && RANDIF(3, TALENT:旧支配者の名残)
+		IF RAND:2 == 0
+			PRINT と
+		ELSEIF RAND:2 == 0
+			PRINT とピョコピョコ動く
+		ELSE
+			PRINT と触らずには居られない
+		ENDIF
+
+		SELECTCASE TALENT:動物耳
+		CASE 1
+			PRINT ネコ耳
+		CASE 2
+			PRINT イヌ耳
+		CASE 3
+			PRINT キツネの耳
+		CASE 4
+			PRINT ウサ耳
+		CASE 5
+			PRINT ウマ耳
+		CASEELSE
+			PRINT 獣耳
+		ENDSELECT
+	;触手
+	ELSEIF TALENT:旧支配者の名残 && RAND:3 == 0
+		PRINT とぬるぬるした触手
+	ENDIF
+
+	IF TALENT:妊娠 || RAND:3 == 0
+		PRINT を優しく
+	ELSEIF RAND:2
+		PRINT を念入りに
+	ELSE
+		PRINT を丹念に
+	ENDIF
+	IF PREVCOM == SELECTCOM
+		PRINTFORMW %TEXTR("撫で回し", "愛撫し")%続けた…
+	ELSE
+		PRINTFORMW %TEXTR("撫で回し", "愛撫し")%た…
+	ENDIF
+ENDIF

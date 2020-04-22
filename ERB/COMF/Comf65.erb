@@ -1,0 +1,437 @@
+﻿@COM65
+;騎乗位
+;押し倒しの時に一定条件を満たすと、ワイルドスウィングになり、効果上昇。
+CALL PRINT_TRAIN_NAME(SELECTCOM)
+
+;-------------------------------------------------
+;実行できるかの判定
+;-------------------------------------------------
+CALL SHOW_COM_ORDER_COM, 65
+
+;実行できない
+SIF TCVAR:28 == 0
+	RETURN 0
+;-------------------------------------------------
+;実行決定
+;-------------------------------------------------
+CALL TRAIN_MESSAGE_B
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+STR:0 = %STR:2%
+
+;-------------------------------------------------
+;射精チェック
+;-------------------------------------------------
+CALL SAMEN_CHECK
+
+RETURN 1
+
+@FLAG_COM65, ARG
+IF INSERT("ワイルドスウィング")
+	CALL FLAG_INSERTION, "Ｖインサート", ARG, 120
+ELSE
+	CALL FLAG_INSERTION, "Ｖインサート", ARG, 70
+ENDIF
+
+
+@SOURCE_COM65, ARG
+VARSET LOCAL
+
+LOCAL:20 += 100
+LOCAL:21 += 50
+IF INSERT("ワイルドスウィング")
+	LOCAL:20 += 50
+	LOCAL:21 += 20
+	CALL SOURCE_INSERTION, "Ｖインサート", ARG, 120
+ELSE
+	CALL SOURCE_INSERTION, "Ｖインサート", ARG, 70
+ENDIF
+
+IF TALENT:力持ち
+	TIMES LOCAL:20, 0.50
+	TIMES LOCAL:21, 0.50
+ENDIF
+
+LOCAL:11 = CALCF("実行値による欲情追加")
+LOCAL:12 = 900
+
+;根元まで受け入れられる場合にはクリを擦られてしまう
+IF ABL:Ｖ拡張 > SIZE("ペニス", PLAYER) && PENIS(TARGET) == 0
+	;ABL:Ｃ感覚をみる
+	LOCAL:0 = CALCF("Ｃ刺激", 2, 30)
+	LOCAL:0 = SOURCE_EXABL(LOCAL:0, 33, PLAYER)
+ENDIF
+
+;ABL:奉仕精神をみる
+SELECTCASE ABL:奉仕精神
+CASE 0
+	LOCAL:4 = 200
+	LOCAL:5 = 50
+	LOCAL:14 = 300
+CASE 1
+	LOCAL:4 = 300
+	LOCAL:5 = 200
+	LOCAL:14 = 100
+CASE 2
+	LOCAL:4 = 500
+	LOCAL:5 = 550
+	LOCAL:14 = 30
+CASE 3
+	LOCAL:4 = 800
+	LOCAL:5 = 900
+	LOCAL:14 = 0
+CASE 4
+	LOCAL:4 = 1000
+	LOCAL:5 = 1500
+	LOCAL:14 = 0
+CASEELSE
+	LOCAL:4 = 1200
+	LOCAL:5 = 2200
+	LOCAL:14 = 0
+ENDSELECT
+
+;ABL:Ｖ感覚をみる
+SELECTCASE ABL:Ｖ感覚
+CASE 0
+	LOCAL:3 = 25
+	TIMES LOCAL:4 , 0.50
+CASE 1
+	LOCAL:3 = 75
+	TIMES LOCAL:4 , 0.80
+CASE 2
+	LOCAL:3 = 125
+CASE 3
+	LOCAL:3 = 200
+	TIMES LOCAL:4 , 1.20
+CASE 4
+	LOCAL:3 = 300
+	TIMES LOCAL:4 , 1.50
+CASEELSE
+	LOCAL:3 = 500
+	TIMES LOCAL:4 , 2.00
+ENDSELECT
+
+;PALAM:欲情をみる
+SELECTCASE PALAM:欲情
+CASE IS < PALAMLV:1
+	TIMES LOCAL:3 , 0.30
+CASE IS < PALAMLV:2
+	TIMES LOCAL:3 , 0.60
+CASE IS < PALAMLV:3
+	TIMES LOCAL:3 , 1.00
+CASE IS < PALAMLV:4
+	TIMES LOCAL:3 , 1.50
+CASE IS >= PALAMLV:4
+	TIMES LOCAL:3 , 1.80
+ENDSELECT
+
+CALL CALC, "調教ソース", LOCAL:0, LOCAL:1, LOCAL:2, LOCAL:3, LOCAL:4, LOCAL:5, LOCAL:6, LOCAL:7, LOCAL:8, LOCAL:9, LOCAL:10, LOCAL:11, LOCAL:12, LOCAL:13, LOCAL:14, LOCAL:15, LOCAL:16, LOCAL:17, LOCAL:18, LOCAL:19, LOCAL:20, LOCAL:21, ARG
+
+
+@TRAIN_MESSAGE_COM65
+;同時押し倒し
+IF TEQUIP:Ｗ押し倒し
+	PRINTFORM %CALLNAME:TARGET%は
+	;助手が前回と同じ行動(違う行動の時は、ここでなく、EQUIP_COM32で記述)
+	IF SELECTCOM:1 == PREVCOM:1 && SELECTCOM:1 >= 0
+		PRINTFORM %TEXTS("Ｗ押し倒し中")%
+	ELSEIF PREVCOM:1 == 65 || PREVCOM:1 == 66 || PREVCOM:1 == 67
+		PRINTFORM %CALLNAME:(TARGET:1)%が膣から解放した
+	ELSEIF PREVCOM:1 == 75
+		PRINTFORM %CALLNAME:(TARGET:1)%のアナルから解放されたばかりの
+	ELSEIF PREVCOM:1 == 83
+		PRINTFORM %CALLNAME:(TARGET:1)%のオシッコの穴から解放されたばかりの
+	ENDIF
+	IF INSERT("Ｖインサート")
+		PRINTFORMW %CALLNAME:MASTER%のペニスを、艶かしく腰を振りながら味わい続けている…
+	ELSEIF INSERT("Ａインサート")
+		PRINTFORMW %CALLNAME:MASTER%のペニスをアナルから抜き、今度は膣で根元まで呑み込んできた…
+	ELSEIF INSERT("尿道インサート")
+		PRINTFORMW %CALLNAME:MASTER%のペニスを尿道から抜き、今度は膣で根元まで呑み込んできた…
+	ELSE
+		PRINTFORMW %CALLNAME:MASTER%のペニスにまたがり、ゆっくりと腰を下ろしてきた…
+	ENDIF
+	;アソコを露出させる
+	SIF CHECK_CLO("Ｖ露出") == 0
+		CALL SETFLAG, "ボトムを露出：テキスト無し", TARGET
+;ラブトラップ
+ELSEIF TEQUIP:ラブトラップ
+	;前回と今回の調教者が同じで、抜かないフラグがある場合
+	IF INSERT("インサート") && COND("前Ｔ調教者") == PLAYER
+		;体位が騎乗位
+		IF INSERT("騎乗位")
+			PRINTFORMW %CALLNAME:TARGET%は挿入されたままのペニスを締め付け、再び腰を動かし始めた…
+		ELSE
+			PRINTFORM %CALLNAME:TARGET%は%CALLNAME:PLAYER%を押し倒し、身体を上下に
+			IF (TALENT:妊娠 && RAND:4 > 0) || (TALENT:妊娠 == 0 && RAND:4 == 0)
+				PRINT ゆるやかに
+			ELSE
+				PRINT 激しく
+			ENDIF
+			PRINTFORMW 揺らしている…
+		ENDIF
+	ELSE
+		PRINTFORM %CALLNAME:TARGET%は%CALLNAME:PLAYER%の上にまたがり、
+		IF TALENT:妊娠
+			PRINT 大きなお腹をゆさゆさ
+		ELSE
+			PRINT 身体を上下に激しく
+		ENDIF
+		PRINTFORMW 揺らして快感を貪っている…
+	ENDIF
+ELSEIF CHECK_COM("３Ｐ奉仕")
+	CALL TRAIN_MESSAGE_3P
+ELSE
+	;前回と今回の調教者が同じで、抜かないフラグがある場合
+	IF INSERT("インサート") && COND("前Ｔ調教者") == PLAYER
+		;押し倒されているとき
+		IF TEQUIP:押し倒し
+			;ワイルドスウィング
+			IF INSERT("ワイルドスウィング")
+				CALL TEXT, "ワイルドスウィング"
+			ELSEIF INSERT("Ｖインサート")
+				IF TEQUIP:キス
+					PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%を解放せず、%TEXTS("キス継続")%再び腰を動かし始めた…
+					CALL SETFLAG, "追加キスフラグ", TARGET
+				ELSE
+					PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%を解放せず、膣をきつく締めたまま再び腰を動かし始めた…
+					CALL TEXT, "追加地の文：騎乗位"
+				ENDIF
+			ELSEIF INSERT("Ａインサート")
+				PRINTFORM %CALLNAME:TARGET%は腰を浮かしてアナルから%NAMES("ペニス", PLAYER)%を\@ PENIS(PLAYER) ? 解放する # 抜く \@と、腸液に塗れたソレを今度は膣で
+				IF TALENT:妊娠 == 0
+					IF RAND:2 && ABL:Ｖ拡張 > SIZE("ペニス", PLAYER)
+						PRINT 根元まで
+					ELSEIF ABL:Ｖ拡張 >= 2
+						PRINT 深々と
+					ENDIF
+				ENDIF
+				PRINTFORMW 咥え込んできた…
+			ELSEIF INSERT("尿道インサート")
+				PRINTFORM %CALLNAME:TARGET%は腰を浮かして尿道から%NAMES("ペニス", PLAYER)%を\@ PENIS(PLAYER) ? 解放する # 抜く \@と、濡れたソレを今度は膣で
+				IF TALENT:妊娠 == 0
+					IF RAND:2 && ABL:Ｖ拡張 > SIZE("ペニス", PLAYER)
+						PRINT 根元まで
+					ELSEIF ABL:Ｖ拡張 >= 2
+						PRINT 深々と
+					ENDIF
+				ENDIF
+				PRINTFORMW 咥え込んできた…
+			ENDIF
+		ELSE
+			;前回はアナル
+			IF INSERT("Ａインサート")
+				PRINTFORM %CALLNAME:TARGET%を抱き上げ、アナルから引き抜いた%NAMES("ペニス", PLAYER)%で
+				PRINTFORMW %TEXTS("Ｖ挿入前")%を突き上げた…
+			;前回は尿道
+			ELSEIF INSERT("尿道インサート")
+				PRINTFORM %CALLNAME:TARGET%を抱き上げ、オシッコの穴から引き抜いた%NAMES("ペニス", PLAYER)%で
+				PRINTFORMW %TEXTS("Ｖ挿入前")%を突き上げた…
+			;体位が正常位
+			ELSEIF INSERT("正常位") || INSERT("屈曲位")
+				PRINTFORMW 膣内から抜き去ることなく%CALLNAME:TARGET%を抱き上げ、下から腰を突き上げた…
+			;体位が後背位
+			ELSEIF INSERT("後背位")
+				PRINTFORMW 膣内から抜き去ることなく%CALLNAME:TARGET%を抱き上げ、下から腰を突き上げた…
+			;体位が対面座位
+			ELSEIF INSERT("対面座位")
+				PRINTFORMW 膣内から抜き去ることなく%CALLNAME:TARGET%を抱き上げ、下から腰を突き上げた…
+			;体位が背面座位
+			ELSEIF INSERT("背面座位")
+				PRINTFORMW 膣内から抜き去ることなく%CALLNAME:TARGET%を抱き上げ、下から腰を突き上げた…
+			;体位が騎乗位
+			ELSEIF INSERT("騎乗位")
+				IF PENIS(PLAYER)
+					PRINTFORM %CALLNAME:TARGET%は
+					IF ABL:露出癖 >= 3 && RAND:2
+						PRINT 腰を上げて肉棒が愛液で濡れ光る様を見せ付けた後に再び膣に収めると、
+					ELSE
+						PRINT 挿入されたままのペニスを締め付け、
+					ENDIF
+				ELSE
+					PRINTFORM %CALLNAME:TARGET%は挿入されたままの張型を締め付け、
+				ENDIF
+
+				IF TEQUIP:キス
+					PRINTFORMW %CALLNAME:PLAYER%%TEXTS("キス継続助詞付き")%腰を動かし始めた…
+					CALL SETFLAG, "追加キスフラグ", TARGET
+				ELSEIF ABL:Ｖ感覚 >= 3 && RAND:3 == 0
+					PRINTW 恍惚とした顔で下腹部を撫でながら腰を動かし始めた…
+				ELSEIF RAND:2
+					PRINTW 激しく腰を動かし始めた…
+				ELSE
+					PRINTW 恥骨を擦りつけながら腰を動かし始めた…
+				ENDIF
+			ENDIF
+		ENDIF
+	ELSE
+		PRINTFORM %CALLNAME:TARGET%は
+		IF COND("前Ｔから対象のみ変更") && PREVCOM:1 >= 60 && PREVCOM:1 <= 79
+			CALL TEXT, "追加地の文：穴から穴へ"
+		;穴開きでないパンツをはいていて、ずらされていないなら、必ずずらす
+		ELSEIF CHECK_CLO("Ｖ露出") == 0 && CHECK_CLO("Ｖ露出可")
+			CALL SETFLAG, "ボトムを露出：テキスト無し", TARGET
+		ENDIF
+		IF PREVCOM == 1 || PREVCOM == 9 || (PREVCOM >= 90 && PREVCOM <= 119)
+			PRINTFORM %CALLNAME:PLAYER%の上にまたがると、
+		ELSEIF TALENT:好色 && RAND:2 == 0
+			PRINTFORM %CALLNAME:PLAYER%のペニスに%TEXTR("照準", "膣口")%を合わせると、
+		ELSE
+			PRINTFORM %CALLNAME:PLAYER%のペニスの位置を確認すると、
+		ENDIF
+
+		;スカートなどをはいているなら
+		IF EQUIP:スカート + TEQUIP:新妻プレイ && (TALENT:好色 + TALENT:淫乱 || ABL:露出癖 >= 3) && RAND:2
+			;エプロン
+			IF TEQUIP:新妻プレイ
+				PRINTFORM エプロンを
+			ELSE
+				PRINTFORM %SKIRT(TARGET, 1)%を
+			ENDIF
+			IF COND("口の使用") && RANDIF(2, COND("指の使用") )
+				PRINT 口で咥えて
+			ELSEIF COND("指の使用") && RAND:2
+				PRINT 指で摘んで
+			ELSE
+				PRINT めくって
+			ENDIF
+			IF RAND:2
+				PRINTFORM %TEXTS("アソコ：視覚")%
+			ELSEIF RAND:2 && PALAM:Ｖ潤 >= 10000 && PALAM:欲情 >= 10000
+				PRINTFORM 涎を垂らす穴
+			ELSE
+				PRINTFORM %TEXTR("恥ずかしい所", "股間")%
+			ENDIF
+			PRINTFORM を%TEXTR("見せ付け", "見せびらかし")%ながら
+		ELSE
+			IF TALENT:好色 + TALENT:淫乱 + TALENT:恋慕 && COND("視力") && RAND:3 == 0
+				PRINT 顔を見つめながら
+			ELSEIF TEQUIP:押し倒し && ABL:サドっ気 >= 2 && RAND:2
+				IF TALENT:高慢 + TALENT:強気 && RANDIF(2, TALENT:生意気 + TALENT:小悪魔)
+					PRINT 不敵な笑みを浮かべながら
+				ELSEIF TALENT:生意気 + TALENT:小悪魔 && RAND:2
+					PRINT ニヤニヤしながら
+				ELSE
+					PRINT 嗜虐的な悦びを滲ませながら
+				ENDIF
+			ELSEIF ABL:Ｖ感覚 >= 3 && RAND:2
+				IF RAND:2
+					PRINT 甘い吐息を漏らしながら
+				ELSE
+					PRINT 気持ち良さそうな顔を見せながら
+				ENDIF
+			ELSE
+				PRINT 熱っぽい息を吐きながら
+			ENDIF
+			IF ABL:Ｖ拡張 >= SIZE("ペニス", PLAYER) && ABL:サドっ気 && RAND:2
+				PRINT 一気に
+			ELSE
+				PRINT ゆっくりと
+			ENDIF
+		ENDIF
+		IF RAND:2
+			PRINTFORM %TEXTS("お尻：視覚")%を下ろして
+		ELSE
+			PRINTFORM 腰を下ろして
+		ENDIF
+		IF ABL:Ｖ拡張 >= SIZE("ペニス", PLAYER) && PALAM:Ｖ潤 >= 3000 && RAND:3
+			IF ABL:Ｖ拡張 > SIZE("ペニス", PLAYER) && RAND:2
+				PRINTW 、根元までペニスを呑み込んだ…
+			ELSE
+				PRINTW 、綻んだ膣でペニスを呑み込んできた…
+			ENDIF
+		ELSE
+			PRINTW きた…
+		ENDIF
+	ENDIF
+ENDIF
+
+
+@COM_ORDER_COM65, ARG
+VARSET LOCAL
+LOCALS = 
+
+;すべての命令に共通の要素を考慮
+;(従順が高いと命令に従いやすいなど)
+CALL COM_ORDER, ARG
+
+LOCAL = RESULT
+
+;ABL:Ｖ感覚
+IF ABL:Ｖ感覚
+	LOCAL += ABL:Ｖ感覚 * 2
+	LOCALS = %LOCALS% + %ABLNAME:4%LV{ABL:Ｖ感覚}({ABL:Ｖ感覚 * 2})
+ENDIF
+;ABL:奉仕精神
+IF ABL:奉仕精神
+	LOCAL += ABL:奉仕精神 * 4
+	LOCALS = %LOCALS% + %ABLNAME:6%LV{ABL:奉仕精神}({ABL:奉仕精神 * 4})
+ENDIF
+;ABL:精液中毒
+IF ABL:精液中毒
+	LOCAL += ABL:精液中毒 * 3
+	LOCALS = %LOCALS% + %ABLNAME:11%LV{ABL:精液中毒}({ABL:精液中毒 * 3})
+ENDIF
+;PALAM:Ｖ潤（の不足）
+IF PALAM:Ｖ潤 < PALAMLV:3
+	LOCAL -= 5
+	LOCALS = %LOCALS% - Ｖ潤不足(5)
+ENDIF
+
+;強気
+IF TALENT:強気
+	LOCAL += 10
+	LOCALS = %LOCALS% + %TALENTNAME:18%(10)
+ENDIF
+;恥じらい
+IF TALENT:恥じらい
+	LOCAL -= 10
+	LOCALS = %LOCALS% - %TALENTNAME:35%(10)
+ENDIF
+;Ｖ損傷
+IF TALENT:Ｖ損傷
+	LOCAL -= 30 * TALENT:Ｖ損傷
+	LOCALS = %LOCALS%- %TALENTNAME:44%({30 * TALENT:Ｖ損傷})
+ENDIF
+;献身的
+IF TALENT:献身
+	LOCAL += 6
+	LOCALS = %LOCALS% + %TALENTNAME:63%(6)
+ENDIF
+;快感の否定
+IF TALENT:快感の否定
+	LOCAL -= 1
+	LOCALS = %LOCALS% - %TALENTNAME:71%(1)
+ENDIF
+
+;処女
+IF TALENT:処女
+	LOCAL -= 20
+	LOCALS = %LOCALS% - %TALENTNAME:0%(20)
+ELSEIF EXP:Ｖ経験 < EXPLV:2
+	LOCAL -= 5
+	LOCALS = %LOCALS% - %EXPNAME:0%不足(5)
+ENDIF
+
+;媚薬
+IF TEQUIP:媚薬
+	LOCAL += 6
+	LOCALS = %LOCALS% + %ITEMNAME:31%(6)
+ENDIF
+
+;汚れあり
+IF COM_ORDER_STAIN("Ｐ", "Ｖ")
+	LOCAL -= COM_ORDER_STAIN("Ｐ", "Ｖ")
+	LOCALS = %LOCALS% - 汚れあり
+	;汚臭鈍感
+	SIF TALENT:汚臭鈍感 || TALENT:汚臭敏感
+		LOCALS = %LOCALS%、\@TALENT:汚臭鈍感 ? %TALENTNAME:61% # %TALENTNAME:62%\@
+	LOCALS = %LOCALS%({COM_ORDER_STAIN("Ｐ", "Ｖ")})
+ENDIF
+
+;合計を表示(24以上で実行)
+CALL PRINT_COM_ORDER_COM, LOCALS, ARG, LOCAL, 24
+
+RETURN RESULT

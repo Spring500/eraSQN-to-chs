@@ -1,0 +1,159 @@
+﻿システムを用意しておきながら広めていなかった事に気付いたので、少しづつ書き記していこうかと。
+
+全般
+・CHOSECOM(A)で、「今回調教においてコマンド番号Aのプレイをしたかどうか？」を記録しています。
+　分岐として使用するなら、　IF CHOSECOM(1)　で、「クンニをした」という分岐となります。
+・FIRSTCOM(A)は、CHOSECOM(A)の今までの履歴全部版です。
+・EXP_GAIN(A, TARGET)で、「今回調教において経験：Aが増加したか？」を参照できます。
+　IF EXP_GAIN(22, TARGET)　なら、「今回フェラをした」という分岐になります。
+
+・PREVEX、PREVUPなどで前回コマンドにおける絶頂部位の記録や経験を参照できます。
+たとえば、Ｖ絶頂はEX:1なので、TARGETが前回得たＶ絶頂の値は PREVEX(1, TARGET) で得ることが出来ます。
+詳しくはFUNCTION_SQ_COMにて。
+主にEVENT_M.ERBや口上で使用されます。
+
+・無印の方にある、口上側からの調教強制終了を移植しました。
+　口上中でNEXTCOM = 999と書くと、即座に調教が終了されます。
+
+・口上で使える、PLAYERに対する"てかげん"を設定。通常と同じように、TEQUIP:31を使用する。
+　使いたい時には、TEQUIP:PLAYER:31 = 2 を追記する。
+　毎ターンの射精判定の直前にTEQUIP:PLAYER:31 は１以上ならば-1されていき、0でない場合にはイけない仕組み。
+
+
+@開始前の口上において
+・前回の調教での満足度(CFLAG:99)やCHOSECOMなどが初期化されていないので、そのことについて分岐に使えます。
+　例）IF CHOSECOM(6) == 0 で、「前回キスしてくれなかったから…」とかしゃべったり。
+
+
+@KOJO_MESSAGE_COM　において
+・NOWEXによる分岐が新たに使えます。
+　例えば、IF NOWEX:0　は"今回選んだコマンドでＣ絶頂していたら"という分岐となります。
+　NOWEX:0 , 調教絶頂Lv:Ｃ絶頂
+　NOWEX:1 , 調教絶頂Lv:Ｖ絶頂
+　NOWEX:2 , 調教絶頂Lv:Ａ絶頂
+　NOWEX:3 , 調教絶頂Lv:Ｂ絶頂
+　NOWEX:11 , 調教絶頂Lv:Ｍ絶頂
+　NOWEX:6、NOWEX:7、NOWEX:8、NOWEX:9、NOWEX:12　はそれぞれの焦らし。
+　EVENT_K01.ERB等に例あり。
+
+・CALL BOUHATSUによる、口上内での射精絶頂処理が出来ます。
+　IF BASE:PLAYER:2 >= MAXBASE:PLAYER:2　などで分岐をつけると使いやすいと思われます。
+　EVENT_K01.ERB、EVENT_K17.ERB等に例あり。
+
+・射精箇所の決定が使えます。
+CALL SET_SHOOT, PLAYER, "お尻"
+とすると、自動的にお尻に出させます。
+文字列には、髪、顔、口、胸、股間、お腹、、お尻、変更不可、ぶっかけ が使えます
+　例えば、
+	PRINTFORMW 「ぁっ、ねえ、アタシのおまんこ気持ちいい？たまらない？精液出ちゃいそう？」
+	PRINTFORML 一心不乱に腰を振りながらあなたがコクコクと頷くと、%SAVESTR:TARGET%はギュウッとペニスを締め上げてタイミングを合わせて腰を押し付けてくる
+	PRINTFORMW 「あっ、はぁんっ！嬉しいわぁ…んっ、ほらぁ、アタシの子宮を白いので満たしてぇ♪」
+	CALL SET_SHOOT, PLAYER, "変更不可"
+　とすると、射精箇所の設定がなんであろうと、中に出させます（変更させない）。
+　外に出させたいときには、"ぶっかけ"とすればよいでしょう。
+　前後のつながりなどはまだないので、今後仕様を変えていく可能性もあります。
+　なお、このシステムは@KOJO_MESSAGE_BEFORE_COM、@KOJO_MESSAGE_PALAMCNGと@COUNTER_KOJOでも使えます。
+
+・Ｗ押し倒しの時の書き方：
+　たとえば、メローナの口上が
+	IF SELECTCOM == 1
+		IF TEQUIP:32 == 2 && SELECTCOM:1 >= 60 && SELECTCOM:1 <= 79
+			PRINTFORMW 「ほらぁ、%SAVESTR:ASSI%ばっかじゃなくて、あたしも気持ち良くしてよぉ……♪」
+			PRINTFORMW 「次は、あたしの番なんだからねぇ……ふふっ♪」
+		ENDIF
+	ENDIF
+　となっているなら、メローナがASSI＆ストゥーナがTARGETで、メローナが顔面騎乗位＆ストゥーナがセックス系の時に上の台詞をしゃべります。
+　TEQUIP:32 == 1 ならゲーム上のTARGET(行動を選べる方)、TEQUIP:32 == 2ならゲーム上のASSI(勝手に行動する方)となります。
+　しゃべっていない方の名前、今回ターンの行動、前回ターンの行動は、TEQUIP:32の値にかかわらず、それぞれ%SAVESTR:ASSI%、SELECTCOM:1、PREVCOM:1です。
+
+
+@KOJO_MESSAGE_BEFORE_COM　において
+調教内容のテキストの前で喋らせることが出来ますが、その際にはコピーしてきた部分でCFLAGを変動させないようにしてください。具体的には：
+IF SELECTCOM == X && TEQUIP:Z
+	;初めて
+	IF CFLAG:Y == 0
+		;反発刻印Lv3
+		IF MARK:3 == 3
+			PRINTFORMW A
+		;それ以外
+		ELSE
+			PRINTFORMW B
+		ENDIF
+		CFLAG:Y = 1
+		RETURN 0
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:3 == 3
+			PRINTFORMW C
+		;恋慕
+		ELSEIF TALENT:85
+			PRINTFORMW D
+		;それ以外
+		ELSE
+			PRINTFORMW E
+		ENDIF
+		RETURN 0
+	ENDIF
+ENDIF
+という口上の用意されているコマンドの、調教テキスト前に喋らせたいとした時は、
+IF SELECTCOM == X && TEQUIP:Z == 0
+	;初めて
+	IF CFLAG:Y == 0
+		;反発刻印Lv3
+		IF MARK:3 == 3
+			PRINTFORMW A'
+		;それ以外
+		ELSE
+			PRINTFORMW B'
+		ENDIF
+		RETURN 0
+	;二回目以降
+	ELSE
+		;反発刻印Lv3
+		IF MARK:3 == 3
+			PRINTFORMW C'
+		;恋慕
+		ELSEIF TALENT:85
+			PRINTFORMW D'
+		;それ以外
+		ELSE
+			PRINTFORMW E'
+		ENDIF
+		RETURN 0
+	ENDIF
+ENDIF
+とすることで、A'→調教テキスト→A　のように出力されます。TEQUIPを設定するコマンドの時には値が変化することに注意してください。
+　EVENT_K01.ERB等に例あり。
+
+・コマンドを実行させないことが出来ます。
+　@KOJO_MESSAGE_BEFORE_COMにおいてTFLAG:14 = 1とすることで、そのコマンドは実行されません。
+　ただし、実行しないことに対するテキストは用意されていないので、必ず何らかのテキストを用意するようにしてください。
+
+・殆どのコマンドの汎用テキストを出力させないことができます。
+　@KOJO_MESSAGE_BEFORE_COMにおいてTCVAR:24 = 1とすることで、そのコマンドのテキストは表示されません。
+　ただし、そのことに対するテキストは用意されていないので、必ず何らかのテキストを用意するようにしてください。
+
+・アナルを弄ることを許可する変数CFLAG:100 = 1が使用できます。
+　貞操観念が強くないキャラの時などに意味あり。なお、処女を失うと、CFLAG:100 = 0となります。
+
+
+@KOJO_MESSAGE_SHOOT　において
+・射精箇所の決定が使えます（最後のチャンス）。
+
+
+@COUNTER_KOJO_X1　において
+分岐ごとに CALL COUNTER_TEXT というのがありますが、これは共通のカウンターテキストを出力する関数です。
+まとめて変更するのが楽なように、これを用います。
+実際の文章はCOUNTER_SYSTEM.ERBの@COUNTER_TEXTか口上テンプレの@COUNTER_KOJO_X1を見てください。
+
+
+@KOJO_MESSAGE_PALAMCNG_X1　において
+　射精テキストのところで　TFLAG:0 && TFLAG:90 == X　によって、カウンターによる射精の時のテキストを喋らせられる。
+　なお、TFLAG:90の値と選択したコマンド間の関係は次のようになっている。
+　Ｖインサート		TFLAG:90 = 1
+　アナルインサート	TFLAG:90 = 2
+　愛撫			TFLAG:90 = 3
+　奉仕			TFLAG:90 = 4
+　SM			TFLAG:90 = 5
+　EVENT_K14.ERB等に例あり。

@@ -1,0 +1,284 @@
+﻿;逆オシオキ開始関数
+;ここではCFLAG:460は逆調教進行度として扱う
+;-------------------------------------------------
+@GYAKUSTART_21
+DRAWLINE
+PRINTFORML 
+ALIGNMENT CENTER
+PRINTFORML ★☆★【　躾けて☆%CALLNAME:TARGET%様♪　】★☆★
+ALIGNMENT LEFT
+PRINTFORML 
+DRAWLINE
+;逆調教進行度を0に
+CFLAG:460 = 0
+;マスターの屈服刻印を0に
+MARK:MASTER:2 = 0
+PRINTFORML 
+PRINTFORMW 「ふふ、じゃあ質問だよ、%CSTR:6%は%CSTR:2%の何だい…？」
+;ループ開始
+$21_LOOP
+BASE:MASTER:6 += 1
+;尋問に対するマスターの回答
+PRINTL [0] 「…ご主人様です…」
+PRINTL [1] 答えない
+CALL INPUT_SELECT, 2
+DRAWLINE
+;答えない、もしくはマスターが屈服しきっていない
+IF RESULT == 1 || MARK:MASTER:2 < 3
+	;ご主人様ですと答えさせられることで逆調教がランダムで進行
+	SIF RESULT == 0
+		CFLAG:460 += RAND:3
+	;屈服済みだが、答えなかった
+	IF RESULT == 1 && MARK:MASTER:2 == 3
+		IF RAND:3 == 0
+			PRINTFORMW 
+		ELSEIF RAND:2 == 0
+			PRINTFORMW 
+		ELSE
+			PRINTFORMW 
+		ENDIF
+	;主人が誰であるのか答えたが、屈服しきっていない
+	ELSEIF RESULT == 0 && MARK:MASTER:2 < 3
+		IF RAND:4 == 0
+			PRINTFORMW 
+		ELSEIF RAND:3 == 0
+			PRINTFORMW 「そんな嘘で%CSTR:6%が騙されるとでもおもったのかい？」
+		ELSEIF RAND:2 == 0
+			PRINTFORMW 「うん、まだ心底から堕ちてないみたいだね？」
+		ELSE
+			PRINTFORMW 「口先で%CSTR:6%が騙されるとでも…？」
+		ENDIF
+		PRINTFORMW 「……オ・シ・オ・キ・だ・よ……♪」
+	;答えない、屈服もしていない
+	ELSE
+		IF RAND:5 == 0
+			PRINTFORMW 「ふふ……生意気な子は…オ・シ・オ・キ・だ・よ……♪」
+		ELSEIF RAND:4 == 0
+			PRINTFORMW 「意地を張っても無駄だよ…？ 素直になるまで続けるからね…♪」
+		ELSEIF RAND:3 == 0
+			PRINTFORMW 「そう……それなら言うことを聞きたくなるようにしてあげるよ……♪」
+		ELSEIF RAND:2 == 0
+			PRINTFORMW 「そんな意地っ張りは、おかしくなるまで鳴かせちゃうよ？ それともそうされたいのかい？」
+		ELSE
+			PRINTFORMW 「何も言わないなら…いっぱい鳴かせてあげるよ…♪」
+		ENDIF
+	ENDIF
+	PRINTFORML 
+	;逆オシオキ関数呼び出し（絶頂しなければ0、絶頂すれば1を返す）
+	CALL 21GYAKUOSIOKI
+	;絶頂すると逆調教進行度に応じて屈服刻印取得
+	IF RESULT == 1
+		;逆調教進行度が15
+		IF CFLAG:460 > 15 && MARK:MASTER:2 == 2
+			MARK:MASTER:2 = 3
+			PRINTFORMW もう%CALLNAME:TARGET%になら何をされてもいい…むしろ、壊れるほど弄んで欲しい…
+			PRINTFORMW %CALLNAME:MASTER%は自分が身も心も%CALLNAME:TARGET%に躾けられてしまったことを悟った……
+			PRINTFORMW %CALLNAME:MASTER%の屈服刻印のLVがあがった！
+			SETCOLOR 255, 255, 0
+			PRINTFORMW 屈服刻印がLV3になった！
+			RESETCOLOR
+		;逆調教進行度が10
+		ELSEIF CFLAG:460 > 10 && MARK:MASTER:2 == 1
+			MARK:MASTER:2 = 2
+			PRINTFORMW %CALLNAME:TARGET%は次に何をしてくれるのだろう…
+			PRINTFORMW そんな期待を抱いてしまった自分に気が付き、%CALLNAME:MASTER%は自分が%CALLNAME:TARGET%に屈服しつつあることを知った……
+			PRINTFORMW %CALLNAME:MASTER%の屈服刻印のLVがあがった！
+			SETCOLOR 255, 255, 0
+			PRINTFORMW 屈服刻印がLV2になった！
+			RESETCOLOR
+		;逆調教進行度が5
+		ELSEIF CFLAG:460 > 5 && MARK:MASTER:2 < 1
+			MARK:MASTER:2 = 1
+			PRINTFORMW どれほど堪えようとしても、%CALLNAME:TARGET%に責められると為す術も無く絶頂させられてしまう…
+			PRINTFORMW %CALLNAME:MASTER%は%CALLNAME:TARGET%に自分の身体の手綱を握られてしまったと知り、愕然となった……
+			PRINTFORMW %CALLNAME:MASTER%の屈服刻印のLVがあがった！
+			SETCOLOR 255, 255, 0
+			PRINTFORMW 屈服刻印がLV1になった！
+			RESETCOLOR
+		ENDIF
+	ENDIF
+	PRINTFORMW ………………
+	PRINTFORMW …………
+	PRINTFORMW ……
+	PRINTFORML 
+	;マスターに対する尋問内容
+	;屈服済み
+	IF MARK:MASTER:2 == 3
+		PRINTFORMW 「ふふ…快楽に染まったいい顔だよ♪　じゃあ、もう一度聞くね。%CSTR:6%は%CSTR:2%の何なのかな…？」
+	ELSE
+		IF RAND:4 == 0
+			PRINTFORM 「……では、もう一度聞こうかな。
+		ELSEIF RAND:3 == 0
+			PRINTFORM 「答えはわかってるよね？
+		ELSEIF RAND:2 == 0
+			PRINTFORM 「そろそろ意地を張るのはやめたらどうかな…？
+		ELSE
+			PRINTFORM 「なかなか頑張るね…まぁ、無駄なことだけど…さ、聞かせてもらおうかな…
+		ENDIF
+		PRINTFORMW %CSTR:6%は%CSTR:2%のなんなのかな…？」
+		PRINTFORML 
+	ENDIF
+	GOTO 21_LOOP
+;答えた（マスターは屈服済み）
+ELSEIF RESULT == 0
+	;逆オシオキ関数呼び出し（絶頂しなければ0、絶頂すれば1を返す）
+	CALL 21GYAKUOSIOKI
+	;絶頂しなかった
+	IF RESULT == 0
+		PRINTFORMW 「ほらほら、%CSTR:6%は%CSTR:2%の何なの？　もう一度言ってくれたら、気持ちよくイかせてあげるよ？」
+		GOTO 21_LOOP
+	ENDIF
+	;逆調教終了
+	DRAWLINE
+	PRINTFORMW 「ふふっ、気絶しちゃったか……それでもまだ腰が跳ねてるね♪」
+	PRINTFORMW 意識を失ったまま、悦楽の残滓に身体を震えさせている元ご主人様を見下ろし、%CALLNAME:TARGET%はサディスティックな笑みを浮かべる…
+	PRINTFORMW 「また明日も明後日も…ずっといじめてあげるよ…♪ いい声で鳴いてね…♪」
+ENDIF
+RETURN 1
+
+
+;-------------------------------------------------
+;主従逆転ベロチュー調教開始関数
+;キスで射精した時はここから開始
+;-------------------------------------------------
+@GYAKUKISSSTART_21
+PRINTFORML 
+PRINTFORMW %CALLNAME:TARGET%は瑞々しい唇を見せつけ、誘惑してくる……
+PRINTFORMW %CALLNAME:PLAYER%は……
+;PLAYERはキスの虜？
+PRINTL [0] べ、別にキスなんか…
+PRINTL [1] その唇から目を離せず、こくりと頷いてしまった…
+CALL INPUT_SELECT, 2
+DRAWLINE
+;理性が勝った
+IF RESULT == 0
+	PRINTFORMW 「ま、今はそういうことにしておいてあげるよ……ふふ、いずれ、%CSTR:2%の方からねだってくることになるだろうけどね♪」
+	PRINTFORMW ちろりと舌を出す%CALLNAME:TARGET%に、%CALLNAME:PLAYER%は思わず生唾を飲み込んでいた…
+	RETURN 1
+ELSE
+	PRINTFORMW 「%CSTR:2%は素直だね……さ、覚悟するんだよ…躾けてあげるからね♪」
+	PRINTFORMW %CALLNAME:PLAYER%は%CALLNAME:TARGET%の言うがまま、椅子に座らされて手足を拘束されてしまう…
+	PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%の太股の上に跨るように座り、ちょうど対面座位のような姿勢になる…
+	SIF PENIS(PLAYER)
+		PRINTFORMW しかし%CALLNAME:PLAYER%の硬く起立したペニスは挿入を許されておらず、%CALLNAME:TARGET%との間に挟まれているだけだ
+	PRINTFORMW 「%CSTR:2%の瞳とも、しばしのお別れだよ…怖がらなくてもいいよ、ずっとこうして抱き合ったままだからね♪」
+	PRINTFORMW と、%CALLNAME:PLAYER%は手足の拘束だけではなく、視界すらもアイマスクで封じられてしまう…
+	PRINTFORMW %CALLNAME:PLAYER%に感じられるのは、%CALLNAME:TARGET%の体温と息遣いだけ……ふと、その息遣いが耳元へと近づいてきた…
+	PRINTFORMW 「さ、キスだけで狂ってしまうといいよ……♪」
+	PRINTFORMW 耳元でふぅ、と息を吹きかけられながら囁かれ、%CALLNAME:PLAYER%はこれから味わわされるであろう悦楽への期待にゾクゾクと身体を震わせた…
+	DRAWLINE
+	PRINTFORML 
+	ALIGNMENT CENTER
+	PRINTFORML ★☆★【　堕天使様のべろちゅー調教♪　】★☆★
+	ALIGNMENT LEFT
+	PRINTFORML 
+	DRAWLINE
+	PRINTFORML 
+	;精力が高すぎると終わらないので30+αとする
+	BASE:PLAYER:6 = 30 + RAND:10
+	PRINTFORMW 「たっぷりと教えてあげるよ…ほら、口を開けるんだよ…♪」
+	PRINTFORMW %CALLNAME:TARGET%の腕が%CALLNAME:PLAYER%の首に回され、鼓動が聞こえるほどに肌が触れ合わされる…
+	PRINTFORMW 「あ～～～～むっ……♪♪」
+	PRINTFORMW 唇を塞がれ、%CALLNAME:TARGET%の舌がぬるりと口内へと入り込んでくる…
+	CALL 21KISS
+	PRINTFORML 
+	PRINTFORMW %CALLNAME:PLAYER%は%CALLNAME:TARGET%にされるがまま、舌を性器のように扱われ、その悦楽を刻まれていく…
+	PRINTFORMW 「%KOJO_RAND_21("キス")%」
+	PRINTFORMW 「ぁむ、ぷは……ふふ、これはもういらないね…♪」
+	PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%のアイマスクをするりと剥ぎ取る…
+	PRINTFORMW 「あぁ…%CSTR:2%の顔……もう完全に蕩けきってるね……♪♪　とどめを刺してあげるよ…♪」
+	PRINTFORMW 「%KOJO_RAND_21("キス")%」
+	PRINTFORMW %CALLNAME:TARGET%のキスに%CALLNAME:PLAYER%はもはや抗うことができず、%CALLNAME:TARGET%の腕に抱かれながら、キスだけで何度も絶頂してしまう…
+	PRINTFORMW 「%KOJO_RAND_21("キス")%」
+	PRINTFORMW 「%KOJO_RAND_21("キス")%」
+	PRINTFORMW 「%KOJO_RAND_21("キス")%」
+	PRINTFORMW ………………
+	PRINTFORMW …………
+	PRINTFORMW ……
+	PRINTFORML 
+	;キス経験増加（逆調教なのでPLAYERの方がより多く増加する）
+	EXP:70 += 2
+	EXP:PLAYER:70 += 10
+	PRINTFORMW 「ふふふ……、もう限界みたいだね…♪」
+	IF PENIS(PLAYER)
+		PRINTFORMW %CALLNAME:TARGET%の言葉通り、キスだけで根こそぎ搾り取られた%CALLNAME:PLAYER%のペニスは壊れてしまったかのように、半萎えの状態のまま白濁を零している…
+	ELSE
+		PRINTFORMW %CALLNAME:TARGET%の言葉通り、キスだけで%CALLNAME:PLAYER%はすっかり腰砕けになり、絶頂の余韻に腰を震わせている…
+	ENDIF
+	PRINTFORMW 酸欠と度を超えた悦楽に朦朧となりながらも、%CALLNAME:PLAYER%は%CALLNAME:TARGET%の唇から目を離すことができない…
+	;プレイヤーが蕩唇持ちでない
+	IF TALENT:PLAYER:89 == 0
+		PRINTFORMW %CALLNAME:PLAYER%はすっかり%CALLNAME:TARGET%の唇の虜になってしまった…
+		SETCOLOR 255, 255, 0
+		PRINTFORMW %CALLNAME:PLAYER%は【蕩唇】を得た
+		RESETCOLOR
+		;排他的な素質を持っていても蕩唇を取得
+		TALENT:PLAYER:89 = 1
+	ENDIF
+	PRINTFORMW 「じゃあまた、ね…♪　またキスで狂わされたかったら、次も正直に言うんだよ…ふふふ♪」
+	PRINTFORMW 遠くに%CALLNAME:TARGET%の声を聞きながら%CALLNAME:PLAYER%の意識は闇に沈んでいった……
+
+	BASE:PLAYER:6 = 0
+	BASE:0 = 499
+	BASE:1 = 100
+	NEXTCOM = 999
+ENDIF
+
+
+;-------------------------------------------------
+;プレイヤーのマゾ取得関数
+;-------------------------------------------------
+@KOJO_MAZO_21
+;プレイヤーのマゾっ気が開花する
+IF TALENT:PLAYER:88
+	PRINTFORMW %CALLNAME:TARGET%に言葉でなじられ、%CALLNAME:PLAYER%はいっそう腰を突き出して絶頂する…
+ELSEIF ABL:PLAYER:8 == 5
+	PRINTFORML %CALLNAME:TARGET%に壊れるまで弄んで欲しい…%CALLNAME:PLAYER%はそう心の底から懇願している自分に気がついた…
+	PRINTFORM %CALLNAME:PLAYER%は素質
+	SETCOLOR 255, 255, 0
+	PRINTFORM 【マゾ】
+	RESETCOLOR
+	PRINTFORMW を得た。
+	TALENT:PLAYER:88 = 1
+ELSEIF ABL:PLAYER:8 == 4
+	PRINTFORML %CALLNAME:TARGET%に何と言われようと、それはもはや%CALLNAME:PLAYER%の情欲を煽るスパイスにしかならない…
+	PRINTFORM %CALLNAME:PLAYER%の
+	SETCOLOR 255, 255, 0
+	PRINTFORM マゾっ気がLV5
+	RESETCOLOR
+	PRINTFORMW に上がった。
+	ABL:PLAYER:8 = 5
+ELSEIF ABL:PLAYER:8 == 3
+	PRINTFORML %CALLNAME:TARGET%は次はどう責めてくれるのだろう…そんな危険な願望に、%CALLNAME:PLAYER%はごくりと唾を飲み込んだ…
+	PRINTFORM %CALLNAME:PLAYER%の
+	SETCOLOR 255, 255, 0
+	PRINTFORM マゾっ気がLV4
+	RESETCOLOR
+	PRINTFORMW に上がった。
+	ABL:PLAYER:8 = 4
+ELSEIF ABL:PLAYER:8 == 2
+	PRINTFORML %CALLNAME:TARGET%は次はどう責めてくれるのだろう…そんな危険な願望を%CALLNAME:PLAYER%は頭を振って慌てて追い出した…
+	PRINTFORM %CALLNAME:PLAYER%の
+	SETCOLOR 255, 255, 0
+	PRINTFORM マゾっ気がLV3
+	RESETCOLOR
+	PRINTFORMW に上がった。
+	ABL:PLAYER:8 = 3
+ELSEIF ABL:PLAYER:8 == 1
+	PRINTFORML %CALLNAME:TARGET%に罵倒されるたびに心の奥がちりちりと焦げていく…
+	PRINTFORM %CALLNAME:PLAYER%の
+	SETCOLOR 255, 255, 0
+	PRINTFORM マゾっ気がLV2
+	RESETCOLOR
+	PRINTFORMW に上がった。
+	ABL:PLAYER:8 = 2
+ELSE
+	PRINTFORML  %CALLNAME:TARGET%の言葉責めに背筋にゾクリとしたものが走った…
+	PRINTFORM %CALLNAME:PLAYER%の
+	SETCOLOR 255, 255, 0
+	PRINTFORM マゾっ気がLV1
+	RESETCOLOR
+	PRINTFORMW に上がった。
+	ABL:PLAYER:8 = 1
+ENDIF
+RETURN 1

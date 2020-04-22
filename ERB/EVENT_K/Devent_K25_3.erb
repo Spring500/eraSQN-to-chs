@@ -1,0 +1,273 @@
+﻿;-------------------------------------------------
+;ヴァンパイア３日常口上_****_**_**（キャラクターの名前を入れる、下にコンセプトなど一言あれば入れる）
+;-------------------------------------------------
+@DAILY_LIFE_MESSAGE_25_3
+
+
+;☆２さんがいるか判定
+SIF FIND_COND("Ｃヴァンパイア２", "恋慕")
+	RESULT = FIND_COND("Ｃヴァンパイア２")
+;☆トマト収穫が行われなかったとき用
+SIF TEXTS("季節") == "秋" && CEVENT("ミニトマト栽培初回") && CEVENT("ミニトマト収穫") == 0
+	CALL SET_CEVENT, "ミニトマト栽培二回目以降"
+
+;反発刻印Lv3の時
+IF MARK:反発刻印 == 3
+
+;体力が低め（1000以下）の時は休ませる
+;ELSEIF BASE:0 <= 1000
+;	PRINTFORMW 
+;☆２さんイベント(現状ブラッドサック修得フラグのみ)
+ELSEIF CEVENT("ブラッドサック習得") == 0 && GETBIT(CFLAG:RESULT:201, 30) == 0
+	PRINTFORMW %CALLNAME:RESULT%の部屋から物音が聞こえます……
+	PRINTFORMW 一体何をしているのかと%CALLNAME:MASTER%が中を覗くと―――
+	PRINTFORML 
+	PRINTFORMW %CALLNAME:TARGET%が%CALLNAME:RESULT%の首筋に噛みついていました！　一体何事でしょうか？
+	PRINTFORMW 「歯の深さはその位で……ほら、血が溢れてきましたよ」
+	PRINTFORMW 「吸う時はゆっくり、必要なら舌も使って……」
+	PRINTFORMW %CALLNAME:RESULT%は自分の体で%CALLNAME:TARGET%にブラッドサックの技術を教えているようです
+	PRINTFORMW 「ん……なかなか上手ですね。　基本的な所は大丈夫そうです」
+	PRINTFORMW 『ほう、ということは後はアイツで実践するだけだな！』
+	PRINTFORMW ………%CALLNAME:TARGET%が何だか不穏なことを口にしています
+	CALL SET_CEVENT, "ブラッドサック習得"
+;☆トマト栽培開始イベント
+ELSEIF TEXTS("季節") == "春" && TIME == 0 && CEVENT("ミニトマト栽培") == 0 && TALENT:恋慕
+	;☆初回
+	IF CEVENT("ミニトマト栽培初回") == 0
+		PRINTFORMW %CALLNAME:MASTER%が自室の窓から何気なく庭を眺めると、%CALLNAME:TARGET%が木陰にしゃがみこんでいるのが見えた。
+		PRINTFORMW どうやらプランターに何かを植えているようだが……気になった%CALLNAME:MASTER%は庭へ出て%CALLNAME:TARGET%に声をかけた。
+		PRINTFORMW 「おぉ、%CNAME("二人称")%……ん？ああ、これか？」
+		PRINTFORMW 「なに、出入りの商人がミニトマトの苗を譲ってくれたのでな、それをプランターに植え替えていたのだ」
+		PRINTFORMW 「なんでもホロス原産で、苗に込められた魔力によって成長が他より早い品種らしい。魔法とは便利なものだな」
+		PRINTFORMW 「フフッ、収穫したら%CNAME("二人称")%にも食べさせてやるからな、楽しみにしておけ♪」
+		PRINTFORMW 少しばかり土埃で汚れた顔で、%CALLNAME:TARGET%は笑みを浮かべた……
+		CALL SET_CEVENT, "ミニトマト栽培初回"
+		CALL SET_CEVENT, "ミニトマト栽培"
+	;☆二回目以降
+	ELSEIF CEVENT("ミニトマト栽培二回目以降")
+		PRINTFORMW %CALLNAME:MASTER%が自室の窓から何気なく庭を眺めると、%CALLNAME:TARGET%が木陰にしゃがみこんでいるのが見えた。
+		PRINTFORMW どうやらプランターに何かを植えているようだが……気になった%CALLNAME:MASTER%は庭へ出て%CALLNAME:TARGET%に声をかけた。
+		PRINTFORMW 「おぉ、%CNAME("二人称")%……ん？ああ、これか？」
+		PRINTFORMW 「実はまたミニトマトを育てようと思ってな、準備していたところだ」
+		;☆収穫イベントを見たことがある
+		IF CEVENT("ミニトマト収穫")
+			PRINTFORMW 「今年も美味しいミニトマトが沢山実るように、愛情こめて世話してやらんとな♪」
+			PRINTFORMW %CALLNAME:TARGET%は楽しげな表情でそう言うと、鼻歌混じりで作業を再開した。
+		ELSE
+			PRINTFORMW 「去年は栽培に失敗してしまったが……今年こそ、美味しいトマトを食べさせてやるぞ！」
+			PRINTFORMW %CALLNAME:TARGET%はシャベルを片手に力強く決意表明したのち、作業を再開した。
+		ENDIF
+		PRINTFORMW ……日中に屋外でこんなことをしている吸血鬼など%CALLNAME:TARGET%くらいのものだろう……
+		CALL SET_CEVENT, "ミニトマト栽培"
+		CALL DEL_CEVENT, "ミニトマト収穫"
+	ENDIF
+;☆ミニトマト収穫イベント
+ELSEIF TEXTS("季節") == "夏" && CEVENT("ミニトマト栽培") && CEVENT("ミニトマト収穫") == 0 && TALENT:恋慕
+	;☆初回
+	IF CEVENT("収穫経験あり") == 0
+		PRINTFORMW %CALLNAME:MASTER%が廊下を歩いていると、%CALLNAME:TARGET%が部屋から出てきた。
+		PRINTFORMW 「おおっ、%CNAME("二人称")%！今呼びに行こうと思っていたのだ！」
+		PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:MASTER%の手を握って部屋に引き込むと、そのまま奥にある机のもとまで連れていく。
+		PRINTFORMW 机の上に置かれた小さめのバスケットの中には、赤く、瑞々しいミニトマトが沢山入っていた。
+		PRINTFORMW 「どうだ、%CNAME("一人称")%が手間暇かけて育てたミニトマトだ！こんなに沢山収穫できたんだぞ！」
+		PRINTFORMW 「%CNAME("二人称")%、味見してみてくれ！　ほら、あーん……」
+		PRINTFORMW %CALLNAME:TARGET%はバスケットからミニトマトをひとつ摘み上げ、%CALLNAME:MASTER%の口元へと運んだ。
+		PRINTFORMW %CALLNAME:MASTER%が差し出されたそれを頬張ると、果汁が溢れ、程よい酸味とほのかな甘さが口いっぱいに広がる……
+		PRINTFORM 「美味しいか？
+		;☆初栽培初収穫
+		IF CEVENT("ミニトマト栽培二回目以降") == 0
+			PRINTFORMW うんうん、そうだろう！　なにせ%CNAME("一人称")%が育てたのだからな！」
+			PRINTFORMW 日の光を苦手とする吸血鬼の身では、世話をするのも容易ではなかっただろう……
+			PRINTFORM %CALLNAME:MASTER%は得意げに胸を張る
+		ELSE
+			PRINTFORMW そうか、よかった……！　去年の反省を生かして、色々と工夫した甲斐があったというものだ！」
+			PRINTFORMW 日の光を苦手とする吸血鬼の身では、世話をするのも容易ではなかっただろう……
+			PRINTFORM %CALLNAME:MASTER%は安堵の表情を浮かべる
+		ENDIF
+		PRINTFORMW %CALLNAME:TARGET%の頭を優しく撫でてあげた。
+		PRINTFORMW 「わっ……♪　ま、まぁ、%CNAME("一人称")%にかかれば、この程度朝飯前だがな！フハハハハ！！」
+		PRINTFORMW 「さぁ、まだ沢山あるからな、もっと食べてくれ！　ほらほら、あーん……♪」
+		PRINTFORMW %CALLNAME:MASTER%はしばしの間、%CALLNAME:TARGET%に促されるままにミニトマトを食べ続けた……
+		SIF CEVENT("収穫経験あり") == 0
+			CALL SET_CEVENT, "収穫経験あり"
+		SIF CEVENT("ミニトマト栽培二回目以降") == 0
+			CALL SET_CEVENT, "ミニトマト栽培二回目以降"
+	;☆二回目以降
+	ELSE
+		PRINTFORMW 「%CNAME("二人称")%、今日の\@ COND("昼") ? 昼 # 夕 \@食は私が作るぞ、ちょっと待っていてくれ！」
+		PRINTFORMW %CALLNAME:TARGET%はなにやら はりきった様子でキッチンへと消えた……
+		PRINTFORMW ……待つことしばらく。%CALLNAME:TARGET%が出来た料理を%CALLNAME:MASTER%の前に並べていく。
+		PRINTFORMW ……サラダからスープから、ほとんど全ての料理にミニトマトがふんだんに使われている……
+		PRINTFORMW 「フフ、%CNAME("一人称")%が手塩にかけて育てたミニトマトを使った料理たちだ！さぁ%CNAME("二人称")%、食べてみてくれ♪」
+		PRINTFORMW 見た目も香りもよく、食欲をそそる。%CALLNAME:MASTER%は礼を言って食べ始めた……
+		PRINTFORMW ！　……美味しい……自然と口から出たその言葉に、%CALLNAME:TARGET%は嬉しさを隠しきれない様子だ。
+		PRINTFORMW 「そ、そうか……！　ま、まぁ%CNAME("一人称")%の育てたミニトマトに%CNAME("一人称")%の料理の腕が加われば当然だな！フハハハハ！！」
+		PRINTFORMW 「おっと！　おかわりが欲しくなったら遠慮なく言ってくれ、まだたくさんあるからな！」
+		PRINTFORMW %CALLNAME:TARGET%の心のこもった手料理をお腹いっぱいになるまで堪能した……
+	ENDIF
+	CALL SET_CEVENT, "ミニトマト収穫"
+	CALL SET_CEVENT, "おすそ分け"
+	CALL DEL_CEVENT, "ミニトマト栽培"
+;通常昼の時
+ELSEIF TIME == 0 && RAND:3 == 0
+	;☆ミニトマト栽培開始後
+	IF RAND:3 == 0 && CEVENT("ミニトマト栽培") && TALENT:恋慕
+		;☆調合知識持ち
+		IF RAND:3 == 0 && TALENT:調合知識
+			PRINTFORMW %CALLNAME:TARGET%の部屋のドアが少し開いている。
+			PRINTFORMW 何気なく中を覗くと、どうやら本を読みながら何か調合しているようだ……
+			IF RAND:3 == 0
+				PRINTFORMW 「……最後にコレを一滴垂らせば……よしよし、これで害虫除けの薬が出来たぞ」
+				PRINTFORMW 「ミニトマトを食い荒らそうとする虫どもを殲滅し、その上ミニトマトには悪影響を与えない……フフ、完璧だ」
+				PRINTFORMW ……どうやら、ミニトマトの栽培に使う薬を作っていたようだ。
+				PRINTFORMW %CALLNAME:MASTER%は満足げな%CALLNAME:TARGET%の様子に口元に笑みを浮かべ、部屋から離れた……
+			ELSEIF RAND:2 == 0
+				PRINTFORMW 「……最後にコレを一滴垂らせば……よしよし、これで成長促進剤が出来たぞ」
+				PRINTFORMW 「これでミニトマトは元気で丈夫になり、収穫量も増えるはずだ……フフフ、楽しみだな」
+				PRINTFORMW ……どうやら、ミニトマトの栽培に使う薬を作っていたようだ。
+				PRINTFORMW %CALLNAME:MASTER%は満足げな%CALLNAME:TARGET%の様子に口元に笑みを浮かべ、部屋から離れた……
+			ELSE
+				PRINTFORMW 「……最後にコレを一滴垂らせば……うわあっ！？」
+				PRINTFORMW %CALLNAME:TARGET%が毒々しい色をした液体を瓶に垂らした途端、モクモクと煙が噴き出した。
+				PRINTFORMW どうやら調合に失敗したようだ……
+				PRINTFORMW 「ゴホッ……お、おかしいな……どうして……」
+				PRINTFORMW 「……あっ！？し、しまった、加える量を見間違えていた！」
+				PRINTFORMW 「%CNAME("一人称")%としたことがこんな初歩的なミスを……し、仕方ない！やり直しだ！」
+				PRINTFORMW %CALLNAME:TARGET%が気を取り直して再び調合を始めたのを見届け、%CALLNAME:MASTER%は部屋から離れた……
+			ENDIF
+		ELSEIF RAND:2 == 0
+			PRINTFORMW 廊下を歩く%CALLNAME:MASTER%がふと窓の外に目をやると、ミニトマトの世話をしている%CALLNAME:TARGET%が見えた。
+			PRINTFORMW 極力肌を晒さない長袖の服に手袋、帽子……さらに日傘で日の光から身を守っている。
+			PRINTFORMW 吸血鬼だけに、日中の屋外での活動には苦労が多そうだ……
+		ELSE
+			PRINTFORMW 図書室へ行くと、%CALLNAME:TARGET%が真剣な表情で本を読んでいた。
+			PRINTFORMW 何を読んでいるのか気になった%CALLNAME:MASTER%は、後ろからそっと%CALLNAME:TARGET%に近づいて覗き込んでみる……
+			PRINTFORMW ……どうやら植物の育て方について詳しく書かれている本のようだ。
+			PRINTFORMW 余程集中しているのか、%CALLNAME:TARGET%は%CALLNAME:MASTER%にまったく気づいていないらしい……
+			PRINTFORMW 邪魔するのも悪いと思い、静かにその場を後にした……
+		ENDIF
+	;☆［好奇心］持ちの夢魔がいる
+	ELSEIF RAND:2 == 0 && FIND_COND("好奇心")
+		LOCAL = FIND_COND("好奇心")
+		;☆恋慕
+		IF TALENT:恋慕
+			PRINTFORMW %CALLNAME:MASTER%の部屋に、%CALLNAME:TARGET%が訪ねてきた。
+			PRINTFORMW 聞けば、部屋に遊びに来た%CALLNAME:LOCAL%が棺桶に興味を示したらしく、寝てみたいと言い出したらしい。
+			PRINTFORMW %CALLNAME:TARGET%が許可すると%CALLNAME:LOCAL%は棺桶の中に横たわり、そのまま本当に寝始めてしまったのだという……
+			PRINTFORMW つまり、寝床を占領されたので、%CALLNAME:MASTER%のベッドを借りて昼寝したいということのようだ。
+			PRINTFORMW 自分の部屋のベッドで寝ればいいのではないかという%CALLNAME:MASTER%に、%CALLNAME:TARGET%は「%CALLNAME:MASTER%のベッドは棺桶と同じくらい寝心地がいい」と返してきた。
+			PRINTFORMW 複雑な気分になった%CALLNAME:MASTER%とは対照的に、%CALLNAME:TARGET%は嬉しそうな顔でベッドに もぐり込んでいる……
+		;☆それ以外
+		ELSE
+			PRINTFORMW リビングに行くと、眠そうな表情の%CALLNAME:TARGET%がトマトジュースを飲んでいた。
+			PRINTFORMW 聞けば、部屋に遊びに来た%CALLNAME:LOCAL%が棺桶に興味を示したらしく、寝てみたいと言い出したらしい。
+			PRINTFORMW %CALLNAME:TARGET%が許可すると%CALLNAME:LOCAL%は棺桶の中に横たわり、そのまま本当に寝始めてしまったのだという……
+			PRINTFORMW %CALLNAME:TARGET%には「昼寝は棺桶で」というこだわりがあるらしく、仕方なく起きているそうだ。
+			PRINTFORMW そう話している間にも、%CALLNAME:TARGET%はうとうとし始めている。
+			PRINTFORMW やがて頭がガクリと下がった瞬間に目を覚まし、驚いたように辺りを見回した……
+		ENDIF
+	ELSE
+		PRINTFORMW リビングの前を通りかかると、なにやら紅茶の香りが漂ってくる……
+		PRINTFORMW どうやら%CALLNAME:TARGET%がティータイムを楽しんでいるようだ。
+		PRINTFORM お茶菓子の
+		IF RAND:3 == 0
+			PRINTFORM ハニービスケット
+		ELSEIF RAND:2 == 0
+			PRINTFORM チュロス
+		ELSE
+			PRINTFORM シュー・ア・ラ・クレーム
+		ENDIF
+		PRINTFORMW を頬張る%CALLNAME:TARGET%は満面の笑みを浮かべ、まさに至福といった様子である。
+		;☆恋慕
+		IF TALENT:恋慕
+			PRINTFORMW と、%CALLNAME:TARGET%は%CALLNAME:MASTER%に気づいたようだ。
+			PRINTFORMW 緩んだ顔を見られてしまったことを恥らいつつも、一緒にお茶を飲まないかと誘ってくる……
+			PRINTFORMW %CALLNAME:MASTER%は誘いに応じ、二人で美味しい紅茶とお菓子を楽しんだ……
+		;☆［幼稚］or [愚か] 持ちの夢魔がいる
+		ELSEIF RAND:2 && (FIND_COND("幼稚") || FIND_COND("愚か"))
+			IF FIND_COND("愚か") && RANDIF(1, FIND_COND("幼稚"))
+				LOCAL = FIND_COND("愚か")
+			ELSE
+				LOCAL = FIND_COND("幼稚")
+			ENDIF
+			PRINTFORMW と、%CALLNAME:LOCAL%がリビングに現れた。
+			PRINTFORMW %CALLNAME:RESULT%は%CALLNAME:TARGET%がお菓子を食べているのを見ると、自分にも頂戴とおねだりする……
+			PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:LOCAL%の顔とひとつ残っているお菓子を見比べ、しばし迷った様子を見せたあと―――
+			PRINTFORMW %CALLNAME:RESULT%のほうへ、皿をすっと差し出した！
+			PRINTFORMW 嬉しそうに礼を言う%CALLNAME:LOCAL%に対し、%CALLNAME:TARGET%は照れ隠しなのか、そっぽを向いて紅茶を飲みだした……
+		;☆それ以外
+		ELSE
+			PRINTFORMW と、%CALLNAME:MASTER%に見られていることに気づいた%CALLNAME:TARGET%は、慌てて澄ました表情を取り繕い、紅茶を飲みだした。
+			PRINTFORMW その口元には、お菓子の食べカスが付いたままだ……
+		ENDIF
+	ENDIF
+;通常夜の時
+ELSEIF TIME == 1 && RAND:2 == 0
+		PRINTFORMW %CALLNAME:MASTER%が洗面所の前を通りかかると、%CALLNAME:TARGET%が歯磨きをしているのが見えた。
+		PRINTFORMW 吸血鬼だけに、歯の健康には特に気を使っているようだ……
+;☆時間問わず
+ELSE
+;	;☆ヴァンパイア2におすそ分け
+;	IF CEVENT("おすそ分け") && CEVENT("おすそ分け終了") == 0
+;		IF RAND:2
+;			PRINTFORMW ヴァンパイ２が何かの包みを持って廊下を歩いている……
+;			PRINTFORMW 『あら、\@ TIME == 0 ? こんにちは # こんばんは \@♪　……え？　何を持っているのかって？』
+;			PRINTFORMW 『これはこの前%CALLNAME:TARGET%ちゃんにトマトを貰ったお返しなんです♪』
+;			PRINTFORM 掲げられたその包みは、
+;			IF RAND:3 == 0
+;				PRINTFORMW 大きなビンのような形をしている。
+;			ELSEIF RAND:2 == 0
+;				PRINTFORMW 四角い箱型をしている。
+;			ELSE
+;				PRINTFORMW なにやら小物の類のようだ。
+;			ENDIF
+;			PRINTFORMW 『もし中身が気になるのでしたら、後で%CALLNAME:TARGET%ちゃんの所に行ってみたらどうですか？　おすそ分けがあるかもしれませんよ♪』
+;			PRINTFORMW ヴァンパイア２に焚き付けられている気もするが……後で遊びに行く良い口実が出来たと考えよう。
+;		ELSE
+;			PRINTFORMW ヴァンパイ２が何かの包みを持って廊下をうろうろしている……
+;			PRINTFORMW 『あら、\@ TIME == 0 ? こんにちは # こんばんは \@♪　……え？　何をしているのかって？』
+;			PRINTFORMW 『%CALLNAME:TARGET%ちゃんにトマトを貰ったお返しを持ってきたんですけど、部屋にいないみたいで……』
+;			PRINTFORM ヴァンパイア２に見せられたその包みは、
+;			IF RAND:3 == 0
+;				PRINTFORMW 大きなビンのような形をしている。
+;			ELSEIF RAND:2 == 0
+;				PRINTFORMW 四角い箱型をしている。
+;			ELSE
+;				PRINTFORMW なにやら小物の類のようだ。
+;			ENDIF
+;			PRINTFORMW 『やっぱりこういうのは手渡しに限りますよね。　さぁて、どこにいるのかなっと……』
+;			PRINTFORMW ヴァンパイア２はそう言ってどこかへ去って行った。　包みの中身が何なのか、少し気になる……
+;		ENDIF
+;		CALL SET_CEVENT, "おすそ分け終了"
+	;☆貧乳
+	IF TALENT:貧乳 && TALENT:オトコ == 0
+		PRINTFORMW %CALLNAME:MASTER%がリビングを覗くと、%CALLNAME:TARGET%がなにか白っぽい液体を飲んでいる。
+		PRINTFORMW 傍らに置かれた容器のラベルを見るに、どうやらあれは豆乳のようだ……
+		;☆巨乳が来た
+		IF (RANDIF(1, FIND_COND("貧乳"), (TALENT:MASTER:オトコ == 0 && TALENT:MASTER:巨乳), (TALENT:MASTER:オトコ == 0 && TALENT:MASTER:貧乳)) && FIND_COND("巨乳"))
+			LOCAL = FIND_COND("巨乳")
+			PRINTFORMW と、リビングに%CALLNAME:LOCAL%が入ってきた。
+			PRINTFORMW %CALLNAME:TARGET%は自分の胸と%CALLNAME:LOCAL%の豊かな胸を見比べると、悔しげな表情で二杯目の豆乳をグラスに注ぎだした……
+		;☆貧乳が来た
+		ELSEIF (RANDIF(1, (TALENT:MASTER:オトコ == 0 && TALENT:MASTER:巨乳), (TALENT:MASTER:オトコ == 0 && TALENT:MASTER:貧乳)) && FIND_COND("貧乳"))
+			LOCAL = FIND_COND("貧乳")
+			PRINTFORMW と、リビングに%CALLNAME:LOCAL%が入ってきた。
+			PRINTFORMW %CALLNAME:LOCAL%は%CALLNAME:TARGET%が豆乳を飲んでいるのに気づくと、自分にも分けてほしいと言い出した。
+			PRINTFORMW %CALLNAME:TARGET%は快く応じ、棚から取り出したグラスに豆乳を注いで%CALLNAME:LOCAL%に渡してやっている。
+			PRINTFORMW 同じ悩みを持つもの同士、通じ合うものがあるのだろう……
+		;☆女あなたが巨乳
+		ELSEIF (RANDIF(1, (TALENT:MASTER:オトコ == 0 && TALENT:MASTER:貧乳)) && TALENT:MASTER:オトコ == 0 && TALENT:MASTER:巨乳)
+			PRINTFORMW %CALLNAME:MASTER%が居ることに気づいた%CALLNAME:TARGET%は、自分の胸と%CALLNAME:MASTER%の豊かな胸を見比べると、\@ TALENT:恋慕 ? 落ち込んだような # 悔しげな \@表情で二杯目の豆乳をグラスに注ぎだした……
+		;☆女あなたが貧乳
+		ELSEIF TALENT:MASTER:オトコ == 0 && TALENT:MASTER:貧乳
+			PRINTFORMW %CALLNAME:MASTER%が居ることに気づいた%CALLNAME:TARGET%は、黙って戸棚からグラスを取り出し、豆乳を注いで%CALLNAME:MASTER%に差し出す。
+			PRINTFORMW %CALLNAME:MASTER%は素直に受け取り一気に飲み干すと、%CALLNAME:TARGET%におかわりを求めた……
+		;☆それ以外
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%はグラスを空にすると、確かめるように自分の胸を触っている。
+			PRINTFORMW %CALLNAME:MASTER%は彼女の密やかな努力を見届けると、静かにその場を後にした……
+		ENDIF
+	ENDIF
+ENDIF
+RETURN 1
+

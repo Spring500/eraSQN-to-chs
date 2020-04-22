@@ -1,0 +1,287 @@
+﻿;-------------------------------------------------
+;好きなあの子にセクハラしたいあなたに！
+;ARGにはセクハラする相手のキャラ番号が入っています
+;一言イベントとセットで進行するため、FLAG:23のbitによって管理します
+;10一言イベント中, 11セクハラ終了
+;セクハラメニューはMASTERのCSTRによって記録、操作されます
+;-------------------------------------------------
+@INPUT_SEXUHARA, ARG
+;まだ封印
+RETURN 0
+
+;セクハラしたことが無い場合には初回専用の選択肢
+IF CSTR:MASTER:セクハラ履歴 == ""
+	PRINTFORML [0]セクハラする？
+	RETURN 0
+ENDIF
+
+CALL PRINT_SEXUHARA, ARG
+
+SIF COND("セクハラ終了")
+	RETURN 0
+
+PRINTFORM [0]悪戯一覧 
+SIF CALCF("１番好きなセクハラ") >= 0
+	PRINTFORM [1]%NAMES("セクハラ", CALCF("１番好きなセクハラ") )% 
+SIF CALCF("２番目に好きなセクハラ") >= 0
+	PRINTFORM [2]%NAMES("セクハラ", CALCF("２番目に好きなセクハラ") )% 
+SIF CALCF("３番目に好きなセクハラ") >= 0
+	PRINTFORM [3]%NAMES("セクハラ", CALCF("３番目に好きなセクハラ") )% 
+SIF CALCF("４番目に好きなセクハラ") >= 0
+	PRINTFORM [4]%NAMES("セクハラ", CALCF("４番目に好きなセクハラ") )% 
+PRINTL 
+
+;一言イベントの相手含めてリセットします
+@RESET_SEXUHARAFLAG
+FLAG:23 = 0
+;現在進行形のセクハラをリセット。履歴自体はCSTR:MASTER:セクハラ履歴に永久に残る
+CSTR:MASTER:セクハラ中 = 
+CSTR:MASTER:セクハラ済 = 
+CSTR:MASTER:直前のセクハラ = 
+
+@EVENTBUY_SEXUHARA, ARG
+;まだ封印
+RETURN 0
+
+SIF COND("セクハラ終了")
+	RETURN 0
+;セクハラ選択初回
+IF CSTR:MASTER:セクハラ履歴 == ""
+	SELECTCASE ARG
+	CASE 0
+		CALL README_SEXUHARA
+	ENDSELECT
+ELSE
+	SELECTCASE ARG
+	CASE 0
+		CALL LIST_SEXUHARA
+	CASE 1
+		SIF CALCF("１番好きなセクハラ") >= 0
+			CALL PRINT_ADD_SEXUHARA, CALCF("１番好きなセクハラ")
+	CASE 2
+		SIF CALCF("２番目に好きなセクハラ") >= 0
+			CALL PRINT_ADD_SEXUHARA, CALCF("２番目に好きなセクハラ")
+	CASE 3
+		SIF CALCF("３番目に好きなセクハラ") >= 0
+			CALL PRINT_ADD_SEXUHARA, CALCF("３番目に好きなセクハラ")
+	CASE 4
+		SIF CALCF("４番目に好きなセクハラ") >= 0
+			CALL PRINT_ADD_SEXUHARA, CALCF("４番目に好きなセクハラ")
+	ENDSELECT
+ENDIF
+
+
+@README_SEXUHARA
+CLEARLINE 1
+CALL PRINT_STR, "ハートピンク_話しかけてきた相手_に、ちょっかいをかけます_L"
+CALL PRINT_STR, "別にしたくないのなら、ＳＨＯＰ画面の他の選択肢を選んでください_L"
+CALL PRINT_STR, "行う頻度が高いものは、次回から_黄色_ショートカットコマンドとして表示_されます_L"
+CALL PRINT_STR, "やりたい行動が表示されなかった場合には _黄色_一覧から選ぶ_ を選択してください_W"
+PRINTL 
+PRINTFORML それでは、以下から行動を選んでください
+CALL LIST_SEXUHARA, "README"
+
+@LIST_SEXUHARA, ARGS
+#DIM LCOUNT
+FOR LCOUNT, 0, NUM("セクハラ")
+	PRINTFORM  [{LCOUNT, 2}] %TEXT_LJ(NAMES("セクハラ", LCOUNT), 14)%
+	SIF LCOUNT%4 == 3
+		PRINTL 
+NEXT
+PRINTL 
+CALL INPUT_SELECT, NUM("セクハラ")
+
+SIF ARGS == "README"
+	CLEARLINE 5
+CLEARLINE 1 + (NUM("セクハラ") + 3)/4
+CALL PRINT_ADD_SEXUHARA, RESULT
+
+@PRINT_ADD_SEXUHARA, ARG
+CLEARLINE 2
+CALL SETFLAG, "セクハラ履歴", ARG
+CALL PRINT_SEXUHARA, CALCF("一言イベントの相手"), "追加"
+
+
+;-------------------------------------------------
+;セクハラ行為の表示。ARGS = "追加"となってる場合には最新の行為だけWAITを挟んで表示
+;-------------------------------------------------
+@PRINT_SEXUHARA, ARG, ARGS
+#DIM LCOUNT
+#DIMS MEMO_CSTR_SEXUHARA
+
+MEMO_CSTR_SEXUHARA = %CSTR:MASTER:セクハラ中%
+
+;これはここで毎回初期化
+CSTR:MASTER:セクハラ済 = 
+CSTR:MASTER:直前のセクハラ = 
+
+VARSET LOCALS
+SPLIT CSTR:MASTER:セクハラ中, "/", LOCALS
+
+FOR LCOUNT, 0, 100
+	SIF LOCALS:LCOUNT == ""
+		BREAK
+	CSTR:MASTER:セクハラ済 = %LOCALS:LCOUNT%/%CSTR:MASTER:セクハラ済%
+	CSTR:MASTER:セクハラ中 = %LOCALS:LCOUNT%
+
+	SELECTCASE ARGS
+	CASE "追加"
+		SIF LOCALS:(LCOUNT + 1) == ""
+			CALL PRINT_SEXUHARA_MESSAGE, CSTR:MASTER:セクハラ中, ARG, 1
+	CASEELSE
+		CALL PRINT_SEXUHARA_MESSAGE, CSTR:MASTER:セクハラ中, ARG
+	ENDSELECT
+
+	CSTR:MASTER:直前のセクハラ = %LOCALS:LCOUNT%
+NEXT
+
+CSTR:MASTER:セクハラ中 = %MEMO_CSTR_SEXUHARA%
+
+
+;-------------------------------------------------
+;セクハラ行為の地の文など
+;ARGSは一般にCSTR:MASTER:セクハラ中
+;ARGは話している相手。ARG:1は0でない場合にはWAITが入る
+;諸事情により、ここでのRANDはRANDFで行う
+;-------------------------------------------------
+@PRINT_SEXUHARA_MESSAGE, ARGS, ARG, ARG:1
+#DIM LCOUNT
+#DIM MEMO_LINECOUNT
+;RANDFの補正値として使う
+#DIM R_ADD
+
+;R_ADDを設定
+FOR LCOUNT, 0, 64
+	SELECTCASE NAMES("セクハラ", LCOUNT)
+	CASE ARGS
+		R_ADD = (LCOUNT + 1)*100 + NUM("セクハラターン数")
+		BREAK
+	ENDSELECT
+NEXT
+
+MEMO_LINECOUNT = LINECOUNT
+;ここでの分岐は@NAMESの"セクハラ"まんまなので、片方を変更したら両方変更する事
+SELECTCASE ARGS
+CASE "パンツチェック"
+
+
+CASE "パンツ没収"
+
+
+CASE "キスする"
+
+CASE "アソコを撫でる"
+
+CASE "膣を弄る"
+
+CASE "アナルを弄る"
+
+CASE "胸を触る"
+
+CASE "褒める"
+	PRINTFORM %CALLNAME:MASTER%は
+
+	PRINTFORM %CALLNAME:ARG%
+	;上の方ほどよく口にする
+	IF ABL:ARG:助手 >= 3 && RANDF(3, R_ADD + 8) == 0
+		PRINTFORM の働き振り
+	ELSEIF TALENT:ARG:清楚 && RANDF(3, R_ADD + 7) == 0
+		PRINTFORM の洗練された女性らしさ
+	ELSEIF TALENT:ARG:気品 && RANDF(3, R_ADD + 6) == 0
+		PRINTFORM の品のある立ち振る舞い
+	ELSEIF TALENT:ARG:魅惑 && RANDF(3, R_ADD + 5) == 0
+		PRINTFORM の人を惹きつける所作
+	ELSEIF TALENT:ARG:巨乳 && RANDF(3, R_ADD + 4) == 0
+		PRINTFORM の胸の大きさ
+	ELSEIF TALENT:ARG:魅力 && RANDF(3, R_ADD + 3) == 0
+		PRINTFORM の美しさ
+	ELSEIF TALENT:ARG:肌の色 && RANDF(3, R_ADD + 2) == 0
+		PRINTFORM の肌の色
+	ELSEIF TALENT:ARG:耳の形 && RANDF(3, R_ADD + 1) == 0
+		PRINTFORM の耳の形
+	ELSEIF TALENT:ARG:賢い && RANDF(3, R_ADD) == 0
+		PRINTFORM の賢さ
+	ENDIF
+	PRINTFORML を褒めた
+CASE "抱きしめる"
+
+CASE "太ももを撫でる"
+
+CASE "お尻を撫でる"
+
+ENDSELECT
+
+;地の文書いてないので、なにやったかだけ表示
+SIF LINECOUNT == MEMO_LINECOUNT
+	PRINTFORML %ARGS%
+
+SIF ARG:1
+	WAIT
+
+MEMO_LINECOUNT = LINECOUNT
+
+TRYCALLFORM GUEST_KOJO_K{NO:ARG}_{CFLAG:ARG:209}, "セクハラ", ARG
+
+SIF LINECOUNT == MEMO_LINECOUNT
+	CALL TMESSAGE_SEXUHARA, ARGS, ARG
+
+SIF ARG:1
+	WAIT
+
+
+;セリフがない時に表示される汎用反応
+@TMESSAGE_SEXUHARA, ARGS, ARG
+#DIM MEMO_LINECOUNT
+
+;IF RAND:3 == 0
+;	PRINTFORML 怒られた
+;	SETBIT FLAG:23, 11
+;ENDIF
+
+MEMO_LINECOUNT = LINECOUNT
+SELECTCASE ARGS
+CASE "パンツチェック"
+
+CASE "パンツ没収"
+
+CASE "キスする"
+
+CASE "アソコを撫でる"
+
+CASE "膣を弄る"
+
+CASE "アナルを弄る"
+
+CASE "胸を触る"
+
+CASE "褒める"
+
+CASE "抱きしめる"
+
+CASE "太ももを撫でる"
+
+CASE "お尻を撫でる"
+
+ENDSELECT
+
+;地の文書いてないので、なにやったかだけ表示
+SIF LINECOUNT == MEMO_LINECOUNT
+	PRINTFORML %ARGS%選択時の%CALLNAME:ARG%の反応
+
+;途中で切り上げた時…まだ何も作ってない
+;ARGには100以上を選択した際の番号が入っている
+@USERSHOP_SEXUHARA, ARG
+;SIF COND("セクハラ終了") || CSTR:MASTER:セクハラ中 == ""
+;	RETURN 0
+
+;一言イベント中フラグクリア
+SELECTCASE ARG
+;一言イベントの発言者を変えない
+CASE 101, 108 TO 110, 113, 120, 140, 142, 200, 300, 333, 555, 650, 777
+	CLEARBIT FLAG:23, 10
+;一言イベントの発言フラグリセット
+CASE 100 TO 102, 108 TO 118, 120 TO 125, 131, 140 TO 142, 160, 330, 88224646
+	CALL RESET_SEXUHARAFLAG
+CASEELSE
+	CLEARBIT FLAG:23, 10
+ENDSELECT

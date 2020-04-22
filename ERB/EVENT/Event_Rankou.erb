@@ -1,0 +1,447 @@
+﻿;-------------------------------------------------
+;欲求不満持ちの夢魔をあなたから能動的に解消する
+;システム以外はヴァンパイア２口上作者のIRC>>あねふぁさんが大体作りました
+;ARGSには"夜這い乱交"とかシチュ指定が入り限定的な地の文を出す際の分岐に使える
+;-------------------------------------------------
+@EVENT_RANKOU, ARGS
+#DIM LCOUNT
+#DIM MEMO_LINECOUNT
+;乱交参加者の人数
+#DIM CHARANUM_RANKOU
+;乱交プレイ参加者の名前の羅列。%CALLNAME:TARGET%と%CALLNAME:(TARGET:1)% など
+#DIMS CNAMES_RANKOU
+;プレイの記録
+#DIM MAINCOM
+#DIM SUBCOM
+;ストックを記録
+#DIM MEMO_BASE_STOCK
+
+;乱交参加者の人数
+CHARANUM_RANKOU = CHARA_NUM("乱交参加中")
+;乱交プレイ参加者の名前の羅列。%CALLNAME:TARGET%と%CALLNAME:(TARGET:1)%など
+CNAMES_RANKOU = %CALLNAME:TARGET%と%CALLNAME:(TARGET:1)%\@ TARGET:2 > 0 ? と%CALLNAME:(TARGET:2)% # \@
+;副次的なプレイは基本的には無し
+SUBCOM = -1
+;ストックを記録
+MEMO_BASE_STOCK = BASE:MASTER:ストック
+
+;参加者のPALAM、EXP、EX、JUEL、BASEを記録(後で増加分を算出する)
+CALL SIMULATE_TRAIN_FIRST, CHARANUM_RANKOU
+
+SELECTCASE ARGS
+CASE "夜這い乱交"
+	PRINTFORMW %CALLNAME:MASTER%が床に就こうとしたとき、%CNAMES_RANKOU%が部屋を訪ねてきた
+	;PRINTFORMW 相当焦れてるなと直感した%CALLNAME:MASTER%は、%TEXTS("漢数字概数", CHARANUM_RANKOU)%人を部屋に招いて淫靡な宴をはじめることにした…
+ENDSELECT
+
+PRINTL 
+;セリフがあるかの判定
+MEMO_LINECOUNT = LINECOUNT
+
+;開始セリフ
+FOR LCOUNT, 0, CHARANUM_RANKOU
+	;主なプレイ内容(CSTR:乱交)で分岐させることができる
+	TRYCALLFORM GUEST_KOJO_K{NO:(TARGET:LCOUNT)}_{CFLAG:(TARGET:LCOUNT):209}, "乱交開始", TARGET:LCOUNT
+NEXT
+
+;セリフがあった
+IF LINECOUNT > MEMO_LINECOUNT
+	WAIT
+	PRINTL 
+ENDIF
+
+;プレイ内容で分岐
+SELECTCASE CSTR:乱交
+CASE "重ねて交互突き"
+	PRINTFORMW %TEXTS("漢数字概数", CHARANUM_RANKOU)%人はベッドに横たわり、%TEXTR("アソコを広げて", "ポーズをとって", "衣服をはだけながらの")%おねだり合戦を始めた
+	PRINTFORMW %CALLNAME:TARGET%達は%CALLNAME:MASTER%に犯されながら、互いの体を愛撫し合って愉しんでいる
+	MAINCOM = 60
+	SUBCOM = 13
+CASE "次々に犯す"
+	PRINTFORMW %TEXTS("漢数字概数", CHARANUM_RANKOU)%人は%CALLNAME:MASTER%に向けて尻を突き出し、下着をおろして催促をしてきた
+	PRINTFORMW %CALLNAME:MASTER%は目の前に並んだお尻の誘惑に抗えず、フラフラと吸い寄せられて順番に犯して回ってしまった
+	MAINCOM = 61
+	SUBCOM = 13
+CASE "騎乗位輪姦"
+	IF RAND:2
+		PRINTFORMW %TEXTS("漢数字概数", CHARANUM_RANKOU)%人は協力して%CALLNAME:MASTER%を押し倒し、顔と腰に跨って快楽を貪りはじめた
+	ELSE
+		PRINTFORMW %CALLNAME:MASTER%は%TEXTS("漢数字概数", CHARANUM_RANKOU)%人に押し倒され、騎乗位で代わる代わる犯された
+	ENDIF
+	IF RAND:6 == 0
+		PRINTFORMW %CALLNAME:TARGET%達は%CALLNAME:MASTER%の顔をにやにやと見つめながら、その表情を楽しむように腰をグラインドさせている！
+	ELSEIF RAND:5 == 0
+		PRINTFORMW %CALLNAME:TARGET%達は自分で動こうとせず、見下ろした%CALLNAME:MASTER%に腰を振るよう命令してくる
+	ELSEIF RAND:4 == 0
+		PRINTFORMW %CALLNAME:TARGET%達は%CALLNAME:MASTER%の体をがっちりと抑え込み、ひたすら激しく腰を振り続けてくる！
+	ELSEIF RAND:3 == 0
+		PRINTFORMW %CALLNAME:TARGET%達は%CALLNAME:MASTER%と体を密着させて、粘膜の動きだけで搾り取ろうとしてくる！
+	ELSEIF RAND:2
+		PRINTFORMW 楽しそうに腰を振る%CALLNAME:TARGET%に負けじと、順番待ちの%CALLNAME:(TARGET:1)%が%CALLNAME:MASTER%の唇を奪う
+	ELSE
+		PRINTFORMW 組み敷かれて腰を振る%CALLNAME:MASTER%の横では、順番を待つ夢魔が卑猥な言葉を囁いてくる
+	ENDIF
+
+	IF CANTRAINS("押し倒し騎乗位") == CHARANUM_RANKOU && (RAND:2 || CANTRAINS("押し倒しアナル騎乗位") < CHARANUM_RANKOU)
+		MAINCOM = 65
+	ELSE
+		MAINCOM = 75
+	ENDIF
+	IF CANTRAINS("押し倒しクンニ") == CHARANUM_RANKOU && (RAND:2 || CANTRAINS("押し倒しアナル舐め") < CHARANUM_RANKOU)
+		SUBCOM = 1
+	ELSE
+		SUBCOM = 9
+	ENDIF
+	;押し倒しＯＮ
+	CVARSET TEQUIP, 30, 1
+CASE "シックスナイン"
+	PRINTFORMW %TEXTS("漢数字概数", CHARANUM_RANKOU)%人は絡み合うようにして互いの性器に舌を這わせながら、%CALLNAME:MASTER%に向けて過激なおねだりをしてきた
+	IF RAND:2
+		PRINTFORMW %CALLNAME:TARGET%達は口と股間を交互に犯されるのをスパイスにして、汗まみれで６９を愉しんでいる
+	ELSE
+		PRINTFORMW %CALLNAME:TARGET%達は犯されながら、お互いの恥ずかしい部分を夢中で味わっている
+	ENDIF
+	MAINCOM = 69
+	SUBCOM = 61
+CASE "Ｗ素股"
+	PRINTFORMW %TEXTS("漢数字概数", CHARANUM_RANKOU)%人は%CALLNAME:MASTER%を押し倒して取り囲み、\@ TARGET:2 ? 交代で # \@Ｗ素股をしてきた
+	PRINTFORMW アソコの柔らかい感触でペニスを虐められて絶頂する様子を、%CALLNAME:TARGET%達は面白そうに眺めている
+	MAINCOM = 93
+CASE "足コキ"
+	;押し倒しＯＮ
+	CVARSET TEQUIP, 30, 1
+	MAINCOM = 95
+
+	PRINTFORMW %TEXTS("漢数字概数", CHARANUM_RANKOU)%人は%CALLNAME:MASTER%を押し倒し、\@ TARGET:2 ? 交代で # \@足コキをしてきた
+	IF RAND:3 == 0 && CANTRAINS("押し倒しクンニ") == CHARANUM_RANKOU
+		PRINTFORMW 反射的に逃れようとした%CALLNAME:MASTER%だったが、容赦のない顔面騎乗により反撃の芽を摘み取られてしまう……
+		SUBCOM = 1
+	ELSEIF RAND:2 && CANTRAINS("くぱぁさせる") == CHARANUM_RANKOU
+		PRINTFORMW それどころか不敵な眼差しで見下ろされながら全員にアソコを見せつけられ、%CALLNAME:MASTER%は目が離せなくなってしまった……
+		SUBCOM = 13
+	ELSE
+		PRINTFORMW 取り囲まれながらの無慈悲な足コキに、%CALLNAME:MASTER%はペニスをいきりたたせることしかできない！
+	ENDIF
+CASE "オナホプレイ"
+	PRINTFORMW %TEXTS("漢数字概数", CHARANUM_RANKOU)%人は%CALLNAME:MASTER%を押し倒し、オナホを用いて交代でペニスを扱いてきた
+	PRINTFORMW 責め立てられる%CALLNAME:MASTER%の顔色が、オナホを上下させる%CALLNAME:TARGET%達には面白くて仕方が無い様だ
+	;押し倒しＯＮ
+	CVARSET TEQUIP, 30, 1
+	MAINCOM = 105
+;雛形（ここへは来ない）
+CASEELSE
+	PRINTFORMW %CALLNAME:TARGET%達は%CSTR:乱交%をしてきた
+	;MAINCOM = 
+	;SUBCOM = 
+ENDSELECT
+
+CALL EVENT_RANKOU_PLAY, MAINCOM, CHARANUM_RANKOU, SUBCOM
+
+;あなたのイかされた回数とストックの減少表示
+CALL PRINT_EVENT_RANKOU_STOCK, MEMO_BASE_STOCK
+
+;プレイ終了時の地の文
+SELECTCASE CSTR:乱交
+CASE "次々に犯す"
+	PRINTFORMW 膣内にたっぷり精液を注ぎ込まれ、%CALLNAME:TARGET%達は幸せそうだ……
+CASE "騎乗位輪姦"
+	IF RAND:2
+		PRINTFORMW 解放された%CALLNAME:MASTER%の横で、%CALLNAME:TARGET%達は搾り取った精液を見せつけ合っている……
+	ELSE
+		PRINTFORMW %CALLNAME:TARGET%達は\@ MAINCOM == 65 ? アソコを # アナルを押し\@広げ、搾り取った精液を%CALLNAME:MASTER%に見せつけている……
+	ENDIF
+CASE "オナホプレイ"
+	PRINTFORMW オナホールの中に出された精液を、%CALLNAME:TARGET%達は美味しそうに回し飲みしている……
+CASEELSE
+	IF RAND:2
+		PRINTFORMW %CALLNAME:TARGET%達は精液の張り付いた顔を互いに舐め合っている……
+	ELSE
+		PRINTFORMW %CALLNAME:TARGET%達は、搾り取った精液を口移しで分け合っている……
+	ENDIF
+ENDSELECT
+PRINTL 
+
+;経験や珠などの獲得量計算
+CALL SIMULATE_TRAIN_CALC
+;結果発表
+CALL SIMULATE_TRAIN_SHOW
+PRINTL 
+
+;ピロートーク
+SELECTCASE ARGS
+CASE "夜這い乱交"
+	;主人ダウン
+	IF BASE:MASTER:精力 <= 1 && BASE:MASTER:ストック == 0
+		IF RAND:2 && PENIS(MASTER)
+			PRINTFORMW %CALLNAME:TARGET%達は頑張った%CALLNAME:MASTER%のペニスを弄りつつ、あれやこれやと労ってきた
+			PRINTFORMW そして%TEXTS("漢数字概数", CHARANUM_RANKOU + 1)%人は身を寄せ合って抱き合い、深い眠りに落ちた…
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%達は動けない%CALLNAME:MASTER%を撫でながら、わいわいと雑談に花を咲かせている
+			PRINTFORMW そのあと%TEXTS("漢数字概数", CHARANUM_RANKOU + 1)%人は身を寄せ合って抱き合い、深い眠りに落ちた…
+		ENDIF
+	ELSE
+		;とりあえず今のところ一番上のみ。他は蛇足な気がする
+		IF 1
+			PRINTFORMW %CALLNAME:TARGET%たちを何度も絶頂させた後、%TEXTS("漢数字概数", CHARANUM_RANKOU + 1)%人は身を寄せ合って抱き合い、深い眠りに落ちた…
+		ELSEIF RAND:2
+			PRINTFORMW 満足した%CALLNAME:TARGET%達は、%CALLNAME:MASTER%に体を密着させてべたべたと甘えてきた
+			PRINTFORMW %CALLNAME:MASTER%は{CHARANUM_RANKOU}人分の温もりを感じながら、穏やかなお喋りの時間を過ごした……
+		ELSE
+			IF RAND:2
+				PRINTFORMW %CALLNAME:TARGET%達は%CALLNAME:MASTER%の働きに満足し、感謝の言葉を述べながら撫でてきた
+			ELSE
+				PRINTFORMW 満足した%CALLNAME:TARGET%達は%CALLNAME:MASTER%とお喋りしながら、さわさわと色んな所を触ってきた
+			ENDIF
+			PRINTFORMW くすぐったそうな%CALLNAME:MASTER%を見て、{CHARANUM_RANKOU}人のイタズラはエスカレートするばかりだ……
+		ENDIF
+	ENDIF
+	;MASTERが一緒に寝た相手フラグ(TARGET優遇)
+	IF RAND:3
+		CFLAG:MASTER:96 = TARGET
+		CFLAG:96 = MASTER
+	ELSEIF RAND:2 && TARGET:2 > 0
+		CFLAG:MASTER:96 = TARGET:2
+		CFLAG:(TARGET:2):96 = MASTER
+	ELSE
+		CFLAG:MASTER:96 = TARGET:1
+		CFLAG:(TARGET:1):96 = MASTER
+	ENDIF
+ENDSELECT
+
+CVARSET TEQUIP, 30, 0
+
+;欲求不満解消
+FOR LCOUNT, 0, CHARANUM_RANKOU
+	CALL CALC, "欲求不満解消", TARGET:LCOUNT, 20
+NEXT
+
+;仲良くなる
+CALL CHANGE_RELATION, 5, TARGET, TARGET:1, TARGET:2
+
+;-------------------------------------------------
+;CSTR:乱交 を決める前段階の決定をする
+;ARGSには"夜這い乱交"とかシチュ指定が入る
+;-------------------------------------------------
+@EVENT_RANKOU_SET, ARGS
+#DIM LCOUNT
+;仲良しフラグ
+#DIM IS_FRIEND
+;乱交参加者の人数
+#DIM CHARANUM_RANKOU
+;ランダム選択に用いる
+#DIM NUM_FIND
+
+;参加者の人数フラグ初期化
+CHARANUM_RANKOU = 1
+;乱交参加済みフラグON
+SETBIT CFLAG:95, 5
+;仲良しフラグ。最初の一人呼んだ時点で仲良しだとグループ全体が仲良しになる
+IS_FRIEND = 0
+
+;二人まで仲間を呼ぶ…欲求不満の人が多い場合を除いて、相性のいい人優先。ここでTARGET:1, TARGET:2を決定
+FOR LCOUNT, 1, 3
+	IF CHARA_NUM("欲求不満で乱交可能") >= 3 + RANDF(7)
+		TARGET:LCOUNT = FIND_COND("乱交可能", "欲求不満")
+	ELSEIF FIND_COND("相性☆", "乱交可能")
+		TARGET:LCOUNT = FIND_COND("相性☆", "乱交可能")
+		;確率６７％
+		SIF LCOUNT == 1 && RAND:3
+			IS_FRIEND = 1
+	ELSEIF FIND_COND("相性◎", "乱交可能")
+		TARGET:LCOUNT = FIND_COND("相性◎", "乱交可能")
+		;確率３３％
+		SIF LCOUNT == 1 && RAND:3 == 0
+			IS_FRIEND = 1
+	;仲良しフラグ発動
+	ELSEIF IS_FRIEND && LCOUNT >= 2
+		BREAK
+	ELSEIF FIND_COND("相性○", "乱交可能")
+		TARGET:LCOUNT = FIND_COND("相性○", "乱交可能")
+	ELSEIF FIND_COND("乱交可能", "欲求不満")
+		TARGET:LCOUNT = FIND_COND("乱交可能", "欲求不満")
+	ELSEIF FIND_COND("乱交可能", "ご無沙汰")
+		TARGET:LCOUNT = FIND_COND("乱交可能", "ご無沙汰")
+	ELSEIF FIND_COND("乱交可能")
+		TARGET:LCOUNT = FIND_COND("乱交可能")
+	ELSE
+		BREAK
+	ENDIF
+	;参加者増
+	CHARANUM_RANKOU += 1
+	;乱交参加済みフラグON
+	SETBIT CFLAG:(TARGET:LCOUNT):95, 5
+NEXT
+;メンバーが決まったら各人の実行可能コマンドの確認
+FOR LCOUNT, 0, CHARANUM_RANKOU
+	CALL CHECK_COM_ABLE, TARGET:LCOUNT
+NEXT
+
+;プレイの種類の記録…基本プレイが何かをSELECTCOMで判定して、種類を分けることにする
+;CANTRAINS("コマンド名") == CHARANUM_RANKOU となることが基本の実行条件
+NUM_FIND = 0
+
+SELECTCASE ARGS
+CASE "夜這い乱交"
+	FOR LCOUNT, 0, 10
+		SELECTCASE LCOUNT
+		CASE 0
+			SIF CANTRAINS("正常位") < CHARANUM_RANKOU
+				CONTINUE
+			SIF CANTRAINS("くぱぁさせる") < CHARANUM_RANKOU
+				CONTINUE
+			LOCALS = 重ねて交互突き
+		CASE 1
+			SIF CANTRAINS("後背位") < CHARANUM_RANKOU
+				CONTINUE
+			SIF CANTRAINS("くぱぁさせる") < CHARANUM_RANKOU
+				CONTINUE
+			LOCALS = 次々に犯す
+		CASE 2
+			SIF CANTRAINS("押し倒し騎乗位") < CHARANUM_RANKOU && CANTRAINS("押し倒しアナル騎乗位") < CHARANUM_RANKOU
+				CONTINUE
+			SIF CANTRAINS("押し倒しクンニ") < CHARANUM_RANKOU && CANTRAINS("押し倒しアナル舐め") < CHARANUM_RANKOU
+				CONTINUE
+			LOCALS = 騎乗位輪姦
+		CASE 3
+			SIF CANTRAINS("素股") < CHARANUM_RANKOU
+				CONTINUE
+			LOCALS = Ｗ素股
+		CASE 4
+			SIF CANTRAINS("押し倒し足コキ") < CHARANUM_RANKOU
+				CONTINUE
+			LOCALS = 足コキ
+		CASE 5
+			SIF CANTRAINS("押し倒しオナホプレイ") < CHARANUM_RANKOU
+				CONTINUE
+			LOCALS = オナホプレイ
+		CASE 6
+			SIF CANTRAINS("後背位") < CHARANUM_RANKOU
+				CONTINUE
+			SIF CANTRAINS("シックスナイン") < CHARANUM_RANKOU
+				CONTINUE
+			LOCALS = シックスナイン
+		CASEELSE
+			BREAK
+		ENDSELECT
+
+		NUM_FIND += 1
+
+		SIF RAND:NUM_FIND
+			CONTINUE
+
+		CSTR:夜這い = %LOCALS%
+	NEXT
+	;乱交プレイが実行可能ならば決定
+	SIF CSTR:夜這い != ""
+		RETURN 1
+ENDSELECT
+
+;乱交が起きないならフラグリセット
+FOR LCOUNT, 0, CHARANUM_RANKOU
+	CLEARBIT CFLAG:(TARGET:LCOUNT):95, 5
+NEXT
+TARGET:1 = 0
+TARGET:2 = 0
+
+
+;-------------------------------------------------
+;具体的なコマンド選択
+;ARGにはプレイ内容(SELECTCOM)が、ARG:1には参加人数が入る
+;ARG:2は基本-1だが、0以上の場合はその番号のコマンドを実行する
+;-------------------------------------------------
+@EVENT_RANKOU_PLAY, ARG, ARG:1, ARG:2
+#DIM LCOUNT
+
+FOR LCOUNT, 0, ARG:1
+	SWAP TARGET, TARGET:LCOUNT
+
+	DO
+		;まずはキスや愛撫
+		SIF CANTRAIN("キスする") && RAND:(ARG:1) == 0 && (RAND:3 == 0 || TALENT:恋慕 || TALENT:蕩唇 || COND("唇に弱い", MASTER) )
+			CALL SIMULATE_TRAIN_COM, 6, 1
+		SIF CANTRAIN("胸愛撫") && RAND:(ARG:1) == 0 && (TALENT:巨乳 >= RAND:4 || TALENT:淫乳 || COND("胸に弱い", MASTER) )
+			CALL SIMULATE_TRAIN_COM, 5, 1
+		SIF CANTRAIN("クンニ") && RAND:(ARG:1) == 0 && (RAND:5 == 0 || TALENT:淫核 || COND("♀に弱い", MASTER) )
+			CALL SIMULATE_TRAIN_COM, 1, 1
+		SIF CANTRAIN("アナル舐め") && RAND:(ARG:1) == 0 && (TALENT:尻穴狂い || COND("お尻に弱い", MASTER) )
+			CALL SIMULATE_TRAIN_COM, 9, 1
+		SIF CANTRAIN("フェラする") && RAND:(ARG:1) == 0 && COND("♂に弱い", MASTER)
+			CALL SIMULATE_TRAIN_COM, 4, 1
+		SIF CANTRAIN("手淫する") && RAND:(ARG:1) == 0 && (RAND:3 == 0 || COND("♂に弱い", MASTER) )
+			CALL SIMULATE_TRAIN_COM, 10, 1
+
+		;そして基本プレイ
+		CALL SIMULATE_TRAIN_COM, ARG, BASE:欲求不満/10 + (ABL:欲望 + 1)/3 + TALENT:淫乱 + COND("ご無沙汰") + 1
+		SIF ARG:2 >= 0
+			CALL SIMULATE_TRAIN_COM, ARG:2, 1
+
+		;後のプレイはどうするかな
+		SIF CANTRAIN("手コキ") && RAND:3 == 0 && (ABL:指使い >= RAND:8 || COND("手に弱い", MASTER) )
+			CALL SIMULATE_TRAIN_COM, 90, 1
+		SIF CANTRAIN("フェラチオ") && RAND:3 == 0 && (ABL:舌使い >= RAND:8 || TALENT:献身 || COND("口に弱い", MASTER) )
+			CALL SIMULATE_TRAIN_COM, 91, 1
+		SIF CANTRAIN("クンニさせる") && RAND:3 == 0 && (ABL:舌使い >= RAND:8 || TALENT:献身 || COND("口に弱い", MASTER) )
+			CALL SIMULATE_TRAIN_COM, 98, 1
+		SIF CANTRAIN("パイズリ") && TALENT:巨乳 >= RAND:4 && (ABL:魔乳 >= RAND:8 || COND("胸に弱い", MASTER) )
+			CALL SIMULATE_TRAIN_COM, 92, 1
+		SIF CANTRAIN("ぱふぱふ") && TALENT:巨乳 >= RAND:4 && (ABL:魔乳 >= RAND:8 || COND("胸に弱い", MASTER) )
+			CALL SIMULATE_TRAIN_COM, 104, 1
+		SIF CANTRAIN("足コキ") && (ABL:サドっ気 + ABL:MASTER:マゾっ気 + 1)/2 >= RAND:10 && (ABL:足使い >= RAND:8 || COND("脚に弱い", MASTER) )
+			CALL SIMULATE_TRAIN_COM, 95, 1
+
+	LOOP (BASE:欲求不満 >= (EXP:2 - TCVAR:302)*4 + (EXP:6 - TCVAR:306)*3)
+
+	SWAP TARGET, TARGET:LCOUNT
+NEXT
+
+;-------------------------------------------------
+;ARGには乱交前の主人のストック数が入っている
+;-------------------------------------------------
+@PRINT_EVENT_RANKOU_STOCK, ARG
+#DIM LCOUNT
+#DIM MEMO_EXP6_ALL
+
+MEMO_EXP6_ALL = 0
+FOR LCOUNT, 0, 3
+	SIF TARGET:LCOUNT == 0
+		BREAK
+	MEMO_EXP6_ALL += EXP:(TARGET:LCOUNT):6 - TCVAR:(TARGET:LCOUNT):306
+NEXT
+
+SIF BASE:MASTER:ストック >= ARG && MEMO_EXP6_ALL == 0
+	RETURN 0
+
+SETCOLOR DEF_COLOR("ハートピンク")
+
+;SIF EXP:MASTER:2 > TCVAR:MASTER:302
+;	PRINTFORML %CALLNAME:MASTER%は{EXP:MASTER:2 - TCVAR:MASTER:302}回イかされてしまった！
+;SIF EXP:MASTER:3 > TCVAR:MASTER:303
+;	PRINTFORML %CALLNAME:MASTER%は{EXP:MASTER:3 - TCVAR:MASTER:303}回射精してしまった！
+IF MEMO_EXP6_ALL > 10
+	PRINTFORML %CALLNAME:MASTER%は{MEMO_EXP6_ALL}回もイかされてしまった！
+ELSE
+	PRINTFORML %CALLNAME:MASTER%は{MEMO_EXP6_ALL}回イかされてしまった！
+ENDIF
+
+SETCOLOR DEF_COLOR("水色")
+
+IF ARG > BASE:MASTER:ストック
+	IF MEMO_EXP6_ALL
+		PRINTFORM そして、
+	ELSE
+		PRINTFORM %CALLNAME:MASTER%は
+	ENDIF
+	IF ARG - BASE:MASTER:ストック >= 2
+		PRINTFORML {ARG - BASE:MASTER:ストック}回もダウンしてしまった！
+	ELSE
+		PRINTFORML {ARG - BASE:MASTER:ストック}回ダウンしてしまった！
+	ENDIF
+ENDIF
+
+RESETCOLOR
+
+WAIT
+
+PRINTL 
+
+

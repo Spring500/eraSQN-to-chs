@@ -1,0 +1,282 @@
+﻿@COM15
+;尿道指挿入れ
+;指はブジーに比べると非常に入れ辛いので、拡張効果があるような段階では入れることは出来ない
+;あくまで尿道の広がっている相手への愛撫コマンド。消耗は低い
+CALL PRINT_TRAIN_NAME(SELECTCOM)
+
+CALL TRAIN_MESSAGE_B
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+STR:0 = %STR:2%
+
+RETURN 1
+
+@FLAG_COM15, ARG
+;尿の汚れ発生
+IF PENIS(TARGET)
+	STAIN:Ｐ = SET_STAIN(STAIN:Ｐ, "尿")
+ELSE
+	STAIN:Ｖ = SET_STAIN(STAIN:Ｖ, "尿")
+ENDIF
+STAIN:PLAYER:手 = SET_STAIN(STAIN:PLAYER:手, "尿")
+;パンツをずらす
+SIF !CHECK_CLO("Ｖ露出") && INSERT("インサート") == 0
+	CALL SETFLAG, "ボトムを露出：テキスト無し", TARGET
+
+
+@SOURCE_COM15, ARG
+VARSET LOCAL
+
+LOCAL:20 += 80
+LOCAL:21 += 120
+
+LOCAL:8 = 3000
+LOCAL:12 = 300
+LOCAL:11 = 500 + SIZE("指の直径", PLAYER)*100
+LOCAL:13 = 5000
+LOCAL:14 = 10000
+
+;どっちの尿道か
+IF PENIS(TARGET)
+	LOCALS = %CSTR:4%
+	LOCAL:6 = 3000
+	LOCAL:9 = 3000
+ELSE
+	LOCALS = %CSTR:3%
+	LOCAL:6 = 1000
+	LOCAL:9 = 1000
+ENDIF
+
+;ABL:Ｃ感覚をみる
+LOCAL:0 = CALCF("尿道刺激", 1)
+;調教者の指使いをみる
+LOCAL:0 = SOURCE_EXABL(LOCAL:0, 30, PLAYER)
+CALL SETFLAG, "尿道性感フラグ", TARGET
+
+;尿道の方が指の太さよりも太いなら痛みが軽減
+SELECTCASE MIN_STR(LOCALS) - SIZE("指の直径", PLAYER)
+CASE IS >= 11
+	TIMES LOCAL:6, 0.05
+CASE IS >= 8
+	TIMES LOCAL:6, 0.20
+CASE IS >= 5
+	TIMES LOCAL:6, 0.50
+CASE IS >= 2
+	TIMES LOCAL:6, 0.75
+ENDSELECT
+
+;尿道拡張経験が5, 20, 50, 150…と区切りを越えて大きいなら、恐怖を軽減する
+SELECTCASE GET_EXP_LV(EXP:尿道拡張経験)
+CASE 1
+	TIMES LOCAL:9, 0.50
+CASE 2
+	TIMES LOCAL:9, 0.30
+CASE IS >= 3
+	TIMES LOCAL:9, 0.15
+ENDSELECT
+
+SELECTCASE EXP:尿道経験 + MIN(EXP:PLAYER:尿道責め経験, 50)
+CASE IS < 5
+CASE IS < 20
+	TIMES LOCAL:6, 0.80
+	TIMES LOCAL:9, 0.80
+CASE IS < 50
+	TIMES LOCAL:0, 1.20
+	TIMES LOCAL:6, 0.60
+	TIMES LOCAL:9, 0.60
+CASE IS < 150
+	TIMES LOCAL:0, 1.35
+	TIMES LOCAL:6, 0.40
+	TIMES LOCAL:9, 0.40
+CASEELSE
+	TIMES LOCAL:0, 1.50
+	TIMES LOCAL:6, 0.20
+	TIMES LOCAL:9, 0.20
+ENDSELECT
+
+;PALAM:欲情をみる
+SELECTCASE PALAM:欲情
+CASE IS < PALAMLV:1
+	TIMES LOCAL:14, 1.50
+CASE IS < PALAMLV:2
+	TIMES LOCAL:14, 1.00
+CASE IS < PALAMLV:3
+	TIMES LOCAL:14, 0.90
+CASE IS < PALAMLV:4
+	TIMES LOCAL:14, 0.70
+CASE IS >= PALAMLV:4
+	TIMES LOCAL:14, 0.50
+ENDSELECT
+
+;ABL:マゾっ気をみる
+SELECTCASE ABL:マゾっ気
+CASE 0
+	TIMES LOCAL:11, 0.05
+CASE 1
+	TIMES LOCAL:11, 0.50
+CASE 2
+
+CASE 3
+	TIMES LOCAL:11, 1.50
+CASE 4
+	TIMES LOCAL:11, 2.00
+CASEELSE
+	TIMES LOCAL:11, 3.00
+ENDSELECT
+
+;快Ｃについては既に参照済み
+IF TALENT:尿道狂い
+	TIMES LOCAL:6, 0.10
+	TIMES LOCAL:9, 0.10
+	LOCAL:7 += 10000 + SIZE("ペニスの直径", PLAYER)*200
+	LOCAL:11 += LOCAL:14
+	TIMES LOCAL:14, 0.05
+ELSEIF TALENT:尿道性感
+	TIMES LOCAL:6, 0.20
+	TIMES LOCAL:9, 0.20
+	LOCAL:7 += 5000 + SIZE("ペニスの直径", PLAYER)*100
+	LOCAL:11 += LOCAL:14
+	TIMES LOCAL:14, 0.20
+ENDIF
+
+SELECTCASE EXP:放尿経験 + EXP:お漏らし経験
+CASE IS < EXPLV:1
+	TIMES LOCAL:14, 3.00
+CASE IS < EXPLV:2
+	TIMES LOCAL:14, 2.50
+CASE IS < EXPLV:3
+	TIMES LOCAL:14, 2.00
+CASE IS < EXPLV:4
+	TIMES LOCAL:14, 1.00
+CASE IS < EXPLV:5
+	TIMES LOCAL:14, 0.80
+CASEELSE
+	TIMES LOCAL:14, 0.60
+ENDSELECT
+
+;筋弛緩剤
+SIF GETBIT(TEQUIP:筋弛緩剤, 1)
+	TIMES LOCAL:6, 0.20
+
+CALL CALC, "調教ソース", LOCAL:0, LOCAL:1, LOCAL:2, LOCAL:3, LOCAL:4, LOCAL:5, LOCAL:6, LOCAL:7, LOCAL:8, LOCAL:9, LOCAL:10, LOCAL:11, LOCAL:12, LOCAL:13, LOCAL:14, LOCAL:15, LOCAL:16, LOCAL:17, LOCAL:18, LOCAL:19, LOCAL:20, LOCAL:21, ARG
+
+
+
+@TRAIN_MESSAGE_COM15
+PRINTFORM %CALLNAME:PLAYER%は
+IF TEQUIP:キス
+	PRINTFORM %TEXTS("キス継続")%、
+	CALL SETFLAG, "追加キスフラグ", TARGET
+ELSEIF TEQUIP:シックスナイン
+	PRINTFORM %TEXTS("６９")%
+ELSEIF INSERT("Ａインサート")
+	PRINTFORM アナルを抉りながら、
+ELSEIF PREVCOM == 1 && PENIS(TARGET) == 0 && CHECK_CLO("Ｖ露出")
+	SIF PALAM:欲情 >= 3000 && ABL:Ｃ感覚 >= 3
+		PRINT 勃起した
+	PRINTFORM クリトリスを舐めながら、
+ELSEIF PREVCOM == 13 && PENIS(TARGET) == 0
+	PRINT 目の前で剥き出しにされている
+ENDIF
+PRINTFORM %CALLNAME:TARGET%の
+IF TEQUIP:尿道ブジー
+	IF RAND:2
+		PRINTFORMW 尿道に鎮座しているプジーを前後に抜き差しした…
+	ELSEIF RAND:1
+		PRINTFORMW 尿道に鎮座しているプジーを勢い良く膀胱まで突き刺した…
+	ELSE
+		PRINTFORMW 尿道に鎮座しているプジーをぐりぐりと回してやると、一目見てわかるほど皮膚を押し上げている…
+	ENDIF
+ELSEIF TEQUIP:尿道バイブ
+	IF SIZE("尿道バイブ", TARGET) == 5
+		PRINTFORMW 膀胱まで飲み込んだパールを引っ張ると尿道口がいやらしく盛り上がった…
+	ELSEIF RAND:3
+		PRINTFORMW 尿道で震えているバイブを前後に抜き差しした…
+	ELSEIF RAND:2
+		PRINTFORMW 尿道に鎮座しているバイブを勢い良く膀胱まで突き刺した…
+	ELSE
+		PRINTFORMW 尿道に鎮座しているバイブをぐりぐりと回してやると、一目見てわかるほど皮膚を押し上げている…
+	ENDIF
+
+ELSEIF PREVCOM == SELECTCOM
+	IF RAND:2 && PENIS(TARGET) == 0
+		PRINTFORM 膀胱の中で指を曲げ、
+		IF RAND:2
+			PRINTFORMW 爪を立てないように注意しながら内部の粘膜を撫で続けた…
+		ELSE
+			PRINTFORMW 内尿道口を集中して指の腹でくすぐり続けた…
+		ENDIF
+	ELSE
+		IF RAND:2
+			PRINTFORMW 尿道に指を根元まで挿入し、ゆっくりと出し入れしながら刺激し続けた…
+		ELSE
+			PRINTFORMW 尿道の敏感な粘膜を擦るようにして指を動かした…
+		ENDIF
+	ENDIF
+;指
+ELSE
+	;前回尿道で射精された
+	IF PREVEX("尿道内射精")
+		PRINTFORM 精液を注ぎ込まれたばかりの
+	;前回放尿
+	ELSEIF PREVPLAY("放尿")
+		PRINTFORM 排尿したばかりの
+	ELSEIF PREVCOM == 83
+		PRINTFORM セックス直後で開き気味な
+	ELSEIF PREVCOM == 151
+		PRINTFORM ブジーで虐め抜いた直後の
+	ENDIF
+	PRINTFORM \@ PENIS(TARGET) ? ペニス # 尿道 \@に
+	IF CALCF("尿道径") > SIZE("指の直径", PLAYER)*2 && RAND:2
+		PRINTFORM \@ RAND:2 ? 中指と薬指 # 指二本 \@
+	ELSE
+		PRINTFORM \@ RAND:2 ? 中 # \@指
+	ENDIF
+	PRINTFORM を\@ RAND:2 ? 根元まで # ゆっくりと \@挿入
+
+	IF RAND:3 == 0 && BASE:尿意 >= 10000 && PENIS(TARGET) == 0
+		PRINTFORMW して、溜まっているオシッコの温かさを楽しんだ。
+	ELSEIF RAND:2
+		PRINTFORMW して、傷つけないよう注意しながら粘膜をなぞりあげた。
+	ELSE
+		PRINTFORMW して、吸い付いてくる粘膜を指の腹でくすぐった。
+	ENDIF
+
+	;初めての指受け入れ
+	IF FIRSTCOM(SELECTCOM) == 0
+		IF TALENT:尿道性感
+			PRINTFORMW 尿道性感の虜となってしまった%CALLNAME:TARGET%は、腰を突き出してもっと激しく出し入れするようにと促している…
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%は不安そうな様子で、少々の抵抗と共に出入りする指の動きに耐えている…
+		ENDIF
+	;前回中出し
+	ELSEIF PREVEX("尿道内射精")
+		PRINTFORM 尿道から抜いた精液まみれの指を見せると、
+		IF ABL:精液中毒 > 3 && PALAM:欲情 >= 10000
+			PRINTFORMW %CALLNAME:TARGET%は物欲しそうに舌を出してきた…
+		ELSEIF TALENT:恋慕
+			PRINTFORMW %CALLNAME:TARGET%は嬉しそうな微笑を見せた…
+		ELSE
+			IF RAND:2
+				PRINTFORMW %CALLNAME:TARGET%は恥ずかしそうな顔を見せた…
+			ELSE
+				PRINTFORMW %CALLNAME:TARGET%は恥ずかしそうに目線を逸らした…
+			ENDIF
+		ENDIF
+	ELSEIF TALENT:尿道性感 && CHECK("尿道プレイ")
+		SELECTCASE EXP:尿道経験
+		CASE IS <= 50
+			PRINTFORMW %CALLNAME:TARGET%は指の感触を楽しんでいるようだ…
+		CASE IS <= 80
+			PRINTFORMW %CALLNAME:TARGET%は指の蠢く感触にうっとりとしている…
+		CASE IS <= 120
+			PRINTFORMW %CALLNAME:TARGET%は、秘密の場所を掻き回される感覚に熱い吐息を吐いて悶えている…
+		CASEELSE
+			PRINTFORMW %CALLNAME:TARGET%は涎をたらし、自ら腰を振って快楽を貪っている…
+		ENDSELECT
+	ELSE
+		PRINTFORMW %CALLNAME:TARGET%は息を整えながら、出し入れされる指の感触に耐えている…
+	ENDIF
+ENDIF

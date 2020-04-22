@@ -1,0 +1,159 @@
+﻿;-------------------------------------------------
+;マーメイド日常口上_****_**_**（キャラクターの名前を入れる、下にコンセプトなど一言あれば入れる）
+;製作者:IRC>>あねふぁ 　eraSQ製作スレッド>>もしかしたら誤字報告してるヤツ…？
+
+;はじめに
+;このマーメイド日常口上も、何人もの方々からの指摘、指導、修正を受けながら製作されています。関係者の方々にはこの場をお借りしてお礼の言葉を言わせて下さい。
+;
+;血迷ってやった。後悔はしてるが反省はしてない。
+;いまさらだけど、マーメイドと絡ませるんだったらスキュラが一番自然だった。長編と短編で口調がかなり違うが、いつかどうにかしたい。海鮮丼
+;ヴィレッジャ日常口上をある程度書いたら、こっちの加筆にも本腰を入れたい。
+;久々にちまっと
+;ちまちまっと加筆
+;-------------------------------------------------
+@DAILY_LIFE_MESSAGE_13_1
+#DIM LCOUNT
+#DIM GUEST, 20
+;#DIM GUEST2, 20
+#DIM DEVENT, 100
+#DIM EVENT_NUM
+#DIM NUM_RAND
+
+;会話イベント用
+VARSET DEVENT
+VARSET GUEST
+;VARSET GUEST2
+
+;各イベントが発生する条件をチェックし、ＯＫならDEVENT:(イベント番号)に１を代入
+;登場させるキャラが居る場合には、一人目から順にGUEST, GUEST2にそのキャラの番号を代入する
+
+SIF TALENT:恋慕
+	DEVENT:1 = 1
+IF TALENT:恋慕 && TIME == 1 && FIND_COND("Ｃアプサラス", "恋慕")
+	DEVENT:2 = 1
+	GUEST:2 = FIND_COND("Ｃアプサラス", "恋慕")
+ENDIF
+IF TALENT:恋慕 && FIND_COND("Ｃエンジェル", "恋慕")
+	DEVENT:3 = 1
+	GUEST:3 = FIND_COND("Ｃエンジェル", "恋慕")
+ENDIF
+IF TALENT:恋慕 && FIND_COND("Ｃアプサラス", "恋慕")
+	DEVENT:4 = 1
+	GUEST:4 = FIND_COND("Ｃアプサラス", "恋慕")
+ENDIF
+IF TALENT:恋慕 && CHARA_NUM("調教経験あり") > 4 && FIND_COND("Ｃアプサラス", "恋慕")
+	DEVENT:5 = 1
+	GUEST:5 = FIND_COND("Ｃアプサラス", "恋慕")
+ENDIF
+IF TALENT:恋慕 && FIND_COND("Ｃクズノハ", "恋慕")
+	DEVENT:6 = 1
+	GUEST:6 = FIND_COND("Ｃクズノハ", "恋慕")
+ENDIF
+
+;起きうるイベントから、等確率でのランダム選択開始
+NUM_RAND = 1
+FOR LCOUNT, 1, 100
+	SIF DEVENT:LCOUNT == 0
+		CONTINUE
+	;CEVENTを用いて、イベントが既に発生したかをチェックし、していないなら優先的に発生させる処理を行う
+	;数字が大きい（新しく用意された）ものほど優先
+	;起きるイベント番号はEVENT_NUMに保存。イベントが発生しないならEVENT_NUM = 0 となる
+	LOCALS:LCOUNT = 日常：%TOFULL(TOSTR(LCOUNT) )%
+	SIF RAND:NUM_RAND == 0 || CEVENT(LOCALS:LCOUNT) == 0
+		EVENT_NUM = LCOUNT
+
+	NUM_RAND += 1
+NEXT
+
+;ゲストキャラ
+GUEST = GUEST:EVENT_NUM
+;GUEST2 = GUEST2:EVENT_NUM
+
+;反発刻印Lv3の時
+IF MARK:反発刻印 == 3
+;体力が低め（1000以下）の時は休ませる
+;ELSEIF BASE:体力 <= 1000
+;	PRINTFORMW 
+;キャラ限定のイベント。まだ起きていないイベントならCEVENT(LOCALS:EVENT_NUM) == 0なので確実に起こしておく
+ELSEIF EVENT_NUM && (RAND:3 == 0 || CEVENT(LOCALS:EVENT_NUM) == 0)
+	SELECTCASE EVENT_NUM
+	;恋慕の時
+	CASE 1
+		;昼
+		IF TIME == 0
+			IF RAND:2 == 0 && TEXTS("季節") == "夏"
+				PRINTFORMW %CALLNAME:TARGET%がリビングで何かの雑誌を読んでいる
+				PRINTFORM やけに楽しそうに読んでいるので、%CALLNAME:MASTER%はその隣で少し覗いて見ることにした。雑誌のタイトルは…
+				IF RAND:3 == 0 
+					PRINTFORMW 『最新水着カタログ』というらしい
+					PRINTFORMW 雑誌の中には色鮮やかな水着から際どい水着まで載っている…
+				ELSEIF RAND:2 == 0 
+					PRINTFORMW 『泳げるデートスポット30選』というらしい
+					PRINTFORMW キアズマ方面の海を中心に、カップルに人気だというデートスポットが紹介されている
+				ELSE
+					PRINTFORMW 『水着用二枚貝特集』というらしい
+					PRINTFORMW 普段%CALLNAME:TARGET%が使っているような貝殻がずらりと並んでいる。中には勝負用というものもあるようだ…
+				ENDIF
+				PRINTFORMW …今度%CALLNAME:TARGET%を何所かに連れて行ってあげようかと、%CALLNAME:MASTER%は思った
+			ELSE
+				PRINTFORMW 風呂場の前を通りかかると、中から水音が聞こえてきた
+				PRINTFORMW 誰かいるのだろうか……そう思いながらそっと中を覗いた
+				PRINTFORMW なんと、%CALLNAME:TARGET%が湯船で泳いでいる！
+				PRINTFORMW 部屋の水槽にいる時よりものびのびしている……
+			ENDIF
+		;夜
+		ELSE
+			PRINTFORMW …………♪〜〜〜
+			PRINTFORMW 夜、%CALLNAME:TARGET%の部屋から美しい歌声が聞こえてきた
+			PRINTFORMW ……♪〜〜〜
+			PRINTFORMW %CALLNAME:TARGET%の歌声についつい聞き入ってしまう
+			PRINTFORMW 今夜は気持ち良く眠れそうだ……
+		ENDIF
+	;アプサラスといっしょにお風呂。通常口上での夜這いとセット。
+	CASE 2
+		PRINTFORMW %CALLNAME:MASTER%が風呂に入ろうと脱衣所の扉を開けると、風呂場から楽しげな声が聞こえてきた。
+		PRINTFORMW どうやら%CALLNAME:TARGET%と%CALLNAME:GUEST%のようだ。
+		PRINTFORMW 水に縁のある夢魔同士、仲が良いのも不思議はない。
+		PRINTFORMW 邪魔しちゃ悪いな…と思って扉を閉めて帰ろうとすると、
+		PRINTFORMW 「あら、入って来てくれても良かったのにぃ」
+		PRINTFORMW 「そうだ、%CALLNAME:TARGET%が歌って誘えばいいのよぉ♪」
+		PRINTFORMW 『でも何も準備してないし…今度にしない？』
+		PRINTFORMW 「そうね、お楽しみは今度にしましょう♪」
+		PRINTFORMW なんて会話が聞こえてきた。
+		PRINTFORMW …何であれ期待されているのは嬉しいが、そんな節操なく手を出す訳にはいかない。
+		PRINTFORMW ……………まあ機会があれば、と心に留め、今度こそ扉を閉めた。
+	;エンジェルと歌
+	CASE 3
+		PRINTFORMW リビングで%CALLNAME:TARGET%と%CALLNAME:GUEST%がエーランド聖歌を歌っている
+		PRINTFORMW 「〜〜♪〜〜〜♪〜〜♪」『〜♪〜〜〜♪〜〜♪』
+		PRINTFORMW リビングは厳かな雰囲気に包まれた……
+	;内気な娘と歌。お互い恋慕
+	CASE 4
+		PRINTFORMW %CALLNAME:TARGET%の部屋から歌声が聞こえてくる……
+		PRINTFORMW そっと中を覗くと、そこには気持ち良さそうに歌う%CALLNAME:TARGET%と、その歌に耳を傾ける%CALLNAME:GUEST%の姿があった
+		PRINTFORMW 透き通るような%CALLNAME:TARGET%の歌声に%CALLNAME:GUEST%はリラックスしている……
+		PRINTFORMW が、その歌詞に“恋人”や“口付け”といった言葉が混じり始めると、%CALLNAME:GUEST%の顔は徐々に赤くなった
+	;アプサラスと歌。観客付き
+	CASE 5
+		PRINTFORMW リビングでは%CALLNAME:TARGET%が情熱的な歌を歌っている…
+		PRINTFORMW その騒ぎを聞きつけて館中の住人が集まり始めると……突如、%CALLNAME:GUEST%が歌に合わせて踊り始めた！
+		PRINTFORMW 二人のパフォーマンスはしばらく続き、やがて終わると大きな喝采が沸いた
+	;クズノハの歌
+	CASE 6
+		PRINTFORMW …どこかから歌が聞こえてくる。不思議な雰囲気の歌だ
+		PRINTFORMW しばらくすると歌は止んだが、気になって歌の聞こえた方へと足を運ぶと…リビングに%CALLNAME:TARGET%がいた。歌の出所は彼女のようだ
+		PRINTFORMW %CALLNAME:GUEST%に教えてもらったというその歌を聞かせてもらうと、何だか懐かしい気分になった…
+	ENDSELECT
+	;ゲストと仲良くなる
+	CALL CHANGE_RELATION, 5, TARGET, GUEST
+	;今回起きたイベントを記録
+	CALL SET_CEVENT, LOCALS:EVENT_NUM
+;通常昼の時
+;ELSEIF TIME == 0 && RAND:3 == 0
+;	PRINTFORMW 
+;通常夜の時
+;ELSEIF TIME == 1 && RAND:3 == 0
+;	PRINTFORMW 
+ENDIF
+
+RETURN 1

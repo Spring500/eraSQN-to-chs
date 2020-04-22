@@ -1,0 +1,2063 @@
+﻿;--------------------------------------------------------
+;温泉で使う浮気イベント関係関数
+;--------------------------------------------------------
+;浮気本編
+;ARGは対象キャラ（基本的にTARGETのみだと思われるが一応）
+;ARGSは場所指定。今のところは"川下り"がある
+;--------------------------------------------------------
+@UNFAITHFUL_TRAVEL, ARG, ARGS
+#DIM LCOUNT
+;ナンパ相手の種別名
+#DIMS DYNAMIC NPC_NAME
+;ナンパ相手の呼び名（巨根ショタなどと地の文で表示されると笑ってしまうのを回避）
+#DIMS DYNAMIC NPC_CALLNAME
+;ナンパ相手の人数
+#DIM NUM_NPC
+;プレイ内容
+#DIMS DYNAMIC PLAY_TRAVEL
+;何回楽しんだか
+#DIM DYNAMIC NUM_PLAY_TRAVEL
+;輪姦中の膣内射精カウントの合計
+#DIM DYNAMIC TOTAL_CREAMPIE
+;輪姦中の１ターンごとの膣内射精数
+#DIM DYNAMIC CREAMPIE
+;一時記憶用変数
+#DIM MEMO, 10
+;正の字の書かれた数
+#DIM DYNAMIC NUM_MARK
+
+VARSET LOCAL
+
+;※※※導入※※※
+;ナンパされたか、それともナンパしたか
+;基本的にはナンパされるものだが、性格などの影響で確率は変動
+;LOCALをナンパに対する積極度とする(高いほど自分からナンパする。逆に低ければナンパされやすくなる）
+;臆病などの、声をかけやすそうだったり押しに弱そうだったりする要素は-とする。
+;相手から見てナンパされにくそうな要素は+で加算する。
+;臆病
+SIF TALENT:ARG:臆病
+	LOCAL -= 1
+;内気
+SIF TALENT:ARG:内気
+	LOCAL -= 1
+;好奇心
+SIF TALENT:ARG:好奇心
+	LOCAL += 1
+;保守的
+SIF TALENT:ARG:保守的
+	LOCAL -= 1
+;陽気(声をかけられやすいので相対的に）
+SIF TALENT:ARG:陽気
+	LOCAL -= 1
+;陰気(声をかけられにくいので相対的に）
+SIF TALENT:ARG:陰気
+	LOCAL += 1
+;一線越えない
+SIF TALENT:ARG:一線越えない
+	LOCAL -= 1
+;貞操観念
+SIF TALENT:ARG:貞操観念
+	LOCAL -= 1
+;貞操無頓着
+SIF TALENT:ARG:貞操無頓着
+	LOCAL -= 1
+;抑圧
+SIF TALENT:ARG:抑圧
+	LOCAL -= 1
+;解放
+SIF TALENT:ARG:解放
+	LOCAL += 1
+;恥じらい
+SIF TALENT:ARG:恥じらい
+	LOCAL -= 1
+;恥薄い
+SIF TALENT:ARG:恥薄い
+	LOCAL += 1
+;気品（声をかけづらいはず）
+SIF TALENT:ARG:気品
+	LOCAL += 1
+;粗野
+SIF TALENT:ARG:粗野
+	LOCAL -= 1
+;賢い
+SIF TALENT:ARG:賢い
+	LOCAL += 1
+;愚か（誘えばホイホイ付いてきそうな相手はカモだよね）
+SIF TALENT:ARG:愚か
+	LOCAL -= 1
+;発情体質
+SIF TALENT:ARG:発情体質
+	LOCAL += 1
+;好色
+SIF TALENT:ARG:好色
+	LOCAL += 1
+;淫乱
+SIF TALENT:ARG:淫乱
+	LOCAL += 1
+;恋慕
+SIF TALENT:ARG:恋慕
+	LOCAL -= 1
+;魅惑
+SIF TALENT:ARG:魅惑
+	LOCAL -= 1
+;謎の魅力
+SIF TALENT:ARG:謎の魅力
+	LOCAL -= 1
+;巨乳（目立つ)
+SIF TALENT:ARG:巨乳
+	LOCAL -= 1
+;人気
+SIF TALENT:ARG:人気
+	LOCAL -= 1
+;巨尻（目立つ）
+SIF TALENT:ARG:巨尻
+	LOCAL -= 1
+;欲望
+LOCAL += ABL:ARG:欲望
+
+;無補正では50%だが、LOCALによって確率変動
+
+;NPC_NAMEに相手を記録
+;男…特徴がないのが特徴
+;ショタ…筆下ろしとか、ナンパはしてこない、レイプ系には発展しない
+;巨根ショタ…巨根・大量射精、ナンパはしてこない、レイプ系には発展しない
+;筋肉質な男…野獣ックス・大量射精（巨根ショタと差別化できないので保留)
+;太った男…ねちっこい・多分一番NTRっぽい
+;痩せた男…アナル専門、見た目がひょろいのでナンパの対象ではない
+;チンピラ…悪いやつ、集団専用
+;浮浪者…小汚いのでナンパの対象ではない、集団専用
+
+;PLAY_TRAVELにプレイの系統を記録
+;夢魔が相手のプレイとか（未実装、メイヴ様によるSM調教とかルシフェルとの堕落セックスとかどうかな？誰か作って）
+;輪姦
+;乱交
+;レイプ（作業量的に手が回らないのでとりあえずコメントアウト。誰か作って><）
+;浮気
+
+PRINTFORM %CALLNAME:TARGET%はこっそり%CALLNAME:MASTER%から離れると、
+IF RAND:3 == 0
+	PRINTFORML 持て余した欲望を解消するため、その捌け口を物色し始めた…
+ELSEIF RAND:2 == 0
+	PRINTFORML 欲求不満を解消するため、都合のいい相手を物色し始めた…
+ELSE
+	PRINTFORML 溜まりに溜まった欲望を解消するため、誰でもいいからと適当な相手を物色し始めた…
+ENDIF
+
+FOR LCOUNT, 0, 100
+	PRINTFORML 
+	PRINTFORML ・
+	PRINTFORML ・
+	PRINTFORML ・
+	PRINTFORMW 
+	;ナンパされた
+	IF RAND:100 > 50 + LOCAL
+		PRINTFORM %CALLNAME:TARGET%は
+		;乱交/輪姦
+		IF RAND:4 == 0
+			IF RAND:2 == 0
+				NPC_CALLNAME = 浮浪者
+				PRINTFORML 小汚い%NPC_CALLNAME%たちに付きまとわれているようです…
+				;輪姦
+				IF RAND:3 == 0
+					PRINTFORML %CALLNAME:TARGET%は目を合わせず無視しようとしましたが、%NPC_CALLNAME%たちに取り囲まれ、
+					PRINTFORM %NPC_CALLNAME%たちのねぐらである
+					;川下り
+					IF ARGS == "川下り"
+						PRINTFORM 廃船置き場
+					ELSE
+						;季節
+						SELECTCASE TEXTS("季節")
+						CASE "春"
+							PRINTFORM 桜並木の脇の茂み
+						CASE "夏"
+							PRINTFORM 沢を渡る橋の下
+						CASE "秋"
+							PRINTFORM 神社の社の中
+						CASE "冬"
+							PRINTFORM 廃屋
+						ENDSELECT
+					ENDIF
+					PRINTFORML に引きずり込まれてしまいました！
+					;フラグ確定
+					NPC_NAME = 浮浪者
+					PLAY_TRAVEL = 輪姦
+				;乱交
+				ELSEIF RAND:2 == 0
+					PRINTFORML 最初は無視しようと考えた%CALLNAME:TARGET%でしたが、鬱積した性欲に目を血走らせる%NPC_CALLNAME%たちの様子に、
+					PRINTFORML 『つまみ食い』には絶好の相手だと考えを改めたようです…
+					PRINTFORM %CALLNAME:TARGET%は彼らのねぐらである
+					;川下り
+					IF ARGS == "川下り"
+						PRINTFORM 廃船置き場
+					ELSE
+						;季節
+						SELECTCASE TEXTS("季節")
+						CASE "春"
+							PRINTFORM 桜並木の脇の茂み
+						CASE "夏"
+							PRINTFORM 沢を渡る橋の下
+						CASE "秋"
+							PRINTFORM 神社の社の中
+						CASE "冬"
+							PRINTFORM 廃屋
+						ENDSELECT
+					ENDIF
+					PRINTFORML まで案内させると、%NPC_CALLNAME%たちを扇情的な仕草で誘惑し始めました…
+					;フラグ確定
+					NPC_NAME = 浮浪者
+					PLAY_TRAVEL = 乱交
+				ELSE
+					PRINTFORML %CALLNAME:TARGET%は%NPC_CALLNAME%たちを無視し、その場を離れました…
+					;フラグリセット
+					NPC_NAME = 
+				ENDIF
+			ELSE
+				NPC_CALLNAME = チンピラ
+				PRINTFORML 柄の悪い%NPC_CALLNAME%たちに話かけられているようです…
+				;輪姦
+				IF RAND:3 == 0 && TALENT:Ａ処女 == 0
+					PRINTFORML %CALLNAME:TARGET%は目を合わせず無視しようとしましたが、%NPC_CALLNAME%たちに取り囲まれ、
+					;川下り
+					IF ARGS == "川下り"
+						PRINTFORM 逃げ場のない舟の上
+					ELSE
+						PRINTFORM 人気のない
+						;季節
+						SELECTCASE TEXTS("季節")
+						CASE "春"
+							PRINTFORM 桜並木の脇の茂み
+						CASE "夏"
+							PRINTFORM 沢を渡る橋の下
+						CASE "秋"
+							PRINTFORM 神社の社の中
+						CASE "冬"
+							PRINTFORM 廃屋
+						ENDSELECT
+					ENDIF
+					PRINTFORML に引きずり込まれてしまいました！
+					;フラグ確定
+					NPC_NAME = チンピラ
+					PLAY_TRAVEL = 輪姦
+				;乱交
+				ELSEIF RAND:2 == 0 && TALENT:Ａ処女 == 0
+					PRINTFORML 最初は無視しようと考えた%CALLNAME:TARGET%でしたが、下品な欲望を隠しもしない%NPC_CALLNAME%たちの様子に、
+					PRINTFORML 『つまみ食い』には絶好の相手だと考えを改めたようです…
+					PRINTFORM %CALLNAME:TARGET%は
+					;川下り
+					IF ARGS == "川下り"
+						PRINTFORM 宴会用の広い川下りの舟
+					ELSE
+						PRINTFORM 彼らの溜り場である
+						;季節
+						SELECTCASE TEXTS("季節")
+						CASE "春"
+							PRINTFORM 桜並木の脇の茂み
+						CASE "夏"
+							PRINTFORM 沢を渡る橋の下
+						CASE "秋"
+							PRINTFORM 神社の社の中
+						CASE "冬"
+							PRINTFORM 廃屋
+						ENDSELECT
+					ENDIF
+					PRINTFORML まで案内させると、扇情的な仕草で彼らの興奮を煽り始めました…
+					;フラグ確定
+					NPC_NAME = チンピラ
+					PLAY_TRAVEL = 乱交
+				ELSE
+					PRINTFORML %CALLNAME:TARGET%は%NPC_CALLNAME%たちを無視し、その場を離れました…
+					;フラグリセット
+					NPC_NAME = 
+				ENDIF
+			ENDIF
+		ELSE
+			;痩せた男（A処女は除外）
+			IF RAND:3 == 0 && TALENT:Ａ処女 == 0
+				NPC_CALLNAME = 痩せた男
+				;一時フラグ
+				NPC_NAME = 痩せた男
+				PRINTFORM 性癖が歪んでいそうな
+			;太った男
+			ELSEIF RAND:2 == 0
+				NPC_CALLNAME = 太った男
+				PRINTFORM 性欲の強そうな
+				;一時フラグ
+				NPC_NAME = 太った男
+			;筋肉質な男
+			;ELSEIF RAND:2 == 0
+			;	NPC_CALLNAME = 筋肉質な男
+			;	PRINTFORM 逞しい
+			;	;一時フラグ
+			;	NPC_NAME = 筋肉質な男
+			;その他
+			ELSE
+				NPC_CALLNAME = 男
+				PRINTFORM %TEXTR("軽薄そうな", "あまりモテなさそうな", "遊んでそうな", "イケメンの", "冒険者風の", "観光客風の", "地元の")%
+				;一時フラグ
+				NPC_NAME = 男
+			ENDIF
+			;輪姦・乱交系以外
+			PRINTFORML %NPC_CALLNAME%に話かけられているようです…
+			PRINTFORMW どうやらナンパのようだ
+			IF RAND:3 == 0
+				PRINTFORML 言葉巧みに誘ってくる%NPC_CALLNAME%にすっかりその気になってしまった%CALLNAME:TARGET%は、
+				PRINTFORM %NPC_CALLNAME%に誘われるがままに、
+				;川下り
+				IF ARGS == "川下り"
+					PRINTFORM 二人きりの舟の上
+				ELSE
+					PRINTFORM 人気のない
+					;季節
+					SELECTCASE TEXTS("季節")
+					CASE "春"
+						PRINTFORM 桜並木の脇の茂み
+					CASE "夏"
+						PRINTFORM 沢を渡る橋の下
+					CASE "秋"
+						PRINTFORM 神社の社の中
+					CASE "冬"
+						PRINTFORM 廃屋
+					ENDSELECT
+				ENDIF
+				PRINTFORML へと付いていってしまった…
+
+				;フラグ確定
+				SELECTCASE NPC_NAME
+				CASE "痩せた男", "太った男", "筋肉質な男"
+				;その他
+				CASEELSE
+					NPC_NAME = 男
+				ENDSELECT
+				PLAY_TRAVEL = 浮気
+			;ELSEIF RAND:2 == 0
+			;	PRINTFORML %CALLNAME:TARGET%は無視してその場を離れようとしましたが、
+			;	PRINTFORM 無視された事に怒った%NPC_CALLNAME%に強引に
+			;	;川下り
+			;	IF ARGS == "川下り"
+			;		PRINTFORM 逃げ場のない川下りの舟の上
+			;	ELSE
+			;		PRINTFORM 人気のない
+			;		;季節
+			;		SELECTCASE TEXTS("季節")
+			;		CASE "春"
+			;			PRINTFORM 桜並木の脇の茂み
+			;		CASE "夏"
+			;			PRINTFORM 沢を渡る橋の下
+			;		CASE "秋"
+			;			PRINTFORM 神社の社の中
+			;		CASE "冬"
+			;			PRINTFORM 廃屋
+			;		ENDSELECT
+			;	ENDIF
+			;	PRINTFORML へ連れ込まれてしまいました…！
+			;	;フラグ確定
+			;	SELECTCASE NPC_NAME
+			;	CASE "痩せた男", "太った男", "筋肉質な男"
+			;	;その他
+			;	CASEELSE
+			;		NPC_NAME = 男
+			;	ENDSELECT
+			;	PLAY_TRAVEL = レイプ
+			ELSE
+				PRINTFORML %CALLNAME:TARGET%は%NPC_CALLNAME%を軽くあしらい、その場を離れました…
+				;フラグリセット
+				NPC_NAME = 
+			ENDIF
+		ENDIF
+	;ナンパした
+	ELSE
+		PRINTFORM %CALLNAME:TARGET%は前から歩いてきた
+		;対複数
+		IF RAND:4 == 0
+			;チンピラ
+			IF RAND:2 == 0 || TALENT:オトコ
+				NPC_CALLNAME = チンピラ
+				PRINTFORML 柄の悪い%NPC_CALLNAME%たちに声をかけています…
+				;輪姦
+				IF RAND:6 == 0
+					PRINTFORML %CALLNAME:TARGET%は%NPC_CALLNAME%たちをわざと怒らせるように罵倒を始めた！
+					IF RAND:2 == 0 && TALENT:Ａ処女 == 0
+						PRINTFORM 激怒した%NPC_CALLNAME%たちに取り囲まれ、%CALLNAME:TARGET%は
+						;川下り
+						IF ARGS == "川下り"
+							PRINTFORM 逃げ場のない舟の上
+						ELSE
+							PRINTFORM 人気のない
+							;季節
+							SELECTCASE TEXTS("季節")
+							CASE "春"
+								PRINTFORM 桜並木の脇の茂み
+							CASE "夏"
+								PRINTFORM 沢を渡る橋の下
+							CASE "秋"
+								PRINTFORM 神社の社の中
+							CASE "冬"
+								PRINTFORM 廃屋
+							ENDSELECT
+						ENDIF
+						PRINTFORML に引きずり込まれてしまいました！
+						PRINTFORML %CALLNAME:TARGET%は怒りとともに自らに向けられるギラギラとした獣欲に胸をドキドキとさせています…
+						;フラグ確定
+						NPC_NAME = チンピラ
+						PLAY_TRAVEL = 輪姦
+					ELSE
+						PRINTFORML わざと怒らせて自らを輪姦させようと企んだ%CALLNAME:TARGET%でしたが…
+						PRINTFORML %NPC_CALLNAME%たちは%CALLNAME:TARGET%の言葉に深く傷つき、半泣きになりながら退散してしまいました…
+						PRINTFORML 柄が悪そうに見えたのは見た目だけで、内面はガラスのハートだったようです…
+						;フラグリセット
+						NPC_NAME = 
+					ENDIF
+				;乱交
+				ELSEIF RAND:5 == 0
+					IF RAND:2 == 0 && TALENT:Ａ処女 == 0
+					PRINTFORM %CALLNAME:TARGET%は%NPC_CALLNAME%たちを誘惑して
+						;川下り
+						IF ARGS == "川下り"
+							PRINTFORM 宴会用の広い川下りの舟
+						ELSE
+							PRINTFORM 彼らの溜り場である
+							;季節
+							SELECTCASE TEXTS("季節")
+							CASE "春"
+								PRINTFORM 桜並木の脇の茂み
+							CASE "夏"
+								PRINTFORM 沢を渡る橋の下
+							CASE "秋"
+								PRINTFORM 神社の社の中
+							CASE "冬"
+								PRINTFORM 廃屋
+							ENDSELECT
+						ENDIF
+						PRINTFORML まで案内させると、扇情的な仕草で彼らの興奮を煽り始めました…
+						;フラグ確定
+						NPC_NAME = チンピラ
+						PLAY_TRAVEL = 乱交
+					ELSE
+						PRINTFORML 言葉巧みに誘惑を試みた%CALLNAME:TARGET%でしたが、%NPC_CALLNAME%たちに「%TEXTR("そういう集まりじゃないんで", "そういうの間に合ってるんで")%…」と断られてしまいました…
+						;フラグリセット
+						NPC_NAME = 
+					ENDIF
+				ENDIF
+			ELSE
+				NPC_CALLNAME = 少年
+				PRINTFORML 年端も行かない%NPC_CALLNAME%たちに声をかけています…
+				;ショタ乱交
+				IF RAND:4 == 0 && TALENT:Ａ処女 == 0
+					PRINTFORM %CALLNAME:TARGET%は%NPC_CALLNAME%たち
+					;川下り
+					IF ARGS == "川下り"
+						PRINTFORM を宴会用の広い川下りの舟の上へ連れ込むと、
+					ELSE
+						PRINTFORM に彼らの秘密の遊び場である
+						;季節
+						SELECTCASE TEXTS("季節")
+						CASE "春"
+							PRINTFORM 桜並木の脇の茂み
+						CASE "夏"
+							PRINTFORM 沢を渡る橋の下
+						CASE "秋"
+							PRINTFORM 神社の社の中
+						CASE "冬"
+							PRINTFORM 廃屋
+						ENDSELECT
+						PRINTFORML へと案内させると、
+					ENDIF
+					PRINTFORML 性への興味を湧き立てるようにその興奮を煽り始めました…
+					;フラグ確定
+					NPC_NAME = ショタ
+					PLAY_TRAVEL = 乱交
+				ELSE
+					PRINTFORML ところが、驚いた%NPC_CALLNAME%たちは蜘蛛の子を散らすように逃げてしまいました…
+					PRINTFORML 少しがっつきすぎたようです…
+					;フラグリセット
+					NPC_NAME = 
+				ENDIF
+			ENDIF
+		ELSE
+			;太った男
+			IF RAND:2 == 0
+				NPC_CALLNAME = 太った男
+				PRINTFORM 性欲の強そうな
+				;一時フラグ
+				NPC_NAME = 太った男
+			;筋肉質な男
+			;ELSEIF RAND:2 == 0
+			;	NPC_CALLNAME = 筋肉質な男
+			;	PRINTFORM 逞しい
+			;	;一時フラグ
+			;	NPC_NAME = 筋肉質な男
+			;ショタ
+			ELSEIF RAND:2 == 0 && TALENT:オトコ == 0
+				NPC_CALLNAME = 少年
+				PRINTFORM 年端も行かない
+				;一時フラグ
+				NPC_NAME = ショタ
+			;その他
+			ELSE
+				NPC_CALLNAME = 男
+				PRINTFORM %TEXTR("軽薄そうな", "あまりモテなさそうな", "遊んでそうな", "イケメンの", "冒険者風の", "観光客風の", "地元の")%
+				;一時フラグ
+				NPC_NAME = 男
+			ENDIF
+			;輪姦・乱交系以外
+			PRINTFORML %NPC_CALLNAME%に声をかけています…
+			IF RAND:3 == 0
+				PRINTFORM 猥らな誘惑にすっかりその気になった%NPC_CALLNAME%は、%CALLNAME:TARGET%を
+				;川下り
+				IF ARGS == "川下り"
+					PRINTFORM 二人きりの舟の上
+				ELSE
+					PRINTFORM 人気のない
+					;季節
+					SELECTCASE TEXTS("季節")
+					CASE "春"
+						PRINTFORM 桜並木の脇の茂み
+					CASE "夏"
+						PRINTFORM 沢を渡る橋の下
+					CASE "秋"
+						PRINTFORM 神社の社の中
+					CASE "冬"
+						PRINTFORM 廃屋
+					ENDSELECT
+				ENDIF
+				PRINTFORML へと連れ込んでしまいました…！
+				;一時フラグがそのまま相手確定フラグになるがショタだけはここから分岐
+				PLAY_TRAVEL = 浮気
+				IF NPC_NAME == "ショタ"
+					IF RAND:2 == 0
+						PRINTFORMW 恥ずかしがる%NPC_CALLNAME%を押さえつけ、前かがみになって隠していたパンツを脱がせてやると……
+						PRINTFORML %CALLNAME:TARGET%の目の前に馬もかくやというような巨大なペニスが現れました！
+						PRINTFORML 想像だにしていなかった逞しい肉槍に、%CALLNAME:TARGET%はゴクリと唾を飲み込みました…！
+						;フラグ確定
+						NPC_NAME = 巨根ショタ
+					ENDIF
+				ENDIF
+			ELSE
+				PRINTFORML 言葉巧みに誘惑を仕掛けた%CALLNAME:TARGET%でしたが、%NPC_CALLNAME%に軽くあしらわれてしまいました…
+				;フラグリセット
+				NPC_NAME = 
+			ENDIF
+		ENDIF
+		;仕切り直しセリフ
+		SIF NPC_NAME == ""
+			PRINTFORML %CALLNAME:TARGET%は気を取り直し、次の獲物を物色し始めました…
+	ENDIF
+	;相手が決まった場合はループ脱出
+	SIF NPC_NAME != ""
+		BREAK
+NEXT
+
+;※※※本編※※※
+SELECTCASE PLAY_TRAVEL
+CASE "輪姦"
+	;輪姦参加初期人数(8-12人)
+	NUM_NPC = 8 + RAND:5
+
+	PRINTFORMW %NPC_CALLNAME%たちによる輪姦が始まった…
+
+	;陵辱参加人数が0になるまで続行
+	FOR LCOUNT, 0, 100
+		;ループ2回目以降の処理
+		IF NUM_PLAY_TRAVEL > 0
+			;チンピラの場合川下りでは舟の上なので増えない、浮浪者は増える
+			IF (NPC_NAME == "チンピラ" && ARGS != "川下り") || NPC_NAME == "浮浪者"
+				;何人増えるか(0〜8人)、ループ回数によって減少する。
+				MEMO = RAND:10 - NUM_PLAY_TRAVEL
+				;増えた場合の処理
+				IF MEMO > 0
+					NUM_NPC += MEMO
+					PRINTFORMW 騒ぎを聞きつけた{MEMO}人の%NPC_CALLNAME%が陵辱に新たに加わった！
+				ENDIF
+			ENDIF
+
+			;ループ回数が5以上の場合、薬を使用するかもしれない
+			IF NUM_PLAY_TRAVEL >= 5 && NPC_NAME == "チンピラ" && TEQUIP:媚薬 == 0 && RAND:3 == 0
+				PRINTFORMW %CALLNAME:TARGET%は%TEXTR("怪しげな薬", "薄めて使う媚薬の原液", "家畜用の興奮剤")%を注射されてしまった…！
+				TEQUIP:媚薬 = 200
+			ENDIF
+		ENDIF
+		PRINTFORML 
+		PRINTFORMW %CALLNAME:TARGET%は{NUM_NPC}人の%NPC_CALLNAME%に輪姦されている…
+		PRINTFORML 
+		;薬使用後
+		IF TEQUIP:媚薬
+			;前段
+			IF RAND:8 == 0
+				PRINTFORMW %CALLNAME:TARGET%は淫語を喚きながら、%NPC_CALLNAME%の上で腰を振っている…
+			ELSEIF RAND:7 == 0
+				PRINTFORMW %CALLNAME:TARGET%は後ろから犯す%NPC_CALLNAME%に『中出し』をねだっている…
+			ELSEIF RAND:6 == 0
+				PRINTFORMW %CALLNAME:TARGET%は\@TALENT:オトコ ? お尻 # アソコ\@を手荒く突かれながら、つき付けられたペニスを貪欲にしゃぶっている…
+			ELSEIF RAND:5 == 0
+				PRINTFORMW %CALLNAME:TARGET%は犯される快楽に脚を広げ、頭を振りながら喘いでいる…
+			ELSEIF RAND:4 == 0
+				PRINTFORMW %CALLNAME:TARGET%は自ら%NPC_CALLNAME%と繋がっている部分を晒し、淫靡な笑みを浮かべている…
+			ELSEIF RAND:3 == 0
+				PRINTFORMW %CALLNAME:TARGET%は白濁の溢れ出る\@TALENT:オトコ ? アナル # アソコ\@を広げながら、淫靡にペニスをねだっている…
+			ELSEIF RAND:2 == 0
+				PRINTFORMW %CALLNAME:TARGET%は突き上げた尻を鷲掴みにされながら、ケモノのように犯されている…
+			ELSE
+				PRINTFORMW %CALLNAME:TARGET%は道具のように犯されながらも、悦びの声を上げている…
+			ENDIF
+		ELSE
+			;前段
+			IF RAND:8 == 0
+				PRINTFORMW %CALLNAME:TARGET%は後ろから%NPC_CALLNAME%に尻を掴まれ、荒々しく犯されている…
+			ELSEIF RAND:7 == 0
+				PRINTFORMW %CALLNAME:TARGET%は仰向けにされ、正面から覆い被さる%NPC_CALLNAME%に乱暴に腰を打ち付けられている…
+			ELSEIF RAND:6 == 0
+				PRINTFORMW %CALLNAME:TARGET%は、罵声を浴びせられながら犯されている…
+			ELSEIF RAND:5 == 0
+				PRINTFORMW %CALLNAME:TARGET%は『中出し』をねだる言葉を強要されながら、剛直に貫かれている…
+			ELSEIF RAND:4 == 0
+				PRINTFORMW %CALLNAME:TARGET%は%NPC_CALLNAME%と繋がっている様を周りに晒されながら犯されている…
+			ELSEIF RAND:3 == 0
+				PRINTFORMW %CALLNAME:TARGET%は頭を地面に押さえ付けられながら、腰を打ち付けられている…
+			ELSEIF RAND:2 == 0
+				PRINTFORMW %CALLNAME:TARGET%は両腕を押さえ付けられながら陵辱されている…
+			ELSE
+				PRINTFORMW %CALLNAME:TARGET%は荒々しく腰を打ち付けられている…
+			ENDIF
+		ENDIF
+
+		;中段
+		PRINTFORM さらに、
+		IF RAND:4 == 0
+			PRINTFORMW %CALLNAME:TARGET%は頭を掴まれイラマチオの要領で口内を乱暴に犯されている…！
+		ELSEIF RAND:3 == 0
+			PRINTFORMW %CALLNAME:TARGET%は精液に塗れたペニスを責め苦に喘ぐ口にねじ込まれている…！
+		ELSEIF RAND:2 == 0
+			PRINTFORMW 空いた手には他の男のペニスを握らされ、%CALLNAME:TARGET%は手淫奉仕を強制されている…！
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%は髪を掴み上げられ、異臭を放つ男根を口内にねじ込まれている…！
+		ENDIF
+
+		PRINTFORML 
+
+		;後段(膣内・肛内射精)
+		IF RAND:5 == 0
+			PRINTFORMW %CALLNAME:TARGET%は%NPC_CALLNAME%に両脚を抱え込まれるように引き付けられ、濁流のような精液の奔流が膣内へと放たれた！
+		ELSEIF RAND:4 == 0
+			PRINTFORMW %CALLNAME:TARGET%の\@TALENT:オトコ ? アナル # 膣内\@に%NPC_CALLNAME%の子種が流し込まれた！
+		ELSEIF RAND:3 == 0
+			PRINTFORMW %CALLNAME:TARGET%の\@TALENT:オトコ ? アナル # 膣内\@に%NPC_CALLNAME%の子種が充満した！
+		ELSEIF RAND:2 == 0
+			PRINTFORMW %CALLNAME:TARGET%は『孕め！』と言い捨てられながら、\@TALENT:オトコ ? 肛内 # 膣内\@射精された！
+		ENDIF
+
+		IF TEQUIP:媚薬
+			;後段（薬使用中のみ追加）
+			IF RAND:6 == 0
+				PRINTFORMW %CALLNAME:TARGET%は膣内を灼く精液の熱に悦楽の声を上げている…
+			ELSEIF RAND:5 == 0
+				PRINTFORMW %CALLNAME:TARGET%は\@TALENT:オトコ ? 直腸 # 子宮\@を子種で満たされる恍惚感に浸っている…
+			ELSEIF RAND:4 == 0
+				PRINTFORMW %CALLNAME:TARGET%は\@TALENT:オトコ ? 直腸 # 膣\@と口内を濃厚な精液に満たされながら、陶酔している…
+			ELSEIF RAND:3 == 0
+				PRINTFORMW %CALLNAME:TARGET%は%NPC_CALLNAME%の射精と同時に脚を交差させ、しっかりと種を搾り取ろうとしている…
+			ELSEIF RAND:2 == 0
+				PRINTFORMW 脚をＭ字に開かれ、晒された%CALLNAME:TARGET%の\@TALENT:オトコ ? アナル # アソコ\@からは止め処なく精液が流れ出している…
+			ELSE
+				PRINTFORMW %CALLNAME:TARGET%は\@TALENT:オトコ ? アナル # 膣内\@から溢れ出る精液を指で掬うと、%NPC_CALLNAME%達に見せ付けるように舌で舐めとった…
+			ENDIF
+		ENDIF
+
+		;後段2（ぶっかけ・事後的な描写、口上を喋らせる為に口内射精は描写しない）
+		;ぶっかけ
+		IF RAND:2 == 0
+			IF RAND:3 == 0
+				PRINTFORMW 加えて、口内から引き抜かれたペニスからも精が放たれ、%CALLNAME:TARGET%の顔を白く染め上げた
+			ELSEIF RAND:2 == 0
+				PRINTFORMW 同時に、顔に押し付けられていたペニスからも精液が弾け、%CALLNAME:TARGET%を白濁濡れにしていった
+			ELSE
+				PRINTFORMW それに合わせるかのように、両手の中のペニスから白濁が浴びせ掛けられた
+			ENDIF
+		ENDIF
+
+		PRINTFORML 
+
+		;事後的な描写
+		IF RAND:2 == 0
+			IF RAND:2 == 0
+				PRINTFORMW 座り込む%CALLNAME:TARGET%の\@TALENT:オトコ ? アナル # アソコ\@からは大量の精液があふれ出ている
+			ELSE
+				PRINTFORMW %NPC_CALLNAME%が何度か身体を震わせてから、ペニスを抜き去ると%CALLNAME:TARGET%の\@TALENT:オトコ ? アナル # アソコ\@から犯された証が流れ出してきた
+			ENDIF
+		ENDIF
+
+		;1ターン中の膣内射精数は最大でも輪姦参加人数
+		CREAMPIE = MIN(NUM_NPC, RAND:(NUM_NPC)+RAND:(NUM_NPC)+1)
+
+		IF CREAMPIE > 0
+			TOTAL_CREAMPIE += CREAMPIE
+			;輪姦中の総膣内射精回数が2の倍数の時、落書き表示
+			IF TOTAL_CREAMPIE % 2 == 0
+				PRINTFORML %NPC_CALLNAME%達は欲望を吐き出した%CALLNAME:TARGET%の身体に、猥雑な言葉を書き連ねていく…
+				;落書きは3つ表示（重複しないようある程度カテゴリ分けをする）
+				PRINTFORM %CALLNAME:TARGET%は
+				CALL GRAFFITI_TRAVEL_NTR
+				PRINTFORMW と落書きされてしまった！
+			ENDIF
+
+			;NUM_MARK は正の字の個数。TOTAL_CREAMPIE/5がNUM_MARKを越えるごとに正の字の処理を行う
+			IF (TOTAL_CREAMPIE / 5) - NUM_MARK > 0
+				SIF TOTAL_CREAMPIE % 2 == 0
+					PRINTFORM さらに、
+				IF NUM_MARK == 0
+					PRINTFORM 何度も膣内射精を繰り返された%CALLNAME:TARGET%に『種付け回数』を表す【正】の字が落書きされ、【
+				ELSE
+					PRINTFORM %CALLNAME:TARGET%に書かれた『種付け回数』を表す【正】の字が書き足され、【
+				ENDIF
+				NUM_MARK = TOTAL_CREAMPIE / 5
+				CALL TEXT, "正の字", TOTAL_CREAMPIE
+				PRINTFORMW 】となった…
+
+				;正の字の数の加算(未実装)
+				;TOTAL_CREAMPIE += CREAMPIE
+				;PRINTFORM %CALLNAME:TARGET%は
+				;「正」の個数
+				;MEMO = TOTAL_CREAMPIE / 5
+				;REPEAT MEMO
+				;	PRINT 正
+				;REND
+				;端数
+				;MEMO = TOTAL_CREAMPIE % 5
+				;フォントがないのはどうしようもない
+				;IF MEMO == 4
+				;	PRINT 
+				;ELSEIF MEMO == 3
+				;	PRINT 
+				;ELSEIF MEMO == 2
+				;	PRINT 
+				;ELSEIF MEMO == 1
+				;	PRINT 
+				;ENDIF
+				;PRINTL と太股に落書きされている…
+			ENDIF
+			IF (TALENT:淫乱 || ABL:マゾっ気 >= 3) && RAND:3 == 0
+				PRINTFORMW 書き込まれた言葉に%CALLNAME:TARGET%は倒錯的な興奮を強く感じ、更なる陵辱をねだっている…
+			ELSEIF RAND:2 == 0
+				PRINTFORMW 書き込まれた言葉に%CALLNAME:TARGET%は興奮を覚えている…
+			ELSE
+				PRINTFORMW 惨めな姿になった%CALLNAME:TARGET%に%NPC_CALLNAME%達はゲラゲラと嘲笑っている…
+			ENDIF
+		ENDIF
+
+		;ループ回数加算
+		NUM_PLAY_TRAVEL ++
+
+		;陵辱参加人数の減少処理
+		;1ループで0〜3満足する。陵辱参加人数が3人以下の場合、0になる。
+		SELECTCASE NUM_NPC
+		CASE IS <= 3
+			MEMO = NUM_NPC
+			NUM_NPC = 0
+		CASEELSE
+			MEMO = RAND:4
+			NUM_NPC -= MEMO
+		ENDSELECT
+		SIF MEMO != 0
+			PRINTFORMW {MEMO}人の%NPC_CALLNAME%が満足した…
+
+		;このターンの膣内射精数のカウントをリセット
+		CREAMPIE = 0
+
+		;陵辱参加人数が0になったら終了
+		SIF NUM_NPC <= 0
+			BREAK
+	NEXT
+
+	PRINTFORML 
+	PRINTFORML 
+	CALL EXP_CALC_TRAVEL_UWAKI, "輪姦乱交", TOTAL_CREAMPIE
+	PRINTFORML 
+
+CASE "乱交"
+	;乱交参加初期人数(8-12人)
+	NUM_NPC = 8 + RAND:5
+
+	SELECTCASE NPC_NAME
+	CASE "ショタ"
+		PRINTFORMW 興奮した%NPC_CALLNAME%たちとの肉欲の宴が始まりました…！
+
+		;陵辱参加人数が0になるまで続行
+		FOR LCOUNT, 0, 100
+			;ループ2回目以降の処理
+			IF NUM_PLAY_TRAVEL > 0
+				;仲間を呼ぶ
+				;川下りでは舟の上なので増えない
+				IF ARGS != "川下り"
+					;何人増えるか(0〜8人)、ループ回数で減少
+					MEMO = RAND:10 - NUM_PLAY_TRAVEL
+					;増えた場合の処理
+					IF MEMO > 0
+						NUM_NPC += MEMO
+						PRINTFORMW 騒ぎを聞きつけた{MEMO}人の%NPC_CALLNAME%が宴に加わった！
+					ENDIF
+				ENDIF
+			ENDIF
+			PRINTFORML 
+			PRINTFORMW %CALLNAME:TARGET%は{NUM_NPC}人の%NPC_CALLNAME%と楽しんでいる…
+			PRINTFORML 
+			;前段
+			IF RAND:8 == 0
+				PRINTFORMW %CALLNAME:TARGET%は四つん這いで%NPC_CALLNAME%を迎え入れ、精通も済んでいない子供ペニスを貪っている
+			ELSEIF RAND:7 == 0
+				PRINTFORMW %CALLNAME:TARGET%は仰向けで%NPC_CALLNAME%を迎え入れ、本能の赴くままに腰を振らせている
+			ELSEIF RAND:6 == 0
+				PRINTFORMW %CALLNAME:TARGET%は、息も絶え絶えな%NPC_CALLNAME%たちの喘ぎ声を愉しみながら腰を振り、精を搾り取っている
+			ELSEIF RAND:5 == 0
+				PRINTFORMW %CALLNAME:TARGET%は『子作り』の仕方を%NPC_CALLNAME%たちに囁きながら、膣内射精を促している
+			ELSEIF RAND:4 == 0
+				PRINTFORMW %CALLNAME:TARGET%は仰向けにした%NPC_CALLNAME%の上に跨り、容赦なく腰を使っている
+			ELSEIF RAND:3 == 0
+				PRINTFORMW %CALLNAME:TARGET%は%NPC_CALLNAME%の腰に足を絡め、膣内射精で精通を迎えさせようとしている
+			ELSEIF RAND:2 == 0
+				PRINTFORMW %CALLNAME:TARGET%は初めて味わう快楽に腰砕けになってしまった%NPC_CALLNAME%の上で腰を振っている
+			ELSE
+				PRINTFORMW %CALLNAME:TARGET%は一心不乱に腰を振る%NPC_CALLNAME%の激しい腰使いに嬌声を上げている
+			ENDIF
+
+			PRINTFORM さらに、
+			;中段
+			IF RAND:4 == 0
+				PRINTFORMW 順番待ちをしている%NPC_CALLNAME%たちのペニスを両手で扱き上げている…
+			ELSEIF RAND:3 == 0
+				PRINTFORMW 青臭い精液に塗れたペニスを口で咥え込み、お掃除フェラをしている…
+			ELSEIF RAND:2 == 0
+				PRINTFORMW 空いた手には未成熟な%NPC_CALLNAME%のペニスを握り、手淫奉仕で愉しませている…
+			ELSE
+				PRINTFORMW %NPC_CALLNAME%たちと唇を重ね、キスの味を教え込んでいる…
+			ENDIF
+			;後段(膣内・肛内射精)
+			IF RAND:3 == 0
+				PRINTFORMW %CALLNAME:TARGET%の\@TALENT:オトコ ? アナル # 膣内\@に%NPC_CALLNAME%の子種が流し込まれた
+			ELSEIF RAND:2 == 0
+				PRINTFORMW %CALLNAME:TARGET%の\@TALENT:オトコ ? アナル # 膣内\@に%NPC_CALLNAME%の子種が充満した
+			ELSE
+				PRINTFORMW %CALLNAME:TARGET%の\@TALENT:オトコ ? 肛内 # 膣内\@に%NPC_CALLNAME%の子種が射精された
+			ENDIF
+			;後段2（ぶっかけ・事後的な描写）
+			;ぶっかけ
+			IF RAND:2 == 0
+				IF RAND:3 == 0
+					PRINTFORMW 加えて、口内から引き抜かれたペニスからも精が放たれ、%CALLNAME:TARGET%の顔を白く染め上げた
+				ELSEIF RAND:2 == 0
+					PRINTFORMW 同時に、顔に押し付けられていたペニスからも精液が弾け、%CALLNAME:TARGET%を白濁濡れにしていった
+				ELSE
+					PRINTFORMW それに合わせるかのように、両手の中のペニスから白濁が浴びせ掛けられた
+				ENDIF
+			;事後的な描写
+			ELSE
+				IF RAND:2 == 0
+					PRINTFORMW 小さなペニスが引き抜かれた%CALLNAME:TARGET%の\@TALENT:オトコ ? アナル # アソコ\@から、大量の精液があふれ出ている
+				ELSE
+					PRINTFORMW %NPC_CALLNAME%が何度か身体を震わせてから、ペニスを抜き去ると%CALLNAME:TARGET%の\@TALENT:オトコ ? アナル # アソコ\@から欲望を吐き出した証が流れ出してきた
+				ENDIF
+			ENDIF
+
+			;1ターン中の膣内射精数は最大でも輪姦参加人数
+			CREAMPIE = MIN(NUM_NPC, RAND:(NUM_NPC)+RAND:(NUM_NPC)+1)
+			TOTAL_CREAMPIE += CREAMPIE
+
+			;ループ回数加算
+			NUM_PLAY_TRAVEL ++
+
+			;陵辱参加人数の減少処理
+			;1ループで0〜3満足する。陵辱参加人数が3人以下の場合、0になる。
+			SELECTCASE NUM_NPC
+			CASE IS <= 3
+				MEMO = NUM_NPC
+				NUM_NPC = 0
+			CASEELSE
+				MEMO = RAND:4
+				NUM_NPC -= MEMO
+			ENDSELECT
+			SIF MEMO != 0
+				PRINTFORMW {MEMO}人の%NPC_CALLNAME%が満足した…
+
+			;このターンの膣内射精数のカウントをリセット
+			CREAMPIE = 0
+
+			;陵辱参加人数が0になったら終了
+			SIF NUM_NPC <= 0
+				BREAK
+		NEXT
+	;チンピラ・浮浪者
+	CASEELSE
+		PRINTFORMW 扇情的な%CALLNAME:TARGET%に%NPC_CALLNAME%たちが殺到していきます…！
+
+		;陵辱参加人数が0になるまで続行
+		FOR LCOUNT, 0, 100
+			;ループ2回目以降の処理
+			IF NUM_PLAY_TRAVEL > 0
+				;仲間を呼ぶ
+				;チンピラの場合川下りでは舟の上なので増えない、浮浪者は増える
+				IF (NPC_NAME == "チンピラ" && ARGS != "川下り") || NPC_NAME == "浮浪者"
+					;何人増えるか(0〜8人)、ループ回数で減少
+					MEMO = RAND:4 - NUM_PLAY_TRAVEL
+					;増えた場合の処理
+					IF MEMO > 0
+						NUM_NPC += MEMO
+						PRINTFORMW 騒ぎを聞きつけた{MEMO}人の%NPC_CALLNAME%が肉欲の宴に新たに加わった！
+					ENDIF
+				ENDIF
+			ENDIF
+			PRINTFORML 
+			PRINTFORMW %CALLNAME:TARGET%は{NUM_NPC}人の%NPC_CALLNAME%と楽しんでいる…
+			PRINTFORML 
+			;前段
+			IF RAND:8 == 0
+				PRINTFORMW %CALLNAME:TARGET%は後ろから%NPC_CALLNAME%に尻を掴まれ、荒々しく犯されている
+			ELSEIF RAND:7 == 0
+				PRINTFORMW %CALLNAME:TARGET%は仰向けにされ、正面から覆い被さる%NPC_CALLNAME%に乱暴に腰を打ち付けられている
+			ELSEIF RAND:6 == 0
+				PRINTFORMW %CALLNAME:TARGET%は、罵声を浴びせられながら犯されている
+			ELSEIF RAND:5 == 0
+				PRINTFORMW %CALLNAME:TARGET%は『中出し』をねだる言葉を強要されながら、剛直に貫かれている
+			ELSEIF RAND:4 == 0
+				PRINTFORMW %CALLNAME:TARGET%は%NPC_CALLNAME%と繋がっている様を周りに晒されながら犯されている
+			ELSEIF RAND:3 == 0
+				PRINTFORMW %CALLNAME:TARGET%は頭を地面に押さえ付けられながら、腰を打ち付けられている
+			ELSEIF RAND:2 == 0
+				PRINTFORMW %CALLNAME:TARGET%は両腕を押さえ付けられながら陵辱されている
+			ELSE
+				PRINTFORMW %CALLNAME:TARGET%は荒々しく腰を打ち付けられている
+			ENDIF
+			PRINTFORM さらに、
+			;中段
+			IF RAND:4 == 0
+				PRINTFORMW 頭を掴まれイラマチオの要領で口内を乱暴に犯されている…
+			ELSEIF RAND:3 == 0
+				PRINTFORMW 精液に塗れたペニスを責め苦に喘ぐ口にねじ込まれている…
+			ELSEIF RAND:2 == 0
+				PRINTFORMW 空いた手には他の男のペニスを握らされ、手淫奉仕を強制されている…
+			ELSE
+				PRINTFORMW 髪を掴み上げられ、異臭を放つ男根を口内にねじ込まれている…
+			ENDIF
+			;後段(膣内・肛内射精)
+			IF RAND:5 == 0
+				PRINTFORMW %CALLNAME:TARGET%は%NPC_CALLNAME%に両脚を抱え込まれるように引き付けられ、濁流のような精液の奔流を膣内へと放たれた
+			ELSEIF RAND:4 == 0
+				PRINTFORMW %CALLNAME:TARGET%の\@TALENT:オトコ ? アナル # 膣内\@に%NPC_CALLNAME%の子種が流し込まれた
+			ELSEIF RAND:3 == 0
+				PRINTFORMW %CALLNAME:TARGET%の\@TALENT:オトコ ? アナル # 膣内\@に%NPC_CALLNAME%の子種が充満した
+			ELSEIF RAND:2 == 0
+				PRINTFORMW %CALLNAME:TARGET%は『孕め』と言い捨てられながら、\@TALENT:オトコ ? 肛内 # 膣内\@射精された
+			ENDIF
+			;後段2（ぶっかけ・事後的な描写）
+			;ぶっかけ
+			IF RAND:2 == 0
+				IF RAND:3 == 0
+					PRINTFORMW 加えて、口内から引き抜かれたペニスからも精が放たれ、%CALLNAME:TARGET%の顔を白く染め上げた
+				ELSEIF RAND:2 == 0
+					PRINTFORMW 同時に、顔に押し付けられていたペニスからも精液が弾け、%CALLNAME:TARGET%を白濁濡れにしていった
+				ELSE
+					PRINTFORMW それに合わせるかのように、両手の中のペニスから白濁が浴びせ掛けられた
+				ENDIF
+			;事後的な描写
+			ELSE
+				IF RAND:2 == 0
+					PRINTFORMW 座り込む%CALLNAME:TARGET%の\@TALENT:オトコ ? アナル # アソコ\@からは大量の精液があふれ出ている
+				ELSE
+					PRINTFORMW %NPC_CALLNAME%が何度か身体を震わせてから、ペニスを抜き去ると%CALLNAME:TARGET%の\@TALENT:オトコ ? アナル # アソコ\@から犯された証が流れ出してきた
+				ENDIF
+			ENDIF
+
+			;1ターン中の膣内射精数は最大でも輪姦参加人数
+			CREAMPIE = MIN(NUM_NPC, RAND:(NUM_NPC)+RAND:(NUM_NPC)+1)
+
+			IF CREAMPIE > 0
+				TOTAL_CREAMPIE += CREAMPIE
+				;輪姦中の総膣内射精回数が2の倍数の時、落書き表示
+				IF TOTAL_CREAMPIE % 2 == 0
+					PRINTFORML %NPC_CALLNAME%達は欲望を吐き出した%CALLNAME:TARGET%の身体に、猥雑な言葉を書き連ねていく…
+					;落書きは3つ表示（重複しないようある程度カテゴリ分けをする）
+					PRINTFORM %CALLNAME:TARGET%は
+					CALL GRAFFITI_TRAVEL_NTR
+					PRINTFORMW と落書きされてしまった！
+				ENDIF
+
+				;NUM_MARK は正の字の個数。TOTAL_CREAMPIE/5がNUM_MARKを越えるごとに正の字の処理を行う
+				IF (TOTAL_CREAMPIE / 5) - NUM_MARK > 0
+					SIF TOTAL_CREAMPIE % 2 == 0
+						PRINTFORM さらに、
+					IF NUM_MARK == 0
+						PRINTFORM 何度も膣内射精を繰り返された%CALLNAME:TARGET%に『種付け回数』を表す【正】の字が落書きされ、【
+					ELSE
+						PRINTFORM %CALLNAME:TARGET%に書かれた『種付け回数』を表す【正】の字が書き足され、【
+					ENDIF
+					NUM_MARK = TOTAL_CREAMPIE / 5
+					CALL TEXT, "正の字", TOTAL_CREAMPIE
+					PRINTFORMW 】となった…
+
+					;正の字の数の加算(未実装)
+					;TOTAL_CREAMPIE += CREAMPIE
+					;PRINTFORM %CALLNAME:TARGET%は
+					;「正」の個数
+					;MEMO = TOTAL_CREAMPIE / 5
+					;REPEAT MEMO
+					;	PRINT 正
+					;REND
+					;端数
+					;MEMO = TOTAL_CREAMPIE % 5
+					;フォントがないのはどうしようもない
+					;IF MEMO == 4
+					;	PRINT 
+					;ELSEIF MEMO == 3
+					;	PRINT 
+					;ELSEIF MEMO == 2
+					;	PRINT 
+					;ELSEIF MEMO == 1
+					;	PRINT 
+					;ENDIF
+					;PRINTL と太股に落書きされている…
+				ENDIF
+				IF (TALENT:淫乱 || ABL:マゾっ気 >= 3) && RAND:3 == 0
+					PRINTFORMW 書き込まれた言葉に%CALLNAME:TARGET%は倒錯的な興奮を強く感じ、更なる陵辱をねだっている…
+				ELSEIF RAND:2 == 0
+					PRINTFORMW 書き込まれた言葉に%CALLNAME:TARGET%は興奮を覚えている…
+				ELSE
+					PRINTFORMW 惨めな姿になった%CALLNAME:TARGET%に%NPC_CALLNAME%達はゲラゲラと嘲笑っている…
+				ENDIF
+			ENDIF
+		
+			;ループ回数加算
+			NUM_PLAY_TRAVEL ++
+
+			;陵辱参加人数の減少処理
+			;1ループで0〜3満足する。陵辱参加人数が3人以下の場合、0になる。
+			SELECTCASE NUM_NPC
+			CASE IS <= 3
+				MEMO = NUM_NPC
+				NUM_NPC = 0
+			CASEELSE
+				MEMO = RAND:4
+				NUM_NPC -= MEMO
+			ENDSELECT
+			SIF MEMO != 0
+				PRINTFORMW {MEMO}人の%NPC_CALLNAME%が満足した…
+
+			;このターンの膣内射精数のカウントをリセット
+			CREAMPIE = 0
+
+			;陵辱参加人数が0になったら終了
+			SIF NUM_NPC <= 0
+				BREAK
+		NEXT
+	ENDSELECT
+
+	PRINTFORML 
+	PRINTFORML 
+	CALL EXP_CALC_TRAVEL_UWAKI, "輪姦乱交", TOTAL_CREAMPIE
+	PRINTFORML 
+
+;CASE "レイプ"
+;	SELECTCASE NPC_NAME
+;	;痩せた男（アナル専門）
+;	CASE "痩せた男"
+;
+;	;太った男(ねちっこい/NTRっぽい)
+;	CASE "太った男"
+;	;筋肉質な男(野獣ックス・大量射精)
+;	CASE "筋肉質な男"
+;
+;	;モブ男
+;	CASEELSE
+;
+;	ENDSELECT
+;
+CASE "浮気"
+	SELECTCASE NPC_NAME
+	;痩せた男（アナル専門）
+	CASE "痩せた男"
+		;A感覚3以上
+		IF ABL:Ａ感覚 >= 3 && RAND:2 == 0
+			PRINTFORML %CALLNAME:TARGET%は%NPC_CALLNAME%の偏執的なアナルへの責めに嬌声を上げている…
+		ELSE
+			PRINTFORML %NPC_CALLNAME%が%CALLNAME:TARGET%のアナルを執拗に責め立てている…
+		ENDIF
+		IF RAND:2 == 0
+			PRINTFORM 指や舌で
+		ELSE
+			PRINTFORM ローションがたっぷり塗された道具で
+		ENDIF
+		PRINTFORM 尻穴を弄ばれた%CALLNAME:TARGET%は、
+		IF TALENT:巨乳 && RAND:3 == 0
+			PRINTFORMW 下腹部から襲い来る快感に豊かな乳房をプルンと揺らしながら、身体を震わせている…
+		ELSEIF TALENT:巨尻 && RAND:3 == 0
+			PRINTFORMW 羞恥に顔を染めつつも、更なる肛虐をねだるように大きなお尻を振っている…
+		ELSEIF TALENT:小尻 && RAND:3 == 0
+			PRINTFORMW 小さな尻を激しく震わせながら、あられもない声を上げてよがっている…
+		ELSEIF RAND:3 == 0
+			PRINTFORMW %NPC_CALLNAME%の責めにだらしなく涎を垂らして喘いでいる……
+		ELSEIF RAND:2 == 0
+			PRINTFORMW アナルをしつこく責められてびくびくと身体を跳ねさせている…
+		ELSE
+			PRINTFORMW アナルから送られる激しい快感に羞恥を忘れて喘ぎ続けている…
+		ENDIF
+		;A正常位・A後背位
+		IF RAND:2 == 0
+			PRINTFORML %NPC_CALLNAME%は%CALLNAME:TARGET%がすっかりデキあがったのと確かめると、猛る肉棒を見せつけ、嗤いながら%CALLNAME:TARGET%を押し倒した…
+			;A正常位
+			IF RAND:2 == 0
+				IF TALENT:尻穴狂い && RAND:2 == 0
+					PRINTFORML すっかり発情した%CALLNAME:TARGET%は脚をぱかっと広げるとやや腰を浮かせ、尻でペニスを受け入れる体勢になった
+					PRINTFORML %NPC_CALLNAME%が圧し掛かるようにして腰を沈めると、ずぶぶぶ…と音を立て、陰茎が解れたアナルに収まっていく
+				ELSE
+					PRINTFORM %NPC_CALLNAME%は%CALLNAME:TARGET%を
+					IF RAND:2 == 0
+						PRINTFORM 仰向けに手荒く押し倒すと、
+					ELSE
+						PRINTFORM 仰向けに寝かせると、
+					ENDIF
+					;A感覚3以上
+					IF ABL:Ａ感覚 >= 5 && RAND:3 == 0
+						PRINTFORML 既に柔らかく蕩けきっているアナルを貫いた
+					ELSEIF ABL:Ａ感覚 >= 3
+						PRINTFORML 慎ましげに蕾を開いたアナルを貫いた
+					ELSE
+						PRINTFORML 未だ異物を拒もうとするアナルを強引に貫いた！
+					ENDIF
+				ENDIF
+
+				IF RAND:3 == 0
+					PRINTFORML %CALLNAME:TARGET%は%NPC_CALLNAME%の腰使いに嬌声を上げ、足を絡めて腰を押し付けている…
+				ELSEIF RAND:2 == 0
+					PRINTFORML 熱を帯びた%NPC_CALLNAME%のペニスが腸壁を抉り犯す感覚に、%CALLNAME:TARGET%は喘いでいる…
+				ELSE
+					PRINTFORML %NPC_CALLNAME%は%CALLNAME:TARGET%の菊穴の感触を味わいながら、リズミカルに腰を動かしている…
+				ENDIF
+
+				;処女
+				IF TALENT:処女
+					IF RAND:3 == 0
+						PRINTFORMW %NPC_CALLNAME%の男根がアナルを突くたびに%CALLNAME:TARGET%の処女の花唇はトロトロと愛液を溢れさせた
+					ELSEIF RAND:2 == 0
+						PRINTFORMW %NPC_CALLNAME%の怒張がズポズポと不浄の穴に差し込まれると、その動きに合わせ%CALLNAME:TARGET%の処女穴から蜜が流れ出た
+					ELSE
+						PRINTFORMW 後ろの穴に%NPC_CALLNAME%の肉棒が出入りするたびに%CALLNAME:TARGET%は処女の蕾から熱い液を滴らせた
+					ENDIF
+				ENDIF
+
+			;A後背位
+			ELSE
+				IF TALENT:尻穴狂い && RAND:2 == 0
+					IF TALENT:恋慕
+						PRINTFORML 四つん這いの姿勢をとらされた%CALLNAME:TARGET%は、%NPC_CALLNAME%に後ろからアナルを犯された…
+						PRINTFORML %CALLNAME:MASTER%以外のペニスをねじ込まれた%CALLNAME:TARGET%の浮気な尻穴は、背徳感をスパイスに興奮の度合いを高めていく…
+					ELSE
+						PRINTFORML すっかり発情した%CALLNAME:TARGET%身体を伏せて尻だけを高く掲げると、%NPC_CALLNAME%を誘うように尻穴を両手で広げた…
+						PRINTFORML %NPC_CALLNAME%が後ろから圧し掛かるようにして腰を沈めると、ずぶずぶと音を立て、陰茎が解れたアナルに収まっていく…
+					ENDIF
+				ELSE
+					PRINTFORM %NPC_CALLNAME%は%CALLNAME:TARGET%を
+					IF RAND:2 == 0
+						PRINTFORM を四つん這いに転がすと、
+					ELSE
+						PRINTFORM を四つん這いにさせると、
+					ENDIF
+					;A感覚3以上
+					IF ABL:Ａ感覚 >= 5 && RAND:3 == 0
+						PRINTFORML 既に柔らかくとろけきっているアナルを貫いた
+					ELSEIF ABL:Ａ感覚 >= 3
+						PRINTFORML 慎ましげに口を開いたアナルを貫いた
+						ELSE
+					PRINTFORML 未だ異物を拒もうとするアナルを強引に貫いた
+					ENDIF
+				ENDIF
+				IF RAND:3 == 0
+					PRINTFORML %CALLNAME:TARGET%は%NPC_CALLNAME%の腰使いに嬌声を上げ、自ら貪るように腰を動かしている…
+				ELSEIF RAND:2 == 0
+					PRINTFORML 熱を帯びた%NPC_CALLNAME%のペニスが腸壁を抉り犯す感覚に、%CALLNAME:TARGET%は喘いでいる…
+				ELSE
+					PRINTFORML %NPC_CALLNAME%は%CALLNAME:TARGET%の菊穴の感触を味わいながら、リズミカルに腰を動かしている…
+				ENDIF
+				IF TALENT:処女
+					IF RAND:3 == 0
+						PRINTFORMW %NPC_CALLNAME%の男根がアナルを突くたびに%CALLNAME:TARGET%の処女の花唇はトロトロと愛液を溢れさせた。
+					ELSEIF RAND:2 == 0
+						PRINTFORMW %NPC_CALLNAME%の怒張がズポズポと不浄の穴に差し込まれると、その動きに合わせ%CALLNAME:TARGET%の処女穴から蜜が流れ出た。
+					ELSE
+						PRINTFORMW 後ろの穴に%NPC_CALLNAME%の肉棒が出入りするたびに%CALLNAME:TARGET%は処女の蕾から熱い液を滴らせた。
+					ENDIF
+				ENDIF
+			ENDIF
+			PRINTFORML 
+			;射精
+			IF RAND:2 == 0
+				PRINTFORM 口を押さえ、尻穴を犯される感覚に耐えていた%CALLNAME:TARGET%でしたが、
+			ELSE
+				PRINTFORM 必死に尻の快感に耐えていた%CALLNAME:TARGET%でしたが、
+			ENDIF
+			IF RAND:3 == 0
+				PRINTFORML 一度声を出してしまえば、あとは全く我慢が効かなくなってしまった…
+			ELSEIF RAND:2 == 0
+				PRINTFORML %NPC_CALLNAME%の執拗な腰使いに屈服し、切なげな声で肛虐を求めるようになっていた…
+			ELSE
+				PRINTFORML 熱く滾った陰茎で尻穴を突かれるうち、すっかり発情し、突き上げに合わせて恥ずかしげもなく嬌声を上げていた…
+			ENDIF
+			IF RAND:2 == 0
+				PRINTFORML %NPC_CALLNAME%は%CALLNAME:TARGET%に覆いかぶさりながら腰を振り、射精の瞬間にペニスをアヌスの奥深くまで突き入れた！
+			ELSE
+				PRINTFORML %NPC_CALLNAME%は%CALLNAME:TARGET%に種をねだるセリフを言わせると、直腸深くまで突き入れてから雄汁をぶちまけた！
+			ENDIF
+			IF RAND:2 == 0
+				PRINTFORML 深く捻じ込まれた%NPC_CALLNAME%の肉柱はびくびくと痙攣し、%CALLNAME:TARGET%の直腸に精を注ぎ込んでいく…
+			ELSE
+				PRINTFORML 肛悦に蕩けた%CALLNAME:TARGET%の腸内へと、どぷ、どぽ、と%NPC_CALLNAME%の肉茎から種汁が放たれていく…
+			ENDIF
+		;A騎乗位・A対面座位・A背面座位
+		ELSE
+			PRINTFORML %NPC_CALLNAME%は%CALLNAME:TARGET%がすっかりデキあがったのと確かめると、『上になって自分からハメろ』と命令した…
+			IF RAND:4 == 0
+				PRINTFORM %CALLNAME:TARGET%は%NPC_CALLNAME%の腰の上を跨ぐと、
+			ELSEIF RAND:3 == 0
+				PRINTFORM 仰向けの%NPC_CALLNAME%の上にまたがった%CALLNAME:TARGET%は、
+			ELSEIF RAND:2 == 0
+				PRINTFORM %CALLNAME:TARGET%は%NPC_CALLNAME%の腰の上に跨り、
+			ELSE
+				PRINTFORM %CALLNAME:TARGET%は%NPC_CALLNAME%の上にまたがると、
+			ENDIF
+			IF TALENT:巨尻 && RAND:2 == 0
+				IF RAND:2 == 0
+					IF RAND:2 == 0
+						PRINTFORM 肉付きの良い
+					ELSE
+						PRINTFORM むっちりとした
+					ENDIF
+					PRINTFORM 尻たぶを受け入れ易いようにと左右に押き、
+				ELSE
+					PRINTFORM 自らの尻肉を掴んで菊門を精一杯広げ、
+				ENDIF
+			ELSE
+				IF RAND:2 == 0
+					PRINTFORM 反り返った肉棒の先端を尻穴に宛がうと、
+				ELSE
+					PRINTFORM 淫靡に腰をくねらせ、
+				ENDIF
+			ENDIF
+			IF RAND:4 == 0
+				PRINTFORML 小さな紫色の窄まりに%NPC_CALLNAME%の肉棒を咥え込んでいく…
+			ELSEIF RAND:3 == 0
+				PRINTFORML そのまま%NPC_CALLNAME%の淫棒を根本まで呑み込んでいく…
+			ELSEIF RAND:2 == 0
+				PRINTFORML 待ち受けるペニスに徐々に体重をかけ、菊座へと飲み込ませていく…
+			ELSE
+				PRINTFORML 粘液にまみれたアヌスでゆっくりと%NPC_CALLNAME%のモノを飲み込んでいく…
+			ENDIF
+			;A騎乗位
+			IF RAND:3 == 0
+				PRINTFORM 騎乗位の姿勢で繋がった%CALLNAME:TARGET%は
+				IF RAND:4 == 0
+					PRINTFORM %NPC_CALLNAME%の胸板に手をついて体を支えながら、
+				ELSEIF RAND:3 == 0
+					PRINTFORM 腸液でぐちゅぐちゅと音を鳴らす菊門に棒を奥まで咥え込みながら、
+				ELSEIF RAND:2 == 0
+					PRINTFORM 蕩けきった表情で腸内の肉茎を締め付けながら、
+				ELSE
+					PRINTFORM %NPC_CALLNAME%の腸壁で肉棒を締め上げながらながら、
+				ENDIF
+				IF RAND:4 == 0
+					PRINTFORM 快楽をむさぼるために腰を激しく上下させ
+				ELSEIF RAND:3 == 0
+					PRINTFORM %NPC_CALLNAME%の腰の上で弾むように腰を振り
+				ELSEIF RAND:2 == 0
+					PRINTFORM 自ら腰を動かし
+				ELSE
+					PRINTFORM クネクネとした腰の動きを加え
+				ENDIF
+				PRINTFORML 始めた…
+
+				PRINTFORM %NPC_CALLNAME%が
+				IF TALENT:巨乳
+					PRINTFORM 頭上で大きく揺れる豊満な乳を揉みしだきつつ、
+				ELSEIF TALENT:貧乳
+					PRINTFORM 汗が流れ落ちる平べったい乳房に手を這わせつつ、
+				ELSE
+					PRINTFORM 揺れる乳房を鷲掴みながら、
+				ENDIF
+				PRINTFORML 力強く下から突き上げると、
+				PRINTFORM %CALLNAME:TARGET%は
+				IF RAND:2 == 0
+					PRINTFORML 嬌声を裏返らせ、媚態を晒した…
+				ELSE
+					PRINTFORML ケダモノのような喘ぎ声を上げ痴態を晒した…
+				ENDIF
+
+			;A対面座位
+			ELSEIF RAND:2 == 0
+				PRINTFORM 対面座位の姿勢で繋がった%CALLNAME:TARGET%は、
+				IF RAND:3 == 0
+					PRINTFORM %NPC_CALLNAME%の首へ腕を回して唇を重ねると、
+				ELSEIF RAND:2 == 0
+					PRINTFORM %NPC_CALLNAME%と濃厚なキスをして舌を絡めると、
+				ELSE
+					PRINTFORM %NPC_CALLNAME%の首に手を回して身体を密着させ、
+				ENDIF
+				IF RAND:3 == 0
+					PRINTFORM 肉棒の感触を愉しむように腰をくねらせ
+				ELSEIF RAND:2 == 0
+					PRINTFORM 長いストロークで腰を揺すり
+				ELSE
+					PRINTFORM ゆっくりと腰を上下に動かし
+				ENDIF
+				PRINTFORML 始めた…
+
+				PRINTFORM %NPC_CALLNAME%が
+				IF TALENT:巨乳 && RAND:2 == 0
+					PRINTFORM 下から突き上げる度に豊かな乳が%NPC_CALLNAME%の目の前で揺れ、
+				ELSEIF TALENT:巨尻 && RAND:2 == 0
+					PRINTFORM 桃尻を鷲掴みにしながら腰を激しく突き上げると、
+				ELSE
+					PRINTFORM %CALLNAME:TARGET%の動きに合わせるように突き上げると、
+				ENDIF
+				PRINTFORM %CALLNAME:TARGET%は
+				IF RAND:2 == 0
+					PRINTFORML 嬌声を裏返らせ、媚態を晒した…
+				ELSE
+					PRINTFORML ケダモノのような喘ぎ声を上げ痴態を晒した…
+				ENDIF
+			;A背面座位
+			ELSE
+				PRINTFORM 背面座位の姿勢で繋がった%CALLNAME:TARGET%は、
+				IF ABL:自慰中毒 >= 3 && RAND:2 == 0
+					IF RAND:2 == 0
+						PRINTFORML 淫核で自慰をしながら、%NPC_CALLNAME%に突き上げられている…
+					ELSE
+						PRINTFORML 指での陰核を弄びながら自らも腰を上下させ、%CALLNAME:TARGET%は浅ましく快楽を貪っている…
+					ENDIF
+					PRINTFORML 自慰に夢中になった%CALLNAME:TARGET%が尻穴の締め付けを少しでも緩めると、躾と称して%NPC_CALLNAME%に乱暴に腰を突き上げられ、%CALLNAME:TARGET%は舌を突き出して無様なアヘ顔を晒している…
+				ELSE
+					;胸
+					IF RAND:2 == 0
+						IF TALENT:巨乳 && RAND:2 == 0
+							PRINTFORML 大きな乳を揉みしだかれながら、突き上げられている…
+						ELSEIF TALENT:貧乳 && RAND:2 == 0
+							PRINTFORML %NPC_CALLNAME%に薄い胸の頂を捻り上げられながら、突き上げられている…
+						ENDIF
+						PRINTFORML %CALLNAME:TARGET%は両手を%NPC_CALLNAME%の首の後ろに回し、頭を引き寄せてキスを交わしながら、突き上げに合わせて自らも腰を振っている…
+						PRINTFORMW 淫らに、そして滑らかに腰をくねらせつつ上下させるその姿は、欲に溺れた獣そのものようだ…
+					ELSE
+						PRINTFORML %NPC_CALLNAME%に淫核を弄ばれながら、突き上げられている…
+						PRINTFORMW 充血した淫核を%NPC_CALLNAME%の弄ぶたび、%CALLNAME:TARGET%は深々と怒張を咥え込んだ菊座が締まり、%NPC_CALLNAME%を愉しませている…
+					ENDIF
+				ENDIF
+			ENDIF
+
+			PRINTFORM %CALLNAME:TARGET%は
+			IF RAND:3 == 0
+				PRINTFORMW %NPC_CALLNAME%に尻穴を激しく犯され、背徳的な快楽を享受している…
+			ELSEIF RAND:2 == 0
+				PRINTFORMW アナルセックスの虜になったかのように、だらしなく弛緩した表情を見せながら、声にならない叫びをあげている…
+			ELSE
+				PRINTFORMW だらしなく舌を垂らしながら、ペニスが菊座を耕す快楽にぶるぶると肢体を震わせている…
+			ENDIF
+			PRINTFORML 
+			;射精
+			IF RAND:3 == 0
+				PRINTFORMW %NPC_CALLNAME%は%CALLNAME:TARGET%の腰を掴んで密着させると、込み上げる衝動に従って、直腸の奥深くへと存分に欲望を排泄した…！
+			ELSEIF RAND:2 == 0
+				PRINTFORMW %NPC_CALLNAME%は高まる射精感に身を任せ、%CALLNAME:TARGET%の一番深いところで白濁を爆発させた…！
+			ELSE
+				PRINTFORMW %NPC_CALLNAME%は腰を奥まで撃ち込んでびくびくと二度三度と痙攣させると、%CALLNAME:TARGET%の直腸奥深くへと精液を注ぎ込んだ…！
+			ENDIF
+		ENDIF
+		PRINTFORM %CALLNAME:TARGET%のアナルは注ぎ込まれる%TEXTR("白濁液", "雄汁", "種汁", "汚濁", "白濁", "遺伝子汁", "ザーメン")%に絶頂し、
+		IF RAND:5 == 0
+			PRINTFORMW 緩むことなくキツくペニスを搾り続けている…
+		ELSEIF RAND:4 == 0
+			PRINTFORMW 尿道内の残滓すら搾り取ろうとするかのように強烈な締まりをみせている…
+		ELSEIF RAND:3 == 0
+			PRINTFORMW 貪欲にペニスに吸い付いている…
+		ELSEIF RAND:2 == 0
+			PRINTFORMW まだ足りないとばかりにペニスをきつく締めつけている…
+		ELSE
+			PRINTFORMW 未だ脈動を続けるペニスに絡みついている…
+		ENDIF
+		PRINTFORML 
+		IF RAND:3 == 0
+			PRINTFORMW %CALLNAME:TARGET%は発情しきった顔で腰をくねらせ、更なる尻穴射精を望んでいる…
+		ELSEIF RAND:2 == 0
+			PRINTFORMW %CALLNAME:TARGET%は排泄器官に射精される屈辱感に歪んだ情欲を滾らせ、更なる肛虐をねだっている…
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%はうっとりと陶酔に浸りながら、更なる陵辱を期待し媚びるように尻を振っている…
+		ENDIF
+
+		PRINTFORML 
+		PRINTFORML 
+		CALL EXP_CALC_TRAVEL_UWAKI, "アナル"
+		PRINTFORML 
+	;太った男(ねちっこい/NTRっぽい)
+	CASE "太った男"
+		PRINTFORM %NPC_CALLNAME%に人気の無いところに連れ込まれた%CALLNAME:TARGET%は、
+		;本番
+		;挿入
+		;正常位
+		IF RAND:4 == 0
+			PRINTFORM 向かい合った姿勢で、
+		;後背位
+		ELSEIF RAND:3 == 0
+			IF RAND:3 == 0
+				PRINTFORM 犬のような姿勢で、
+			ELSEIF RAND:2 == 0
+				PRINTFORM 獣の交尾のように後ろから、
+			ELSE
+				PRINTFORM 四つん這いにさせられ、
+			ENDIF
+		;対面座位
+		ELSEIF RAND:2 == 0
+			IF RAND:3 == 0
+				PRINTFORM 抱き合った姿勢で、
+			ELSEIF RAND:2 == 0
+				PRINTFORM 恋人同士のように抱き締め合いながら、
+			ELSE
+				PRINTFORM ねっとりと濃厚なキスを重ねながら、
+			ENDIF
+		;背面座位
+		ELSE
+			IF RAND:3 == 0
+				PRINTFORM 後ろから
+				IF TALENT:巨乳
+					PRINTFORM 掌から溢れる大きな胸を思うままに弄ばれながら、
+				ELSEIF TALENT:貧乳
+					PRINTFORM 薄い胸の先端を指先で磨り潰すように捻り上げられながら、
+				ELSE
+					PRINTFORM 形の良い胸を弄ばれながら、
+				ENDIF
+			ELSEIF RAND:2 == 0
+				PRINTFORM 後ろから抱き抱えられながら、
+			ELSE
+				PRINTFORM 後ろから抱き締められながら、
+			ENDIF
+		ENDIF
+		IF RAND:4 == 0
+			PRINTFORML 奥まで貫かれている…！
+		ELSEIF RAND:3 == 0
+			PRINTFORML 犯されている…！
+		ELSEIF RAND:2 == 0
+			PRINTFORML 肉棒で貫かれている…！
+		ELSE
+			PRINTFORML 腰を打ち付けられている…！
+		ENDIF
+		PRINTFORML 
+		PRINTFORM %CALLNAME:TARGET%は
+		;挿入に対する反応
+		IF RAND:3 == 0
+			PRINTFORML 身体の芯を%NPC_CALLNAME%の肉槍で貫かれ、喉を仰け反らせて身体をひくつかせている…
+		ELSEIF RAND:2 == 0
+			PRINTFORML %NPC_CALLNAME%のカリ太ペニスに膣肉を押し広げられ、言葉にならない声を上げながら背中を弓なりに反らせている…
+		ELSE
+			PRINTFORMW %NPC_CALLNAME%の女を泣かせる凶器に貫かれ、膣口から愛液を溢れるように零しながら、腰をひくひくと震わせて悶えている…
+		ENDIF
+
+		IF RAND:3 == 0
+			PRINTFORMW %NPC_CALLNAME%はキスをしながら容赦無く注挿を繰り返し、%CALLNAME:TARGET%の膣に自らのペニスの形を刻み付けていく…
+		ELSEIF RAND:2 == 0
+			PRINTFORML %NPC_CALLNAME%は%CALLNAME:TARGET%の膣内に、自らの怒張の形を教え込むように抽送を繰り返している…
+		ELSE
+			PRINTFORMW %NPC_CALLNAME%は%CALLNAME:TARGET%の痴態を気に掛ける事無く、子宮口をこじ開けるかのようにゴツゴツと膣奥を突き上げている…
+		ENDIF
+		IF RAND:5 == 0
+			PRINTFORML まるで膣内を自分のペニスの形に合うように造り変えるかの様な%NPC_CALLNAME%の腰使いに、%CALLNAME:TARGET%はあられもない声を上げている…
+		ELSEIF RAND:4 == 0
+			PRINTFORMW %NPC_CALLNAME%の激しく、ねちっこい腰使いに、%CALLNAME:TARGET%は牝の顔で膣内射精をおねだりしている…
+		ELSEIF RAND:3 == 0
+			PRINTFORML %CALLNAME:TARGET%は昂ぶる情欲のままに、%NPC_CALLNAME%との情事に溺れ、舌を突き出しながら背中を弓なりに逸らしている…
+		ELSEIF RAND:2 == 0
+			PRINTFORMW %NPC_CALLNAME%が抉るように腰を使っても、%CALLNAME:TARGET%は愛液を飛び散らせながら悦楽の声を上げている…
+		ELSE
+			PRINTFORML 執拗に続く%NPC_CALLNAME%の甘い責めに%CALLNAME:TARGET%は抑えることも忘れ、悦楽に蕩けた声をあげている…
+		ENDIF
+
+		;膣内射精
+		IF RAND:4 == 0
+			PRINTFORML %NPC_CALLNAME%は%CALLNAME:TARGET%を一際強く突き上げると、ぶるりと身体を震わせ濃厚な精液を解き放った…！
+		ELSEIF RAND:3 == 0
+			PRINTFORML %CALLNAME:TARGET%は%NPC_CALLNAME%に耳元で『孕め！受精しろ！』と囁かれながら膣内に濃厚な精液を流し込まれている…！
+		ELSEIF RAND:2 == 0
+			PRINTFORML %NPC_CALLNAME%は絶頂の連続に恍惚としている%CALLNAME:TARGET%の腰をぐっと引き寄せると、叩きつけるように欲望を解き放った…！
+		ELSE
+			PRINTFORML %NPC_CALLNAME%は不意に%CALLNAME:TARGET%の奥を激しく突き上げると、子宮口に密着させた男根の先端から欲望の塊を大量に吐き出した…！
+		ENDIF
+		IF COND("危険日", ARG)
+			PRINTFORML %CALLNAME:MASTER%のものではない精液が、危険日の子宮へと吐き出されているにもかかわらず
+			PRINTFORMW %CALLNAME:TARGET%の柔肉は%NPC_CALLNAME%のモノへと絡みつき最後の一滴まで搾り取ろうと締め付けている…
+		ELSE
+			IF RAND:7 == 0
+				PRINTFORML %NPC_CALLNAME%と%CALLNAME:TARGET%の結合部から、収まりきらなかった大量の精液が溢れ出している…
+			ELSEIF RAND:6 == 0
+				PRINTFORML %CALLNAME:TARGET%と男との結合部から大量の精液が流れ落ち、床に白い水たまりを作っている…
+			ELSEIF RAND:5 == 0
+				PRINTFORML %CALLNAME:TARGET%は自分が征服されていく感覚に包まれながら、%NPC_CALLNAME%の口付けを甘受している…
+			ELSEIF RAND:4 == 0
+				PRINTFORML %CALLNAME:TARGET%は胎内にずっしりと重く溜まっていく濃厚な子種を感じながら、背徳の絶頂に酔いしれている…
+			ELSEIF RAND:3 == 0
+				PRINTFORML %NPC_CALLNAME%のペニスが膣内で脈打ち子種を吐き出すたびに、%CALLNAME:TARGET%は『本気』になっているかのように歓喜の声を響かせている…
+			ELSEIF RAND:2 == 0
+				PRINTFORML %NPC_CALLNAME%の精液が膣内に叩きつけるように放たれるたび、%CALLNAME:TARGET%は頭を振りながらケモノのような喘ぎ声を上げながら絶頂に達している…
+			ELSE
+				PRINTFORML 貞淑さなど忘れて牝の容貌を晒す%CALLNAME:TARGET%の胎内に、名前さえ知らない相手の濃厚な子種が放たれてしまった…
+			ENDIF
+		ENDIF
+
+		;事後
+		IF RAND:7 == 0
+			PRINTFORML 牝の本能のままに種搾りをした%CALLNAME:TARGET%は、%NPC_CALLNAME%にさらなる中出しを媚びた表情でおねだりしている…
+		ELSEIF RAND:6 == 0
+			PRINTFORML 蕩けた表情で絶頂の余韻に浸る%CALLNAME:TARGET%の女陰から%NPC_CALLNAME%の子種がとめどなく溢れ、零れ落ちている…
+		ELSEIF RAND:5 == 0
+			PRINTFORMW すっかり%NPC_CALLNAME%のイチモツに馴染んだ%CALLNAME:TARGET%の膣口はぽっかりと口を広げ、たっぷりと注ぎ込まれた子種を垂れ流している……
+		ELSEIF RAND:4 == 0
+			PRINTFORMW %CALLNAME:TARGET%は%NPC_CALLNAME%のペニスにこびり付いた精液を舌を使ってキレイに舐めとっている…
+		ELSEIF RAND:3 == 0
+			PRINTFORMW ぽっかりと口を開けた%CALLNAME:TARGET%の膣口からは、入りきらなかった精液がどろどろと溢れ出している…
+		ELSEIF RAND:2
+			PRINTFORMW %CALLNAME:TARGET%は%NPC_CALLNAME%と舌を絡ませあいながら、腰を深く押し付け、次の種付けをおねだりしている…
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%はだらしない表情で膣内から精液を溢れさせながら、更なる種付けをおねだりしている…
+		ENDIF
+		PRINTFORML 
+		PRINTFORMW %CALLNAME:TARGET%は%NPC_CALLNAME%の執拗な膣内射精に酔い、すっかり『その気』になってしまっている…
+		PRINTFORML 
+		PRINTFORML 
+		CALL EXP_CALC_TRAVEL_UWAKI, "浮気"
+		PRINTFORML 
+	;筋肉質な男(野獣ックス・大量射精)
+	CASE "筋肉質な男"
+
+	;ショタ(巨根)…巨根・大量射精
+	CASE "巨根ショタ"
+		PRINTFORM %NPC_CALLNAME%を物陰に連れ込んだはずの%CALLNAME:TARGET%でしたが、
+		IF RAND:2 == 0
+			PRINTFORM %NPC_CALLNAME%の腕ほどもある巨根と若さ任せた強引な腰使いに主導権を奪われ、
+		ELSE
+			PRINTFORM %NPC_CALLNAME%の凶悪なイチモツに縦横無尽に膣を穿られ、
+		ENDIF
+		IF RAND:4 == 0
+			PRINTFORML まるで性処理玩具のように使われていた…
+		ELSEIF RAND:3 == 0
+			PRINTFORML 既に幾度目かもわからない絶頂を味わわされていた…
+		ELSEIF RAND:2 == 0
+			PRINTFORML されるがままに犯されていた…
+		ELSE
+			PRINTFORML 逆に嬌声をあげさせられしまっていた…
+		ENDIF
+
+		IF RAND:3 == 0
+			PRINTFORML 四つん這いになった%CALLNAME:TARGET%にしがみつくようにしながら、%NPC_CALLNAME%は無我夢中で腰を使っている…
+		ELSEIF RAND:2 == 0
+			PRINTFORMW 加減を知らない%NPC_CALLNAME%が強く突き上げるたびに、%CALLNAME:TARGET%の下腹部は巨根の形に盛り上がっている…
+		ELSE
+			PRINTFORMW %NPC_CALLNAME%の太いペニスを咥えこむ%CALLNAME:TARGET%の秘唇は大きく拡張されてしまっている…
+		ENDIF
+		IF RAND:2 == 0
+			PRINTFORMW 涙と涎を垂れ流しながら、%CALLNAME:TARGET%は膣壁に刻まれる強烈な快感に体を震わせている…
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%は%NPC_CALLNAME%の巨根に膣内を抉じ開けられる快楽に喜びの悲鳴を上げている…
+		ENDIF
+
+		;膣内射精
+		IF RAND:3 == 0
+			PRINTFORML %NPC_CALLNAME%は%CALLNAME:TARGET%を一際強く突き上げると、ぶるりと身体を震わせ濃厚な精液を解き放った…！
+		ELSEIF RAND:2 == 0
+			PRINTFORML %NPC_CALLNAME%は朦朧となっている%CALLNAME:TARGET%へ腰を強く、さらに奥へと押し込むと、大量の精液を解き放った…！
+		ELSE
+			PRINTFORML %NPC_CALLNAME%は不意に%CALLNAME:TARGET%の奥を激しく突き上げると、子宮口に密着させた巨根から欲望の塊を大量に吐き出した…！
+		ENDIF
+		IF RAND:4 == 0
+			PRINTFORML 巨根の大きさに見合った大量の精液を流し込まれ、%CALLNAME:TARGET%は正体をなくしてアヘ顔を晒している…
+		ELSEIF RAND:3 == 0
+			PRINTFORML 子宮に叩きつけられるような凄まじい勢いの射精を浴びせられた%CALLNAME:TARGET%は、だらしなく表情を弛緩させ、半ば失神してしまっている…
+		ELSEIF RAND:2 == 0
+			PRINTFORML %CALLNAME:TARGET%は逞しすぎる牡の虜になり、%NPC_CALLNAME%相手に媚び、次の種付けをおねだりしている…
+		ELSE
+			PRINTFORML 射精も終わらないうちに再び腰を打ち付け始めた%NPC_CALLNAME%に、%CALLNAME:TARGET%はすっかり陥落してしまっていた…
+		ENDIF
+		PRINTFORML 
+		PRINTFORMW %CALLNAME:TARGET%は巨根の快楽に堕ち、だらしない表情のまま為すがままに犯されている…
+		PRINTFORML 
+		PRINTFORML 
+		CALL EXP_CALC_TRAVEL_UWAKI, "巨根ショタ"
+		PRINTFORML 
+	;ショタ…筆下ろしとか
+	CASE "ショタ"
+		PRINTFORM %NPC_CALLNAME%を物陰に連れ込んだ%CALLNAME:TARGET%は、
+		IF RAND:3 == 0
+			PRINTFORMW %NPC_CALLNAME%の未成熟なペニスをしっかりと奥まで咥え込み、セックスの味を教え込んでいる…
+		ELSEIF RAND:2 == 0
+			PRINTFORMW 興奮する%NPC_CALLNAME%の前で四つん這いになり、欲望のままに腰を振らせている…
+		ELSE
+			PRINTFORMW %NPC_CALLNAME%の上に跨り、思うがままに腰を振っている…
+		ENDIF
+		IF TALENT:夢魔 && RAND:2 == 0
+			PRINTFORML 夢魔の%CALLNAME:TARGET%が与える快楽に初心な%NPC_CALLNAME%が耐えられるはずもなく、%NPC_CALLNAME%は数分と持たず精液を搾られてしまった…
+		ELSE
+			PRINTFORML %CALLNAME:TARGET%のカラダにすっかり夢中になり、%NPC_CALLNAME%は蕩けた顔で腰をカクカクと振ると、あっという間に精液を放ってしまった…
+		ENDIF
+		PRINTFORML 
+		IF RAND:2 == 0
+			PRINTFORMW すっかり%CALLNAME:TARGET%に夢中になってしまった%NPC_CALLNAME%は、射精したばかりだというのに再び腰を振り始めた…
+		ELSE
+			PRINTFORMW 精を放った%NPC_CALLNAME%は既に息も絶え絶えになっていたが、%CALLNAME:TARGET%が満足して開放されるのは当分先のことになりそうだ…
+		ENDIF
+		PRINTFORML 
+		PRINTFORML 
+		CALL EXP_CALC_TRAVEL_UWAKI, "ショタ"
+		PRINTFORML 
+	;モブ男
+	CASEELSE
+		IF RAND:4 == 0
+			PRINTFORMW %CALLNAME:TARGET%は名も知らない%NPC_CALLNAME%の性欲の捌け口になっている…
+		ELSEIF RAND:3 == 0
+			PRINTFORMW %CALLNAME:TARGET%は求められるまま、%NPC_CALLNAME%に身体を許している…
+		ELSEIF RAND:2 == 0
+			PRINTFORMW %CALLNAME:TARGET%は性欲の赴くまま、%NPC_CALLNAME%の肉棒を貪っている……
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%は物陰で%NPC_CALLNAME%の上に跨り、思うがままに腰を振っている…
+		ENDIF
+		IF RAND:3 == 0
+			PRINTFORML 痙攣する%NPC_CALLNAME%の腰を%CALLNAME:TARGET%はガッチリと挟み込み、蜜壷の奥へと注ぎ込むよう%NPC_CALLNAME%の耳へ囁き煽っている…
+		ELSEIF RAND:2 == 0
+			PRINTFORMW 激しく乱れる%CALLNAME:TARGET%の腰使いに翻弄され、%NPC_CALLNAME%は促されるまま射精感を高めていく…
+		ELSE
+			PRINTFORMW %NPC_CALLNAME%は%CALLNAME:TARGET%の肉壺がもたらす快楽に呻き、射精に向けて猿の様に腰を振っている…
+		ENDIF
+		IF TALENT:夢魔 && RAND:2 == 0
+			PRINTFORML 夢魔の%CALLNAME:TARGET%が与える快楽に逆らえるはずもなく、%NPC_CALLNAME%は数分と持たず精液を搾られてしまう…
+		ELSE
+			PRINTFORML %CALLNAME:TARGET%のカラダにすっかり夢中になった%NPC_CALLNAME%は、あっという間に快楽に屈し、搾られるがままに精液を放ってしまう…
+		ENDIF
+		PRINTFORML 
+		PRINTFORMW 精を放った%NPC_CALLNAME%は既に息も絶え絶えになっていたが、%CALLNAME:TARGET%が満足して開放されるのは当分先のことになりそうだ…
+		PRINTFORML 
+		PRINTFORML 
+		CALL EXP_CALC_TRAVEL_UWAKI, "浮気"
+		PRINTFORML 
+	ENDSELECT
+ENDSELECT
+PRINTFORML 
+
+;--------------------------------------------------------
+;浮気をするかどうかの判定
+;ARGは判定対象キャラ（基本的にTARGETのみだと思われるが一応）
+;RAND:100 < チョロい度
+;↑で浮気する。相思相愛・恋慕であれば欲求不満が溜まっていない限りほぼ浮気はしない（はず）
+;--------------------------------------------------------
+@CHECK_UNFAITHFUL_TRAVEL(ARG)
+#FUNCTION
+VARSET LOCAL
+
+SIF CONFIG("温泉旅行での浮気") == 0
+	RETURNF 0
+
+;絶対的浮気判定（まず確率以前の浮気判定）
+;処女＋A処女は浮気しない
+SIF TALENT:処女 && TALENT:Ａ処女
+	RETURNF 0
+;淫乱
+IF TALENT:ARG:淫乱
+	;欲求不満度が0
+	IF BASE:ARG:欲求不満 <= 0
+		RETURNF 0
+	ENDIF
+;淫乱でない
+ELSE
+	IF TALENT:ARG:相思相愛
+		;欲求不満度が30未満
+		SIF BASE:ARG:欲求不満 < 30
+			RETURNF 0
+	ELSEIF TALENT:ARG:恋慕
+		;欲求不満度が20未満
+		SIF BASE:ARG:欲求不満 < 20
+			RETURNF 0
+	ELSE
+		;欲求不満度が10未満
+		SIF BASE:ARG:欲求不満 < 20
+			RETURNF 0
+	ENDIF
+ENDIF
+
+;チョロい度増加要素
+;欲求不満度がベース
+LOCAL += BASE:ARG:欲求不満
+;欲望レベルを加算
+LOCAL += ABL:ARG:欲望
+;淫乱は10ポイント
+SIF TALENT:ARG:淫乱
+	LOCAL += 10
+;惚れっぽいは3ポイント
+SIF TALENT:ARG:惚れっぽい
+	LOCAL += 3
+;好奇心は3ポイント
+SIF TALENT:ARG:好奇心
+	LOCAL += 3
+;貞操無頓着は5ポイント
+SIF TALENT:ARG:貞操無頓着
+	LOCAL += 5
+;愚かは3ポイント
+SIF TALENT:ARG:愚か
+	LOCAL += 3
+;発情期だと5ポイント、淫乱でさらに10ポイント
+IF COND("発情期")
+	;淫乱
+	SIF TALENT:ARG:淫乱
+		LOCAL += 10
+	LOCAL += 5
+ENDIF
+
+;チョロい度減少要素
+;相思相愛は10ポイント
+SIF TALENT:ARG:相思相愛
+	LOCAL -= 10
+;恋慕は5ポイント
+SIF TALENT:ARG:恋慕
+	LOCAL -= 5
+;一線越えないは3ポイント
+SIF TALENT:ARG:一線越えない
+	LOCAL -= 3
+;貞操観念は3ポイント
+SIF TALENT:ARG:貞操観念
+	LOCAL -= 3
+;危険日だと相思相愛・恋慕はさらに5ポイント
+IF COND("危険日", ARG)
+	;相思相愛
+	SIF TALENT:ARG:相思相愛
+		LOCAL -= 5
+	;恋慕
+	SIF TALENT:ARG:恋慕
+		LOCAL -= 5
+ENDIF
+
+;浮気確率の計算(欲求不満ボーナスが無ければそんなには高くないはず）
+IF RAND:100 < LOCAL
+	;浮気する場合1を返す
+	RETURNF 1
+ENDIF
+RETURNF 0
+
+;--------------------------------------------------------
+;落書きの表示
+;--------------------------------------------------------
+@GRAFFITI_TRAVEL_NTR
+PRINTFORM 【
+	;アナル系はとりあえず判定が固まるまで保留（A非処女なら解禁OKな気もする）
+	;IF TALENT:オトコ || (TALENT:Ａ処女 == 0 && RAND:4 == 0)
+	;	PRINTDATA
+	;		DATAFORM アナル便所
+	;		DATAFORM ケツハメ最高
+	;		DATAFORM 精液で浣腸して
+	;		DATAFORM ケツメド奴隷
+	;		DATAFORM アナルマニア
+	;		DATAFORM けつまんこ使い放題
+	;	ENDDATA
+
+	;膣内射精（相思相愛専用？）
+	IF TALENT:相思相愛 && RAND:3 == 0
+		PRINTDATA
+			DATAFORM 受精完了
+			DATAFORM 種付け完了
+			DATAFORM 受精済
+			DATAFORM 種付け済
+			DATAFORM 浮気精子で受精中
+			DATAFORM 浮気精子で種付けされちゃいました
+			DATAFORM 赤の他人に孕まされてごめんなさい
+			DATAFORM 浮気SEX最高
+			DATAFORM 浮気しちゃいました
+			DATAFORM ママにされちゃいました
+			DATAFORM チンポがあれば誰でもいいの
+			DATAFORM 浮気おまんこ大好き
+			DATAFORM 浮気中毒Lv5
+			DATAFORM NTRされちゃいました
+		ENDDATA
+	;母乳体質
+	ELSEIF TALENT:母乳体質 && RAND:2 == 0
+		PRINTDATA
+			DATAFORM 牝牛奴隷
+			DATAFORM 無料ミルクサーバー
+			DATAFORM 自由におっぱい飲んでね
+			DATAFORM 射乳中毒Lv5
+			DATAFORM 射乳奴隷
+			DATAFORM 乳家畜
+		ENDDATA
+	;その他
+	ELSE
+		PRINTDATA
+			DATAFORM 受精完了
+			DATAFORM 種付け完了
+			DATAFORM 受精済
+			DATAFORM 種付け済
+			DATAFORM 膣内射精専用
+			DATAFORM セックス中毒Lv5
+			DATAFORM ザーメン中毒Lv5
+			DATAFORM チンポ中毒Lv5
+			DATAFORM セックス狂い
+			DATAFORM チンポ依存症
+			DATAFORM 精液依存症
+		ENDDATA
+	ENDIF
+PRINTFORM 】【
+	;称号系
+	PRINTDATA
+		DATAFORM 肉便器
+		DATAFORM 公衆便女
+		DATAFORM 精液便女
+		DATAFORM 性処理便女
+		DATAFORM ドスケベ女
+		DATAFORM 淫乱痴女
+		DATAFORM 牝家畜
+		DATAFORM ド変態
+		DATAFORM 痴女
+		DATAFORM ドM
+		DATAFORM 淫売
+		DATAFORM 雌犬
+		DATAFORM 雌豚
+		DATAFORM 豚奴隷
+		DATAFORM 露出狂
+		DATAFORM 色狂い
+		DATAFORM 職業：便器
+		DATAFORM 職業：ザーメンソムリエ
+		DATAFORM 特技：アヘ顔
+		DATAFORM 特技：ザーメン搾り
+		DATAFORM 好物：ちんぽ
+		DATAFORM 好物：ザーメン
+		DATAFORM ザーメンタンク
+		DATAFORM チンポ扱き穴
+		DATAFORM 精液排泄穴
+		DATAFORM 淫乱おまんこ
+		DATAFORM 膣内射精用ちんぽケース
+		DATAFORM 年中発情中
+		DATAFORM 即ハメOK
+		DATAFORM ちんぽの恋人
+		DATAFORM 生ハメ専門
+		DATAFORM パパ募集中
+		DATAFORM 認知不要の種付け便器
+		DATAFORM 輪姦希望
+		DATAFORM 奴隷志願
+		DATAFORM 避妊不要
+		DATAFORM 本日特売
+		DATAFORM レイプ歓迎
+		DATAFORM 汚ちんぽ歓迎
+		DATAFORM 変態プレイ大歓迎
+		DATAFORM ハメ逃げ歓迎
+		DATAFORM デカチン歓迎
+		DATAFORM ちんぽ屈服刻印Lv3
+		DATAFORM いつでもおまんこ発情中
+	ENDDATA
+PRINTFORM 】【
+	;セリフ系
+	PRINTDATA
+		DATAFORM 私は家畜です
+		DATAFORM 私は変態です
+		DATAFORM 私は雌豚です
+		DATAFORM 外に射精さないで
+		DATAFORM ぶっかけてください
+		DATAFORM ビッチでごめんなさい
+		DATAFORM ザーメン漬けにしてください
+		DATAFORM お精子恵んでください
+		DATAFORM 無責任種付け希望
+		DATAFORM 下の口からおちんぽ食べさせて
+		DATAFORM 下の口にミルク飲ませてください
+		DATAFORM 気持よくなかったらお詫びします
+		DATAFORM 種付け最高
+		DATAFORM いつでも使ってね
+		DATAFORM 犯して下さいお願いします
+		DATAFORM 早くハメハメして
+		DATAFORM ガバマンでごめんなさい
+		DATAFORM 雌豚調教されちゃいました
+		DATAFORM 犯してください
+		DATAFORM ちんぽでほじって
+		DATAFORM 孕ませてください
+		DATAFORM パイズリさせてください
+		DATAFORM チンポと結婚します
+		DATAFORM セックス大好き
+		DATAFORM オマンコ大好き
+		DATAFORM おちんちん大好き
+		DATAFORM 種付け大好き
+		DATAFORM 精液飲ませて
+		DATAFORM メスブタと呼んで
+		DATAFORM 中出しされると喜びます
+		DATAFORM 淫乱夢魔にオシオキして
+		DATAFORM ちんぽなんかに負けない！(笑)
+		DATAFORM 完全屈服致しました
+		DATAFORM ちんぽに服従しちゃいました
+		DATAFORM 今なら種付けし放題
+		DATAFORM 無責任に妊娠させて
+	ENDDATA
+PRINTFORM 】
+;種族固有(1/2の確立で追加。毎回は表示しない。落書きの数が増えてきたら変更を検討）
+;種族内の亜種も分岐可能
+	IF RAND:2 == 0
+		;クズノハ系
+		IF NAMES("種族", NO:TARGET) == "クズノハ"
+			;タマモ専用
+			IF NAMES("種族", NO:TARGET, CFLAG:TARGET:8) == "タマモ" && RAND:2 == 0
+				PRINTFORM 【
+				PRINTFORM 白濁淫乱九媚の狐
+				PRINTFORM 】
+			ELSE
+				IF RAND:2 == 0
+					PRINTFORM 【
+					PRINTFORM お便所狐
+					PRINTFORM 】
+				ELSE
+					PRINTFORM 【
+					PRINTFORM 淫乱女狐
+					PRINTFORM 】
+				ENDIF
+			ENDIF
+		;ステラ
+		ELSEIF NAMES("種族", NO:TARGET) == "ステラ"
+			PRINTFORM 【
+			PRINTFORM オモチャにされちゃった☆
+			PRINTFORM 】
+		ENDIF
+	ENDIF
+
+RETURN 0
+
+;--------------------------------------------------------
+;浮気中の経験算出・表示
+;総膣内射精回数か欲望を元に経験を算出
+;ARGSはプレイ内容・相手、ARGは総膣内射精回数
+;輪姦・乱交系は総膣内射精回数で、その他は欲望で算出
+;--------------------------------------------------------
+@EXP_CALC_TRAVEL_UWAKI, ARGS, ARG
+#DIM LCOUNT
+
+VARSET LOCAL
+;計算
+SELECTCASE ARGS
+CASE "輪姦乱交"
+	;0,Ｖ経験
+	SIF TALENT:オトコ == 0
+		LOCAL:0 = ARG
+	;1,Ａ経験
+	LOCAL:1 = ARG / 2
+	;2,絶頂経験
+	LOCAL:2 = ARG
+	;3,射精経験
+	SIF TALENT:ふたなり
+		LOCAL:3 = ARG / 3
+	;12,Ｖ性交経験
+	LOCAL:12 = LOCAL:0
+	;13,Ａ性交経験
+	LOCAL:13 = LOCAL:1
+	;17,膣内精液経験
+	LOCAL:17 = ARG
+	;18,肛内精液経験
+	LOCAL:18 = LOCAL:1
+	;19,精飲経験
+	LOCAL:19 = (ARG * 5) / 3
+	;20,精液経験
+	LOCAL:20 = LOCAL:17 + LOCAL:18 + LOCAL:19 + LOCAL:22 + LOCAL:23 + LOCAL:26
+	;22,フェラ経験
+	LOCAL:22 = LOCAL:19 
+	;23,手淫経験
+	LOCAL:23 = ARG * 3 / 2
+	;25,腰使い経験
+	LOCAL:25 = LOCAL:12 + LOCAL:13
+	;26,パイズリ経験
+	LOCAL:26 = ARG * 3 / 2
+	;54,噴乳経験
+	SIF TALENT:母乳体質
+		LOCAL:54 = ARG * 3 / 2
+	;70,キス経験
+	LOCAL:70 = ARG * 3 / 4
+CASE "アナル"
+	;1,Ａ経験
+	LOCAL:1 = ABL:欲望 / 2
+	;2,絶頂経験
+	LOCAL:2 = ABL:欲望
+	;3,射精経験
+	SIF TALENT:ふたなり
+		LOCAL:3 = ABL:欲望 / 3
+	;13,Ａ性交経験
+	LOCAL:13 = LOCAL:1
+	;18,肛内精液経験
+	LOCAL:18 = LOCAL:1
+	;20,精液経験
+	LOCAL:20 = LOCAL:18
+	;54,噴乳経験
+	SIF TALENT:母乳体質
+		LOCAL:54 = ABL:欲望 * 3 / 2
+CASE "巨根ショタ"
+	;0,Ｖ経験
+	LOCAL:0 = ABL:欲望
+	;2,絶頂経験
+	LOCAL:2 = ABL:欲望
+	;3,射精経験
+	SIF TALENT:ふたなり
+		LOCAL:3 = ABL:欲望 / 3
+	;12,Ｖ性交経験
+	LOCAL:12 = LOCAL:0
+	;17,膣内精液経験
+	LOCAL:17 = ABL:欲望
+	;19,精飲経験
+	LOCAL:19 = (ABL:欲望 * 5) / 3
+	;20,精液経験
+	LOCAL:20 = LOCAL:17 + LOCAL:18 + LOCAL:19 + LOCAL:22 + LOCAL:23 + LOCAL:26
+	;22,フェラ経験
+	LOCAL:22 = LOCAL:19 
+	;23,手淫経験
+	LOCAL:23 = ABL:欲望 * 3 / 2
+	;25,腰使い経験
+	LOCAL:25 = LOCAL:12 + LOCAL:13
+	;26,パイズリ経験
+	LOCAL:26 = ABL:欲望 * 3 / 2
+	;53,Ｖ拡張経験
+	LOCAL:53 = LOCAL:0
+	;54,噴乳経験
+	SIF TALENT:母乳体質
+		LOCAL:54 = ABL:欲望 * 3 / 2
+	;70,キス経験
+	LOCAL:70 = ABL:欲望 * 3 / 4
+;浮気などその他
+CASEELSE
+	;0,Ｖ経験
+	LOCAL:0 = ABL:欲望
+	;2,絶頂経験
+	LOCAL:2 = ABL:欲望
+	;3,射精経験
+	SIF TALENT:ふたなり
+		LOCAL:3 = ABL:欲望 / 3
+	;12,Ｖ性交経験
+	LOCAL:12 = LOCAL:0
+	;17,膣内精液経験
+	LOCAL:17 = ABL:欲望
+	;19,精飲経験
+	LOCAL:19 = (ABL:欲望 * 5) / 3
+	;20,精液経験
+	LOCAL:20 = LOCAL:17 + LOCAL:18 + LOCAL:19 + LOCAL:22 + LOCAL:23 + LOCAL:26
+	;22,フェラ経験
+	LOCAL:22 = LOCAL:19 
+	;23,手淫経験
+	LOCAL:23 = ABL:欲望 * 3 / 2
+	;25,腰使い経験
+	LOCAL:25 = LOCAL:12 + LOCAL:13
+	;26,パイズリ経験
+	LOCAL:26 = ABL:欲望 * 3 / 2
+	;54,噴乳経験
+	SIF TALENT:母乳体質
+		LOCAL:54 = ABL:欲望 * 3 / 2
+	;70,キス経験
+	LOCAL:70 = ABL:欲望 * 3 / 4
+ENDSELECT
+
+;表示と加算
+PRINTFORML 　[%CALLNAME:TARGET%]
+FOR LCOUNT, 0, 100
+	SIF LOCAL:LCOUNT <= 0
+		CONTINUE
+	;表示するものを選択
+	SELECTCASE LCOUNT
+	;0,Ｖ経験, 1,Ａ経験, 2,絶頂経験, 3,射精経験, 12,Ｖ性交経験, 13,Ａ性交経験, 17,膣内精液経験, 18,肛内精液経験
+	;19,精飲経験, 20,精液経験, 22,フェラ経験, 23,手淫経験, 25,腰使い経験, 26,パイズリ経験, 54,噴乳経験, 70,キス経験
+	CASE 0 TO 3, 12, 13, 17 TO 20, 22, 23, 25, 26, 54, 70
+		PRINTFORML %TEXT_RJ(EXPNAME:LCOUNT, 14)% + {LOCAL:LCOUNT}
+	ENDSELECT
+
+	EXP:LCOUNT += LOCAL:LCOUNT
+NEXT
+
+RETURN 0

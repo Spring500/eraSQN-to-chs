@@ -1,0 +1,401 @@
+﻿;-------------------------------------------------
+;夜に起こるイベント
+;欲求不満な人たちのために乱交プレイを調整
+;-------------------------------------------------
+@EVENT_YOBAI
+#DIM LCOUNT
+
+;夜イベントの記録初期化
+CVARSET CFLAG, 91
+CVARSET CFLAG, 96
+;夜這いフラグ
+CVARSET CSTR, 61
+
+VARSET LOCAL
+
+;夜イベントの決定。内容は CSTR:夜這い に入っている
+CALL PLAY_AT_EVENING
+SIF CSTR:夜這い == ""
+	RETURN 0
+
+;基本回数は精力依存
+LOCAL = BASE:精力/20 + LIMIT(RAND:(BASE:精力/10 + 1), 1, BASE:精力/15)
+
+DRAWLINE
+SIF COND("同衾イベント")
+	PRINTFORML ＜%CALLNAME:TARGET%の部屋にて＞
+
+SELECTCASE CSTR:夜這い
+CASE "夜這い騎乗位"
+	CVARSET TEQUIP, 30, 1
+
+	;基本回数は精力依存
+	LOCAL = BASE:精力/20 + LIMIT(RAND:(BASE:精力/10 + 1), 1, BASE:精力/15)
+
+	;PRINTL ＜夜這い＞
+	;口上の前後が凝っているキャラ用
+	CALL SELF_KOJO, "夜這い騎乗位口上操作"
+	IF CONFIG("地の文ＯＦＦ")
+		CALL SELF_KOJO, CSTR:夜這い
+	ELSE
+		IF COND("同衾イベント")
+			PRINTFORMW %CALLNAME:MASTER%がベッドで横になろうとすると、%CALLNAME:TARGET%が抱きついてきた
+		ELSE
+			PRINTFORMW %CALLNAME:MASTER%が床に就こうとしたとき、突然%CALLNAME:TARGET%が部屋を訪ねてきた
+		ENDIF
+		;[高慢][生意気][意地悪][強気]持ちなら分岐
+		IF TALENT:高慢 || TALENT:生意気 || TALENT:強気 || TALENT:意地悪
+			PRINTFORMW 「……」
+			PRINTFORMW 無言のまま、%CALLNAME:MASTER%をやけに熱を帯びた潤んだ瞳で睨んでいる
+		;[恥じらい][清楚]持ちの場合分岐
+		ELSEIF TALENT:恥じらい || TALENT:清楚
+			PRINTFORMW 憂いと欲情の熱を帯びた眼差しで、上目遣いに%CALLNAME:MASTER%の様子を伺っている
+			SELECTCASE NO:TARGET
+			CASE 16
+				PRINTFORMW 「…のぅ…%CNAME("二人称")%、その、な。 ……わ、わかっておるであろ？」
+			CASE 9, 30, 32, 37
+				PRINTFORMW 「……あの……ごめんなさいっ！！」
+			CASEELSE
+				PRINTFORMW 「……」
+			ENDSELECT
+		;[惚れっぽい][献身][小悪魔][妄信]持ちなら分岐
+		ELSEIF TALENT:惚れっぽい || TALENT:献身 || TALENT:妄信 || TALENT:小悪魔
+			PRINTFORMW 「……」
+			PRINTFORMW 無言のまま、熱を帯び潤んだ瞳で%CALLNAME:MASTER%を見つめながら微笑む
+		ENDIF
+		PRINTFORMW そのまま彼女は%CALLNAME:MASTER%を押し倒し、蜜壷でペニスを咥え込み激しく腰を打ち付け始めた
+
+		CALL SELF_KOJO, CSTR:夜這い
+
+		;[高慢][生意気][意地悪][強気]持ちなら分岐
+		IF TALENT:高慢 || TALENT:生意気 || TALENT:強気 || TALENT:意地悪
+			PRINTFORMW %CALLNAME:TARGET%は悪態交じりの艶のある嬌声を上げながら、何度も腰を淫らに振り子宮の渇きを癒している…
+		;[恥じらい][清楚]持ちの場合分岐
+		ELSEIF TALENT:恥じらい || TALENT:清楚
+			PRINTFORML %CALLNAME:TARGET%は何度も小さな声で歓喜の悲鳴と謝罪の言葉を紡ぎながら、
+			PRINTFORMW 無心に腰を振って子宮の渇きを癒している…
+		;[惚れっぽい][献身][小悪魔][妄信]持ちなら分岐
+		ELSEIF TALENT:惚れっぽい || TALENT:献身 || TALENT:妄信 || TALENT:小悪魔
+			PRINTFORMW %CALLNAME:TARGET%は微笑みながら、妖しく腰を揺らして子宮の渇きを癒している…
+		;[陽気][好色][快感に素直]持ちの場合分岐
+		ELSEIF TALENT:陽気 || TALENT:好色 || TALENT:快感に素直
+			PRINTFORMW %CALLNAME:TARGET%は目を細めて微笑みながら、何度も腰を打ちつけ子宮の渇きを癒している…
+		ELSE
+			PRINTFORMW 飢えた獣の口は涎を滴らせて怒張を貪り、子宮の渇きを癒している…
+		ENDIF
+	ENDIF
+	CALL SIMULATE_TRAIN, 65, LOCAL
+
+	CALL CALC, "欲求不満解消", TARGET, LOCAL
+
+	PRINTFORM 何度目かの絶頂の後、
+	IF TALENT:お気に入り || TALENT:相思相愛
+		PRINTFORMW 想いを遂げた二人は繋がったまま抱き合い、深い眠りに落ちた…
+		;一緒に眠ったフラグ。朝の相手として優先。
+		CFLAG:MASTER:96 = TARGET
+		CFLAG:96 = MASTER
+	ELSE
+		PRINTFORM 想いを遂げた%CALLNAME:TARGET%は
+		;相手がいっぱいいるときは紳士協定
+		IF RAND:CHARANUM >= 5
+			PRINTFORMW 身を清めると、名残惜しそうに自分の部屋へと戻っていった…
+		ELSE
+			PRINTFORMW %CALLNAME:MASTER%に抱きつき、そのまま深い眠りに落ちた…
+			CFLAG:MASTER:96 = TARGET
+			CFLAG:96 = MASTER
+		ENDIF
+	ENDIF
+	CVARSET TEQUIP, 30, 0
+
+CASE "夜這いＡ騎乗位"
+	CVARSET TEQUIP, 30, 1
+
+	;基本回数は精力依存
+	LOCAL = BASE:精力/20 + LIMIT(RAND:(BASE:精力/10 + 1), 1, BASE:精力/15)
+
+	;PRINTL ＜夜這い＞
+	IF COND("同衾イベント")
+		PRINTFORMW %CALLNAME:MASTER%がベッドで横になろうとすると、%CALLNAME:TARGET%が抱きついてきた
+	ELSE
+		PRINTFORMW %CALLNAME:MASTER%が床に就こうとしたとき、突然%CALLNAME:TARGET%が部屋を訪ねてきた
+	ENDIF
+	;[高慢][生意気][意地悪][強気]持ちなら分岐
+	IF TALENT:高慢 || TALENT:生意気 || TALENT:強気 || TALENT:意地悪
+		PRINTFORMW 「……」
+		PRINTFORMW 無言のまま、%CALLNAME:MASTER%をやけに熱を帯びた潤んだ瞳で睨んでいる
+	;[恥じらい][清楚]持ちの場合分岐
+	ELSEIF TALENT:恥じらい || TALENT:清楚
+		PRINTFORMW 憂いと欲情の熱を帯びた眼差しで、上目遣いに%CALLNAME:MASTER%の様子を伺っている
+		SELECTCASE NO:TARGET
+		CASE 16
+			PRINTFORMW 「…のぅ…%CNAME("二人称")%、その、な。 ……わ、わかっておるであろ？」
+		CASE 9, 30, 32, 37
+			PRINTFORMW 「……あの……ごめんなさいっ！！」
+		CASEELSE
+			PRINTFORMW 「……」
+		ENDSELECT
+	;[惚れっぽい][献身][小悪魔][妄信]持ちなら分岐
+	ELSEIF TALENT:惚れっぽい || TALENT:献身 || TALENT:妄信 || TALENT:小悪魔
+		PRINTFORMW 「……」
+		PRINTFORMW 無言のまま、熱を帯び潤んだ瞳で%CALLNAME:MASTER%を見つめながら微笑む
+	ENDIF
+	PRINTFORMW そのまま\@ TALENT:オトコ ? %CALLNAME:TARGET% # 彼女 \@は%CALLNAME:MASTER%を押し倒し、不浄の穴でペニスを咥え込み激しく腰を打ち付け始めた
+
+	CALL SELF_KOJO, CSTR:夜這い
+
+	;[高慢][生意気][意地悪][強気]持ちなら分岐
+	IF TALENT:高慢 || TALENT:生意気 || TALENT:強気 || TALENT:意地悪
+		PRINTFORMW %CALLNAME:TARGET%は悪態交じりの艶のある嬌声を上げながら、何度も腰を淫らに振り肛門で肉欲を貪っている…
+	;[恥じらい][清楚]持ちの場合分岐
+	ELSEIF TALENT:恥じらい || TALENT:清楚
+		PRINTFORML %CALLNAME:TARGET%は何度も小さな声で歓喜の悲鳴と謝罪の言葉を紡ぎながら、
+		PRINTFORMW 無心に腰を振って肛門で肉欲を貪っている…
+	;[惚れっぽい][献身][小悪魔][妄信]持ちなら分岐
+	ELSEIF TALENT:惚れっぽい || TALENT:献身 || TALENT:妄信 || TALENT:小悪魔
+		PRINTFORMW %CALLNAME:TARGET%は微笑みながら、妖しく腰を揺らして肛門で肉欲を貪っている…
+	;[陽気][好色][快感に素直]持ちの場合分岐
+	ELSEIF TALENT:陽気 || TALENT:好色 || TALENT:快感に素直
+		PRINTFORMW %CALLNAME:TARGET%は目を細めて微笑みながら、何度も腰を打ちつけ肛門で肉欲を貪っている…
+	ELSE
+		PRINTFORMW 開発されきったアナルは吸い込むように怒張を呑み込み、思うが侭に肉欲を貪っている…
+	ENDIF
+	CALL SIMULATE_TRAIN, 75, LOCAL
+
+	CALL CALC, "欲求不満解消", TARGET, LOCAL
+
+	PRINTFORM 何度目かの絶頂の後、
+	IF TALENT:お気に入り || TALENT:相思相愛
+		PRINTFORMW 想いを遂げた二人は繋がったまま抱き合い、深い眠りに落ちた…
+		;一緒に眠ったフラグ。朝の相手として優先。
+		CFLAG:MASTER:96 = TARGET
+		CFLAG:96 = MASTER
+	ELSE
+		PRINTFORM 想いを遂げた%CALLNAME:TARGET%は
+		;相手がいっぱいいるときは紳士協定
+		IF RAND:CHARANUM >= 5
+			PRINTFORMW 身を清めると、名残惜しそうに自分の部屋へと戻っていった…
+		ELSE
+			PRINTFORMW %CALLNAME:MASTER%に抱きつき、そのまま深い眠りに落ちた…
+			CFLAG:MASTER:96 = TARGET
+			CFLAG:96 = MASTER
+		ENDIF
+	ENDIF
+	CVARSET TEQUIP, 30, 0
+
+CASE "添い寝"
+	LOCAL = 1
+	;PRINTL ＜添い寝？＞
+	IF COND("同衾イベント")
+		PRINTFORMW %CALLNAME:MASTER%がベッドで横になっていると、寝巻き姿の%CALLNAME:TARGET%がそ〜っとベッドに入ってきた
+		CALL SELF_KOJO, CSTR:夜這い
+		PRINTFORMW そして、%CALLNAME:MASTER%に抱きついて満足げな表情を見せると、そのまま眠りに落ちていった……
+	ELSE
+		PRINTFORM %CALLNAME:MASTER%が床に就くと、
+		IF RAND:3 == 0
+			PRINT 枕を抱きかかえた
+		ELSEIF RAND:2
+			PRINT パジャマ姿の
+		ELSE
+			PRINT 怪獣のきぐるみパジャマを着た
+		ENDIF
+		PRINTFORMW %CALLNAME:TARGET%がこっそり部屋に忍び込んできた
+		PRINTFORMW どうやら、%CALLNAME:MASTER%と一緒に寝たいようだ…
+		PRINTFORMW 小声での呼びかけに%CALLNAME:MASTER%が狸寝入りしていると、%CALLNAME:TARGET%はそ〜っとベッドに入った
+		CALL SELF_KOJO, CSTR:夜這い
+		PRINTFORMW そして、%CALLNAME:MASTER%に抱きついて満足げな表情を見せると、そのまま眠りに落ちていった……
+	ENDIF
+	CFLAG:MASTER:96 = TARGET
+	CFLAG:96 = MASTER
+
+CASE "夜這いキス"
+	IF TALENT:恋慕 && CFLAG:2 >= 3000 && TALENT:蕩唇
+		LOCAL = RAND:3 + 1
+	ELSEIF TALENT:恋慕 && CFLAG:2 >= 3000 
+		LOCAL = RAND:2 + 1
+	ELSE
+		LOCAL = 1
+	ENDIF
+	;PRINTL ＜夜這いキス＞
+	IF COND("同衾イベント")
+		PRINTFORMW %CALLNAME:MASTER%がベッドで寝息を立て始めると、%CALLNAME:TARGET%がそ〜っと抱きついた
+	ELSE
+		PRINTFORMW %CALLNAME:MASTER%が床に就くと、%CALLNAME:TARGET%はこっそり部屋に忍び込んだ
+	ENDIF
+	PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:MASTER%の寝顔をのぞき込み、想いを抑えきれず唇を奪った
+	CALL SELF_KOJO, CSTR:夜這い
+	PRINTFORMW %CALLNAME:MASTER%が目を醒まさない事を良い事に、何度も貪るように口付けを重ねている……
+
+	CALL SIMULATE_TRAIN, 6, LOCAL
+
+	IF COND("同衾イベント") == 0
+		PRINTFORML しばしの密かな行為を終え、唇に残る感触を思い出しながら
+		PRINTFORMW %CALLNAME:TARGET%は名残惜しそうに部屋を後にした
+	ENDIF
+
+	CALL CALC, "欲求不満解消", TARGET, 1
+
+;以下は乱交イベント(TARGET:1 > 0 は確実)
+CASEELSE
+	CSTR:乱交 = %CSTR:夜這い%
+	CALL EVENT_RANKOU, "夜這い乱交"
+ENDSELECT
+PRINTL 
+
+;夜イベントの記録
+IF CSTR:夜這い != ""
+	CFLAG:PLAYER:91 = NUM_EV(CSTR:夜這い)
+	CFLAG:91 = NUM_EV(CSTR:夜這い)
+	DRAWLINE
+ENDIF
+
+;取り合いのような寝取りのような
+SELECTCASE CSTR:夜這い
+CASE "夜這いＡ騎乗位", "夜這い騎乗位", "添い寝"
+	TARGET:1 = FIND_COND("夜這い可能", "淫乱", "相思相愛")
+	SIF TARGET:1 == 0 || TALENT:相思相愛 == 0 || COND("同衾イベント")  || CFLAG:MASTER:96 == 0
+		RETURN 0
+
+	;実行可能コマンドの確認
+	CALL CHECK_COM_ABLE, TARGET:1
+
+	VARSET LOCAL
+
+	SIF PENIS(MASTER) && CANTRAIN("押し倒し騎乗位", TARGET:1) && TALENT:(TARGET:1):処女 == 0 && TALENT:PLAYER:童貞 == 0
+		LOCAL = 65
+	SIF PENIS(MASTER) == 0 && PENIS(TARGET:1) && CANTRAIN("押し倒し正常位奉仕", TARGET:1) && TALENT:(TARGET:1):童貞 == 0 && TALENT:MASTER:処女 == 0 && TALENT:MASTER:妊娠 == 0
+		LOCAL = 120
+
+	SIF LOCAL == 0
+		RETURN 0
+
+	PRINTL 
+	PRINTFORML ………
+	PRINTFORML ……
+	PRINTFORMW …
+	PRINTL 
+
+	SELECTCASE LOCAL
+	CASE 65
+		PRINTFORMW %CALLNAME:(TARGET:1)%はあなたの上にこっそりと馬乗りになり下着を剥ぎ取ると、ゆっくりと腰を下ろしていく…
+		PRINTFORMW 股間を包む快楽に目を覚ましたあなたの口を素早く塞ぎ、%CALLNAME:(TARGET:1)%は%CALLNAME:TARGET%にばれないように声を殺して欲望のまま腰を振る…
+		PRINTFORMW 愛する夢魔の隣で行為に及ぶ背徳感と、快楽だけを追求する%CALLNAME:(TARGET:1)%の巧みな腰使いにあなたはなすすべもなく達してしまう…
+		PRINTFORMW %CALLNAME:(TARGET:1)%は子宮を叩く熱い迸りを目を閉じ、うっとりとした表情で堪能すると、再び腰を動かし始める…！
+		LOCALS = あなたは%CALLNAME:(TARGET:1)%が満足するまでの間、愛する%CALLNAME:TARGET%のすぐ隣で%TEXTR("弄ばれ", "玩具にされ", "オモチャにされ", "搾られ")%続けた…
+	CASE 120
+		PRINTFORMW %CALLNAME:(TARGET:1)%は%CALLNAME:TARGET%の隣でぐっすりと眠るあなたを確認すると、そっと股を開き下着をずらした…
+		PRINTFORMW そして熱く滾ったペニスを自らの唾液で濡らすと、一気にあなたのアソコを貫いた…！
+		IF ABL:(TARGET:1):サドっ気 >= 5
+				PRINTFORM 身体を貫く衝撃に目を覚ましたあなたに、%CALLNAME:(TARGET:1)%は
+			;ワーウルフ系
+			IF BASE:(TARGET:1):ストック
+				PRINTFORM 動くなとばかりに強く唸ると、
+			ELSE
+				IF RAND:2 == 0
+					PRINTFORM 「%CALLNAME:TARGET%にバレてもいいの
+				ELSE
+					PRINTFORM 「こんなところを見たら%CALLNAME:TARGET%はどう思う
+				ENDIF
+				SELECTCASE BASE:(TARGET:1):種族思考
+				;ネコマタ系
+				CASE 6
+					PRINTFORM かにゃ〜？
+				;クズノハ系
+				CASE 16
+					PRINTFORM かのう？
+				;かな
+				CASE 2, 4, 15, 21, 23, 26, 28, 29, 31, 33, 39, 40, 41, 47, 50, 59
+					PRINTFORM かな？
+				CASE 34
+					PRINTFORM か？
+				;かしら
+				CASEELSE
+					PRINTFORM かしら？
+				ENDSELECT
+				PRINTFORM 」などと囁きながら、
+			ENDIF
+			PRINTFORMW 欲望のまま腰を打ち付けてくる…！
+			PRINTFORMW 発覚を恐れたあなたは自ら口を手で押さえて声を殺し、%CALLNAME:(TARGET:1)%の性欲の捌け口として犯されるままになってしまう…
+			LOCALS = あなたは愛する%CALLNAME:TARGET%の眠る隣で、そのまま%CALLNAME:(TARGET:1)%にたっぷりと%TEXTR("種付け", "膣内射精", "犯", "レイプ")%されてしまった…
+		ELSE
+			PRINTFORMW 身体を貫く衝撃に目を覚ましたあなたの口を塞ぎ、ゆっくりと、あなたの快感を引き出していくように腰を動かし始める…
+			PRINTFORMW あなたは%CALLNAME:TARGET%に対する裏切りを感じつつも、やがて%CALLNAME:(TARGET:1)%の腰使いに応じるように自ら腰を振り出してしまう…
+			LOCALS = あなたは%CALLNAME:(TARGET:1)%に%TEXTR("種付け", "膣内射精", "犯", "レイプ")%されながら、愛する%CALLNAME:TARGET%の隣で%TEXTR("イかされ", "達し", "絶頂し", "快楽に溺れ")%てしまった…
+		ENDIF
+	ENDSELECT
+
+	SWAP TARGET, TARGET:1
+	CALL SIMULATE_TRAIN, LOCAL, BASE:(TARGET:1):精力/20 + LIMIT(RAND:(BASE:(TARGET:1):精力/10 + 1), 0, BASE:(TARGET:1):精力/15)
+	SWAP TARGET, TARGET:1
+
+	PRINTFORMW %LOCALS%
+
+ENDSELECT
+
+
+;-------------------------------------------------
+;夜這いイベントの決定。何をやるかは CSTR:夜這い で記録する
+;複数プレイは短く「乱交」と表記する
+;-------------------------------------------------
+@PLAY_AT_EVENING
+#DIM LCOUNT
+;ランダム選択に用いる
+#DIM NUM_FIND
+
+
+SIF COND("夜這い可能") == 0 || TIME == 0 || COND("手一杯", MASTER)
+	RETURN 0
+
+;反発刻印が3あるとダメ
+SIF MARK:反発刻印 >= 3
+	RETURN 0
+
+;実行可能コマンドの確認
+CALL CHECK_COM_ABLE, TARGET
+
+;まずは乱交かどうか。欲求不満な人が多いと乱交になりやすい
+IF COND("乱交可能") && (CHARA_NUM("欲求不満で乱交可能") >= 3 + RANDF(7) || (FIND_COND("相性◎", "乱交可能") && RAND:3 == 0) )
+	CALL EVENT_RANKOU_SET, "夜這い乱交"
+	;乱交プレイが実行可能ならば決定
+	SIF CSTR:夜這い != ""
+		RETURN 1
+ENDIF
+
+
+;以下は通常の一人での夜這い
+NUM_FIND = 0
+
+FOR LCOUNT, 0, 10
+	SELECTCASE LCOUNT
+	CASE 0
+		SIF PENIS(PLAYER) == 0 || TALENT:処女 || TALENT:PLAYER:童貞 || CANTRAIN("押し倒し騎乗位") == 0
+			CONTINUE
+		LOCALS = 夜這い騎乗位
+	CASE 1
+		SIF PENIS(PLAYER) == 0 || EXP:PLAYER:Ａ挿入経験 == 0 || CANTRAIN("押し倒しアナル騎乗位") == 0
+			CONTINUE
+		LOCALS = 夜這いＡ騎乗位
+
+	;欲求不満or同衾イベント発生時には、ここより上の過激なプレイを優先する
+	CASE 2
+		SIF NUM_FIND && COND("欲求不満") + COND("同衾イベント")
+			BREAK
+
+		SIF (COND("欲求不満") || AGE(TARGET) >= 2) && COND("同衾イベント") == 0
+			CONTINUE
+		LOCALS = 添い寝
+	CASE 3
+		SIF TALENT:恋慕 == 0 || CANTRAIN("キス") == 0
+			CONTINUE
+		LOCALS = 夜這いキス
+	CASEELSE
+		BREAK
+	ENDSELECT
+
+	NUM_FIND += 1
+
+	SIF RAND:NUM_FIND
+		CONTINUE
+
+	CSTR:夜這い = %LOCALS%
+NEXT
+

@@ -1,0 +1,255 @@
+﻿;-------------------------------------------------
+;休憩したときに起きるイベント
+;-------------------------------------------------
+@EVENT_REST_PRE
+SIF ASSI <= 0
+	RETURN 0
+SIF BASE:MASTER:精力 >= MAXBASE:MASTER:精力
+	RETURN 0
+
+SWAP ASSI, TARGET
+CALL EVENT_REST
+SWAP ASSI, TARGET
+
+@EVENT_REST
+SIF ABL:奉仕精神 < RAND:10 || RAND:3
+	RETURN 0
+SIF TALENT:恋慕 == 0 && TALENT:淫乱 == 0 && MARK:屈服刻印 < 3
+	RETURN 0
+;とりあえずは性別の制限つきで
+SIF MARK:反発刻印 || TALENT:妖精 || TALENT:オトコ || PENIS(MASTER) == 0
+	RETURN 0
+
+CALL CALC, "ランダム選択"
+
+;お風呂
+;SIF FIRSTCOM(94)
+	CALL CALC, "ランダム選択", 1
+;耳かき
+SIF ABL:奉仕精神 >= 3 && COND("指の使用")
+	CALL CALC, "ランダム選択", 2
+
+;エッチという名の助手の報酬(とりあえずは主人がオトコで相手が女のときのみ)
+;IF TALENT:MASTER:オトコ && TALENT:オトコ == 0
+;	SIF TALENT:好色 + TALENT:淫乱 || (COND("欲求不満") && ABL:欲望 >= 4)
+;		CALL CALC, "ランダム選択", 3
+;ENDIF
+
+
+;添い寝
+;CALL CALC, "ランダム選択", 2
+;お茶
+;CALL CALC, "ランダム選択", 3
+;マッサージ
+;SIF COND("指の使用") && ABL:指使い >= 3
+;	CALL CALC, "ランダム選択", 4
+
+
+
+
+SELECTCASE RESULT
+CASE 1
+	LOCALS = 休憩：お風呂
+CASE 2
+	LOCALS = 休憩：耳かき
+CASE 3
+	LOCALS = 休憩：掃除
+
+;CASE 
+;	LOCALS = 休憩：エッチ
+;CASE 
+;	LOCALS = 休憩：添い寝
+;CASE 
+;	LOCALS = 休憩：お茶
+;CASE 
+;	LOCALS = 休憩：マッサージ
+
+
+CASEELSE
+	RETURN 0
+ENDSELECT
+
+DRAWLINE
+
+;LOCALで得た経験を管理する予定
+VARSET LOCAL
+
+SELECTCASE LOCALS
+CASE "休憩：掃除"
+
+
+CASE "休憩：お風呂"
+	PRINTFORMW %CALLNAME:MASTER%が自室で%TEXTR("休憩して", "横になって", "寛いで")%いると\@ TARGET == ASSI ? 、%TEXTS("助手の名称")%の # \@%CALLNAME:TARGET%がやって来ました
+	PRINTFORM 何の用かと聞いてみると……どうやら、
+	IF RAND:2
+		PRINTFORMW お風呂で背中を流してくれるとのことです
+	ELSE
+		PRINTFORMW お風呂で体を洗ってくれるとのことです
+	ENDIF
+	PRINTFORMW もちろん、言葉通りの意味ではなさそうですが…
+
+	PRINTL 
+	PRINTFORML ……どうしますか？
+	PRINTFORML  [ 0] 申し出を受ける
+	PRINTFORML [100] やんわりと断って寝る
+	CALL INPUT_SELECT, 1, 100
+
+	SELECTCASE RESULT
+	CASE 100
+		;「あ……そ、そう。 …おやすみ、今度は付き合ってよね？」
+		PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:MASTER%の乗り気でない様子にちょっとがっかりしたようですが、素直に退室しました…
+		RETURN 0
+	CASE 0
+
+		PRINTL 
+		PRINTFORML −浴場−
+		PRINTFORMW %CALLNAME:MASTER%は指示されるがままにお風呂場でマットに寝そべり、全身から力を抜いて%CALLNAME:TARGET%の腕前を楽しむことにしました
+		PRINTFORM 泡まみれの%TEXTS("おっぱい")%を擦り付けて軽く全身を洗ってきた%CALLNAME:TARGET%は、
+		IF ABL:技巧 >= ABL:MASTER:技巧
+			PRINTFORM すっかり大きくなってしまった
+		ELSE
+			PRINTFORM ちょっと硬くなってきている
+		ENDIF
+		PRINTFORM %TEXTR("ペニス", "汚れの強い部分")%を
+		IF COND("ベテラン：Ｖセックス") && TALENT:MASTER:童貞 == 0
+			SIF ABL:技巧 < ABL:MASTER:技巧
+				PRINTFORM %TEXTR("指", "胸", "口", "素股", "キス")%で刺激して勃たせた後に
+			IF ABL:Ｖ拡張 > SIZE("ペニス", MASTER)
+				PRINTFORM 根元まで
+			ELSEIF ABL:Ｖ拡張 == SIZE("ペニス", MASTER)
+				PRINTFORM しっかりと
+			ELSE
+				PRINTFORM 奥まで
+			ENDIF
+			PRINTFORM 膣内%TEXTR("に収め", "に呑み込み")%、
+			IF TALENT:感情乏しい + TALENT:冷静
+				PRINTFORM %CALLNAME:MASTER%の反応を実況しながら
+			ELSEIF TALENT:陽気 && RAND:3
+				PRINTFORM 快楽に蕩けた楽しそうな笑顔で%CALLNAME:MASTER%の顔を覗き込みながら
+			ELSEIF TALENT:強気 + TALENT:高慢 && RAND:3
+				PRINTFORM 余裕たっぷりの不敵な笑顔を見せながら
+			ELSEIF TALENT:巨乳 && RAND:3
+				IF RAND:3 == 0 && TALENT:巨乳 >= 2
+					IF RAND:2
+						PRINTFORM 豊満な胸を派手に揺らしながら
+					ELSE
+						PRINTFORM 重そうなおっぱいをユサユサと揺らしながら
+					ENDIF
+				ELSEIF RAND:3 == 0
+					PRINTFORM 大きな胸を揺らしながら
+				ELSEIF RAND:2
+					PRINTFORM 揺れるおっぱいを見せつけながら
+				ELSE
+					PRINTFORM 胸を揉みしだきながら
+				ENDIF
+			ELSE
+				PRINTFORM 体を赤く火照らせながら
+			ENDIF
+			IF ABL:腰使い >= 5 && RAND:2
+				PRINTFORMW 淫靡な腰使いを見せています…
+			ELSEIF ABL:Ｖ感覚 >= MAX(3, ABL:MASTER:技巧) && RAND:2
+				PRINTFORMW 可愛らしく喘いでいます…
+			ELSEIF RAND:2
+				PRINTFORMW 激しく責めて来ています…
+			ELSE
+				PRINTFORMW 腰を振っています…
+			ENDIF
+			LOCALS = 休憩：お風呂で本番
+		ELSE
+			IF TALENT:巨乳
+				PRINTFORM 自慢の胸で挟んで
+			ELSEIF ABL:舌使い >= MAX(ABL:舌使い, ABL:指使い, ABL:足使い, 1)
+				PRINTFORM 口で咥えて
+			ELSEIF ABL:指使い >= MAX(ABL:舌使い, ABL:指使い, ABL:足使い, 1)
+				PRINTFORM 指を這わせて
+			ELSEIF ABL:足使い >= MAX(ABL:舌使い, ABL:指使い, ABL:足使い, 1)
+				PRINTFORM 足で挟んで
+			ENDIF
+			PRINTFORMW 激しく、時に緩やかに刺激しています…
+		ENDIF
+
+		CALL SELF_KOJO, LOCALS
+
+		PRINTL 
+		PRINTFORMW %CALLNAME:TARGET%にスッキリさせてもらった%CALLNAME:MASTER%は、その後普通に体を綺麗にしてもらいつつ暫しの休息を楽しみました…
+	ENDSELECT
+
+	;PRINTFORM マットに横たわった%CALLNAME:TARGET%は%CALLNAME:MASTER%に向かって股を開き、洗いにくい体の奥の部分を洗ってくれるようにおねだりしてきました
+
+CASE "休憩：耳かき"
+	PRINTFORMW %CALLNAME:MASTER%が自室で%TEXTR("休憩して", "横になって", "寛いで")%いると\@ TARGET == ASSI ? 、%TEXTS("助手の名称")%の # \@%CALLNAME:TARGET%がやって来ました
+	PRINTFORM 何の用かと聞いてみると……どうやら、
+	IF TALENT:ラミア
+		PRINTFORMW 耳かきをしてくれるそうです
+		PRINTFORMW ベッドに陣取った%CALLNAME:TARGET%は胴体をなだらかなスロープ状にさせて、%CALLNAME:MASTER%に寝転がるようにと手招きをしています…
+	ELSEIF TALENT:マーメイド
+		PRINTFORMW 耳かきをしてくれるそうです
+		PRINTFORMW ベッドに腰を下ろした%CALLNAME:TARGET%は魚の下半身に置いた枕をポン、ポン、と叩いて%CALLNAME:MASTER%に手招きをしています…
+	ELSE
+		PRINTFORMW 膝枕で耳かきをしてくれるそうです
+		PRINTFORMW ベッドに座った%CALLNAME:TARGET%は膝をポン、ポン、と叩いて%CALLNAME:MASTER%に手招きをしています…
+	ENDIF
+
+	PRINTL 
+	PRINTFORML ……どうしますか？
+	PRINTFORML  [ 0] 素直に耳掃除してもらう
+	PRINTFORML  [ 1] 耳掃除もいいけど…悪戯もしようかな？
+	PRINTFORML [100] やんわりと断って寝る
+	CALL INPUT_SELECT, 2, 100
+
+	SELECTCASE RESULT
+	CASE 100
+		;「あ……そ、そう。 …おやすみ、今度は付き合ってよね？」
+		PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:MASTER%の乗り気でない様子にちょっとがっかりしたようですが、素直に退室しました…
+		RETURN 0
+	CASE 0
+		PRINTFORMW %CALLNAME:MASTER%は膝枕\@ TALENT:ラミア + TALENT:マーメイド ? ？ # \@の体勢で耳掻きされつつ、うとうとしながら暫しの休息を楽しみました
+		IF ABL:技巧 >= 5
+			PRINTFORMW %CALLNAME:TARGET%は全く痛みを感じさせない見事な手際で両耳を掃除してくれたうえ、まどろんでいる%CALLNAME:MASTER%の髪を優しく手櫛で梳いてくれています…
+		ELSE
+			IF RAND:10 > ABL:技巧
+				PRINTFORMW たまにちょっと痛かったりでビクっと目を覚まされるようなこともありましたが、そのうち上達してくれるでしょう…
+			ELSE
+				PRINTFORMW %CALLNAME:TARGET%は%TEXTR("大きな耳垢が取れてはしゃいでいます…", "あんまり耳垢が取れなかったので、ちょっと残念そうです…", "真剣な表情で耳掃除に没頭して楽しんでいるようです…")%
+			ENDIF
+		ENDIF
+	CASE 1
+		PRINTFORMW %CALLNAME:MASTER%は膝枕\@ TALENT:ラミア + TALENT:マーメイド ? ？ # \@の体勢で耳掻きされつつ、隙を見ては悪戯を繰り出して楽しい一時を過ごす事にしました
+		IF MIN(RAND:10, 5) > ABL:技巧 && RAND:2
+			PRINTFORM …が、調子に乗って
+			IF TALENT:ラミア + TALENT:マーメイド == 0 && RAND:3
+				PRINTFORM %TEXTR("足の裏", "内腿")%
+			ELSE
+				PRINTFORM %TEXTS("腋")%の下
+			ENDIF
+			PRINTFORMW をくすぐったのは失敗だったようです！
+			PRINTFORM %CALLNAME:TARGET%は
+			IF TALENT:感情乏しい + TALENT:冷静
+				PRINTFORM 『…自業自得』
+			ELSEIF TALENT:強気 + TALENT:高慢
+				PRINTFORM 『やってしまった…』
+			ELSE
+				PRINTFORM 『ど、どうしよう…』
+			ENDIF
+			PRINTFORML という表情で硬直しつつ 、のた打ち回る%CALLNAME:MASTER%を見守っています…
+			PRINTFORMW ※奥の方を掃除してもらってる時にはくすぐったりはしないようにしましょう※
+		ELSE
+			PRINTFORM %CALLNAME:TARGET%は
+			IF TALENT:感情乏しい + TALENT:冷静 && RAND:3
+				PRINTFORMW 殆ど反応することなくされるがままの状態で耳かきを黙々と続けていましたが…
+				PRINTFORMW 流石に%TEXTR("乳首に悪戯された", "淫核を摘まれた", "膣に指を入れられた")%時は、ビクっと体を跳ねさせた後にじと〜っとした視線を%CALLNAME:MASTER%に向けてきました
+				PRINTFORMW とはいえ別に怒ってはいないのか、%CALLNAME:TARGET%は%CALLNAME:MASTER%が悪戯し易いように体勢を変え、敏感な部分を撫でられる折に甘い声を漏らしながら耳かきを続けています…
+			ELSEIF TALENT:陽気 && RAND:3
+				PRINTFORMW %CALLNAME:MASTER%に%TEXTR("アソコを撫で撫でされる", "触られる", "おっぱいを揉まれる")%度に気持ちよさそうな声を上げ、時には『めっ』したりしつつノリノリで耳かきをしています…
+			ELSEIF TALENT:強気 + TALENT:高慢 && RAND:3
+				PRINTFORMW 最初に悪戯された時こそ文句を言ってはきたものの、それだけ自分に魅力があるということにでも気づいたのか意外と寛容な態度です
+				PRINTFORMW …が、抵抗薄いのをいい事に、触っているうちに%TEXTR("パンツが濡れて" , "クリトリスが大きくなって", "乳首が硬くなって")%きている事を指摘してみると『調子に乗るな』と叩かれました…
+			ELSEIF TALENT:巨乳 && RAND:3
+				PRINTFORMW %CALLNAME:MASTER%の顔に重い乳房を乗っけたりして反撃しつつ、悪戯をされながらの耳かきを割合楽しそうにしています…
+			ELSE
+				PRINTFORMW 全く痛みを感じさせない見事な手際で耳を掃除してくれたうえ、%CALLNAME:MASTER%の繰り出すエッチな悪戯にも怒ることなく髪を優しく手櫛で梳いてくれています…
+			ENDIF
+		ENDIF
+	ENDSELECT
+ENDSELECT
+

@@ -1,0 +1,252 @@
+﻿;------------------------------------------------------------------------
+;胡蝶の夢
+;------------------------------------------------------------------------
+@KOTYOUNOYUME, ARG
+#DIM LCOUNT
+
+PRINTFORML 一冊を%CALLNAME:ARG%\@ ARG == MASTER ? に渡す # が持つ \@事とします。もう一人選択してください
+
+VARSET LOCAL
+FOR LCOUNT, 1, CHARANUM
+	SELECTCASE LCOUNT
+	CASE ARG
+		CONTINUE
+	CASE MASTER
+	CASEELSE
+		SIF COND("妊娠イベント中", LCOUNT) || MARK:LCOUNT:反発刻印 || ABL:LCOUNT:従順 < 4
+			CONTINUE
+	ENDSELECT
+
+	CALL PRINT_NUM_NAME, "体力", LCOUNT
+	LOCAL:LCOUNT = 1
+NEXT
+PRINTL [100] 戻る
+
+$INPUT_LOOP
+CALL INPUT_SELECT, CHARANUM, 100
+
+SELECTCASE RESULT
+CASE 100
+	PRINTFORMW 胡蝶の夢の使用を取りやめました
+	RETURN 0
+CASEELSE
+	SIF LOCAL:RESULT == 0
+		GOTO INPUT_LOOP
+ENDSELECT
+
+LOCAL = RESULT
+
+;ARGの方をキャラ番号が若い方とする
+SIF ARG > LOCAL
+	SWAP ARG, LOCAL
+
+IF ARG == MASTER
+	PRINTFORML %CALLNAME:ARG%が一冊持ち、もう一冊を[{LOCAL, 2}]%CALLNAME:LOCAL%に渡します。
+ELSE
+	PRINTFORML [{ARG, 2}]%CALLNAME:ARG%と[{LOCAL, 2}]%CALLNAME:LOCAL%に本を渡します。
+ENDIF
+PRINTL 
+PRINTL 本による身体の交換期間はどれほどとしますか？
+PRINTL  [ 0] １日
+PRINTL  [ 1] 二日
+PRINTL  [ 2] 三日
+IF ARG == MASTER
+	PRINTL  [ 3] 夢を終わらせたくなるまで
+ELSE
+	PRINTL  [ 3] 夢を終わらせるまで
+ENDIF
+PRINTL [100] やっぱりやめる
+CALL INPUT_SELECT, 4, 100
+
+
+SELECTCASE RESULT
+CASE 100
+	PRINTFORMW 胡蝶の夢の使用を取りやめました
+	RETURN 0
+CASE 3
+	ITEM:胡蝶の夢 = 100
+	PRINTFORML 選択された交換期間：夢から覚めるまで…
+CASEELSE
+	ITEM:胡蝶の夢 = RESULT + 1
+	PRINTFORML 選択された交換期間：{ITEM:胡蝶の夢}日
+ENDSELECT
+
+PRINTL 
+PRINTFORMW 二人を急激な眠気が襲う…
+
+CALL BODYSWAP, ARG, LOCAL
+
+
+;------------------------------------------------------------------------
+;一日の終わりに胡蝶の夢のフラグチェック
+;ARGSに"夢の終わり"と入れることで突然終わりにもできる
+;------------------------------------------------------------------------
+@EVENT_KOTYOUNOYUME, ARGS
+#DIM LCOUNT
+
+SELECTCASE ITEM:胡蝶の夢
+CASE 0
+	RETURN 0
+CASE 100
+	SIF ARGS != "夢の終わり"
+		RETURN 0
+;日付変更時に1づつ減らす
+CASEELSE
+	ITEM:胡蝶の夢 -= 1
+ENDSELECT
+
+SIF ARGS == "夢の終わり"
+	ITEM:胡蝶の夢 = 0
+
+;効果終了
+IF ITEM:胡蝶の夢 == 0
+	VARSET LOCAL
+	FOR LCOUNT, 1, CHARANUM
+		SIF COND("胡蝶の夢", LCOUNT) <= 0
+			CONTINUE
+
+		IF LOCAL == 0
+			LOCAL = LCOUNT
+		ELSEIF LOCAL:1 == 0
+			LOCAL:1 = LCOUNT
+			BREAK
+		ENDIF
+	NEXT
+	CALL BODYSWAP, LOCAL, LOCAL:1
+ENDIF
+
+
+;------------------------------------------------------------------------
+;ARGとARG:1の身体を入れ替える
+;------------------------------------------------------------------------
+@BODYSWAP, ARG, ARG:1
+#DIMS NAME_ARG, 2
+
+;素質を入れ換える
+FOR LOCAL, 0, 600
+	;精神系・技能系素質は除外（見づらいので分割）
+	SELECTCASE LOCAL
+	CASE 10 TO 41, 50 TO 53, 55, 58 TO 64, 70 TO 72, 75, 76, 80 TO 88, 91 TO 92
+		CONTINUE
+	CASE 117 TO 118, 123, 125, 126, 131, 132, 151, 157, 180 TO 194, 210, 211
+		CONTINUE
+	ENDSELECT
+	SWAP TALENT:ARG:LOCAL, TALENT:(ARG:1):LOCAL
+NEXT
+
+;経験を入れ換える（71まで見る）（保留。使いたい人は90〜97行頭のセミコロンを削除してください）
+FOR LOCAL, 0, 99
+	;精神系・技能系素質は除外（見づらいので分割）
+	SELECTCASE LOCAL
+	CASE 2 TO 7, 10, 14, 17 TO 51, 54 TO 56, 58 TO 61, 70 TO 80
+		CONTINUE
+	ENDSELECT
+	SWAP EXP:ARG:LOCAL, EXP:(ARG:1):LOCAL
+NEXT
+
+;淫紋を入れ替える
+SWAP MARK:ARG:淫紋, MARK:(ARG:1):淫紋
+
+;能力を入れ換える
+SWAP ABL:ARG:Ｃ感覚, ABL:(ARG:1):Ｃ感覚
+SWAP ABL:ARG:Ｖ感覚, ABL:(ARG:1):Ｖ感覚
+SWAP ABL:ARG:Ａ感覚, ABL:(ARG:1):Ａ感覚
+SWAP ABL:ARG:Ｂ感覚, ABL:(ARG:1):Ｂ感覚
+SWAP ABL:ARG:Ｍ感覚, ABL:(ARG:1):Ｍ感覚
+
+;CFLAGを入れ換える
+;性転換時の素質フラグ
+SWAP CFLAG:ARG:4, CFLAG:(ARG:1):4
+;種族に於けるランク識別フラグ
+SWAP CFLAG:ARG:8, CFLAG:(ARG:1):8
+;お漏らし癖治療フラグ
+SWAP CFLAG:ARG:34, CFLAG:(ARG:1):34
+
+;娘の成長フラグ関連
+;SWAP CFLAG:ARG:484, CFLAG:(ARG:1):484
+;SWAP CFLAG:ARG:485, CFLAG:(ARG:1):485
+
+;着せ替えの現在の服の状態管理など
+FOR LOCAL, 40, 60
+	SWAP EQUIP:ARG:LOCAL, EQUIP:(ARG:1):LOCAL
+	SWAP CSTR:ARG:LOCAL, CSTR:(ARG:1):LOCAL
+NEXT
+
+;体力や身体のサイズを交換
+SWAP BASE:ARG:体力, BASE:(ARG:1):体力
+FOR LOCAL, 20, 50
+	SWAP BASE:ARG:LOCAL, BASE:(ARG:1):LOCAL
+NEXT
+
+;得ている経験のフラグを消す
+CALL RESET_EXP_GAIN, ARG
+CALL RESET_EXP_GAIN, ARG:1
+
+;ややこしい呼び名の設定
+NAME_ARG = %CALLNAME:ARG%
+NAME_ARG:1 = %CALLNAME:(ARG:1)%
+IF NAME:ARG == NAME:(ARG:1)
+	IF NAME:ARG == "あなた"
+		NAME_ARG = あなた
+		NAME_ARG:1 = 別世界のあなた
+	ELSE
+		NAME_ARG = [{ARG, 2}]%CALLNAME:ARG%
+		NAME_ARG:1 = [ARG:1, 2]%CALLNAME:(ARG:1)%
+	ENDIF
+ENDIF
+
+;胡蝶の夢発動
+IF ITEM:胡蝶の夢
+	IF ARG == MASTER
+		PRINTFORML ・・・
+		PRINTFORML ・・・・・・
+		PRINTFORMW ・・・・・・・・・
+		PRINTFORMW 夢の中で%NAME_ARG%は%NAME_ARG:1%になっていた。
+		PRINTFORMW %NAME_ARG:1%となった%NAME_ARG%は、%NAME_ARG%と一緒にいた。
+		PRINTFORML はたして、%NAME_ARG%が%NAME_ARG:1%の夢を見ているのか、
+		PRINTFORMW 自分は本当は%NAME_ARG:1%で、これが現実なのか・・・
+		PRINTFORMW そんなことを考えているうちに、意識が遠くなっていく・・・
+		PRINTFORML ・・・・・・・・・
+		PRINTFORML ・・・・・・
+		PRINTFORMW ・・・
+		PRINTFORMW %NAME_ARG%は目を覚ました。
+		PRINTFORMW ・・・？何かがおかしい・・・
+		PRINTFORMW 突然、扉が開く。そこには・・・"%NAME_ARG%"が立っている！
+		PRINTFORMW その"%NAME_ARG%"は、「%CNAMET(ARG:1, "一人称")%は%NAME_ARG:1%だ」と言ってきた。
+		PRINTFORMW 自分の姿を確認すると、なんと%NAME_ARG:1%の姿になっていた！
+	ELSE
+		PRINTFORML ・・・・・・・・・
+		PRINTFORML ・・・・・・
+		PRINTFORMW ・・・
+		PRINTFORMW %CALLNAME:MASTER%は目を覚ました。
+		PRINTFORMW ・・・？何か騒がしい・・・
+		PRINTFORMW 様子を見に行くと、%NAME_ARG%と%NAME_ARG:1%がなにやら言い合っている。
+		PRINTFORML 何があったかと聞いてみると、%NAME_ARG%は自分が%NAME_ARG:1%だと言い、
+		PRINTFORMW 一方の%NAME_ARG:1%は、自分が%NAME_ARG%だと言っている。
+		PRINTFORMW どうやら、昨日の本がこの騒動を巻き起こしたようだ・・・
+	ENDIF
+	CALL SETFLAG, "胡蝶の夢フラグ", ARG
+	CALL SETFLAG, "胡蝶の夢フラグ", ARG:1
+	BASE:ARG:胡蝶の夢 = BASE:(ARG:1):識別番号
+	BASE:(ARG:1):胡蝶の夢 = BASE:ARG:識別番号
+ELSE
+	PRINTFORML ・・・・・・・・・
+	PRINTFORML ・・・・・・
+	PRINTFORMW ・・・
+	PRINTFORMW %NAME_ARG%は目を覚ました。
+	PRINTFORMW 慌てて自分の姿を確認すると・・・慣れ親しんだ筈の元の姿だ。
+	PRINTFORMW だが、これが本当に自分の姿で合っているのだろうか？
+	PRINTFORMW 寝ぼけた眼を擦る%NAME_ARG%の脳裏に浮かぶ姿は・・・%NAME_ARG:1%のものだった。
+
+	BASE:ARG:胡蝶の夢 = 0
+	BASE:(ARG:1):胡蝶の夢 = 0
+ENDIF
+
+PRINTL 
+SETCOLOR DEF_COLOR("イエロー")
+PRINTFORMW [{ARG, 2}]%CALLNAME:ARG%と[{ARG:1, 2}]%CALLNAME:(ARG:1)%の体が\@ ITEM:胡蝶の夢 ? 入れ替わった！ # 元に戻った\@
+RESETCOLOR
+
+CALL EXP50_CHECK, ARG
+CALL EXP50_CHECK, ARG:1
+

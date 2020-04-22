@@ -1,0 +1,260 @@
+﻿@COM68
+;子宮挿入
+CALL PRINT_TRAIN_NAME(SELECTCOM)
+
+CALL TRAIN_MESSAGE_B
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+STR:0 = %STR:2%
+
+;-------------------------------------------------
+;射精チェック
+;-------------------------------------------------
+CALL SAMEN_CHECK
+
+RETURN 1
+
+@FLAG_COM68, ARG
+IF TEQUIP:体位 == 0
+	CALL FLAG_COM60, 10
+ELSE
+	CALLFORM FLAG_COM{INSERT("Ｖ対応コマンド")}, 10
+ENDIF
+
+;屈曲位だと効果がかなり高い
+IF INSERT("屈曲位")
+	CALL FLAG_INSERTION, "子宮挿入", ARG, 300
+ELSE
+	CALL FLAG_INSERTION, "子宮挿入", ARG, 200
+ENDIF
+
+@SOURCE_COM68, ARG
+IF TEQUIP:体位 == 0
+	CALL SOURCE_COM60, 10
+ELSE
+	CALLFORM SOURCE_COM{INSERT("Ｖ対応コマンド")}, 10
+ENDIF
+
+;屈曲位だと効果がかなり高い
+IF INSERT("屈曲位")
+	CALL SOURCE_INSERTION, "子宮挿入", ARG, 300
+ELSE
+	CALL SOURCE_INSERTION, "子宮挿入", ARG, 200
+ENDIF
+
+VARSET LOCAL
+
+LOCAL:12 += 400
+
+;ABL:Ｖ感覚とEXP:子宮経験と子宮性感をみる
+SELECTCASE ABL:Ｖ感覚 + GET_EXP_LV(EXP:子宮経験) + TALENT:子宮性感*3
+CASE 0
+	LOCAL:6 += 3000
+CASE 1
+	LOCAL:6 += 2000
+CASE 2
+	LOCAL:13 += 100
+	LOCAL:6 += 1000
+CASE 3
+	LOCAL:13 += 200
+	LOCAL:6 += 500
+CASE 4
+	LOCAL:13 += 500
+	LOCAL:6 += 200
+CASE IS >= 5
+	LOCAL:13 += MIN(1000 * (ABL:Ｖ感覚 + TALENT:子宮性感*3), 10000)
+ENDSELECT
+
+;ABL:欲望をみる
+SELECTCASE ABL:欲望
+CASE 0
+	TIMES LOCAL:13, 0.10
+CASE 1
+	TIMES LOCAL:13, 0.40
+CASE 2
+	TIMES LOCAL:13, 0.60
+CASE 3
+	TIMES LOCAL:13, 1.00
+CASE 4
+	TIMES LOCAL:13, 1.40
+ENDSELECT
+
+IF TEQUIP:押し倒し
+	TIMES LOCAL:13, 0.50
+	TIMES LOCAL:6, 0.50
+ENDIF
+
+;スライム
+SIF TALENT:スライム
+	TIMES LOCAL:6, 0.10
+
+CALL CALC, "調教ソース", LOCAL:0, LOCAL:1, LOCAL:2, LOCAL:3, LOCAL:4, LOCAL:5, LOCAL:6, LOCAL:7, LOCAL:8, LOCAL:9, LOCAL:10, LOCAL:11, LOCAL:12, LOCAL:13, LOCAL:14, LOCAL:15, LOCAL:16, LOCAL:17, LOCAL:18, LOCAL:19, LOCAL:20, LOCAL:21, ARG
+
+
+@TRAIN_MESSAGE_COM68
+;意図せず子宮に入ってしまった
+IF COND("うっかり子宮挿入フラグ")
+	;ハードピストン
+	IF PENIS(PLAYER) && STATE("ハードスキン", PLAYER) && TEQUIP:押し倒し == 0
+		PRINTFORMW %CALLNAME:PLAYER%はガチガチのペニスで%CALLNAME:TARGET%の子宮口を虐め続けている…
+	;押し倒され(騎乗位)
+	ELSEIF TEQUIP:押し倒し || INSERT("騎乗位")
+		IF TALENT:子宮性感
+			IF PENIS(PLAYER) && RAND:2
+				PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%のペニスに夢中で子宮口を擦り付けて愉しんでいる…
+			ELSE
+				PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%に跨ったまま、自らの大切な部分を虐めて愉しんでいる…
+			ENDIF
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%は未知の快感に僅かに辛そうな顔を見せながらも、腰を小刻みに動かし続けている…
+		ENDIF
+	ELSE
+		PRINTFORM %CALLNAME:PLAYER%は\@ PENIS(PLAYER) ? 亀頭 # 先端 \@を%CALLNAME:TARGET%の子宮口に押し当てたまま、
+		IF TEQUIP:てかげん
+			PRINTFORMW あえて弱めに、時折動きを止めたりしながら%TEXTR("擦りあげ", "苛め", "刺激し", "焦らし")%続けている…
+		ELSE
+			PRINTFORMW %TEXTR("執拗に", "容赦なく", "徹底的に")%%TEXTR("擦りあげ", "苛め", "刺激し")%続けている…
+		ENDIF
+	ENDIF
+	PRINTFORMW と。
+	PRINTFORMW 一際深くまでペニスが呑み込まれる感触と共に、%CALLNAME:TARGET%の顔色が変わった
+	PRINTFORMW ……どうやら、快楽に緩んだ子宮口にペニスが入ってしまったようだ！
+	IF TALENT:スライム
+		PRINTFORMW %CALLNAME:TARGET%は子宮を直に犯されて精液を注がれるのを想像し、とろんと蕩けた表情をしている…
+	ELSEIF TALENT:子宮性感 && CUP:苦痛 < 100
+		IF COND("妊娠可能") && RAND:2
+			PRINTFORMW %CALLNAME:TARGET%は子宮に直接種付けされる期待に、とろんと蕩けた表情をしている…
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%は自分の最も神聖な部分への挿入を、長く甘い息を吐きながら味わっている…
+		ENDIF
+	ELSE
+		PRINTFORM %CALLNAME:TARGET%は子宮への挿入という有り得ない行為に
+		IF TALENT:出産経験
+			PRINTFORMW 、出産にも似た強烈な苦痛に苛まれている…
+		ELSE
+			PRINTFORMW 目を白黒させている…
+		ENDIF
+	ENDIF
+;前回と同じ
+ELSEIF PREVCOM == SELECTCOM && COND("前Ｔ調教者") == PLAYER
+	;ハードピストン
+	IF PENIS(PLAYER) && STATE("ハードスキン", PLAYER) && TEQUIP:押し倒し == 0
+		PRINTFORMW %CALLNAME:PLAYER%はガチガチのペニスで%CALLNAME:TARGET%の子宮を虐め続けた…
+	;押し倒され(騎乗位)
+	ELSEIF TEQUIP:押し倒し || INSERT("騎乗位")
+		IF TALENT:子宮性感
+			IF PENIS(PLAYER) && RAND:2
+				PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%のペニスに夢中で子宮内を擦り付けて愉しんでいる…
+			ELSE
+				PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%に跨ったまま、自らの大切な部分を虐めて愉しんでいる…
+			ENDIF
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%は未知の快感に僅かに辛そうな顔を見せながらも、腰を小刻みに動かし続けている…
+		ENDIF
+	ELSE
+		PRINTFORM %CALLNAME:PLAYER%は\@ PENIS(PLAYER) ? 亀頭 # 先端 \@を%CALLNAME:TARGET%の子宮に%TEXTR("潜り込ませた", "侵入させた", "捻じ込んだ")%まま、
+		IF TEQUIP:てかげん
+			PRINTFORMW あえて弱めに、時折動きを止めたりしながら%TEXTR("擦りあげ", "苛め", "刺激し", "焦らし")%続けた…
+		ELSE
+			PRINTFORMW %TEXTR("執拗に", "容赦なく", "徹底的に")%%TEXTR("擦りあげ", "苛め", "刺激し")%続けた…
+		ENDIF
+	ENDIF
+;ハードピストン
+ELSEIF PENIS(PLAYER) && STATE("ハードスキン", PLAYER) && TEQUIP:押し倒し == 0
+	PRINTFORM %CALLNAME:PLAYER%は
+	IF TALENT:出産経験 >= 5
+		PRINT 度重なる出産によりほぐれた子宮口
+	ELSE
+		IF RAND:2
+			PRINTFORM %CALLNAME:TARGET%の緩んだ子宮口
+		ELSE
+			PRINTFORM 敏感な子宮の入り口
+		ENDIF
+	ENDIF
+	PRINTFORMW へとペニスを力強く押し込んだ
+	PRINTFORM 凄まじい硬さのペニスは
+	IF RAND:2
+		PRINTFORM 僅かな抵抗を押し破って
+	ELSE
+		PRINTFORM 入り口をこじ開けながら
+	ENDIF
+	PRINTFORM 子宮の中まで入り込み、%CALLNAME:TARGET%を
+	IF TALENT:小柄体型
+		PRINT 未成熟な子宮の中まで犯される
+	ELSE
+		PRINT 女体の最も神聖な部分を犯される
+	ENDIF
+	PRINTFORMW 感覚に喘がせる…
+;押し倒され(騎乗位)
+ELSEIF TEQUIP:押し倒し || INSERT("騎乗位")
+	PRINTFORM %CALLNAME:TARGET%は%CALLNAME:PLAYER%の胸に手を衝き、
+	IF RAND:2
+		PRINTFORMW 膣でそうするかのように子宮でスッポリと%NAMES("ペニス", PLAYER)%を呑み込んだ…
+	ELSE
+		PRINTFORMW ゆっくりと腰を落として柔らかく緩んだ子宮で%NAMES("ペニス", PLAYER)%を咥えこんだ…
+	ENDIF
+	PRINTFORM %CALLNAME:TARGET%は腰を小さく揺すりながら、
+	IF RAND:4 == 0
+		PRINTFORMW 子宮の奥をぐりぐりと押し上げられる感覚に酔い痴れている…
+	ELSEIF RAND:3 == 0
+		PRINTFORMW 子宮に直接\@ COND("妊娠可能") ? 種付け # 射精 \@される期待に満ちた眼差しで%CALLNAME:PLAYER%を見つめている…
+	ELSEIF RAND:2
+		PRINTFORMW とろんと蕩けた表情で%CALLNAME:PLAYER%を見つめている…
+	ELSE
+		PRINTFORMW 熱っぽく息を吐いて子宮への挿入感を味わっている…
+	ENDIF
+ELSE
+	PRINTFORM %CALLNAME:PLAYER%は%CALLNAME:TARGET%の
+	IF TALENT:出産経験 >= 5 && RAND:2
+		PRINT 何度も出産を経験した子宮口
+	ELSEIF TALENT:スライム
+		PRINT 硬めのゼリーのような子宮口
+	ELSE
+		PRINT 緩んだ子宮口
+	ENDIF
+	IF RAND:3 == 0
+		PRINTFORM を\@ PENIS(PLAYER) ? 亀頭 # 張り型の先端 \@で抉じ開けて、そのまま
+	ELSE
+		SELECTCASE CONDS("体位")
+		CASE "正常位"
+			PRINTFORM %TEXTR("に照準を合わせて", "目掛けて")%力強く腰を突き出し、%NAMES("ペニス", PLAYER)%で
+		CASE "後背位", "屈曲位"
+			PRINTFORM を体重を乗せた%NAMES("ペニス", PLAYER)%で押し開き、そのまま
+		CASEELSE
+			;いきなり子宮を犯した
+			IF INSERT("Ｖインサート") == 0
+				PRINTFORM %TEXTR("に照準を合わせて", "目掛けて")%力強く腰を突き出し、%NAMES("ペニス", PLAYER)%で
+			ELSE
+				PRINTFORM に\@ PENIS(PLAYER) ? 亀頭 # 張り型の先端 \@を押し当てた後に腰を強く引き寄せて侵入させると、そのまま
+			ENDIF
+		ENDSELECT
+	ENDIF
+	PRINTFORMW 子宮の中まで犯しはじめた…
+
+	PRINTFORM %CALLNAME:TARGET%は
+	IF (TALENT:子宮性感 || TALENT:スライム) && CUP:苦痛 < 500
+		IF COND("妊娠可能") && RAND:3 == 0
+			PRINTFORMW 子宮に直接%TEXTR("種付けされる", "精液を流し込まれる")%期待に、とろんと蕩けた表情をしている…
+		ELSEIF RAND:4 == 0
+			PRINTFORMW 自身の一番奥を抉られる苦痛と歓喜に打ち震え、半ば無意識に膣壁を蠢かせてペニスに絡みつかせている…
+		ELSEIF RAND:3 == 0
+			PRINTFORMW 子宮の奥の壁を激しく突かれながら、とろんと蕩けた表情をしている…
+		ELSEIF RAND:2
+			PRINTFORMW 子宮そのものを揺さぶる%CALLNAME:PLAYER%の動きに狂ったように悶え、牝として最高の快楽に溺れた…
+		ELSE
+			PRINTFORMW 自分の最も神聖な部分への挿入を、長く甘い息を吐きながら味わっている…
+		ENDIF
+	ELSEIF CUP:苦痛 < 500
+		IF RAND:2
+			PRINTFORMW 余りにも深い挿入感に、目を白黒させている…
+		ELSE
+			PRINTFORMW 自分の最も神聖な部分への挿入を、身体を強張らせながら受け入れている…
+		ENDIF
+	ELSEIF RAND:2
+		PRINTFORMW 身体の中で最も大事な部分を犯される苦痛に喘いでいる…
+	ELSE
+		PRINTFORMW 子宮への挿入という暴挙に、出産にも似た強烈な苦痛に苛まれている…
+	ENDIF
+ENDIF

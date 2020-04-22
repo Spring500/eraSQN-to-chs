@@ -1,0 +1,317 @@
+﻿@COM138
+;浴尿させる
+;直前にフェラ系コマンドなら口内放尿、セックス系なら膣内放尿、Ａセックス系なら温泉浣腸となる
+CALL PRINT_TRAIN_NAME(SELECTCOM)
+
+CALL TRAIN_MESSAGE_B
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+STR:0 = %STR:2%
+
+RETURN 1
+
+@FLAG_COM138, ARG
+;尿の汚れ発生
+IF PENIS(PLAYER)
+	STAIN:PLAYER:Ｐ = SET_STAIN(STAIN:PLAYER:Ｐ, "尿")
+ELSE
+	STAIN:PLAYER:Ｖ = SET_STAIN(STAIN:PLAYER:Ｖ, "尿")
+ENDIF
+IF CHECK_COM("口内放尿")
+	STAIN:Ｍ = SET_STAIN(STAIN:Ｍ, "尿")
+	IF PENIS(PLAYER)
+		CALL EQ_STAIN, TARGET, PLAYER, 0, 2
+	ELSE
+		CALL EQ_STAIN, TARGET, PLAYER, 0, 3
+	ENDIF
+	CALL SETFLAG, "飲尿フラグ", TARGET
+;妊娠率減少してみる。まぁファンタジーだしな
+ELSEIF CHECK_COM("膣内放尿")
+	STAIN:Ｖ = SET_STAIN(STAIN:Ｖ, "尿")
+	CALL EQ_STAIN, TARGET, PLAYER, 3, 2
+	BASE:胎内精液量 /= 2
+	BASE:胎内精子量 /= 2
+	CALL SETFLAG, "膣内浴尿フラグ", TARGET
+	IF CHECK_COM("子宮内放尿")
+		BASE:胎内精液量 /= 5
+		BASE:胎内精子量 /= 5
+		CALL SETFLAG, "子宮内浴尿フラグ", TARGET
+	ENDIF
+ELSEIF CHECK_COM("温泉浣腸")
+	STAIN:Ａ = SET_STAIN(STAIN:Ａ, "尿")
+	CALL EQ_STAIN, TARGET, PLAYER, 4, 2
+	;量は(大量)ぐらい
+	TEQUIP:浣腸 |= 1p1 + 1p2 + 1p3 + 1p11
+	;精液浣腸フラグ消去
+	CLEARBIT TEQUIP:浣腸, 10
+	CALL SETFLAG, "温泉浣腸フラグ", TARGET
+ELSEIF CHECK_COM("乳内放尿")
+	STAIN:Ｂ = SET_STAIN(STAIN:Ｂ, "尿")
+	CALL EQ_STAIN, TARGET, PLAYER, 5, 2
+	CALL SETFLAG, "乳内浴尿フラグ", TARGET
+ELSEIF CHECK_COM("膀胱内放尿")
+	IF PENIS(TARGET)
+		STAIN:Ｐ = SET_STAIN(STAIN:Ｐ, "尿")
+		CALL EQ_STAIN, TARGET, PLAYER, 2, 2
+	ELSE
+		STAIN:Ｖ = SET_STAIN(STAIN:Ｖ, "尿")
+		CALL EQ_STAIN, TARGET, PLAYER, 3, 2
+	ENDIF
+	CALL SETFLAG, "膀胱内浴尿フラグ", TARGET
+	BASE:尿意 += BASE:PLAYER:尿意
+ENDIF
+
+;自分から放尿したので、最後まで出し切ります
+BASE:PLAYER:尿意 = 0
+IF NOWEX:PLAYER:放尿 == 0
+	NOWEX:PLAYER:放尿 += 1
+	EX:PLAYER:放尿 += 1
+ENDIF
+
+@SOURCE_COM138, ARG
+VARSET LOCAL
+
+;基本的にはかなりきついコマンドです
+LOCAL:20 += 50
+LOCAL:21 += 100
+;不潔
+LOCAL:8 = 3000
+;屈従
+LOCAL:13 = 1000
+;逸脱
+LOCAL:14 = 5000
+
+IF CHECK_COM("口内放尿")
+	LOCAL:8 += 2000
+	IF CHECK("口内放尿")
+		LOCAL:13 += 4000
+	ELSE
+		LOCAL:15 += 3000
+	ENDIF
+ELSEIF CHECK_COM("子宮内放尿")
+	LOCAL:1 = CALCF("Ｖ刺激", 1, 20)
+	SIF TALENT:子宮性感
+		TIMES LOCAL:1, 2.00
+	LOCAL:8 += 7000
+	LOCAL:14 += 10000
+	IF CHECK("子宮内放尿")
+		LOCAL:13 += 7000
+	ELSE
+		LOCAL:15 += 5000
+	ENDIF
+ELSEIF CHECK_COM("膣内放尿")
+	LOCAL:1 = CALCF("Ｖ刺激", 1, 10)
+	IF CHECK("膣内放尿")
+		LOCAL:13 += 2000
+	ELSE
+		LOCAL:15 += 500
+	ENDIF
+ELSEIF CHECK_COM("温泉浣腸")
+	LOCAL:2 = CALCF("Ａ刺激", 1, 10)
+	LOCAL:14 += 3000
+	IF CHECK("温泉浣腸")
+		LOCAL:13 += 2000
+	ELSE
+		LOCAL:15 += 1000
+	ENDIF
+	CALL SOURCE_COM136, 50
+ELSEIF CHECK_COM("乳内放尿")
+	LOCAL:17 = CALCF("Ｂ刺激", 1, 10)
+	LOCAL:14 += 5000
+	IF CHECK("乳内放尿")
+		LOCAL:13 += 3000
+	ELSE
+		LOCAL:15 += 2000
+	ENDIF
+ELSEIF CHECK_COM("膀胱内放尿")
+	LOCAL:0 = CALCF("尿道刺激", 1, 10)
+	LOCAL:14 += 5000
+	IF CHECK("膀胱内放尿")
+		LOCAL:13 += 3000
+	ELSE
+		LOCAL:15 += 2000
+	ENDIF
+ENDIF
+
+;ABL8,マゾっ気で逸脱減少＆屈従ＵＰ
+SELECTCASE ABL:マゾっ気
+CASE 0
+CASE 1
+	TIMES LOCAL:13, 1.20
+	TIMES LOCAL:14, 0.80
+	TIMES LOCAL:15, 0.80
+CASE 2
+	TIMES LOCAL:13, 1.50
+	TIMES LOCAL:14, 0.60
+	TIMES LOCAL:15, 0.60
+CASE 3
+	TIMES LOCAL:13, 2.00
+	TIMES LOCAL:14, 0.40
+	TIMES LOCAL:15, 0.40
+CASE 4
+	TIMES LOCAL:13, 2.50
+	TIMES LOCAL:14, 0.20
+	TIMES LOCAL:15, 0.20
+CASEELSE
+	TIMES LOCAL:13, 3.00
+	TIMES LOCAL:14, 0.05
+	TIMES LOCAL:15, 0.05
+ENDSELECT
+
+CALL SOURCE_SMPLAY, "浴尿させる", ARG
+
+CALL CALC, "調教ソース", LOCAL:0, LOCAL:1, LOCAL:2, LOCAL:3, LOCAL:4, LOCAL:5, LOCAL:6, LOCAL:7, LOCAL:8, LOCAL:9, LOCAL:10, LOCAL:11, LOCAL:12, LOCAL:13, LOCAL:14, LOCAL:15, LOCAL:16, LOCAL:17, LOCAL:18, LOCAL:19, LOCAL:20, LOCAL:21, ARG
+
+
+@TRAIN_MESSAGE_COM138
+PRINTFORM %CALLNAME:PLAYER%は沸き起こってきた尿意に任せて、
+IF CHECK_COM("口内放尿")
+	IF PENIS(PLAYER)
+		IF PREVCOM == 140
+			IF RAND:3 == 0 && TALENT:PLAYER:サド
+				PRINTFORMW 犯したばかりの口を便器に見立てて小便を流し込んだ
+			ELSEIF RAND:2
+				PRINTFORMW %CALLNAME:TARGET%の喉の奥に精液に続けて小便を流し込んだ
+			ELSE
+				PRINTFORM 精液を%TEXTR("ご馳走した", "飲ませた", "味わわせた")%ばかりの
+				PRINTFORMW %CALLNAME:TARGET%の喉の奥めがけておしっこをした
+			ENDIF
+		ELSE
+			IF ABL:奉仕精神 >= 3 && TEQUIP:口枷 == 0 && RANDIF(2, ABL:精液中毒 >= 3)
+				PRINTFORM 射精直後の亀頭%TEXTR("を咥えて舌でくすぐっている", "に啄ばむ様にキスをしていた")%
+			ELSEIF ABL:精液中毒 >= 3 && RAND:2
+				PRINTFORM %TEXTR("うっとりと", "夢中で", "美味しそうに")%ペニスを舐めしゃぶっている
+			ELSE
+				PRINTFORM 精液を%TEXTR("ご馳走した", "飲ませた", "味わわせた")%ばかりの
+			ENDIF
+			PRINTFORMW %CALLNAME:TARGET%の口の中におしっこをした
+		ENDIF
+	ELSE
+		PRINTFORM アソコに奉仕している%CALLNAME:TARGET%
+		IF COND("指の使用", PLAYER)
+			PRINTFORMW の頭を抑えて聖水をご馳走した
+		ELSE
+			PRINTFORMW に聖水をご馳走した
+		ENDIF
+	ENDIF
+ELSEIF CHECK_COM("子宮内放尿")
+	IF TALENT:PLAYER:サド && RAND:2
+		PRINTFORMW 犯したばかりの子宮を便器に見立てて小便を流し込んだ
+	ELSE
+		IF EX:Ｖ中出し >= 3 && COND("危険日") && COND("受精確率") >= 30
+			PRINTFORM たっぷりと精液を注ぎ込んだ危険日の子宮
+		ELSE
+			PRINTFORM %TEXTR("精液で汚したばかり", "種付けした直後", "精液をご馳走したばかり")%の%CALLNAME:TARGET%の子宮
+		ENDIF
+		IF RAND:2
+			PRINTFORMW に小便を流し込んだ
+		ELSE
+			PRINTFORMW の中をおしっこで洗い流した
+		ENDIF
+	ENDIF
+	PRINTFORMW 勢いよく放出される尿は子宮の中を%TEXTR("蹂躙", "マーキング", "一杯に")%し、その後%CALLNAME:TARGET%の膣口からジョボジョボと溢れ出ている…
+ELSEIF CHECK_COM("膣内放尿")
+	;前回絶頂
+	IF PREVEX("Ｖ絶頂") && RAND:3
+		PRINTFORM 絶頂の余韻
+		IF PREVEX("絶頂数合計") >= 3 || PREVEX("Ｖ絶頂") >= 2
+			PRINTFORM %TEXTR("に蕩けている", "でだらしない顔を晒している", "にうっとりしている")%
+		ELSE
+			PRINTFORM %TEXTR("で脱力している", "で甘く吐息をついている", "に身体を震わせている")%
+		ENDIF
+		PRINTFORM %CALLNAME:TARGET%の
+	ELSEIF COND("指の使用", PLAYER) && RAND:2
+		PRINTFORM %CALLNAME:TARGET%%TEXTR("の腰をがっちりと抑えながら", "をしっかりと抱きながら")%
+	ELSE
+		PRINTFORM %TEXTR("精液で汚したばかり", "種付けした直後", "精液をご馳走したばかり")%の
+	ENDIF
+
+	IF TALENT:PLAYER:サド && RAND:2
+		PRINTFORMW 膣穴を便器に見立てて小便を流し込んだ
+	ELSEIF COND("指の使用", PLAYER) && RAND:2
+		IF RAND:2
+			PRINTFORMW 膣内に小便を流し込んだ
+		ELSE
+			PRINTFORMW 膣の中をおしっこで洗い流した
+		ENDIF
+	ELSEIF PREVCOM == 67 && RAND:2
+		PRINTFORMW 子宮口めがけておしっこをした
+	ELSE
+		PRINTFORMW 膣内にペニスを埋めたままでおしっこをした
+	ENDIF
+	PRINTFORMW 勢いよく放出される尿は膣内には当然収まりきらず、内部に臭い付けをした後に%CALLNAME:TARGET%の膣口からジョボジョボと溢れ出ている…
+ELSEIF CHECK_COM("温泉浣腸")
+	;前回絶頂
+	IF PREVEX("Ａ絶頂") && RAND:3
+		PRINTFORM 絶頂の余韻
+		IF PREVEX("絶頂数合計") >= 3 || PREVEX("Ａ絶頂") >= 2
+			PRINTFORM %TEXTR("に蕩けている", "でだらしない顔を晒している", "にうっとりしている")%
+		ELSE
+			PRINTFORM %TEXTR("で脱力している", "で甘く吐息をついている", "に身体を震わせている")%
+		ENDIF
+		PRINTFORM %CALLNAME:TARGET%の
+	ELSEIF COND("指の使用", PLAYER) && RAND:2
+		PRINTFORM %CALLNAME:TARGET%%TEXTR("の腰をがっちりと抑えながら", "をしっかりと抱きながら")%
+	ELSE
+		PRINTFORM %TEXTR("精液で汚したばかり", "精液を流し込んだ直後", "精液をご馳走したばかり")%の
+	ENDIF
+	IF TALENT:PLAYER:サド && RAND:2
+		PRINTFORMW アナルを便器に見立てて小便を流し込んだ
+	ELSEIF RAND:2
+		PRINTFORMW 腸内に小便を流し込んだ
+	ELSE
+		PRINTFORMW アナルにペニスを埋めたままでおしっこをした
+	ENDIF
+ELSEIF CHECK_COM("乳内放尿")
+	;前回絶頂
+	IF PREVEX("Ｂ絶頂") && RAND:3
+		PRINTFORM 絶頂の余韻
+		IF PREVEX("絶頂数合計") >= 3 || PREVEX("Ｂ絶頂") >= 2
+			PRINTFORM %TEXTR("に蕩けている", "でだらしない顔を晒している", "にうっとりしている")%
+		ELSE
+			PRINTFORM %TEXTR("で脱力している", "で甘く吐息をついている", "に身体を震わせている")%
+		ENDIF
+	ELSE
+		PRINTFORM %TEXTR("精液で汚したばかり", "種付けした直後", "精液をご馳走したばかり")%の
+	ENDIF
+	PRINTFORM %CALLNAME:TARGET%
+	IF TALENT:PLAYER:サド && RAND:2
+		PRINTFORMW の乳房の中を便器に見立てて小便を流し込んだ
+	ELSEIF COND("指の使用", PLAYER) && RAND:2
+		PRINTFORM %TEXTR("の乳房をぐっと抑えて", "のおっぱいを両手で掴んで")%、
+		IF RAND:2
+			PRINTFORMW 中に小便を流し込んだ
+		ELSE
+			PRINTFORMW 腰を突き出しておしっこをした
+		ENDIF
+	ELSE
+		PRINTFORMW の乳内にペニスを埋めたままでおしっこをした
+	ENDIF
+	PRINTFORMW 吸い付くような感触の内部には当然の事ながら尿は収まらず、%CALLNAME:TARGET%の乳首の隙間からはジョボジョボと黄色い液体が溢れ出ている…
+ELSEIF CHECK_COM("膀胱内放尿")
+	;前回絶頂
+	IF PREVEX("尿道絶頂") && RAND:3
+		PRINTFORM 絶頂の余韻
+		IF PREVEX("絶頂数合計") >= 3 || PREVEX("尿道絶頂") >= 2
+			PRINTFORM %TEXTR("に蕩けている", "でだらしない顔を晒している", "にうっとりしている")%
+		ELSE
+			PRINTFORM %TEXTR("で脱力している", "で甘く吐息をついている", "に身体を震わせている")%
+		ENDIF
+		PRINTFORM %CALLNAME:TARGET%の
+	ELSEIF COND("指の使用", PLAYER) && RAND:2
+		PRINTFORM %CALLNAME:TARGET%%TEXTR("の腰をがっちりと抑えながら", "をしっかりと抱きながら")%
+	ELSE
+		PRINTFORM %TEXTR("精液で汚したばかり", "精液をご馳走したばかり")%の
+	ENDIF
+
+	IF TALENT:PLAYER:サド && RAND:2
+		PRINTFORMW 膀胱を便器に見立てて小便を流し込んだ
+	ELSEIF COND("指の使用", PLAYER) && RAND:2
+		PRINTFORMW 膀胱に小便を流し込んだ
+	ELSE
+		PRINTFORMW 尿道にペニスを埋めたままでおしっこをした
+	ENDIF
+	PRINTFORMW 勢いよく放出される%CALLNAME:PLAYER%の尿が、%CALLNAME:TARGET%のソレと混ざりながら下腹部をパンパンにさせていく…
+ENDIF

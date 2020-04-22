@@ -1,0 +1,694 @@
+﻿;MASTERの素質変動など
+@EVENTCHECK_M
+;堕とした人数が5人以上で、謎の魅力が付く
+IF FLAG:30 >= 5 && TALENT:MASTER:謎の魅力 == 0
+	PRINTFORMW %CALLNAME:MASTER%は【謎の魅力】を身につけた
+	TALENT:MASTER:謎の魅力 = 1
+ENDIF
+
+;Ａ経験５００以上、Ａ拡張経験３５以上で尻穴狂い化
+IF EXP:MASTER:Ａ経験 >= 500 && EXP:MASTER:Ａ拡張経験 >= 35 && TALENT:MASTER:尻穴狂い == 0
+	PRINTFORMW 体の様子がおかしい…
+	PRINTFORML お尻が熱を持ち、疼いて仕方ない。
+	PRINTFORMW どうやら調教によって%CALLNAME:MASTER%自身も快楽に目覚めてしまったようだ…
+	PRINTFORMW %CALLNAME:MASTER%は【尻穴狂い】になってしまった
+	TALENT:MASTER:尻穴狂い = 1
+ENDIF
+
+;Ｖ経験５００以上で淫壷化
+IF EXP:MASTER:Ｖ経験 >= 500 && TALENT:MASTER:淫壷 == 0
+	PRINTFORMW 体の様子がおかしい…
+	PRINTFORML 子宮付近が熱を持ち、疼いて仕方ない。
+	PRINTFORMW どうやら調教によって%CALLNAME:MASTER%自身も快楽に目覚めてしまったようだ…
+	PRINTFORMW %CALLNAME:MASTER%は【淫壷】を獲得してしまった
+	TALENT:MASTER:淫壷 = 1
+ENDIF
+
+CALL ABLUP_MASTER, "通常"
+
+
+@LVUPCHECK_MASTER, ARG
+#DIM LCOUNT
+;ARG != 0ならテキストを出力する
+FLAG:255 = MAX(ABL:MASTER:ＬＶ, FLAG:255)
+;本来のレベルがMAXならＬＶＵＰしない
+SIF FLAG:255 >= NUM("最大レベル", 90)
+	RETURN 1
+
+;MASTERのLVに基づく最小経験値算出（Extraの時）
+SIF NO:MASTER && FLAG:255 >= 2
+	EXP:MASTER:経験値 = MAX(EXP_NEXTLV(MASTER, FLAG:255 - 1), EXP:MASTER:経験値)
+
+LOCAL:100 = 0
+FOR LCOUNT, 2, CHARANUM
+	LOCAL = CALCF("経験値獲得", LCOUNT)
+	EXP:MASTER:経験値 += LOCAL
+	IF ARG && LOCAL && LCOUNT == TARGET
+		PRINTFORML %NAME:MASTER%は経験値を{LOCAL}Ｐ得ました。
+		SIF ABL:MASTER:ＬＶ == FLAG:255 && EXP_NEXTLV(MASTER, ABL:MASTER:ＬＶ) - EXP:MASTER:経験値 > 0
+			PRINTFORML あと{EXP_NEXTLV(MASTER, ABL:MASTER:ＬＶ) - EXP:MASTER:経験値}Ｐの経験値で次のレベルになります。
+		WAIT
+	ENDIF
+
+	;現在の経験値によるMAXLVの算出
+	LOCAL:90 = MASTER_LV()
+
+	;本来のレベルが算出したレベル以上(LVUP発生せず)
+	SIF FLAG:255 >= LOCAL:90
+		CONTINUE
+
+	;レベル制限中なら、MAXLVだけあがる
+	IF ABL:MASTER:ＬＶ < FLAG:255
+		LOCAL:100 = 1
+	;制限していない
+	ELSEIF ABL:MASTER:ＬＶ < LOCAL:90
+		ABL:MASTER:ＬＶ = LOCAL:90
+		LOCAL:100 = 2
+	ENDIF
+	;MAXLVの変更
+	FLAG:255 = LOCAL:90
+NEXT
+
+SETCOLOR DEF_COLOR("イエロー")
+IF LOCAL:100 == 1
+	PRINTFORMW %CALLNAME:MASTER%はLVの最大値が{FLAG:255}\@LOCAL:90 == NUM("最大レベル", 90) ? (MAX!) # \@に上がった！
+ELSEIF LOCAL:100 == 2
+	PRINTFORMW %CALLNAME:MASTER%はLVが{ABL:MASTER:ＬＶ}\@LOCAL:90 == NUM("最大レベル", 90) ? (MAX!) # \@に上がった！
+ENDIF
+;甘い言葉ゲット
+IF ( (FLAG:255 >= 5 && FLAG:30) || ITEM:ローズニルの詩集) && TALENT:MASTER:甘い言葉 == 0
+	PRINTFORMW \@ ITEM:ローズニルの詩集 ? 詩集を読みふけった # 経験を積んだ\@%CALLNAME:MASTER%は、%TALENTNAME:191%を習得した！
+	TALENT:MASTER:甘い言葉 = 1
+ENDIF
+RESETCOLOR
+
+@MASTER_LV()
+#FUNCTION
+;経験値からLVを算出
+FOR LOCAL, 1, NUM("最大レベル", 90)
+	SIF EXP:MASTER:経験値 < EXP_NEXTLV(MASTER, LOCAL)
+		RETURNF LOCAL
+NEXT
+RETURNF NUM("最大レベル", 90)
+
+@EXP_NEXTLV(ARG:1, ARG)
+#FUNCTION
+;ARG:1が次のLVに必要な経験値を算出
+IF ARG:1 == MASTER
+	LOCAL = ARG*(10 + (ARG - 1)*10)
+ELSE
+	LOCAL = ARG * (2 + ARG/5 + (ARG > 10)*2 + (ARG > 15)*2 + (ARG > 20)*3 + (ARG > 25)*3 + (ARG > 30)*4)
+ENDIF
+RETURNF LOCAL
+
+
+
+;MASTERの技能獲得
+@ABLUP_MASTER, ARGS
+#DIM MEMO_LINECOUNT
+#DIM CHOICE
+
+MEMO_LINECOUNT = LINECOUNT
+
+SELECTCASE ARGS
+CASE "通常"
+	;LVUP。FLAG:255は本来のレベル。ABL:ＬＶは現在のレベル。ABL:ＬＶはレベルリミッターで減ったりする。
+	CALL LVUPCHECK_MASTER, 1
+	IF CONFIG("ＶＡ詳細表示：手動ＬＶＵＰ") == 0
+		ABL:MASTER:Ｖ拡張 = CALCF("Ｖ拡張の上限", MASTER)
+		ABL:MASTER:Ａ拡張 = CALCF("Ａ拡張の上限", MASTER)
+	ENDIF
+	CALL EX_ABLUP, MASTER
+CASE "週末"
+	REDRAW 0
+
+	;CHOICEでどのABLをＬＶ変更候補として選んでいるかを記録
+	CHOICE = 0
+
+	$START
+	VARSET LOCAL, 0, 0, 100
+	PRINTFORML 来週に備えて、%CALLNAME:MASTER%の能力のLV変更を行います
+	CALL NEW_PRINT_ABL, MASTER
+	DRAWLINE
+	PRINTFORML 以下から二つまで選択してください
+	PRINTFORML (技巧LVの上昇は指使い等、～使いのLVの合計が必要値を満たす事が条件となります)
+
+	;技巧ＬＶが上げられるかどうか
+	LOCAL:99 = ABL:MASTER:舌使い+ABL:MASTER:指使い+ABL:MASTER:足使い+ABL:MASTER:腰使い+ABL:MASTER:魔乳
+	LOCAL:99 -= TALENT:MASTER:舌使い+TALENT:MASTER:指使い+TALENT:MASTER:足使い+TALENT:MASTER:腰使い+TALENT:MASTER:魔乳
+
+	SIF ABL:MASTER:技巧 < MIN(MAX(2 + LOCAL:99/3, 2), NUM("最大レベル", 2) )
+		LOCAL:0 = 1
+	PRINTFORM  [\@ LOCAL:0 ?  {0, 2} # × \@] \@ GETBIT(CHOICE, 0) ? ○ # － \@ 技巧＋1LV
+	SIF LOCAL:0 == 0 && ABL:MASTER:技巧 < NUM("最大レベル", 2)
+		PRINTFORM 　次のLVに必要な～使いLVの合計：あと{(ABL:MASTER:技巧 - 1) * 3 - LOCAL:99}
+	PRINTL 
+
+	SIF ABL:MASTER:技巧 > 0
+		LOCAL:1 = 1
+	PRINTFORML  [\@ LOCAL:1 ?  {1, 2} # × \@] \@ GETBIT(CHOICE, 1) ? ○ # － \@ 技巧－1LV
+	SIF (ABL:MASTER:マゾっ気 < 5 || TALENT:MASTER:マゾ == 0)
+		LOCAL:2 = 1
+	PRINTFORML  [\@ LOCAL:2 ?  {2, 2} # × \@] \@ GETBIT(CHOICE, 2) ? ○ # － \@ \@ ABL:MASTER:マゾっ気 == 5 ? [マゾ]獲得 # マゾっ気＋1LV \@
+	SIF ABL:MASTER:マゾっ気 > 0
+		LOCAL:3 = 1
+	PRINTFORML  [\@ LOCAL:3 ?  {3, 2} # × \@] \@ GETBIT(CHOICE, 3) ? ○ # － \@ \@ (ABL:MASTER:マゾっ気 == 5 && TALENT:MASTER:マゾ) ? [マゾ]を失う # マゾっ気－1LV \@
+	SIF (ABL:MASTER:サドっ気 < 5 || TALENT:MASTER:サド == 0)
+		LOCAL:4 = 1
+	PRINTFORML  [\@ LOCAL:4 ?  {4, 2} # × \@] \@ GETBIT(CHOICE, 4) ? ○ # － \@ \@ ABL:MASTER:サドっ気 == 5 ? [サド]獲得 # サドっ気＋1LV \@
+	SIF ABL:MASTER:サドっ気 > 0
+		LOCAL:5 = 1
+	PRINTFORML  [\@ LOCAL:5 ?  {5, 2} # × \@] \@ GETBIT(CHOICE, 5) ? ○ # － \@ \@ (ABL:MASTER:サドっ気 == 5 && TALENT:MASTER:サド) ? [サド]を失う # サドっ気－1LV \@
+	IF TALENT:MASTER:オトコ == 0
+		SIF ABL:MASTER:レズっ気 < 5
+			LOCAL:6 = 1
+		PRINTFORML  [\@ LOCAL:6 ?  {6, 2} # × \@] \@ GETBIT(CHOICE, 6) ? ○ # － \@ レズっ気＋1LV
+		SIF ABL:MASTER:レズっ気 > 0
+			LOCAL:7 = 1
+		PRINTFORML  [\@ LOCAL:7 ?  {7, 2} # × \@] \@ GETBIT(CHOICE, 7) ? ○ # － \@ レズっ気－1LV
+	ELSE
+		SIF ABL:MASTER:ＢＬっ気 < 5
+			LOCAL:8 = 1
+		PRINTFORML  [\@ LOCAL:8 ?  {8, 2} # × \@] \@ GETBIT(CHOICE, 8) ? ○ # － \@ ＢＬっ気＋1LV
+		SIF ABL:MASTER:ＢＬっ気 > 0
+			LOCAL:9 = 1
+		PRINTFORML  [\@ LOCAL:9 ?  {9, 2} # × \@] \@ GETBIT(CHOICE, 9) ? ○ # － \@ ＢＬっ気－1LV
+	ENDIF
+	IF CONFIG("ＶＡ詳細表示：手動ＬＶＵＰ")
+		IF TALENT:MASTER:オトコ == 0
+			SIF CALCF("Ｖ拡張の上限", MASTER) > ABL:MASTER:Ｖ拡張
+				LOCAL:10 = 1
+			PRINTFORML  [\@ LOCAL:10 ?  {10, 2} # × \@] \@ GETBIT(CHOICE, 10) ? ○ # － \@ Ｖ拡張＋1LV
+		ENDIF
+		SIF CALCF("Ａ拡張の上限", MASTER) > ABL:MASTER:Ａ拡張
+			LOCAL:11 = 1
+		PRINTFORML  [\@ LOCAL:11 ?  {11, 2} # × \@] \@ GETBIT(CHOICE, 11) ? ○ # － \@ Ａ拡張＋1LV
+	ENDIF
+
+	PRINTFORML [100] 終了
+
+	CALL INPUT_SELECT, 12, 100
+
+	IF RESULT == 100
+		IF GETBIT(CHOICE, 0)
+			ABL:MASTER:技巧 += 1
+			PRINTL 技巧が1LV上がった！
+		ELSEIF GETBIT(CHOICE, 1)
+			ABL:MASTER:技巧 -= 1
+			PRINTL 技巧が1LV下がった！
+		ENDIF
+		IF GETBIT(CHOICE, 2)
+			IF ABL:MASTER:マゾっ気 == 5
+				TALENT:MASTER:マゾ = 1
+				PRINTL 素質：[マゾ]を得た！
+			ELSE
+				ABL:MASTER:マゾっ気 += 1
+				PRINTL マゾっ気が1LV上がった！
+			ENDIF
+		ELSEIF GETBIT(CHOICE, 3)
+			IF ABL:MASTER:マゾっ気 == 5 && TALENT:MASTER:マゾ
+				TALENT:MASTER:マゾ = 0
+				PRINTL 素質：[マゾ]を失った！
+			ELSE
+				ABL:MASTER:マゾっ気 -= 1
+				PRINTL マゾっ気が1LV下がった！
+			ENDIF
+		ENDIF
+		IF GETBIT(CHOICE, 4)
+			IF ABL:MASTER:サドっ気 == 5
+				TALENT:MASTER:サド = 1
+				PRINTL 素質：[サド]を得た！
+			ELSE
+				ABL:MASTER:サドっ気 += 1
+				PRINTL サドっ気が1LV上がった！
+			ENDIF
+		ELSEIF GETBIT(CHOICE, 5)
+			IF ABL:MASTER:サドっ気 == 5 && TALENT:MASTER:サド
+				TALENT:MASTER:サド = 0
+				PRINTL 素質：[サド]を失った！
+			ELSE
+				ABL:MASTER:サドっ気 -= 1
+				PRINTL サドっ気が1LV下がった！
+			ENDIF
+		ENDIF
+		IF GETBIT(CHOICE, 6)
+			ABL:MASTER:レズっ気 += 1
+			PRINTL レズっ気が1LV上がった！
+		ELSEIF GETBIT(CHOICE, 7)
+			ABL:MASTER:レズっ気 -= 1
+			PRINTL レズっ気が1LV下がった！
+		ENDIF
+		IF GETBIT(CHOICE, 8)
+			ABL:MASTER:ＢＬっ気 += 1
+			PRINTL ＢＬっ気が1LV上がった！
+		ELSEIF GETBIT(CHOICE, 9)
+			ABL:MASTER:ＢＬっ気 -= 1
+			PRINTL ＢＬっ気が1LV下がった！
+		ENDIF
+
+		IF GETBIT(CHOICE, 10)
+			ABL:MASTER:Ｖ拡張 += 1
+			PRINTL Ｖ拡張が1LV上がった！
+		ENDIF
+		IF GETBIT(CHOICE, 11)
+			ABL:MASTER:Ａ拡張 += 1
+			PRINTL Ａ拡張が1LV上がった！
+		ENDIF
+
+		IF CHOICE
+			WAIT
+		ELSE
+			PRINTW 能力の変更を見送りました
+		ENDIF
+		REDRAW 1
+		RETURN 0
+	ELSEIF LOCAL:RESULT
+		CLEARBIT CHOICE, RESULT + 1 - (RESULT%2)*2
+		IF GETBIT(CHOICE, RESULT) == 0 && NUM_BIT(CHOICE) == 2
+			PRINTW 選択できるのは二つまでです。どれか一つを減らしてください
+		ELSE
+			INVERTBIT CHOICE, RESULT
+		ENDIF
+	ENDIF
+	CLEARLINE LINECOUNT - MEMO_LINECOUNT
+	GOTO START
+ENDSELECT
+
+
+@EX_ABLUP, ARG
+#DIM LCOUNT
+#DIM MEMO_LINECOUNT
+MEMO_LINECOUNT = LINECOUNT
+
+VARSET LOCAL
+;30,舌使い 31,指使い 32,足使い 33,腰使い 34,魔乳
+FOR LCOUNT, 30, 36
+	LOCAL:LCOUNT = ABL:ARG:LCOUNT
+NEXT
+CALL GET_EXABL, ARG
+
+FOR LCOUNT, 30, 35
+	IF ABL:ARG:LCOUNT > LOCAL:LCOUNT
+		IF LINECOUNT == MEMO_LINECOUNT
+			DRAWLINE
+		ELSE
+			PRINTFORML 
+		ENDIF
+		PRINTFORML %NAME:ARG%の%ABLNAME:LCOUNT%のLVが上がった！
+		PRINTFORMW %ABLNAME:LCOUNT%がLV{ABL:ARG:LCOUNT}になった！
+	ENDIF
+NEXT
+
+LOCAL = TALENT:ARG:吸精体質
+LOCAL:1 = TALENT:ARG:歌唱技能
+
+CALL GET_EXTALENT, ARG
+
+IF TALENT:ARG:吸精体質 > LOCAL
+	SIF LINECOUNT == MEMO_LINECOUNT
+		DRAWLINE
+	PRINTFORMW %CALLNAME:ARG%の吸精体質が{TALENT:ARG:吸精体質}LVに上がった！
+ENDIF
+IF TALENT:ARG:歌唱技能 > LOCAL:1 && EXP:ARG:助手経験 + EXP:ARG:調教回数
+	SIF LINECOUNT == MEMO_LINECOUNT
+		DRAWLINE
+	PRINTFORMW %CALLNAME:ARG%の歌唱技能が{TALENT:ARG:歌唱技能}LVに上がった！
+ENDIF
+
+SIF LINECOUNT > MEMO_LINECOUNT
+	DRAWLINE
+
+;経験値の増加処理。ARGには主にCOND("絶頂", PLAYER)、ARG:1は経験値の受け取り手が入る
+@GET_EXPERIENCE, ARG, ARG:1
+;レベル差による補正をかける
+LOCAL = MAX(MULTIPLY(ARG, 100 + (ABL:PLAYER:ＬＶ - ABL:(ARG:1):ＬＶ)*10), 1 + ARG/3)
+EXP:(ARG:1):経験値 += LOCAL
+
+@GET_TALENT, ARG
+REDRAW 0
+;ARGはHARDの時専用
+PRINTL 
+IF CONFIG("ＨＡＲＤ") && ARG > 0
+	PRINTFORML {ABL:ＬＶ/5*5}LV\@ ABL:ＬＶ == ABL:ＬＶ/5*5 ? になった # を越えた \@ため、%CALLNAME:TARGET%は素質をあと{ARG}個獲得できるようです
+	PRINTFORML 変化を好まないのなら [999] 戻る を選択してください
+ELSE
+	PRINTFORM 経験値を
+	SETCOLOR DEF_COLOR("黄色")
+	PRINTFORM {NUM("経験値：素質獲得")}Ｐ
+	RESETCOLOR
+	PRINTFORML 使用することで、幾つかの素質を獲得したり失ったり出来ます
+	;PRINTFORML （ただし、ここで素質を変化させる度に、必要な経験値は200Ｐづつ増えていきます）
+	PRINTFORML あと{EXP:経験値}Ｐの経験値があります
+ENDIF
+PRINTFORML 
+VARSET LOCAL
+
+PRINTFORML [  0] 体力+200＆気力+200
+LOCAL:0 = 1
+
+IF COND("乳首肥大") < 3
+	PRINTFORML [  8] 乳首を肥大化させる（[乳首肥大{COND("乳首肥大") + 1}LV]になります）
+	LOCAL:8 = 1
+ENDIF
+IF TALENT:濡れにくい
+	PRINTFORML [ 43] [濡れにくい] を失う
+	LOCAL:43 = 1
+ELSEIF TALENT:濡れやすい == 0
+	PRINTFORML [ 42] [濡れやすい] を得る
+	LOCAL:42 = 1
+ENDIF
+IF TALENT:腸液分泌体質 == 0
+	IF EXP:Ａ経験 >= 100
+		PRINTFORML [ 48] [腸液分泌体質] を得る
+		LOCAL:48 = 1
+	ELSE
+		CALL PRINT_STR, "暗灰色_[ ×] [腸液分泌体質] を得る（要：Ａ経験100）_L"
+	ENDIF
+ENDIF
+
+IF TALENT:嘔吐反射耐性 == 0
+	IF EXP:フェラ経験 >= 300
+		PRINTFORML [ 52] [嘔吐反射耐性] を得る
+		LOCAL:52 = 1
+	ELSE
+		CALL PRINT_STR, "暗灰色_[ ×] [嘔吐反射耐性] を得る（要：フェラ経験300）_L"
+	ENDIF
+ENDIF
+
+IF TALENT:調合知識 == 0
+	IF TALENT:賢い
+		PRINTFORML [ 55] [調合知識] を得る
+		LOCAL:55 = 1
+	ELSE
+		CALL PRINT_STR, "暗灰色_[ ×] [調合知識] を得る（要：[賢い]）_L"
+	ENDIF
+ENDIF
+IF TALENT:拡張適正 == 0
+	IF MAX(EXP:Ｖ拡張経験, EXP:Ａ拡張経験, EXP:尿道拡張経験) >= 20
+		PRINTFORML [ 59] [拡張適正] を得る
+		LOCAL:59 = 1
+	ELSE
+		CALL PRINT_STR, "暗灰色_[ ×] [拡張適正] を得る（要：Ｖ拡張経験20 or Ａ拡張経験20 or 尿道拡張経験20）_L"
+	ENDIF
+ENDIF
+
+IF TALENT:汚れ無視 == 0
+	PRINTFORML [ 64] [汚れ無視] を得る
+	LOCAL:64 = 1
+ENDIF
+
+IF TALENT:Ｍ鈍感
+	PRINTFORML [ 96] [Ｍ鈍感] を失う
+	LOCAL:96 = 1
+ELSEIF TALENT:Ｍ敏感 == 0
+	PRINTFORML [ 97] [Ｍ敏感] を得る
+	LOCAL:97 = 1
+ENDIF
+
+IF TALENT:妖精 || COND("子孫") || COND("夢魔") == 0
+ELSE
+	IF TALENT:小柄体型 == 0 && TALENT:男の娘 == 0
+		PRINTFORML [ 99] \@ TALENT:長身 ? 背を低くする（[長身]を失う） # 背を高くする（[長身]） \@
+		LOCAL:99 = 1
+	ENDIF
+	IF TALENT:長身 == 0
+		PRINTFORML [100] \@ TALENT:小柄体型 ? 普通の身長に成長する（[小柄体型]を失う） # 背を低くする（[小柄体型]） \@
+		LOCAL:100 = 1
+	ENDIF
+ENDIF
+
+IF TALENT:Ｃ鈍感
+	PRINTFORML [101] [Ｃ鈍感] を失う
+	LOCAL:101 = 1
+ELSEIF TALENT:Ｃ敏感 == 0
+	PRINTFORML [102] [Ｃ敏感] を得る
+	LOCAL:102 = 1
+ENDIF
+
+IF TALENT:オトコ == 0
+	IF TALENT:Ｖ鈍感
+		PRINTFORML [103] [Ｖ鈍感] を失う
+		LOCAL:103 = 1
+	ELSEIF TALENT:Ｖ敏感 == 0
+		PRINTFORML [104] [Ｖ敏感] を得る
+		LOCAL:104 = 1
+	ENDIF
+ENDIF
+IF TALENT:Ａ鈍感
+	PRINTFORML [105] [Ａ鈍感] を失う
+	LOCAL:105 = 1
+ELSEIF TALENT:Ａ敏感 == 0
+	PRINTFORML [106] [Ａ敏感] を得る
+	LOCAL:106 = 1
+ENDIF
+
+IF TALENT:オトコ == 0
+	IF TALENT:Ｂ鈍感
+		PRINTFORML [107] [Ｂ鈍感] を失う
+		LOCAL:107 = 1
+	ELSEIF TALENT:Ｂ敏感 == 0
+		PRINTFORML [108] [Ｂ敏感] を得る
+		LOCAL:108 = 1
+	ENDIF
+ENDIF
+
+IF TALENT:オトコ || COND("子孫") || COND("夢魔") == 0
+ELSE
+	IF TALENT:巨乳 == 0
+		PRINTFORML [109] \@ TALENT:貧乳 ? 胸を大きくする（貧乳とは言わせない！） # 胸を小さくする（[貧乳]） \@
+		LOCAL:109 = 1
+	ENDIF
+	IF TALENT:貧乳 == 0
+		PRINTFORM [110] 
+		IF TALENT:巨乳 >= 2
+			PRINTFORML 胸を小さくする（\@ TALENT:巨乳 >= 3 ? [超乳]→[爆乳] # [爆乳]→[巨乳] \@）
+		ELSEIF TALENT:巨乳
+			PRINTFORML 胸を更に大きくしたり、小さくしたり
+		ELSE
+			PRINTFORML 胸を大きくする（[巨乳]）
+		ENDIF
+		LOCAL:110 = 1
+	ENDIF
+ENDIF
+
+IF TALENT:回復遅い
+	PRINTFORML [112] [回復遅い] を失う
+	LOCAL:112 = 1
+ELSEIF TALENT:回復早い == 0
+	PRINTFORML [111] [回復早い] を得る
+	LOCAL:111 = 1
+ENDIF
+
+IF TALENT:治療 == 0
+	IF ABL:技巧 >= 3 || ABL:奉仕精神 >= 5
+		PRINTFORML [117] [治療] を得る
+		LOCAL:117 = 1
+	ELSE
+		CALL PRINT_STR, "暗灰色_[ ×] [治療] を得る（要：技巧3LV or 奉仕精神5LV）_L"
+	ENDIF
+ENDIF
+IF TALENT:禁断の知識 == 0
+	IF TALENT:賢い && TALENT:調合知識 && TALENT:魔法使い && ABL:技巧 >= 5
+		PRINTFORML [125] [禁断の知識] を得る
+		LOCAL:125 = 1
+	ELSE
+		CALL PRINT_STR, "暗灰色_[ ×] [禁断の知識] を得る（要：[賢い][調合知識][魔法使い]技巧5LV）_L"
+	ENDIF
+ENDIF
+IF TALENT:具現 == 0
+	IF TALENT:禁断の知識
+		PRINTFORML [127] [具現] を得る
+		LOCAL:127 = 1
+	ELSE
+		CALL PRINT_STR, "暗灰色_[ ×] [具現] を得る（要：[禁断の知識]）_L"
+	ENDIF
+ENDIF
+IF TALENT:オトコ || COND("子孫") || COND("夢魔") == 0
+ELSEIF TALENT:母乳体質 == 0
+	IF ABL:Ｂ感覚 >= 5 || TALENT:巨乳
+		PRINTFORML [130] [母乳体質] を得る
+		LOCAL:130 = 1
+	ELSE
+		CALL PRINT_STR, "暗灰色_[ ×] [母乳体質] を得る（要：[巨乳] or Ｂ感覚5LV）_L"
+	ENDIF
+ENDIF
+IF TALENT:喉性感 == 0
+	IF ABL:Ｍ感覚 >= 3
+		PRINTFORML [140] [喉性感] を得る
+		LOCAL:140 = 1
+	ELSE
+		CALL PRINT_STR, "暗灰色_[ ×] [喉性感] を得る（要：Ｍ感覚3LV）_L"
+	ENDIF
+ENDIF
+IF TALENT:子宮性感 == 0 && TALENT:オトコ == 0
+	IF ABL:Ｖ感覚 >= 3
+		PRINTFORML [141] [子宮性感] を得る
+		LOCAL:141 = 1
+	ELSE
+		CALL PRINT_STR, "暗灰色_[ ×] [子宮性感] を得る（要：Ｖ感覚3LV）_L"
+	ENDIF
+ENDIF
+IF TALENT:尿道性感 == 0
+	IF ABL:Ｃ感覚 >= 3
+		PRINTFORML [142] [尿道性感] を得る
+		LOCAL:142 = 1
+	ELSE
+		CALL PRINT_STR, "暗灰色_[ ×] [尿道性感] を得る（要：Ｃ感覚3LV）_L"
+	ENDIF
+ENDIF
+
+IF TALENT:においに弱い == 0
+	PRINTFORML [144] [においに弱い] を得る\@ TALENT:汚臭鈍感 ? （同時に[汚臭鈍感]を失います）# \@
+	LOCAL:144 = 1
+ENDIF
+
+IF TALENT:魔法使い == 0
+	IF ABL:技巧 >= 5 && TALENT:賢い
+		PRINTFORML [151] [魔法使い] を得る
+		LOCAL:151 = 1
+	ELSE
+		CALL PRINT_STR, "暗灰色_[ ×] [魔法使い] を得る（要：[賢い]技巧5LV）_L"
+	ENDIF
+ENDIF
+
+IF TALENT:愚か == 0
+	PRINTFORML [185] [調教知識] を\@ TALENT:調教知識 ? 変更する # 得る \@
+	LOCAL:185 = 1
+ENDIF
+IF TALENT:ヴィジョン == 0 && BASE:種族思考 == 22
+	PRINTFORML [243] [分身] を体得する
+	LOCAL:243 = 1
+ENDIF
+
+PRINTL [999] 戻る
+
+CALL INPUT_SELECT, 250, 999
+
+IF RESULT == 999
+	REDRAW 1
+	RETURN 0
+ELSEIF LOCAL:RESULT == 0
+	RESTART
+ELSEIF CONFIG("ＨＡＲＤ") && ARG > 0
+ELSEIF EXP:経験値 < NUM("経験値：素質獲得")
+	PRINTW 経験値が足りません
+	REDRAW 1
+	RETURN 0
+ENDIF
+
+SELECTCASE RESULT
+CASE 0
+	MAXBASE:体力 += 200
+	MAXBASE:気力 += 200
+	BASE:体力 += 200
+	BASE:気力 += 200
+	PRINTFORMW 体力と気力が200づつ上昇しました
+CASE 8
+	SELECTCASE COND("乳首肥大")
+	CASE 0
+		CLEARBIT TALENT:乳首, 0
+		SETBIT TALENT:乳首, 1
+	CASE 1
+		CLEARBIT TALENT:乳首, 1
+		SETBIT TALENT:乳首, 2
+	CASE 2
+		CLEARBIT TALENT:乳首, 2
+		SETBIT TALENT:乳首, 3
+	ENDSELECT
+	PRINTFORMW [乳首肥大\@ COND("乳首肥大") >= 2 ? LV{COND("乳首肥大")} # \@]を獲得しました
+CASE 185
+	LOCAL = TALENT:調教知識
+	CALL SETFLAG, "調教知識の選択", TARGET
+	SIF TALENT:調教知識 == LOCAL
+		RESTART
+;純粋獲得
+CASE 42, 48, 52, 55, 59, 64, 97, 102, 104, 106, 108, 111, 117, 125, 127, 140, 141, 142, 151, 189
+	TALENT:RESULT = 1
+	PRINTFORMW [%TALENTNAME:RESULT%]を獲得しました
+;分身
+CASE 243
+	TALENT:RESULT = 2
+	PRINTFORMW [%TALENT_NAME(RESULT, TALENT:ARG:RESULT)%]を体得しました
+
+;生まれつきかどうかで違いがある素質の獲得
+CASE 130
+	TALENT:RESULT = 2
+	PRINTFORMW [%TALENTNAME:RESULT%]を獲得しました
+;純粋喪失
+CASE 43, 96, 101, 103, 105, 107, 112
+	TALENT:RESULT = 0
+	PRINTFORMW [%TALENTNAME:RESULT%]を失いました
+;反転
+CASE 99
+	TALENT:長身 = !TALENT:長身
+	IF TALENT:長身
+		CALL CALC, "長身化", TARGET
+		PRINTFORMW [長身]を獲得しました
+	ELSE
+		CALL CALC, "普通体型化", TARGET
+		PRINTFORMW [長身]を失いました
+	ENDIF
+CASE 100
+	TALENT:小柄体型 = !TALENT:小柄体型
+	IF TALENT:小柄体型
+		CALL CALC, "小柄化", TARGET
+		PRINTFORMW [小柄体型]を獲得しました
+	ELSE
+		CALL CALC, "普通体型化", TARGET
+		PRINTFORMW [小柄体型]を失いました
+	ENDIF
+CASE 109
+	TALENT:貧乳 = !TALENT:貧乳
+	IF TALENT:貧乳
+		CALL CALC, "貧乳化", TARGET
+		PRINTFORMW [貧乳]を獲得しました
+	ELSE
+		CALL CALC, "並乳化", TARGET
+		PRINTFORMW [貧乳]を失いました
+	ENDIF
+CASE 110
+	IF TALENT:巨乳 == 1
+		PRINTL [ 0] 爆乳にする
+		PRINTL [ 1] 胸を小さくする（巨乳を失う）
+		PRINTL [ 2] 戻る
+		CALL INPUT_SELECT, 3
+		IF RESULT == 0
+			CALL CALC, "爆乳化", TARGET
+			PRINTFORMW [爆乳]になりました
+		ELSEIF RESULT == 1
+			CALL CALC, "並乳化", TARGET
+			PRINTFORMW [巨乳]を失いました
+		ELSE
+			RESTART
+		ENDIF
+	ELSEIF TALENT:巨乳 >= 3
+		CALL CALC, "爆乳化", TARGET
+		PRINTFORMW [爆乳]になりました
+	ELSE
+		CALL CALC, "巨乳化", TARGET
+		PRINTFORMW [巨乳]になりました
+	ENDIF
+CASE 144
+	TALENT:RESULT = 1
+	IF TALENT:汚臭鈍感
+		TALENT:汚臭鈍感 = 0
+		PRINTFORM [汚臭鈍感]を失い、
+	ENDIF
+	PRINTFORMW [%TALENTNAME:RESULT%]を獲得しました
+ENDSELECT
+
+IF CONFIG("ＨＡＲＤ") && ARG > 0
+	ARG -= 1
+	IF ARG == 0
+		REDRAW 1
+		RETURN 0
+	ELSE
+		RESTART
+	ENDIF
+ELSE
+	EXP:経験値 -= NUM("経験値：素質獲得")
+	SIF COND("素質獲得可能")
+		RESTART
+ENDIF
+REDRAW 1
+

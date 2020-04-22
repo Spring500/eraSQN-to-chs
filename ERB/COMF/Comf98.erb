@@ -1,0 +1,269 @@
+﻿@COM98
+;クンニさせる
+CALL PRINT_TRAIN_NAME(SELECTCOM)
+;-------------------------------------------------
+;実行できるかの判定
+;-------------------------------------------------
+CALL SHOW_COM_ORDER_COM, 98
+
+;実行できない
+SIF TCVAR:28 == 0
+	RETURN 0
+;-------------------------------------------------
+;実行決定
+;-------------------------------------------------
+CALL SETFLAG, "下半身を脱がす", PLAYER
+
+CALL TRAIN_MESSAGE_B
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+STR:0 = %STR:2%
+
+;-------------------------------------------------
+;射精チェック
+;-------------------------------------------------
+CALL SAMEN_CHECK
+
+RETURN 1
+
+@FLAG_COM98, ARG
+;対象の口⇔調教者のＶの汚れが移動
+CALL EQ_STAIN, TARGET, PLAYER, 0, 3
+SIF CHECK_COM("お掃除クンニ", 98)
+	CALL SETFLAG, "お掃除クンニ", TARGET
+
+
+@SOURCE_COM98, ARG
+VARSET LOCAL
+
+LOCAL:20 += 10
+LOCAL:21 += 50
+
+LOCAL:8 = COM_ORDER_STAIN("Ｖ", "Ｍ")*100 + 100
+LOCAL:11 = CALCF("実行値による欲情追加")
+LOCAL:13 = 1000
+LOCAL:14 = 500
+
+;ABL:奉仕精神をみる
+SELECTCASE ABL:奉仕精神
+CASE 0
+	LOCAL:4 = 420
+	LOCAL:5 = 150
+CASE 1
+	LOCAL:4 = 500
+	LOCAL:5 = 300
+CASE 2
+	LOCAL:4 = 580
+	LOCAL:5 = 600
+CASE 3
+	LOCAL:4 = 660
+	LOCAL:5 = 900
+CASE 4
+	LOCAL:4 = 740
+	LOCAL:5 = 1500
+CASEELSE
+	LOCAL:4 = 820
+	LOCAL:5 = 2200
+ENDSELECT
+
+;ABL:技巧をみる
+SELECTCASE ABL:技巧
+CASE 0
+	TIMES LOCAL:4 , 0.50
+	TIMES LOCAL:5 , 0.50
+CASE 1
+	TIMES LOCAL:4 , 0.80
+	TIMES LOCAL:5 , 0.80
+CASE 2
+CASE 3
+	TIMES LOCAL:4 , 1.20
+	TIMES LOCAL:5 , 1.20
+CASE 4
+	TIMES LOCAL:4 , 1.50
+	TIMES LOCAL:5 , 1.50
+CASEELSE
+	TIMES LOCAL:4 , 2.00
+	TIMES LOCAL:5 , 2.00
+ENDSELECT
+
+CALL CALC, "調教ソース", LOCAL:0, LOCAL:1, LOCAL:2, LOCAL:3, LOCAL:4, LOCAL:5, LOCAL:6, LOCAL:7, LOCAL:8, LOCAL:9, LOCAL:10, LOCAL:11, LOCAL:12, LOCAL:13, LOCAL:14, LOCAL:15, LOCAL:16, LOCAL:17, LOCAL:18, LOCAL:19, LOCAL:20, LOCAL:21, ARG
+
+
+@TRAIN_MESSAGE_COM98
+;同時押し倒し
+IF TEQUIP:Ｗ押し倒し
+	PRINTFORM %CALLNAME:TARGET%は
+	;助手が前回と同じ行動(違う行動の時は、ここでなく、EQUIP_COM32で記述)
+	SIF SELECTCOM:1 == PREVCOM:1 && SELECTCOM:1 >= 0
+		PRINTFORM 、%TEXTS("Ｗ押し倒し中")%
+
+	IF PREVCOM == SELECTCOM
+		PRINTFORMW %CALLNAME:PLAYER%のアソコを%NAMES("指")%先で押し広げて、丹念に舐め続けている…
+	ELSEIF TEQUIP:押し倒し
+		;前回逆レイプ
+		IF PREVPLAY("Ｖインサート", PLAYER)
+			IF PREVEX("射精") && RAND:3
+				PRINTFORM 精液をトロトロ溢している
+			ELSEIF ABL:サドっ気 >= 3 && RAND:2 == 0
+				PRINTFORM 思う存分愉しんだ
+			ELSE
+				PRINTFORM 犯されてほぐれた
+			ENDIF
+		ELSEIF RAND:3 == 0
+			PRINTFORM 身動きの取れない
+		ELSE
+			PRINTFORM 組み伏せられている
+		ENDIF
+		PRINTFORMW %CALLNAME:PLAYER%の陰唇を口で攻めた…
+	ENDIF
+ELSEIF CHECK_COM("３Ｐ奉仕")
+	CALL TRAIN_MESSAGE_3P
+ELSEIF CHECK_COM("恥垢お掃除クンニ")
+	PRINTFORM %CALLNAME:TARGET%は%CALLNAME:PLAYER%のアソコを押し広げ、
+	PRINTFORM %TEXTR("陰唇に残る恥垢", "膣口にこびりついている恥垢", "白くドロリとした汚れ", "チーズの様な汚れ", "粘膜を彩る恥ずかしい汚れ")%
+	IF RAND:2 && PLAYER == MASTER && TALENT:においに弱い && TALENT:恋慕
+		PRINTFORMW の%TEXTS("匂い")%を嗅ぎながら、舌できれいに掃除した…
+	ELSEIF RAND:2
+		PRINTFORMW を舌で隅々まで舐めとった…
+	ELSE
+		PRINTFORMW を舌で徹底的に掃除した…
+	ENDIF
+ELSEIF PREVCOM == SELECTCOM
+	PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:PLAYER%のアソコを%NAMES("指")%先で押し広げて、丹念に舐め続けている…
+ELSEIF TEQUIP:押し倒し
+	PRINTFORM %CALLNAME:TARGET%は
+	;前回逆レイプ
+	IF PREVPLAY("Ｖインサート", PLAYER)
+		IF PREVEX("射精") && CHECK_STAIN(STAIN:PLAYER:Ｖ, "精液") && RAND:3
+			PRINTFORM 精液をトロトロ溢している
+		ELSEIF ABL:サドっ気 >= 3 && RAND:2 == 0
+			PRINTFORM 思う存分愉しんだ
+		ELSE
+			PRINTFORM 犯されてほぐれた
+		ENDIF
+	ELSEIF RAND:3 == 0
+		PRINTFORM 身動きの取れない
+	ELSE
+		PRINTFORM 組み伏せられている
+	ENDIF
+	IF CHECK_COM("お掃除クンニ")
+		IF RAND:2
+			PRINTFORMW %CALLNAME:PLAYER%のアソコを押し広げて、汚れを舌で綺麗に舐めとってきた…
+		ELSE
+			PRINTFORMW %CALLNAME:PLAYER%の膣口に舌を差し込んで、愛液ごと汚れを啜りだした…
+		ENDIF
+	ELSE
+		PRINTFORMW %CALLNAME:PLAYER%のアソコを口で攻めている…
+	ENDIF
+ELSE
+	PRINTFORM %CALLNAME:TARGET%は
+	;尿のお掃除
+	IF GETBIT(CHECK_COM("お掃除クンニ"), 1)
+		IF PREVPLAY("膣内浴尿", PLAYER)
+			PRINTFORM 大量に注がれたオシッコを逆流させている
+		ELSE
+			PRINTFORM 排尿直後で%TEXTR("きつい", "強い", "アンモニアの")%臭いを漂わせている
+		ENDIF
+	ELSEIF PREVPLAY("Ｖインサート", PLAYER) || CHECK_COM("お掃除クンニ")
+		IF PREVEX("Ｖ中出し", PLAYER) && CHECK_STAIN(STAIN:PLAYER:Ｖ, "精液") && RAND:2
+			PRINTFORM 中出しされたばかりで精液を溢している
+		ELSEIF RAND:2
+			PRINTFORM 犯された直後でヒクヒク蠢いている
+		ELSE
+			PRINTFORM 撹拌されて泡立った粘液を垂らしている
+		ENDIF
+	ELSEIF TEQUIP:シックスナイン
+		PRINTFORM %TEXTS("６９")%
+	ELSEIF EXP_GAIN(2, PLAYER)
+		PRINTFORM 絶頂の余韻にわなないている
+	ELSEIF RAND:2
+		PRINTFORM 奉仕を命じた
+	ELSE
+		PRINTFORM 目の前で脚を開いている
+	ENDIF
+	PRINTFORM %CALLNAME:PLAYER%のアソコ
+	IF COND("指の使用") && TCVAR:28 > 20
+		PRINTFORM を押し広げて、
+	ELSE
+		PRINTFORM に顔を近付けて、
+	ENDIF
+	IF CHECK_COM("お掃除クンニ")
+		PRINTFORMW 熱心にお掃除をはじめた…
+	ELSEIF TCVAR:28 > 20 && (TALENT:オトコ || ABL:レズっ気)
+		IF RAND:4 == 0
+			PRINTFORMW クリトリスに吸い付いてきた…
+		ELSEIF RAND:3 == 0
+			PRINTFORMW 膣口を重点的に刺激してきた…
+		ELSEIF RAND:2
+			PRINTFORMW 襞の隅々に至るまで舌を這わせてきた…
+		ELSE
+			PRINTFORMW チュッチュッと情熱的なキスを降らせた…
+		ENDIF
+	ELSEIF RAND:2
+		PRINTFORMW 舌での奉仕をはじめた…
+	ELSE
+		PRINTFORMW \@ (ABL:従順 >= 2 && RAND:2) ? 従順に # ぺろぺろと \@舐めはじめた…
+	ENDIF
+
+	SIF CHOSECOM(SELECTCOM) == 0 && TALENT:オトコ == 0 && ABL:レズっ気 == 0 && CHECK_COM("お掃除クンニ") == 0
+		PRINTFORMW 同性の性器に口を付けるのに抵抗があるのか、その表情はなんとも複雑な色を覗かせている…
+ENDIF
+
+
+@COM_ORDER_COM98, ARG
+VARSET LOCAL
+LOCALS = 
+
+;すべての命令に共通の要素を考慮
+;(従順が高いと命令に従いやすいなど)
+CALL COM_ORDER, ARG
+
+LOCAL = RESULT
+
+;ABL:奉仕精神
+IF ABL:奉仕精神
+	LOCAL += ABL:奉仕精神 * 4
+	LOCALS = %LOCALS% + %ABLNAME:6%LV{ABL:奉仕精神}({ABL:奉仕精神 * 4})
+ENDIF
+;ABL:レズっ気
+IF ABL:レズっ気
+	LOCAL += ABL:レズっ気 * 5
+	LOCALS = %LOCALS% + %ABLNAME:9%LV{ABL:レズっ気}({ABL:レズっ気 * 5})
+ENDIF
+;恥じらい
+IF TALENT:恥じらい
+	LOCAL -= 3
+	LOCALS = %LOCALS% - %TALENTNAME:35%(3)
+ENDIF
+;献身的
+IF TALENT:献身
+	LOCAL += 6
+	LOCALS = %LOCALS% + %TALENTNAME:63%(6)
+ENDIF
+;快感の否定
+IF TALENT:快感の否定
+	LOCAL -= 1
+	LOCALS = %LOCALS% - %TALENTNAME:71%(1)
+ENDIF
+
+;汚れあり
+IF COM_ORDER_STAIN("Ｖ", "Ｍ")
+	LOCAL -= COM_ORDER_STAIN("Ｖ", "Ｍ")
+	LOCALS = %LOCALS% - 汚れあり
+	;汚臭鈍感
+	SIF TALENT:汚臭鈍感 || TALENT:汚臭敏感
+		LOCALS = %LOCALS%、\@TALENT:汚臭鈍感 ? %TALENTNAME:61% # %TALENTNAME:62%\@
+	LOCALS = %LOCALS%({COM_ORDER_STAIN("Ｖ", "Ｍ")})
+ENDIF
+;オトコ
+IF TALENT:オトコ
+	LOCAL += 10
+	LOCALS = %LOCALS% + %TALENTNAME:122%(10)
+ENDIF
+
+;合計を表示(30以上で実行)
+CALL PRINT_COM_ORDER_COM, LOCALS, ARG, LOCAL, 30
+
+RETURN RESULT

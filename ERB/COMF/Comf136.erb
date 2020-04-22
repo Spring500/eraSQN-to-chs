@@ -1,0 +1,400 @@
+﻿@COM136
+;浣腸器＋プラグ
+;排泄した場合は NOWEX:排泄 で記録。SOURCEとしては、12：露出、13：屈従、14：逸脱が特に高い。
+;排泄を撮影すると、初回は屈従が凄まじい事になる
+
+IF COND("アナル栓") || (TEQUIP:触手 && TEQUIP:浣腸)
+	IF COND("大量浣腸")
+		PRINT 大量排泄
+	ELSEIF COND("液体浣腸")
+		PRINT 排泄
+	ELSE
+		PRINT 腸内ガス排泄
+	ENDIF
+	SIF TEQUIP:ビデオカメラ
+		PRINT （ビデオ録画中）
+ELSEIF TEQUIP:触手
+	PRINT 触手浣腸
+ELSE
+	PRINT 浣腸器
+ENDIF
+PRINTL 
+
+CALL TRAIN_MESSAGE_B
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+IF NOWEX:排泄
+	IF TEQUIP:ビデオカメラ
+		STR:0 = 排泄（ビデオ録画中）
+	ELSE
+		STR:0 = 排泄
+	ENDIF
+ELSEIF TEQUIP:触手
+	STR:0 = 触手浣腸
+ELSE
+	IF COND("アナル栓")
+		STR:0 = 浣腸
+	ELSE
+		STR:0 = 浣腸（プラグ無し）
+	ENDIF
+ENDIF
+
+RETURN 1
+
+@FLAG_COM136, ARG
+;パンツなどをずらす
+SIF !CHECK_CLO("Ａ露出")
+	CALL SETFLAG, "ボトムを露出：テキスト無し", TARGET
+
+@SOURCE_COM136, ARG
+VARSET LOCAL
+
+;プレイとしては、TEQUIP:浣腸…つまりCOND("液体浣腸")の値が増えるほどキツいこととする。最高に厳しいのは排泄プレイ。
+LOCAL:20 += 60
+LOCAL:21 += 150
+
+;LOCAL:2  快Ａ
+LOCAL:2 = ABL:Ａ感覚*100
+;LOCAL:6  苦痛
+LOCAL:6 = COND("液体浣腸")*500
+;LOCAL:8  不潔
+LOCAL:8 = 4000 + COND("液体浣腸")*1000
+;LOCAL:12 露出
+LOCAL:12 = 10000
+;LOCAL:13 屈従
+LOCAL:13 = 9000 + COND("液体浣腸")*1000
+;LOCAL:14 逸脱
+LOCAL:14 = 4000 + COND("液体浣腸")*1000
+
+
+;排泄
+IF NOWEX:排泄
+	LOCAL:8 += 20000
+	LOCAL:12 += NOWEX:排泄 * 5000 + 10000
+	LOCAL:13 += NOWEX:排泄 * 5000 + 10000
+	LOCAL:14 += NOWEX:排泄 * 5000 + 10000
+	;初めて撮影したなら
+	IF TEQUIP:ビデオカメラ && GETBIT(CFLAG:12, 7) == 0
+		LOCAL:13 *= 10
+	;撮影したなら
+	ELSEIF TEQUIP:ビデオカメラ
+		LOCAL:13 *= 2
+	ENDIF
+ENDIF
+
+;場所をみる
+IF COND("人里") || TEQUIP:館内露出プレイ
+	TIMES LOCAL:12 , 1.50
+	TIMES LOCAL:14 , 3.00
+ELSEIF TEQUIP:野外プレイ
+	TIMES LOCAL:12 , 1.50
+	TIMES LOCAL:14 , 2.00
+ELSEIF TEQUIP:羞恥プレイ
+	TIMES LOCAL:12 , 1.20
+	TIMES LOCAL:14 , 1.50
+ELSEIF TEQUIP:お風呂プレイ
+	TIMES LOCAL:14 , 0.50
+ENDIF
+
+;露出癖で逸脱減少
+SELECTCASE ABL:露出癖
+CASE 0
+CASE 1
+	TIMES LOCAL:14 , 0.90
+CASE 2
+	TIMES LOCAL:14 , 0.75
+CASE 3
+	TIMES LOCAL:14 , 0.60
+CASE 4
+	TIMES LOCAL:14 , 0.40
+CASEELSE
+	TIMES LOCAL:14 , 0.20
+ENDSELECT
+
+;ABL8,マゾっ気で逸脱減少＆屈従ＵＰ
+SELECTCASE ABL:マゾっ気
+CASE 0
+CASE 1
+	TIMES LOCAL:13 , 1.20
+	TIMES LOCAL:14 , 0.80
+CASE 2
+	TIMES LOCAL:13 , 1.50
+	TIMES LOCAL:14 , 0.60
+CASE 3
+	TIMES LOCAL:13 , 2.00
+	TIMES LOCAL:14 , 0.40
+CASE 4
+	TIMES LOCAL:13 , 2.50
+	TIMES LOCAL:14 , 0.20
+CASEELSE
+	TIMES LOCAL:13 , 3.00
+	TIMES LOCAL:14 , 0.05
+ENDSELECT
+
+;Ａ拡張LVをみる
+SELECTCASE ABL:Ａ拡張
+CASE IS >= 3
+	TIMES LOCAL:6 , 0.30
+CASE 2
+	TIMES LOCAL:6 , 0.50
+CASE 1
+CASEELSE
+	TIMES LOCAL:6 , 2.00
+ENDSELECT
+
+;処女で貞操観念orお尻許可フラグ
+SIF (TALENT:処女 == 1 && TALENT:貞操観念) || CFLAG:100
+	LOCAL:14 /= 2
+
+CALL SOURCE_SMPLAY, "浣腸", ARG
+
+CALL CALC, "調教ソース", LOCAL:0, LOCAL:1, LOCAL:2, LOCAL:3, LOCAL:4, LOCAL:5, LOCAL:6, LOCAL:7, LOCAL:8, LOCAL:9, LOCAL:10, LOCAL:11, LOCAL:12, LOCAL:13, LOCAL:14, LOCAL:15, LOCAL:16, LOCAL:17, LOCAL:18, LOCAL:19, LOCAL:20, LOCAL:21, ARG
+
+
+@TRAIN_MESSAGE_COM136
+; 0bit 空気浣腸
+; 1bit 浣腸（少なめ）
+; 2bit 浣腸（規定量）
+; 3bit 浣腸（大量）
+; 4bit 浣腸（超大量）
+; 9bit アナルプラグ
+;10bit 精液浣腸
+;11bit 温泉浣腸
+
+;浣腸プラグの着脱
+IF COND("アナル栓")
+	CALL SETFLAG, "排泄"
+ELSE
+	IF TEQUIP:浣腸
+		IF COND("大量浣腸")
+			PRINTFORMW %CALLNAME:TARGET%に限界まで浣腸液を追加で注入した
+			PRINTFORMW 大量の液体に満たされた%CALLNAME:TARGET%のお腹は蛙の様に膨れ上がっている…
+			TEQUIP:浣腸 = 1p1 + 1p2 + 1p3 + 1p4
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%の菊穴に追加の浣腸液を流し込んだ
+			PRINTFORMW もう少しなら余裕がありそうだが、%CALLNAME:TARGET%のお腹はぽっこりと膨らんで結構苦しそうだ…
+			TEQUIP:浣腸 = 1p1 + 1p2 + 1p3
+		ENDIF
+	ELSEIF ITEM:浣腸器＋プラグ
+		PRINTFORML どれで%CALLNAME:TARGET%のお腹を膨らませますか？
+		PRINTFORML （注意：小型の物以外を使用した場合にはアナルセックスなど一部コマンドは行えません）
+		PRINTFORML  [ 0] 小型浣腸器
+		PRINTFORML  [ 1] 普通の浣腸器
+		PRINTFORML  [ 2] 大型浣腸器
+		PRINTFORML  [ 3] 特大浣腸器
+		SIF ITEM:空気ポンプ
+			PRINTFORML  [ 4] 空気ポンプ
+		PRINTFORML [100] やめる
+
+		IF ITEM:空気ポンプ
+			CALL INPUT_SELECT, 5, 100
+		ELSE
+			CALL INPUT_SELECT, 4, 100
+		ENDIF
+
+		IF RESULT == 100
+			TFLAG:14 = 1
+			RETURN 0
+		ELSEIF RESULT == 0
+			PRINTFORMW %CALLNAME:TARGET%の菊穴に浣腸液を少量だけ流し込んだ
+			TEQUIP:浣腸 = 1p1
+		ELSEIF RESULT == 1
+			PRINTFORMW %CALLNAME:TARGET%の菊穴に浣腸液を流し込んだ
+			TEQUIP:浣腸 = 1p1 + 1p2
+		ELSEIF RESULT == 2
+			PRINTFORMW %CALLNAME:TARGET%の菊穴に大量の浣腸液を流し込んだ
+			TEQUIP:浣腸 = 1p1 + 1p2 + 1p3
+		ELSEIF RESULT == 3
+			PRINTFORMW 大量の浣腸液を注入され%CALLNAME:TARGET%のおなかはまるで妊婦のように膨らんでしまった…
+			TEQUIP:浣腸 = 1p1 + 1p2 + 1p3 + 1p4
+		ELSEIF RESULT == 4 && ITEM:空気ポンプ
+			PRINTFORMW %CALLNAME:TARGET%の菊穴に、腹が膨れるくらいポンプで空気を送り込んだ
+			TEQUIP:浣腸 = 1p0 + 1p9
+		ENDIF
+	ELSE
+		PRINTFORMW %CALLNAME:TARGET%の菊穴に、腹が膨れるくらいポンプで空気を送り込んだ
+		TEQUIP:浣腸 = 1p0 + 1p9
+	ENDIF
+	IF COND("液体浣腸") && COND("アナル栓") == 0
+		PRINTFORML 　
+		PRINTFORML アナルプラグを使用しますか？
+		PRINTFORML [0] 使う
+		PRINTFORML [1] 使わない
+		CALL INPUT_SELECT, 2
+		IF RESULT == 0
+			PRINTFORMW %CALLNAME:TARGET%のアナルにプラグで栓をした…
+			SETBIT TEQUIP:浣腸, 9
+		ENDIF
+	ENDIF
+	;精液浣腸フラグ消去
+	CLEARBIT TEQUIP:浣腸, 10
+ENDIF
+
+@TRAIN_MESSAGE_COM207
+IF COND("アナル栓")
+	CALL SETFLAG, "排泄"
+ELSE
+	;液体量MAX＆プラグつき
+	TEQUIP:浣腸 = 1p1 + 1p2 + 1p3 + 1p4 + 1p9
+	PRINTFORMW 極太の触手が%CALLNAME:TARGET%の菊穴をふさぎ、体液を流し込んだ…
+	CALL ADD_STAIN, TARGET, "Ａ", "触手"
+ENDIF
+
+
+@EQUIP_COM46
+SIF SELECTCOM == 136
+	RETURN 0
+SIF COND("精液浣腸")
+	RETURN 0
+CALL SOURCE_COM136, 10
+
+RETURN 1
+
+@EQUIP_COM46_2
+SIF SELECTCOM == 136
+	RETURN 0
+
+IF COND("精液浣腸")
+	PRINTL ＜精液浣腸中＞
+ELSEIF TEQUIP:触手
+	PRINTL ＜浣腸触手挿入中＞
+ELSE
+	PRINTFORM ＜\@ COND("温泉浣腸") ? 温泉 # \@浣腸
+	SELECTCASE COND("液体浣腸")
+	CASE 0
+		PRINT （空気）
+	CASE 1
+		PRINT （少量）
+	CASE 3
+		PRINT （大量）
+	CASE 4
+		PRINT （超大量）
+	ENDSELECT
+	IF TEQUIP:拡張バルーン == 2
+		PRINT ＋アナル拡張バルーン
+	ELSEIF INSERT("Ａインサート")
+		PRINT ＋Ａインサート
+	ELSEIF COND("アナル栓")
+		PRINT ＋アナルプラグ挿入中
+	ENDIF
+	PRINTL ＞
+ENDIF
+
+;精液浣腸だと浣腸経験とかは無し
+IF COND("精液浣腸")
+	;ここは微々たる物
+	BASE:排泄欲 += EXP_GAIN(18)*20
+	;限界まであとどれくらい？
+	;SELECTCASE (BASE:排泄欲 * 100) / MAXBASE:排泄欲
+	;CASE IS >= 90
+	;	PRINTFORML %CALLNAME:TARGET%のお腹は精液を注がれて刺激されたせいか、ごろごろと音を鳴らしている…
+	;ENDSELECT
+	RETURN 0
+ELSEIF COND("液体浣腸")
+	VARSET LOCAL
+	;ターンごとに耐えるのがきつくなる
+	LOCAL = 300 + (CUP:快Ｃ + CUP:快Ｖ + CUP:快Ａ + CUP:苦痛)/5 + NOWEX:Ｃ絶頂*200 + NOWEX:Ｖ絶頂*500 + NOWEX:Ａ絶頂*1000 + NOWEX:絶頂数合計*100
+
+	;浣腸量による補正
+	SELECTCASE COND("液体浣腸")
+	CASE 2
+		TIMES LOCAL, 1.50
+	CASE 3
+		TIMES LOCAL, 3.00
+	CASE 4
+		TIMES LOCAL, 5.00
+	ENDSELECT
+
+	;Ａ拡張度合いによる補正
+	SELECTCASE ABL:Ａ拡張 - ABL:Ａ使い
+	CASE IS >= 4
+		TIMES LOCAL, 30.00
+	CASE 3
+		TIMES LOCAL, 10.00
+	CASE 2
+		TIMES LOCAL, 5.00
+	CASE 1
+		TIMES LOCAL, 3.00
+	ENDSELECT
+
+	;コマンドなどによる補正
+	SELECTCASE SELECTCOM
+	CASE 2
+		TIMES LOCAL, 1.20
+	CASE 9
+		TIMES LOCAL, 1.10
+	CASE 14
+		TIMES LOCAL, 1.30
+	CASE 33, 141
+		TIMES LOCAL, 2.00
+	CASE 142, 143
+		TIMES LOCAL, 3.00
+	CASE 60 TO 79
+		TIMES LOCAL, 1.50
+	ENDSELECT
+
+	;LOCAL:1は下方修正。かかり過ぎないようにLOCALとは独立させて調整
+	LOCAL:1 = 100
+
+	;性格による補正(ツンやクーはがんばって堪えます。他はシラネ)
+	SELECTCASE TALENT:高慢*50 + TALENT:気丈*40 + TALENT:強気*40 + TALENT:冷静*25 + TALENT:恥じらい*50 + TALENT:賢い*25
+	CASE IS >= 150
+		TIMES LOCAL:1, 0.30
+	CASE IS >= 100
+		TIMES LOCAL:1, 0.50
+	CASE IS > 50
+		TIMES LOCAL:1, 0.80
+	ENDSELECT
+
+	;能力による補正。露出癖が高いと我慢しない。マゾっ気が高いと我慢する。
+	SELECTCASE 100 - ABL:露出癖*30 + ABL:マゾっ気*10
+	CASE IS >= 80
+		TIMES LOCAL:1, 0.30
+	CASE IS >= 50
+		TIMES LOCAL:1, 0.50
+	CASE IS >= 30
+		TIMES LOCAL:1, 0.80
+	CASE IS < -20
+		TIMES LOCAL:1, 2.00
+	CASE IS < 0
+		TIMES LOCAL:1, 1.50
+	ENDSELECT
+
+	;どんなに耐えても30％はある
+	LOCAL:1 = MAX(LOCAL:1, 30)
+
+	;補正のかかった値を追加
+	BASE:排泄欲 += MULTIPLY(LOCAL, LOCAL:1)
+
+	IF COND("アナル栓")
+		PRINTFORML 腸内に大量に\@ COND("温泉浣腸") ? 小便を流し込まれた # 浣腸液を注がれた \@%CALLNAME:TARGET%は、肛門に栓をされたままで責め続けられている。
+		SELECTCASE ABL:マゾっ気
+		CASE 0
+			PRINTFORML %CALLNAME:TARGET%は苦悶の表情を浮かべている…
+		CASE 1
+			PRINTFORML %CALLNAME:TARGET%は脂汗を浮かべ、排泄感に堪えている…
+		CASE 2
+			PRINTFORML %CALLNAME:TARGET%は苦しそうな表情をしながらも、顔を紅潮させもじもじとお尻を振っている…
+		CASE 3
+			PRINTFORML %CALLNAME:TARGET%は排泄感に苛まれながらも、時折恍惚とした表情を浮かべている…
+		CASE 4
+			PRINTFORML %CALLNAME:TARGET%は、うっとりした表情を浮かべて排泄感と腹痛を愉しんでいる…
+		CASE IS >= 5
+			PRINTFORML %CALLNAME:TARGET%は、排泄感を心ゆくまで味わっている…
+			PRINTFORML その表情は快感にだらしなく緩み、口\@ TALENT:オトコ == 0 ? と膣口 # \@からはポタポタと涎を滴らせている…
+		ENDSELECT
+		SIF COND("排泄：限界")
+			CALL SELF_KOJO, "プラグ無し浣腸イベント"
+	ENDIF
+ENDIF
+EXP:浣腸経験 += 1
+PRINTFORML 浣腸経験＋１
+EXP:緊縛経験 += 2
+PRINTL 緊縛経験＋２
+
+RETURN 1
+
+
+

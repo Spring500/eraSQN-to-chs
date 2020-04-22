@@ -1,0 +1,1482 @@
+﻿;--------------------------------------------------
+;下で長々と記述している人称管理関数@CNAMEのTARGET以外も指定できる版
+;ARGに発言者の番号を入れてください
+;--------------------------------------------------
+@CNAMET(ARG, ARGS, ARGS:1, ARGS:2, ARGS:3, ARGS:4)
+#FUNCTIONS
+LOCAL = TARGET
+TARGET = ARG
+LOCALS = %CNAME(ARGS, ARGS:1, ARGS:2, ARGS:3, ARGS:4)%
+TARGET = LOCAL
+RETURNF LOCALS
+
+;--------------------------------------------------
+;人称管理関数@CNAME
+;ARGSに何人称か、または誰への呼びかけかを入れる。
+;ARGS:1〜にはどもり、甘え、かな、〜など変化をつけたい内容を入れる
+;基本的な人称はPERSON_DEFで設定し、特殊なケースの呼び名はPERSONを用いて設定する
+;具体的には、PERSONが設定されている場合にはPERSON、そうでない場合にはPERSON_DEFを用いることになる
+;また、CEVENTを用いた呼び名変更はPERSONが設定されている場合には無視されるので注意
+;--------------------------------------------------
+@CNAME(ARGS, ARGS:1, ARGS:2, ARGS:3, ARGS:4)
+#FUNCTIONS
+#DIM LCOUNT
+#DIM LCOUNT2
+#DIM PLAYER_MEMO
+;呼び名
+#DIMS PERSON
+;よびな
+#DIMS KANA
+;基本呼び名
+#DIMS PERSON_DEF
+;基本よびな
+#DIMS KANA_DEF
+
+PLAYER_MEMO = PLAYER
+
+SELECTCASE ARGS
+CASE "主人"
+	PLAYER = MASTER
+CASE "助手"
+	PLAYER = ASSI
+ENDSELECT
+
+PERSON = 
+KANA = 
+
+SELECTCASE BASE:種族思考
+;サキュバス
+CASE 1
+	SELECTCASE ARGS
+	CASE "一人称"
+		PERSON_DEF = アタシ
+		KANA_DEF = あたし
+		IF CHECK_SHIRT("女教師")
+			PERSON = 先生
+			KANA = せんせい
+		ENDIF
+	CASE "二人称", "主人", "助手"
+		PERSON_DEF = あなた
+		KANA_DEF = あなた
+		IF COND("Ｃサキュバス２")
+			IF CHECK_SHIRT("メイド服")
+				IF TALENT:恋慕
+					PERSON = 御主人様
+					KANA = ごしゅじんさま
+				ELSEIF TALENT:PLAYER:オトコ
+					PERSON = 旦那様
+					KANA = だんなさま
+				ELSE
+					PERSON = お嬢さま
+					KANA = おじょうさま
+				ENDIF
+			ENDIF
+		ELSE
+			IF CHECK_SHIRT("看護婦")
+				PERSON = 先生
+				KANA = せんせい
+			ELSEIF CHECK_SHIRT("女教師") && CALLNAME:PLAYER != "あなた"
+				IF TALENT:PLAYER:オトコ
+					PERSON = %CALLNAME:PLAYER%君
+					KANA = %CALLNAME:PLAYER%くん
+				ELSE
+					PERSON = %CALLNAME:PLAYER%さん
+					KANA = %CALLNAME:PLAYER%さん
+				ENDIF
+			ELSEIF CHECK_SHIRT("メイド服")
+				PERSON = 御主人様
+				KANA = ごしゅじんさま
+			ENDIF
+		ENDIF
+	ENDSELECT
+;ドライアド
+CASE 3
+	SELECTCASE ARGS
+	CASE "一人称"
+		PERSON_DEF = わたくし
+		KANA_DEF = わたくし
+	CASE "二人称", "主人", "助手"
+		PERSON_DEF = ご主人様
+		KANA_DEF = ごしゅじんさま
+
+		IF CHECK_SHIRT("メイド服")
+			PERSON = ご主人様
+			KANA = ごしゅじんさま
+		ELSEIF CHECK_SHIRT("女教師")
+			IF CALLNAME:PLAYER == "あなた"
+				PERSON = あなた
+				KANA = あなた
+			;コンフィグで「あなた」以外に設定している場合
+			ELSE
+				PERSON = %CALLNAME:PLAYER%君
+				KANA = %CALLNAME:PLAYER%くん
+			ENDIF
+		ENDIF
+	ENDSELECT
+;ピクシー
+CASE 4
+	SELECTCASE ARGS
+	CASE "一人称"
+		;ティターニア
+		IF COND("Ｃティターニア")
+			PERSON_DEF = わたし
+			KANA_DEF = わたし
+		;ピクシー
+		ELSE
+			PERSON_DEF = アタシ
+			KANA_DEF = あたし
+		ENDIF
+	CASE "二人称", "主人", "助手"
+		;ティターニア
+		IF COND("Ｃティターニア")
+			PERSON_DEF = あなた
+			KANA_DEF = あなた
+		;ピクシー
+		ELSE
+			IF PLAYER == MASTER
+				IF TALENT:PLAYER:オトコ
+					PERSON_DEF = お兄さん
+					KANA_DEF = おにいさん
+				ELSE
+					PERSON_DEF = お姉さん
+					KANA_DEF = おねえさん
+				ENDIF
+			ELSE
+				IF AGE(PLAYER) > AGE(TARGET)
+					IF TALENT:PLAYER:オトコ
+						PERSON_DEF = %CALLNAME:PLAYER%さん
+						KANA_DEF = %CALLNAME:PLAYER%さん
+					ELSE
+						PERSON_DEF = %CALLNAME:PLAYER%お姉さん
+						KANA_DEF = %CALLNAME:PLAYER%おねえさん
+					ENDIF
+				ELSE
+					PERSON_DEF = %CALLNAME:PLAYER%ちゃん
+					KANA_DEF = %CALLNAME:PLAYER%ちゃん
+				ENDIF
+			ENDIF
+		ENDIF
+	ENDSELECT
+;シルフ
+CASE 5
+	SELECTCASE ARGS
+	CASE "一人称"
+		PERSON_DEF = あたし
+		KANA_DEF = あたし
+	CASE "二人称", "主人", "助手"
+		IF PLAYER == MASTER 
+			IF TALENT:相思相愛 && TALENT:PLAYER:オトコ
+				PERSON_DEF = 旦那さま
+				KANA_DEF = だんなさま
+			ELSE
+				PERSON_DEF = %CALLNAME:PLAYER%
+				KANA_DEF = %CALLNAME:PLAYER%
+			ENDIF
+		ELSE
+			IF TALENT:PLAYER:オトコ == 0 || TALENT:PLAYER:男の娘
+				PERSON_DEF = %CALLNAME:PLAYER%ちゃん
+				KANA_DEF = %CALLNAME:PLAYER%ちゃん
+			ELSE
+				PERSON_DEF = %CALLNAME:PLAYER%くん
+				KANA_DEF = %CALLNAME:PLAYER%くん
+			ENDIF
+		ENDIF
+	ENDSELECT
+;ネコマタ
+CASE 6
+	SELECTCASE ARGS
+	CASE "一人称"
+		PERSON_DEF = ボク
+		KANA_DEF = ぼく
+	CASE "二人称", "主人", "助手"
+		IF TALENT:PLAYER:オトコ
+			PERSON_DEF = 御主人様
+			KANA_DEF = ごしゅじんさま
+		ELSE
+			PERSON_DEF = お嬢様
+			KANA_DEF = おじょうさま
+		ENDIF
+	ENDSELECT
+;ワーウルフ
+CASE 7
+	SELECTCASE ARGS
+	CASE "一人称"
+		PERSON_DEF = おれ
+		KANA_DEF = おれ
+		;子犬風
+		IF COND("Ｃワーウルフ３")
+			PERSON_DEF = わたし
+			KANA_DEF = わたし
+		ENDIF
+	CASE "二人称", "主人", "助手"
+		PERSON_DEF = おまえ
+		KANA_DEF = おまえ
+
+		IF COND("Ｃワーウルフ３")
+			PERSON_DEF = ご主人さま
+			KANA_DEF = ごしゅじんさま
+		ELSEIF COND("Ｃワーウルフ２")
+			;呼び名を変更させていても、反発刻印3LVだと無視する
+			IF MARK:反発刻印 == 3
+				PERSON = おまえ
+				KANA = おまえ
+			ENDIF
+		ENDIF
+	ENDSELECT
+
+;ラミア
+CASE 10
+	SELECTCASE ARGS
+	CASE "一人称"
+		PERSON_DEF = 私
+		KANA_DEF = わたし
+		;メリュジーヌ
+		IF COND("Ｃメリュジーヌ") || TALENT:気品
+			PERSON_DEF = わたくし
+			KANA_DEF = わたくし
+		ENDIF
+	CASE "二人称", "主人", "助手"
+		PERSON_DEF = アナタ
+		KANA_DEF = あなた
+		;メリュジーヌ
+		IF COND("Ｃメリュジーヌ")
+			IF PLAYER == MASTER
+				PERSON_DEF = 御主人様
+				KANA_DEF = ごしゅじんさま
+			ELSE
+				IF TALENT:PLAYER:オトコ
+					PERSON_DEF = 貴方
+				ELSE
+					PERSON_DEF = 貴女
+				ENDIF
+				KANA_DEF = あなた
+			ENDIF
+		ENDIF
+	ENDSELECT
+;ハーピー
+CASE 11
+	SELECTCASE ARGS
+	CASE "一人称"
+		PERSON_DEF = アタシ
+		KANA_DEF = あたし
+	CASE "二人称", "主人", "助手"
+		;セイレーン
+		IF COND("Ｃセイレーン")
+			PERSON_DEF = %CALLNAME:PLAYER%さん
+			KANA_DEF = %CALLNAME:PLAYER%さん
+		ELSE
+			PERSON_DEF = %CALLNAME:PLAYER%
+			KANA_DEF = %CALLNAME:PLAYER%
+		ENDIF
+	ENDSELECT
+;アプサラス
+CASE 14
+	SELECTCASE ARGS
+	CASE "一人称"
+		PERSON_DEF = あたし
+		KANA_DEF = あたし
+	CASE "二人称", "主人", "助手"
+		IF TALENT:PLAYER:オトコ
+			PERSON_DEF = ぼうや
+			KANA_DEF = ぼうや
+		ELSE
+			PERSON_DEF = 子猫ちゃん
+			KANA_DEF = こねこちゃん
+		ENDIF
+	ENDSELECT
+;スキュラ
+CASE 15
+	SELECTCASE ARGS
+	CASE "一人称"
+		;長編
+		IF COND("Ｃ長編スキュラ")
+			PERSON_DEF = わたくし
+			KANA_DEF = わたくし
+		;短編
+		ELSE
+			;一人称がスキュラ
+			IF GETBIT(CFLAG:201, 30)
+				PERSON_DEF = %CALLNAME:TARGET%
+				KANA_DEF = %CALLNAME:TARGET%
+			ELSE
+				PERSON_DEF = あたし
+				KANA_DEF = あたし
+			ENDIF
+		ENDIF
+	CASE "二人称", "主人", "助手"
+		;長編
+		IF COND("Ｃ長編スキュラ")
+			PERSON_DEF = %CALLNAME:PLAYER%
+			KANA_DEF = %CALLNAME:PLAYER%
+		;短編
+		ELSE
+			IF TALENT:PLAYER:オトコ
+				PERSON_DEF = お兄さま
+				KANA_DEF = おにいさま
+			ELSE
+				PERSON_DEF = お姉さま
+				KANA_DEF = おねえさま
+			ENDIF
+		ENDIF
+	ENDSELECT
+;クズノハ
+CASE 16
+	SELECTCASE ARGS
+	CASE "一人称"
+		PERSON_DEF = わらわ
+		KANA_DEF = わらわ
+	CASE "二人称", "主人", "助手"
+		IF TALENT:恋慕 && PLAYER == MASTER
+			PERSON_DEF = 主様
+			KANA_DEF = ぬしさま
+		ELSEIF TALENT:淫乱 && PLAYER == MASTER
+			PERSON_DEF = 御主人様
+			KANA_DEF = ごしゅじんさま
+		ELSEIF MARK:屈服刻印 >= 2
+			PERSON_DEF = そなた
+			KANA_DEF = そなた
+		ELSE
+			PERSON_DEF = おぬし
+			KANA_DEF = おぬし
+		ENDIF
+	ENDSELECT
+;クィーンメイブ
+CASE 17
+	SELECTCASE ARGS
+	CASE "一人称"
+		PERSON_DEF = アタシ
+		KANA_DEF = あたし
+	CASE "二人称", "主人", "助手"
+		IF PENIS(PLAYER)
+			PERSON_DEF = 犬
+			KANA_DEF = イヌ
+		ELSE
+			PERSON_DEF = 牝犬
+			KANA_DEF = メスイヌ
+		ENDIF
+	ENDSELECT
+;ルシフェル
+CASE 21
+	SELECTCASE ARGS
+	CASE "一人称"
+		;一人称変更
+		IF GETBIT(CFLAG:201, 32)
+			PERSON_DEF = アタシ
+			KANA_DEF = あたし
+		;その他
+		ELSE
+			PERSON_DEF = 僕
+			KANA_DEF = ぼく
+		ENDIF
+	CASE "二人称", "主人", "助手"
+		PERSON_DEF = アンタ
+		KANA_DEF = あんた
+		IF TALENT:恋慕 && PLAYER == MASTER
+			IF TALENT:PLAYER:オトコ
+				IF TEQUIP:媚薬
+					PERSON = にいさま
+					KANA = にいしゃま
+				ELSE
+					PERSON_DEF = 兄様
+					KANA_DEF = にいさま
+				ENDIF
+			ELSE
+				IF TEQUIP:媚薬
+					PERSON = ねえさま
+					KANA = ねえしゃま
+				ELSE
+					PERSON_DEF = 姉様
+					KANA_DEF = ねえさま
+				ENDIF
+			ENDIF
+		ENDIF
+	ENDSELECT
+;クノイチ
+CASE 22
+	SELECTCASE ARGS
+	CASE "一人称"
+		PERSON_DEF = 私
+		KANA_DEF = わたし
+	CASE "二人称", "主人", "助手"
+		IF TALENT:恋慕
+			IF TEQUIP:新妻プレイ
+				PERSON = お前さま
+				KANA = おまえさま
+			ELSE
+				PERSON_DEF = おぬし
+				KANA_DEF = おぬし
+			ENDIF
+		ELSE
+			PERSON_DEF = 貴様
+			KANA_DEF = きさま
+		ENDIF
+	ENDSELECT
+;ヴァンパイア
+CASE 25
+	SELECTCASE ARGS
+	CASE "一人称"
+		IF COND("Ｃヴァンパイア３")
+			PERSON_DEF = 私
+			KANA_DEF = わたし
+		ELSEIF TALENT:恋慕
+			PERSON_DEF = ワタシ
+			KANA_DEF = わたし
+		ELSEIF MARK:屈服刻印 == 3 || MARK:反発刻印 == 3
+			PERSON_DEF = ワタクシ
+			KANA_DEF = わたくし
+		ELSE
+			PERSON_DEF = わたくし
+			KANA_DEF = わたくし
+		ENDIF
+	CASE "主人"
+		IF COND("Ｃヴァンパイア３")
+			IF TALENT:恋慕
+				PERSON_DEF = %CALLNAME:MASTER%
+				KANA_DEF = %CALLNAME:MASTER%
+			ELSEIF MARK:屈服刻印 == 3
+				PERSON_DEF = お前
+				KANA_DEF = おまえ
+			ELSE
+				PERSON_DEF = 貴様
+				KANA_DEF = きさま
+			ENDIF
+		ELSE
+			PERSON_DEF = %CALLNAME:PLAYER%
+			KANA_DEF = %CALLNAME:PLAYER%
+		ENDIF
+
+	CASE "二人称", "助手"
+		IF COND("Ｃヴァンパイア３")
+			IF TALENT:恋慕 && PLAYER == MASTER
+				PERSON_DEF = %CALLNAME:MASTER%
+				KANA_DEF = %CALLNAME:MASTER%
+			ELSEIF MARK:屈服刻印 == 3 && PLAYER == MASTER
+				PERSON_DEF = お前
+				KANA_DEF = おまえ
+			ELSE
+				PERSON_DEF = 貴様
+				KANA_DEF = きさま
+			ENDIF
+		ELSE
+			PERSON_DEF = %CALLNAME:PLAYER%
+			KANA_DEF = %CALLNAME:PLAYER%
+		ENDIF
+	ENDSELECT
+;プロフェテス
+CASE 27
+	SELECTCASE ARGS
+	CASE "一人称"
+		PERSON_DEF = あたし
+		KANA_DEF = あたし
+	CASE "二人称", "主人", "助手"
+		PERSON_DEF = あなた
+		KANA_DEF = あなた
+	ENDSELECT
+;ソルジャー
+CASE 28
+	SELECTCASE ARGS
+	CASE "一人称"
+		PERSON_DEF = アタシ
+		KANA_DEF = あたし
+	CASE "二人称", "主人", "助手"
+		;二人称変更
+		IF GETBIT(CFLAG:201, 30)
+			PERSON_DEF = アンタ
+			KANA_DEF = あんた
+		;その他
+		ELSE
+			PERSON_DEF = %CALLNAME:PLAYER%
+			KANA_DEF = %CALLNAME:PLAYER%
+		ENDIF
+	ENDSELECT
+;スライム
+CASE 29
+	SELECTCASE ARGS
+	CASE "一人称"
+		PERSON_DEF = あたし
+		KANA_DEF = あたし
+	CASE "二人称", "主人", "助手"
+		PERSON_DEF = キミ
+		KANA_DEF = きみ
+	ENDSELECT
+;ユニコーン
+CASE 30
+	SELECTCASE ARGS
+	CASE "一人称"
+		PERSON_DEF = 私
+		KANA_DEF = わたし
+	CASE "主人"
+		PERSON_DEF = マスター
+		KANA_DEF = ますたー
+	CASE "二人称", "助手"
+		PERSON_DEF = マスター
+		KANA_DEF = ますたー
+		IF PLAYER == ASSI
+			;バイコーン
+			IF COND("Ｃバイコーン")
+				PERSON_DEF = %CALLNAME:PLAYER%さん
+				KANA_DEF = %CALLNAME:PLAYER%さん
+			ELSE
+				PERSON_DEF = %TEXTS("助手の名称")%さん
+				KANA_DEF = じょしゅさん
+			ENDIF
+		ENDIF
+	ENDSELECT
+;ストゥーナ
+CASE 34
+	SELECTCASE ARGS
+	CASE "一人称"
+		PERSON_DEF = オレ
+		KANA_DEF = おれ
+	CASE "二人称"
+		PERSON_DEF = テメェ
+		KANA_DEF = てめぇ
+	CASE "主人"
+		PERSON_DEF = %CALLNAME:MASTER%
+		KANA_DEF = %CALLNAME:MASTER%
+	CASE "助手"
+		PERSON_DEF = %CALLNAME:ASSI%
+		KANA_DEF = %CALLNAME:ASSI%
+	ENDSELECT
+;メローナ
+CASE 35
+	SELECTCASE ARGS
+	CASE "一人称"
+		PERSON_DEF = あたし
+		KANA_DEF = あたし
+	CASE "二人称", "主人"
+		IF PLAYER == MASTER
+			IF TALENT:PLAYER:オトコ
+				PERSON_DEF = キミ
+				KANA_DEF = きみ
+			ELSE
+				PERSON_DEF = アナタ
+				KANA_DEF = あなた
+			ENDIF
+		ELSE
+			PERSON_DEF = %CALLNAME:PLAYER%
+			KANA_DEF = %CALLNAME:PLAYER%
+		ENDIF
+	CASE "助手"
+		PERSON_DEF = %CALLNAME:ASSI%
+		KANA_DEF = %CALLNAME:ASSI%
+	ENDSELECT
+;フレデリカ
+CASE 37
+	SELECTCASE ARGS
+	CASE "一人称"
+		PERSON_DEF = 私
+		KANA_DEF = わたし
+	CASE "二人称", "主人", "助手"
+		IF PLAYER == MASTER
+			IF TALENT:恋慕
+				PERSON_DEF = 御主人様
+				KANA_DEF = ごしゅじんさま
+			ELSE
+				PERSON_DEF = アナタ
+				KANA_DEF = あなた
+			ENDIF
+		ELSE
+			;自分より上を呼ぶときorお姉さんグループを呼ぶとき
+			IF AGE(PLAYER) > AGE(TARGET) || AGE(PLAYER) >= 3
+				PERSON_DEF = %CALLNAME:PLAYER%さん
+				KANA_DEF = %CALLNAME:PLAYER%さん
+			;自分より下を呼ぶとき
+			ELSEIF AGE(PLAYER) < AGE(TARGET)
+				PERSON_DEF = %CALLNAME:PLAYER%ちゃん
+				KANA_DEF = %CALLNAME:PLAYER%ちゃん
+			;その他
+			ELSE
+				PERSON_DEF = %CALLNAME:PLAYER%
+				KANA_DEF = %CALLNAME:PLAYER%
+			ENDIF
+		ENDIF
+	ENDSELECT
+;ジャブジャブ
+CASE 43
+	SELECTCASE ARGS
+	CASE "一人称"
+		PERSON_DEF = %CALLNAME:TARGET%
+		KANA_DEF = %CALLNAME:TARGET%
+		IF CHECK_SHIRT("女教師")
+			PERSON = 先生
+			KANA = せんせい
+		ENDIF
+	CASE "主人"
+		PERSON_DEF = %CALLNAME:PLAYER%
+		KANA_DEF = %CALLNAME:PLAYER%
+		IF CHECK_SHIRT("メイド服")
+			PERSON = ご主人様
+			KANA = ごしゅじんさま
+		ELSEIF CHECK_SHIRT("女教師") + CHECK_SHIRT("セーラー服") && CALLNAME:PLAYER != "あなた"
+			PERSON = %CALLNAME:PLAYER%君
+			KANA = %CALLNAME:PLAYER%くん
+		ELSEIF CHECK_SHIRT("看護婦")
+			PERSON = 患者さん
+			KANA = かんじゃさん
+		ELSEIF CHECK_BODYS("スク水") || CHECK_SHIRT("体操服")
+			PERSON = 先生
+			KANA = せんせい
+		;ウェディングドレス
+		ELSEIF CHECK_SHIRT("ウェディングドレス")
+			PERSON = 旦那さま
+			KANA = だんなさま
+		ENDIF
+	CASE "二人称", "助手"
+		IF PLAYER == MASTER
+			PERSON_DEF = %CALLNAME:PLAYER%
+			KANA_DEF = %CALLNAME:PLAYER%
+			IF CHECK_SHIRT("メイド服")
+				PERSON = ご主人様
+				KANA = ごしゅじんさま
+			ELSEIF CHECK_SHIRT("女教師") + CHECK_SHIRT("セーラー服") && CALLNAME:PLAYER != "あなた"
+				PERSON = %CALLNAME:PLAYER%君
+				KANA = %CALLNAME:PLAYER%くん
+			ELSEIF CHECK_SHIRT("看護婦")
+				PERSON = 患者さん
+				KANA = かんじゃさん
+			ELSEIF CHECK_BODYS("スク水") || CHECK_SHIRT("体操服")
+				PERSON = 先生
+				KANA = せんせい
+			;ウェディングドレス
+			ELSEIF CHECK_SHIRT("ウェディングドレス")
+				PERSON = 旦那さま
+				KANA = だんなさま
+			ENDIF
+		ELSE
+			PERSON_DEF = %CALLNAME:PLAYER%ちゃん
+			KANA_DEF = %CALLNAME:PLAYER%ちゃん
+			IF NO:PLAYER == 48
+				PERSON_DEF = %CALLNAME:PLAYER%様
+				KANA_DEF = %CALLNAME:PLAYER%さま
+			ENDIF
+		ENDIF
+	ENDSELECT
+;リン
+CASE 44
+	SELECTCASE ARGS
+	CASE "一人称"
+		PERSON_DEF = わたし
+		KANA_DEF = わたし
+	CASE "二人称", "主人", "助手"
+		IF PLAYER == MASTER
+			PERSON_DEF = 師匠
+			KANA_DEF = ししょう
+		ELSE
+			PERSON_DEF = %CALLNAME:PLAYER%さん
+			KANA_DEF = %CALLNAME:PLAYER%さん
+		ENDIF
+
+		IF CHECK_SHIRT("メイド服")
+			PERSON = ご主人様
+			KANA = ごしゅじんさま
+		ELSEIF CHECK_SHIRT("女教師")
+			IF CALLNAME:PLAYER == "あなた"
+				PERSON = あなた
+				KANA = あなた
+			;コンフィグで「あなた」以外に設定している場合
+			ELSEIF TALENT:PLAYER:オトコ
+				PERSON = %CALLNAME:PLAYER%君
+				KANA = %CALLNAME:PLAYER%くん
+			ENDIF
+		ENDIF
+	ENDSELECT
+;クララ
+CASE 46
+	SELECTCASE ARGS
+	CASE "一人称"
+		PERSON_DEF = 私
+		KANA_DEF = わたし
+	CASE "二人称", "主人", "助手"
+		IF PLAYER == MASTER
+			PERSON_DEF = ご主人様
+			KANA_DEF = ごしゅじんさま
+		ELSE
+			PERSON_DEF = %CALLNAME:PLAYER%様
+			KANA_DEF = %CALLNAME:PLAYER%さま
+		ENDIF
+		IF CHECK_CLO("自分の服") || CHECK_SHIRT("メイド服")
+
+		ELSEIF CHECK_SHIRT("和服")
+			IF TALENT:PLAYER:オトコ
+				PERSON = 旦那様
+				KANA = だんなさま
+			ELSE
+				PERSON = お嬢様
+				KANA = おじょうさま
+			ENDIF
+		ELSEIF CHECK_SHIRT("女教師") && CALLNAME:PLAYER != "あなた"
+			IF TALENT:PLAYER:オトコ
+				PERSON = %CALLNAME:PLAYER%君
+				KANA = %CALLNAME:PLAYER%くん
+			ELSE
+				PERSON = %CALLNAME:PLAYER%さん
+				KANA = %CALLNAME:PLAYER%さん
+			ENDIF
+		;ELSEIF CHECK_SHIRT("体操服")
+		;	PERSON = 先輩
+		;	KANA = せんぱい
+		ELSEIF CHECK_SHIRT("看護婦")
+			PERSON = 先生
+			KANA = せんせい
+		ELSEIF CHECK_SHIRT("チャイナ服") || CHECK_BODYS("バニースーツ")
+			PERSON = お客様
+			KANA = おきゃくさま
+		ELSEIF CHECK_SHIRT("セーラー服") || CHECK_BODYS("スク水") || CHECK_SHIRT("体操服")
+			IF TALENT:PLAYER:オトコ
+				PERSON = お兄様
+				KANA = おにいさま
+			ELSE
+				PERSON = お姉様
+				KANA = おねえさま
+			ENDIF
+		ENDIF
+	ENDSELECT
+;ベルナドット
+CASE 47
+	SELECTCASE ARGS
+	CASE "一人称"
+		PERSON_DEF = アタシ
+		KANA_DEF = あたし
+		IF GETBIT(CFLAG:201, 30)
+			PERSON_DEF = 師匠
+			KANA_DEF = ししょう
+		ENDIF
+	CASE "二人称", "主人", "助手"
+		PERSON_DEF = あんた
+		KANA_DEF = あんた
+	ENDSELECT
+;ハニービー
+CASE 60
+	SELECTCASE ARGS
+	CASE "一人称"
+		;口上2
+		IF COND("Ｃハニービー２")
+			PERSON_DEF = あたし
+			KANA_DEF = あたし
+		;口上1
+		ELSE
+			PERSON_DEF = 私
+			KANA_DEF = わたし
+		ENDIF
+	CASE "主人"
+		;口上2
+		IF COND("Ｃハニービー２")
+			;呼び名を変更している場合
+			IF GETBIT(CFLAG:201, 33)
+				PERSON = 女王様
+				KANA = じょうおうさま
+			ELSE
+				PERSON_DEF = 君
+				KANA_DEF = キミ
+			ENDIF
+		;口上1
+		ELSE
+			PERSON_DEF = %CALLNAME:PLAYER%
+			KANA_DEF = %CALLNAME:PLAYER%
+		ENDIF
+	CASE "二人称", "助手"
+		;口上2
+		IF COND("Ｃハニービー２")
+			;呼び名を変更している場合
+			IF PLAYER == MASTER && GETBIT(CFLAG:201, 33)
+				PERSON = 女王様
+				KANA = じょうおうさま
+			ELSE
+				PERSON_DEF = 君
+				KANA_DEF = キミ
+			ENDIF
+		;口上1
+		ELSE
+			PERSON_DEF = %CALLNAME:PLAYER%
+			KANA_DEF = %CALLNAME:PLAYER%
+		ENDIF
+	ENDSELECT
+;ヴァルキリー
+CASE 61
+	SELECTCASE ARGS
+	CASE "一人称"
+		PERSON_DEF = 私
+		KANA_DEF = わたし
+	CASE "二人称", "主人", "助手"
+		IF PLAYER == MASTER
+			IF COND("調教中") && SELECTCOM != 175 && TALENT:恋慕 && CHECK_SHIRT("セーラー服")
+				PERSON = 先生
+				KANA = せんせい
+			ELSE
+				PERSON_DEF = マスター
+				KANA_DEF = ますたー
+			ENDIF
+		ELSE
+			PERSON_DEF = %CALLNAME:PLAYER%様
+			KANA_DEF = %CALLNAME:PLAYER%さま
+		ENDIF
+	ENDSELECT
+;妹系キャラ１
+CASE 2, 20, 31, 33, 59
+	SELECTCASE ARGS
+	CASE "一人称"
+		;エンジェルは一人称があたし
+		SELECTCASE NO:TARGET
+		CASE 20
+			PERSON_DEF = アタシ
+			KANA_DEF = あたし
+		CASEELSE
+			PERSON_DEF = %CALLNAME:TARGET%
+			KANA_DEF = %CALLNAME:TARGET%
+		ENDSELECT
+	CASE "二人称", "主人", "助手"
+		IF PLAYER == MASTER
+			IF TALENT:PLAYER:オトコ
+				PERSON_DEF = お兄さん
+				KANA_DEF = おにいさん
+			ELSE
+				PERSON_DEF = お姉さん
+				KANA_DEF = おねえさん
+			ENDIF
+		ELSE
+			SELECTCASE AGE(PLAYER) - AGE(TARGET)
+			CASE IS > 0
+				IF TALENT:PLAYER:オトコ
+					PERSON_DEF = %CALLNAME:PLAYER%さん
+					KANA_DEF = %CALLNAME:PLAYER%さん
+				ELSE
+					PERSON_DEF = %CALLNAME:PLAYER%お姉さん
+					KANA_DEF = %CALLNAME:PLAYER%おねえさん
+				ENDIF
+			CASE 0
+				PERSON_DEF = %CALLNAME:PLAYER%さん
+				KANA_DEF = %CALLNAME:PLAYER%さん
+			CASEELSE
+				PERSON_DEF = %CALLNAME:PLAYER%ちゃん
+				KANA_DEF = %CALLNAME:PLAYER%ちゃん
+			ENDSELECT
+		ENDIF
+	ENDSELECT
+;妹系キャラ２
+CASE 50
+	SELECTCASE ARGS
+	CASE "一人称"
+		PERSON_DEF = %CALLNAME:TARGET%
+		KANA_DEF = %CALLNAME:TARGET%
+	CASE "二人称", "主人", "助手"
+		IF PLAYER == MASTER
+			IF TALENT:PLAYER:オトコ
+				PERSON_DEF = お兄ちゃん
+				KANA_DEF = おにいちゃん
+			ELSE
+				PERSON_DEF = お姉ちゃん
+				KANA_DEF = おねえちゃん
+			ENDIF
+		ELSE
+			IF NO:PLAYER == 48
+				PERSON_DEF = お姉ちゃん
+				KANA_DEF = おねえちゃん
+			ELSEIF AGE(PLAYER) > AGE(TARGET)
+				IF TALENT:PLAYER:オトコ
+					PERSON_DEF = %CALLNAME:PLAYER%お兄ちゃん
+					KANA_DEF = %CALLNAME:PLAYER%おにいちゃん
+				ELSE
+					PERSON_DEF = %CALLNAME:PLAYER%お姉ちゃん
+					KANA_DEF = %CALLNAME:PLAYER%おねえちゃん
+				ENDIF
+			ELSE
+				PERSON_DEF = %CALLNAME:PLAYER%ちゃん
+				KANA_DEF = %CALLNAME:PLAYER%ちゃん
+			ENDIF
+		ENDIF
+	ENDSELECT
+;ツンデレ系
+CASE 12, 39
+	SELECTCASE ARGS
+	CASE "一人称"
+		PERSON_DEF = アタシ
+		KANA_DEF = あたし
+	CASE "二人称", "主人", "助手"
+		PERSON_DEF = アンタ
+		KANA_DEF = あんた
+	ENDSELECT
+;お嬢様系キャラ
+CASE 19
+	SELECTCASE ARGS
+	CASE "一人称"
+		PERSON_DEF = 私
+		KANA_DEF = わたし
+	CASE "二人称", "主人", "助手"
+		IF TALENT:PLAYER:オトコ
+			PERSON_DEF = 貴方
+			KANA_DEF = あなた
+		ELSE
+			PERSON_DEF = 貴女
+			KANA_DEF = あなた
+		ENDIF
+	ENDSELECT
+;その他
+CASEELSE
+	SELECTCASE ARGS
+	CASE "一人称"
+		SELECTCASE BASE:種族思考
+		CASE 3
+			PERSON_DEF = わたくし
+			KANA_DEF = わたくし
+		CASE 7, 8, 24, 32, 51
+			PERSON_DEF = あたし
+			KANA_DEF = あたし
+		CASE 9, 13, 98
+			PERSON_DEF = わたし
+			KANA_DEF = わたし
+		CASE 11, 18, 28, 47, 48
+			PERSON_DEF = アタシ
+			KANA_DEF = あたし
+		CASE 23, 58, 94
+			PERSON_DEF = 僕
+			KANA_DEF = ぼく
+		CASE 26
+			PERSON_DEF = ボク
+			KANA_DEF = ぼく
+		CASE 40
+			PERSON_DEF = %NICKNAME:TARGET%
+			KANA_DEF = %NICKNAME:TARGET%
+		CASEELSE
+			PERSON_DEF = 私
+			KANA_DEF = わたし
+		ENDSELECT
+	CASE "二人称", "主人", "助手"
+		PERSON_DEF = %CALLNAME:PLAYER%
+		KANA_DEF = %CALLNAME:PLAYER%
+	ENDSELECT
+ENDSELECT
+
+;息子
+IF NO:TARGET == 95
+	SELECTCASE ARGS
+	CASE "一人称"
+		PERSON_DEF = ぼく
+		KANA_DEF = ぼく
+	CASE "父親"
+		PERSON_DEF = パパ
+		KANA_DEF = ぱぱ
+	CASE "母親"
+		PERSON_DEF = ママ
+		KANA_DEF = まま
+	CASE "二人称", "主人", "助手"
+		IF COND("父親") == PLAYER
+			PERSON_DEF = パパ
+			KANA_DEF = ぱぱ
+		ELSEIF COND("母親") == PLAYER
+			PERSON_DEF = ママ
+			KANA_DEF = まま
+		ELSEIF PLAYER == ASSI
+			;自分より下を呼ぶとき
+			IF AGE(PLAYER) < AGE(TARGET)
+				PERSON_DEF = %CALLNAME:PLAYER%ちゃん
+				KANA_DEF = %CALLNAME:PLAYER%ちゃん
+			ELSE
+				IF TALENT:PLAYER:オトコ
+					PERSON_DEF = おにぃちゃん
+					KANA_DEF = おにぃちゃん
+				ELSE
+					PERSON_DEF = おねぇちゃん
+					KANA_DEF = おねぇちゃん
+				ENDIF
+			ENDIF
+		ELSEIF TALENT:PLAYER:オトコ
+			PERSON_DEF = おにぃちゃん
+			KANA_DEF = おにぃちゃん
+		ELSE
+			PERSON_DEF = おねぇちゃん
+			KANA_DEF = おねぇちゃん
+		ENDIF
+	ENDSELECT
+ENDIF
+
+;娘専用(一人称は親からもらう)
+IF NO:TARGET == 97
+	SELECTCASE ARGS
+	CASE "父親"
+		SELECTCASE BASE:種族思考
+		;スキュラ
+		CASE 15
+			PERSON_DEF = お父様
+			KANA_DEF = おとうさま
+		;クズノハ
+		CASE 16
+			PERSON_DEF = とうさま
+			KANA_DEF = とうさま
+		;クノイチ
+		CASE 22
+			PERSON_DEF = 父上
+			KANA_DEF = ちちうえ
+		CASEELSE
+			PERSON_DEF = パパ
+			KANA_DEF = ぱぱ
+		ENDSELECT
+	CASE "母親"
+		SELECTCASE BASE:種族思考
+		;スキュラ
+		CASE 15
+			PERSON_DEF = お母様
+			KANA_DEF = おかあさま
+		;クズノハ
+		CASE 16
+			PERSON_DEF = かあさま
+			KANA_DEF = かあさま
+		;クノイチ
+		CASE 22
+			PERSON_DEF = 母上
+			KANA_DEF = ははうえ
+		CASEELSE
+			PERSON_DEF = ママ
+			KANA_DEF = まま
+		ENDSELECT
+	CASE "二人称", "主人", "助手"
+		SELECTCASE CFLAG:209
+		CASE 19
+			SELECTCASE BASE:何番目
+			CASE 1
+				IF COND("父親") == PLAYER
+					PERSON_DEF = 父様
+					KANA_DEF = とうさま
+				ELSEIF COND("母親") == PLAYER
+					PERSON_DEF = 母様
+					KANA_DEF = かあさま
+				ELSEIF PLAYER == ASSI
+					PERSON_DEF = %CALLNAME:PLAYER%さん
+					KANA_DEF = %CALLNAME:PLAYER%さん
+				ELSEIF TALENT:PLAYER:オトコ
+					PERSON_DEF = 兄様
+					KANA_DEF = にいさま
+				ELSE
+					PERSON_DEF = 姉様
+					KANA_DEF = ねえさま
+				ENDIF
+			CASE 2
+				IF COND("父親") == PLAYER
+					PERSON_DEF = おとーさん
+					KANA_DEF = おとーさん
+				ELSEIF COND("母親") == PLAYER
+					PERSON_DEF = おかーさん
+					KANA_DEF = おかーさん
+				ELSEIF PLAYER == ASSI
+					PERSON_DEF = %CALLNAME:PLAYER%さん
+					KANA_DEF = %CALLNAME:PLAYER%さん
+				ELSEIF TALENT:PLAYER:オトコ
+					PERSON_DEF = おにーさん
+					KANA_DEF = おにーさん
+				ELSE
+					PERSON_DEF = おねーさん
+					KANA_DEF = おねーさん
+				ENDIF
+			CASEELSE
+				IF COND("父親") == PLAYER
+					PERSON_DEF = お父さん
+					KANA_DEF = おとうさん
+				ELSEIF COND("母親") == PLAYER
+					PERSON_DEF = お母さん
+					KANA_DEF = おかあさん
+				ELSEIF PLAYER == ASSI
+					PERSON_DEF = %CALLNAME:PLAYER%さん
+					KANA_DEF = %CALLNAME:PLAYER%さん
+				ELSEIF TALENT:PLAYER:オトコ
+					PERSON_DEF = お兄さん
+					KANA_DEF = おにいさん
+				ELSE
+					PERSON_DEF = お姉さん
+					KANA_DEF = おねえさん
+				ENDIF
+			ENDSELECT
+		CASE 33
+			SELECTCASE BASE:何番目
+			CASE 1
+				IF COND("父親") == PLAYER
+					PERSON_DEF = お父様
+					KANA_DEF = おとうさま
+				ELSEIF COND("母親") == PLAYER
+					PERSON_DEF = お母様
+					KANA_DEF = おかあさま
+				ELSEIF PLAYER == ASSI
+					PERSON_DEF = %CALLNAME:PLAYER%さん
+					KANA_DEF = %CALLNAME:PLAYER%さん
+				ELSEIF TALENT:PLAYER:オトコ
+					PERSON_DEF = お兄様
+					KANA_DEF = おにいさま
+				ELSE
+					PERSON_DEF = お姉様
+					KANA_DEF = おねえさま
+				ENDIF
+			CASE 2
+				IF COND("父親") == PLAYER
+					PERSON_DEF = お父さん
+					KANA_DEF = おとうさん
+				ELSEIF COND("母親") == PLAYER
+					PERSON_DEF = お母さん
+					KANA_DEF = おかあさん
+				ELSEIF PLAYER == ASSI
+					PERSON_DEF = %CALLNAME:PLAYER%さん
+					KANA_DEF = %CALLNAME:PLAYER%さん
+				ELSEIF TALENT:PLAYER:オトコ
+					PERSON_DEF = お兄さん
+					KANA_DEF = おにいさん
+				ELSE
+					PERSON_DEF = お姉さん
+					KANA_DEF = おねえさん
+				ENDIF
+			CASEELSE
+				IF COND("父親") == PLAYER
+					PERSON_DEF = パパ
+					KANA_DEF = ぱぱ
+				ELSEIF COND("母親") == PLAYER
+					PERSON_DEF = ママ
+					KANA_DEF = まま
+				ELSEIF PLAYER == ASSI
+					PERSON_DEF = %CALLNAME:PLAYER%さん
+					KANA_DEF = %CALLNAME:PLAYER%さん
+				ELSEIF TALENT:PLAYER:オトコ
+					PERSON_DEF = おにぃちゃん
+					KANA_DEF = おにぃちゃん
+				ELSE
+					PERSON_DEF = おねぇちゃん
+					KANA_DEF = おねぇちゃん
+				ENDIF
+			ENDSELECT
+		CASEELSE
+			SELECTCASE BASE:種族思考
+			;スキュラ
+			CASE 15
+				;PLAYERは父親
+				IF COND("父親") == PLAYER
+					PERSON_DEF = お父様
+					KANA_DEF = おとうさま
+				;PLAYERは母親
+				ELSEIF COND("母親") == PLAYER
+					PERSON_DEF = お母様
+					KANA_DEF = おかぁさま
+				ELSEIF PLAYER == ASSI
+					;自分より下を呼ぶとき
+					IF AGE(PLAYER) < AGE(TARGET)
+						PERSON_DEF = %CALLNAME:PLAYER%ちゃん
+						KANA_DEF = %CALLNAME:PLAYER%ちゃん
+					ELSE
+						PERSON_DEF = %CALLNAME:PLAYER%さん
+						KANA_DEF = %CALLNAME:PLAYER%さん
+					ENDIF
+				;PLAYERの子でなく、PLAYERはオトコ
+				ELSEIF TALENT:PLAYER:オトコ
+					PERSON_DEF = お兄様
+					KANA_DEF = おにぃさま
+				ELSE
+					PERSON_DEF = お姉様
+					KANA_DEF = おねぇさま
+				ENDIF
+			;クズノハ
+			CASE 16
+				;PLAYERは父親
+				IF COND("父親") == PLAYER
+					PERSON_DEF = とうさま
+					KANA_DEF = とうさま
+				;PLAYERは母親
+				ELSEIF COND("母親") == PLAYER
+					PERSON_DEF = かあさま
+					KANA_DEF = かあさま
+				ELSEIF PLAYER == ASSI
+					PERSON_DEF = %CALLNAME:PLAYER%さん
+					KANA_DEF = %CALLNAME:PLAYER%さん
+				;PLAYERの子でなく、PLAYERはオトコ
+				ELSEIF TALENT:PLAYER:オトコ
+					PERSON_DEF = にいさま
+					KANA_DEF = にいさま
+				ELSE
+					PERSON_DEF = ねえさま
+					KANA_DEF = ねえさま
+				ENDIF
+			;クノイチ
+			CASE 22
+				;PLAYERは父親
+				IF COND("父親") == PLAYER
+					PERSON_DEF = 父上
+					KANA_DEF = ちちうえ
+				;PLAYERは母親
+				ELSEIF COND("母親") == PLAYER
+					PERSON_DEF = 母上
+					KANA_DEF = ははうえ
+				ELSEIF PLAYER == ASSI
+					PERSON_DEF = %CALLNAME:PLAYER%さん
+					KANA_DEF = %CALLNAME:PLAYER%さん
+				;PLAYERの子でなく、PLAYERはオトコ
+				ELSEIF TALENT:PLAYER:オトコ
+					PERSON_DEF = 兄上
+					KANA_DEF = あにうえ
+				ELSE
+					PERSON_DEF = 姉上
+					KANA_DEF = あねうえ
+				ENDIF
+			CASEELSE
+				IF COND("父親") == PLAYER
+					PERSON_DEF = パパ
+					KANA_DEF = ぱぱ
+				ELSEIF COND("母親") == PLAYER
+					PERSON_DEF = ママ
+					KANA_DEF = まま
+				ELSEIF PLAYER == ASSI
+					PERSON_DEF = %CALLNAME:PLAYER%さん
+					KANA_DEF = %CALLNAME:PLAYER%さん
+				ELSEIF TALENT:PLAYER:オトコ
+					PERSON_DEF = おにぃちゃん
+					KANA_DEF = おにぃちゃん
+				ELSE
+					PERSON_DEF = おねぇちゃん
+					KANA_DEF = おねぇちゃん
+				ENDIF
+			ENDSELECT
+		ENDSELECT
+	CASE "比較対象"
+		IF BASE:母親 > 0 && COND("母親") == PLAYER && (COND("父親") == PLAYER || TALENT:PLAYER:オトコ)
+			SELECTCASE BASE:種族思考
+			;スキュラ
+			CASE 15
+				PERSON_DEF = お母様
+				KANA_DEF = おかあさま
+			;クズノハ
+			CASE 16
+				PERSON_DEF = かあさま
+				KANA_DEF = かあさま
+			;クノイチ
+			CASE 22
+				PERSON_DEF = 母上
+				KANA_DEF = ははうえ
+			CASEELSE
+				PERSON_DEF = ママ
+				KANA_DEF = まま
+			ENDSELECT
+		ELSEIF BASE:父親 > 0 && COND("父親") == PLAYER && (COND("母親") == PLAYER || TALENT:PLAYER:オトコ == 0)
+			SELECTCASE BASE:種族思考
+			;スキュラ
+			CASE 15
+				PERSON_DEF = お父様
+				KANA_DEF = おとうさま
+			;クズノハ
+			CASE 16
+				PERSON_DEF = とうさま
+				KANA_DEF = とうさま
+			;クノイチ
+			CASE 22
+				PERSON_DEF = 父上
+				KANA_DEF = ちちうえ
+			CASEELSE
+				PERSON_DEF = パパ
+				KANA_DEF = ぱぱ
+			ENDSELECT
+		ELSE
+			SELECTCASE BASE:種族思考
+			;スキュラ
+			CASE 15
+				PERSON_DEF = お姉様方
+				KANA_DEF = おねえさまがた
+			;クズノハ
+			CASE 16
+				PERSON_DEF = ねえさまたち
+				KANA_DEF = ねえさまたち
+			;クノイチ
+			CASE 22
+				PERSON_DEF = 姉上達
+				KANA_DEF = あねうえたち
+			CASEELSE
+				PERSON_DEF = お姉ちゃんたち
+				KANA_DEF = おねえちゃんたち
+			ENDSELECT
+		ENDIF
+	ENDSELECT
+ENDIF
+
+
+;ここまでで人称の変化が起きていない場合には、人称変更をしているならそれを、していないならデフォの人称を使う
+IF PERSON == ""
+	PERSON = %PERSON_DEF%
+	KANA = %KANA_DEF%
+
+	SELECTCASE ARGS
+	CASE "一人称"
+		IF PLAYER == MASTER && CEVENTS("一人称主人") != ""
+			PERSON = %CEVENTS("一人称主人")%
+			KANA = %CEVENTS("一人称主人かな")%
+		ELSEIF PLAYER == ASSI && CEVENTS("一人称助手") != ""
+			PERSON = %CEVENTS("一人称助手")%
+			KANA = %CEVENTS("一人称助手かな")%
+		ELSEIF CEVENTS("一人称") != ""
+			PERSON = %CEVENTS("一人称")%
+			KANA = %CEVENTS("一人称かな")%
+		ENDIF
+	CASE "二人称"
+		IF PLAYER == MASTER && CEVENTS("二人称主人") != ""
+			PERSON = %CEVENTS("二人称主人")%
+			KANA = %CEVENTS("二人称主人かな")%
+		ELSEIF PLAYER == ASSI && CEVENTS("二人称助手") != ""
+			PERSON = %CEVENTS("二人称助手")%
+			KANA = %CEVENTS("二人称助手かな")%
+		ELSEIF CEVENTS("二人称") != ""
+			PERSON = %CEVENTS("二人称")%
+			KANA = %CEVENTS("二人称かな")%
+		ENDIF
+	CASE "主人"
+		IF CEVENTS("二人称主人") != ""
+			PERSON = %CEVENTS("二人称主人")%
+			KANA = %CEVENTS("二人称主人かな")%
+		ELSEIF CEVENTS("二人称") != ""
+			PERSON = %CEVENTS("二人称")%
+			KANA = %CEVENTS("二人称かな")%
+		ENDIF
+	CASE "助手"
+		IF CEVENTS("二人称助手") != ""
+			PERSON = %CEVENTS("二人称助手")%
+			KANA = %CEVENTS("二人称助手かな")%
+		ELSEIF CEVENTS("二人称") != ""
+			PERSON = %CEVENTS("二人称")%
+			KANA = %CEVENTS("二人称かな")%
+		ENDIF
+	ENDSELECT
+ENDIF
+
+
+;以下で細かい変化をつける
+
+;ひらがな化
+FOR LCOUNT, 1, 5
+	SELECTCASE ARGS:LCOUNT
+	CASE "かな", "・"
+		PERSON = %KANA%
+	ENDSELECT
+NEXT
+
+;お・に・い・さん（ひらがな化は上で既に完了）
+FOR LCOUNT, 1, 5
+	SIF ARGS:LCOUNT != "・"
+		CONTINUE
+
+	FOR LCOUNT2, 0, 20
+		SIF STRLENS(PERSON) <= 2 + LCOUNT2 * 4
+			BREAK
+		PERSON = %SUBSTRING(PERSON, 0, 2 + LCOUNT2 * 4)%・%SUBSTRING(PERSON, 2 + LCOUNT2 * 4, -1)%
+	NEXT
+	SELECTCASE PERSON
+	;特殊変化
+	CASE "せ・ん・せ・い"
+		PERSON = せ・ん・せ
+	CASEELSE
+		SELECTCASE SUBSTRING(PERSON, MAX(STRLENS(PERSON) - 6, 0), -1)
+		CASE "さ・ん"
+			PERSON = %SUBSTRING(PERSON, 0, STRLENS(PERSON) - 6)%さん
+		CASE "く・ん"
+			PERSON = %SUBSTRING(PERSON, 0, STRLENS(PERSON) - 6)%くん
+		CASEELSE
+			SELECTCASE SUBSTRING(PERSON, MAX(STRLENS(PERSON) - 10, 0), -1)
+			CASE "ち・ゃ・ん"
+				PERSON = %SUBSTRING(PERSON, 0, STRLENS(PERSON) - 10)%ちゃん
+			ENDSELECT
+		ENDSELECT
+	ENDSELECT
+NEXT
+;甘え(おぬしとかみたいな甘える事が異常な呼び方もあるので個別管理)
+FOR LCOUNT, 1, 5
+	SIF ARGS:LCOUNT != "甘え"
+		CONTINUE
+
+	SELECTCASE PERSON
+	CASE "マスター"
+		PERSON = マスタぁ
+	CASE "あなた", "ぼうや", "ママ", "まま", "パパ", "ぱぱ"
+		PERSON = %PERSON%ぁ
+	CASE "あたし", "アタシ", "あるじ", "わたし", "ワタシ", "わたくし", "ワタクシ"
+		PERSON = %PERSON%ぃ
+	CASE "僕", "ぼく", "ボク"
+		PERSON = %PERSON%ぅ
+	CASE "おれ", "オレ", "母上", "ははうえ", "父上", "ちちうえ", "姉上", "あねうえ", "兄上", "あにうえ"
+		PERSON = %PERSON%ぇ
+	CASE "せんせい"
+		PERSON = せんせぇ
+	;甘え口調が無い
+	CASE "貴方", "貴女", "君", "きみ", "キミ", "マスター", "ますたー"
+	CASEELSE
+		SELECTCASE SUBSTRING(PERSON, MAX(STRLENS(PERSON) - 2, 0), -1)
+		CASE "様"
+			PERSON = %PERSON%ぁ
+		CASE "君"
+			SIF STRLENS(PERSON) >= 3
+				PERSON = %SUBSTRING(PERSON, 0, STRLENS(PERSON) - 2)%くぅん
+		CASEELSE
+			SELECTCASE SUBSTRING(PERSON, MAX(STRLENS(PERSON) - 4, 0), -1)
+			CASE "先生"
+				PERSON = %SUBSTRING(PERSON, 0, STRLENS(PERSON) - 4)%せんせぇ
+			CASE "さま"
+				PERSON = %PERSON%ぁ
+			CASE "さん"
+				PERSON = %SUBSTRING(PERSON, 0, STRLENS(PERSON) - 4)%さぁん
+			CASE "くん"
+				PERSON = %SUBSTRING(PERSON, 0, STRLENS(PERSON) - 4)%くぅん
+
+			CASEELSE
+				SELECTCASE SUBSTRING(PERSON, MAX(STRLENS(PERSON) - 6, 0), -1)
+				CASE "ちゃん"
+					PERSON = %SUBSTRING(PERSON, 0, STRLENS(PERSON) - 6)%ちゃぁん
+				CASE "しゃま"
+					PERSON = %PERSON%ぁ
+				ENDSELECT
+			ENDSELECT
+		ENDSELECT
+	ENDSELECT
+NEXT
+
+;音引きとか波ダッシュとか
+FOR LCOUNT, 1, 5
+	SELECTCASE ARGS:LCOUNT
+	CASE "ー", "〜", "、", "…", "……"
+		SELECTCASE SUBSTRING(PERSON, MAX(STRLENS(PERSON) - 2, 0), -1)
+		CASE "ん"
+			PERSON = %SUBSTRING(PERSON, 0, STRLENS(PERSON) - 2)%%ARGS:LCOUNT%ん
+		ENDSELECT
+	ENDSELECT
+NEXT
+;どもり
+FOR LCOUNT, 1, 5
+	SIF STRLENS(KANA) <= 2
+		BREAK
+	SIF ARGS:LCOUNT != "どもり"
+		CONTINUE
+
+	PERSON = %SUBSTRING(KANA, 0, 2)%、%PERSON%
+NEXT
+
+PLAYER = PLAYER_MEMO
+
+RETURNF PERSON
+
+
+;--------------------------------------------------
+;淫語管理関数@CINGO
+;ARGSに何を指しているかを入れる
+;どもりとか変化については気が向いたら
+;--------------------------------------------------
+@CINGO(ARGS, ARGS:1, ARGS:2, ARGS:3, ARGS:4)
+#FUNCTIONS
+
+LOCALS = %ARGS%
+
+SELECTCASE BASE:種族思考
+;ミミック
+CASE 33
+	SELECTCASE ARGS
+	CASE "アソコ"
+		IF GETBIT(CFLAG:201, 34)
+			LOCALS = 雌まんこ
+		ELSEIF GETBIT(CFLAG:201, 33)
+			LOCALS = おまんこ
+		ENDIF
+	CASE "お尻"
+		IF GETBIT(CFLAG:201, 34)
+			LOCALS = 尻まんこ
+		ELSEIF GETBIT(CFLAG:201, 33)
+			LOCALS = ケツ穴
+		ENDIF
+	ENDSELECT
+ENDSELECT
+RETURNF LOCALS
+

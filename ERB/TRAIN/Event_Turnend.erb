@@ -1,0 +1,1691 @@
+﻿@TEXT_TURNEND
+#DIM EJECT_FLAG
+#DIM OSOUJI_FLAG
+
+PRINTL 
+;--------------------------------------------------------
+;触手で処女喪失
+;--------------------------------------------------------
+;撃沈判定ON
+SIF STATE("撃沈", PLAYER)
+	RETURN 0
+
+;処女喪失で触手が射精
+IF TFLAG:15 && NOWEX:処女喪失
+	PRINTFORMW %CALLNAME:TARGET%の秘唇から、汚液に混ざった破瓜の血が醜い触手を伝い落ちていった…
+	RETURN 0
+;処女喪失で射精なし
+ELSEIF TFLAG:15 == 0 && NOWEX:処女喪失
+	PRINTFORMW %CALLNAME:TARGET%の秘唇から、処女の証である赤い血が垂れ落ちていった…
+	RETURN 0
+ENDIF
+
+;３Ｐ中
+SIF COND("３Ｐ")
+	RETURN 0
+
+;--------------------------------------------------------
+;セックス後に抜く
+;--------------------------------------------------------
+;抜くかどうかの判断(10ぐらいなら、ほぼ抜く)。とりあえず、ペニバンの時には抜かないことに。
+EJECT_FLAG = 0
+IF CONFIG("射精後に抜かない") == 0 && SHOOT("中出し") && COND("絶頂", PLAYER) && INSERT("インサート")
+	EJECT_FLAG = NOWEX:同時絶頂 - TALENT:吸精体質*2
+
+	SIF TALENT:小柄体型
+		EJECT_FLAG += 2
+	;イってない
+	SIF NOWEX:絶頂数合計 == 0
+		EJECT_FLAG -= 10
+	SIF RAND:(MAXBASE:精液欲 + 1) >= EJECT_FLAG
+		EJECT_FLAG = 0
+
+	;中に出した精液の量
+	IF SHOOT("膣内")
+		EJECT_FLAG += EXP_GAIN(17)
+	ELSEIF SHOOT("アナル")
+		EJECT_FLAG += EXP_GAIN(18)
+		;精液浣腸の時には排泄欲ゲージＭＡＸなら抜く
+		SIF COND("精液浣腸") && BASE:排泄欲 >= MAXBASE:排泄欲
+			EJECT_FLAG = 100
+	ELSEIF SHOOT("尿道")
+		EJECT_FLAG += EXP_GAIN(80)
+	ELSE
+		EJECT_FLAG = 0
+	ENDIF
+ENDIF
+
+;精液浣腸の時には排泄欲ゲージＭＡＸなら抜く
+IF EJECT_FLAG >= 100 || (RAND:3 == 0 && EJECT_FLAG > 0)
+	PRINTL 
+
+	VARSET LOCAL
+	VARSET LOCALS
+
+	IF SHOOT("膣内")
+		LOCAL = NOWEX:Ｖ絶頂
+		LOCAL:1 = EXP:Ｖ経験
+		LOCAL:2 = ABL:Ｖ拡張
+		LOCAL:3 = EXP_GAIN(17)
+
+		LOCALS = 膣
+		LOCALS:1 = 膣口
+		LOCALS:2 = アソコ
+	ELSEIF SHOOT("アナル")
+		LOCAL = NOWEX:Ａ絶頂
+		LOCAL:1 = EXP:Ａ経験
+		LOCAL:2 = ABL:Ａ拡張
+		LOCAL:3 = EXP_GAIN(18)
+
+		LOCALS = アナル
+		LOCALS:1 = アヌス
+		LOCALS:2 = 尻の穴
+	ELSEIF SHOOT("尿道")
+		LOCAL = NOWEX:尿道絶頂
+		LOCAL:1 = EXP:尿道経験
+		LOCAL:2 = ABL:尿道拡張
+		LOCAL:3 = EXP_GAIN(80)
+
+		LOCALS = 尿道
+		LOCALS:1 = 排泄口
+		LOCALS:2 = オシッコの穴
+	ENDIF
+	IF INSERT("騎乗位") && (TEQUIP:押し倒し || ABL:奉仕精神 >= 3)
+		PRINTFORM %CALLNAME:TARGET%が
+		IF LOCAL && RAND:3 == 0
+			PRINTFORM 快感に震える腰を
+		ELSEIF LOCAL:1 >= 100 && RAND:2 == 0
+			PRINTFORM 根元まで飲み込んでいる腰を
+		ELSE
+			PRINTFORM %CALLNAME:PLAYER%の胸に手を付いて腰を
+		ENDIF
+		IF BASE:PLAYER:絶頂 >= 3000 && RAND:2 == 0
+			PRINTFORM 勢い良く
+		ELSE
+			PRINTFORM ゆっくりと
+		ENDIF
+		PRINTFORM 持ち上げると、
+	ELSE
+		IF COND("絶頂", PLAYER) >= 2 && RAND:2 == 0
+			PRINTFORM たっぷりと注ぎ込まれた
+		ELSEIF NOWEX:絶頂数合計 && RAND:2 == 0
+			PRINTFORM 絶頂にわななく
+		ELSEIF LOCAL > 2 && LOCAL:2 >= 3
+			SIF NOWEX:Ｖ絶頂 >= 2 || NOWEX:Ａ絶頂 >= 2
+				PRINTFORM 快感で
+			PRINTFORM 緩んだ
+		ELSE
+			PRINTFORM 絡みつく
+		ENDIF
+		PRINTFORM %LOCALS%からペニスを
+		IF BASE:PLAYER:絶頂 >= 3000 && RAND:2 == 0
+			PRINTFORM 勢い良く
+		ELSE
+			PRINTFORM ゆっくりと
+		ENDIF
+		PRINTFORM 引き抜くと、
+		IF RAND:3 == 0 && NOWEX:絶頂数合計 >= 2 && COND("脚の使用")
+			IF INSERT("後背位")
+				PRINTFORM 四つん這いでお尻だけ高く上げた体勢の
+			ELSEIF INSERT("屈曲位") && COND("指の使用") && RAND:2
+				PRINTFORM 興奮のあまり自らの腕で脚を抱きかかえて股間を全開にしている
+			ELSEIF INSERT("正常位") || INSERT("屈曲位")
+				PRINTFORM 快感に身を委ねてだらしなく\@ RAND:2 ? 股 # 脚 \@を開いたままな
+			ENDIF
+		ENDIF
+		PRINTFORM %CALLNAME:TARGET%の
+	ENDIF
+	IF LOCAL >= MAX(2, RAND:5) && EX:絶頂数合計 >= 10
+		PRINTFORM 蕩けきった
+	ELSEIF TALENT:小柄体型 && RAND:2 == 0
+		PRINTFORM 幼い
+	ELSEIF TALENT:小柄体型 && LOCAL:2 <= 1
+		PRINTFORM 小さな
+	ENDIF
+
+	PRINTFORM %LOCALS:1%から
+
+	IF SHOOT("アナル") && BASE:排泄物 && COND("液体浣腸") + COND("精液浣腸")
+		PRINTFORM 汚物
+		IF COND("温泉浣腸")
+			PRINTFORM と小便
+		ELSEIF COND("液体浣腸")
+			PRINTFORM と薬液
+		ENDIF
+		PRINTFORM 混じりの濁った
+	ELSEIF NOWEX:処女喪失 || (EX:処女喪失 && RAND:3 == 0)
+		PRINTFORM 破瓜の血の混ざった
+	ELSEIF LOCAL:3 >= 9 && RAND:3 == 0
+		PRINTFORM 凄い量の
+	ELSEIF LOCAL:3 >= 4 && RAND:3 == 0
+		PRINTFORM ドロッと
+	ELSEIF LOCAL && RAND:3 == 0
+		PRINTFORM 泡立った
+	ELSEIF RAND:3 == 0
+		PRINTFORM ドロリと
+	ELSEIF RAND:2 == 0
+		PRINTFORM とろりと
+	ELSE
+		PRINTFORM 白い
+	ENDIF
+	PRINTFORM 精液が
+
+	IF LOCAL:3 >= 9 && RAND:3 == 0
+		PRINTW 逆流する…
+	ELSEIF LOCAL:3 >= 4 && RAND:2 == 0
+		PRINTW あふれ出てくる…
+	ELSEIF LOCAL:3 >= 4
+		PRINTW 押し出されて来る…
+	ELSEIF RAND:3 == 0
+		PRINTW 滴り落ちる…
+	ELSEIF RAND:2 == 0
+		PRINTW こぼれる…
+	ELSE
+		PRINTW 零れでる…
+	ENDIF
+
+	LOCALS:9 = 0
+	;イきまくって無いなら、視線に気づく。そして、サービス。
+	IF SHOOT("アナル") && COND("精液浣腸") && BASE:排泄欲 >= MAXBASE:排泄欲
+		;イっているなら、快感に浸ったり
+		IF NOWEX:絶頂数合計 && MARK:反発刻印 == 0 && ABL:マゾっ気 >= 3
+			PRINTFORM %CALLNAME:TARGET%は
+			SIF MAX(NOWEX:Ｃ絶頂, NOWEX:Ｖ絶頂, NOWEX:Ａ絶頂, NOWEX:Ｂ絶頂, NOWEX:Ｍ絶頂, NOWEX:尿道絶頂) >= 2
+				PRINTFORM 激しい
+			PRINTFORM 絶頂の余韻に身を委ね、緩んだ肛門から精液に続いて
+			SELECTCASE BASE:排泄物
+			CASE IS <= 2
+				PRINTFORM 凄い臭いの
+			CASE IS <= 4
+				PRINTFORM 大量の
+			CASE IS <= 6
+				PRINTFORM 数日分はあろうかという
+			CASEELSE
+				PRINTFORM 小山が出来るほどの
+			ENDSELECT
+			PRINTFORM %TEXTR("排泄物", "汚物")%をひりだしながら
+			IF RAND:2
+				PRINTW 気持ち良さそうな吐息を吐いています…
+			ELSE
+				PRINTW 気持ち良さそうにしています…
+			ENDIF
+
+			;排泄した時のSOURCEを加算
+			CALL SETFLAG, "排泄"
+			CALL SOURCE_COM136, 100
+			CALL CALC_SOURCE
+			CALL MARK_GOT_CHECK
+
+			LOCALS:9 = 中出し後恍惚
+		ELSE
+			PRINTW ……そして
+			IF NOWEX:絶頂数合計
+				PRINTFORM 絶頂の快楽に耐え切れなかったのか、
+			ELSE
+				IF CUP:快Ａ >= 1000
+					PRINTFORM アナルへの刺激に耐え切れなかったのか、
+				ELSE
+					PRINTFORM 便意を堪え切れなくなってしまったのか、
+				ENDIF
+			ENDIF
+			PRINTFORM %CALLNAME:TARGET%は
+			SELECTCASE BASE:排泄物
+			CASE IS <= 2
+				PRINTFORMW 精液で彩られた腸内の汚物を肛門から撒き散らしてしまった…
+			CASE IS <= 6
+				PRINTFORMW 腸内に溜められていた数日分はあろうかという汚物を精液と共に凄い勢いでぶちまけてしまった…
+			CASEELSE
+				PRINTFORMW 精液塗れにされた\@ RAND:2 ? 排泄物 # 腸内の汚物 \@を盛大にぶちまけてしまった
+				PRINTFORMW しばらく便秘気味だったのか、始めに軟らかめのモノが凄い勢いで飛び出てきた後に、\@ RAND:2 ? いかにも硬そうで # 一本に繋がった \@太いチョコバーのような汚物がゆっくりと時間をかけて肛門を押し広げながらひり出されている…
+			ENDSELECT
+
+			;排泄した時のSOURCEを加算
+			CALL SETFLAG, "排泄"
+			CALL SOURCE_COM136, 100
+			CALL CALC_SOURCE
+			CALL MARK_GOT_CHECK
+
+			CALL SELF_KOJO, "プラグ無し浣腸イベント"
+		ENDIF
+	ELSEIF (NOWEX:絶頂数合計 < 12 || PALAM:連続絶頂COMBO数 < 5 || TALENT:好色 || TALENT:淫乱) && BASE:気力 > 0 && COND("指の使用") && COND("液体浣腸") == 0 && RAND:2
+		PRINTFORM %CALLNAME:TARGET%は%CALLNAME:PLAYER%の視線に気付くと、
+
+		IF (TALENT:恥じらい && PALAM:欲情*(TALENT:恋慕 + 1) < 30000) || (TALENT:恥薄い == 0 && PALAM:欲情*(TALENT:恋慕 + 1) < 10000)
+			IF CFLAG:2 * ABL:奉仕精神 >= 4500 && RAND:3 == 0
+				PRINTFORM 恥ずかしそうに笑顔を浮かべながら、
+				IF RAND:3 == 0 && LOCAL:3 >= 3
+					PRINTFORM いっぱい中に出された
+				ELSEIF RAND:2
+					PRINTFORM 精液にまみれた
+				ELSE
+					PRINTFORM 中出し直後で精液を垂らしている
+				ENDIF
+				SIF AGE(TARGET) == 1 && SHOOT("尿道") == 0
+					PRINTFORM 子供っぽい
+				PRINTFORMW %LOCALS:2%を見易い様に%NAMES("指")%先で広げてきた…
+				LOCALS:9 = 中出し後くぱぁ
+			ELSEIF CFLAG:2 * ABL:奉仕精神 >= 2000 && COND("脚の使用") && RAND:2 == 0
+				PRINTFORM 羞恥に%NAMES("手")%で顔を隠しながら、
+				IF RAND:2
+					PRINTFORMW 脚を広げてトロトロの恥ずかしい部分を見せてきた…
+				ELSE
+					PRINTFORMW 弛緩と緊張を繰り返して精液を溢れさせている%LOCALS:1%を見せてきた…
+				ENDIF
+				LOCALS:9 = 中出し後くぱぁ
+			ELSE
+				PRINTFORMW 慌てて恥ずかしい部分を%NAMES("手")%で隠してしまった…
+				LOCALS:9 = 中出し後恥じらい
+			ENDIF
+		ELSEIF TALENT:淫乱 || (TALENT:恥薄い && TALENT:好色 && PALAM:欲情 >= 3000) || (TALENT:恋慕 && PALAM:欲情 >= 10000)
+			IF LOCAL:2 >= 7 && RAND:5 == 0
+				PRINTFORM 丸く開いたままの
+			ELSEIF LOCAL:2 >= 5 && RAND:4 == 0
+				PRINTFORM ポッカリと口を開けた
+			ELSEIF LOCAL:2 >= 3 && RAND:3 == 0
+				PRINTFORM 完全には閉じ切ってない
+			ELSEIF LOCAL:3 >= 4 && RAND:3 == 0
+				PRINTFORM ドロドロの
+			ELSEIF LOCAL:1 >= 100 && RAND:3 == 0
+				PRINTFORM めくれた
+			ELSEIF ( (SHOOT("膣内") && EX:Ｖ絶頂 >= 3) || (SHOOT("アナル") && EX:Ａ絶頂 >= 3) ) && RAND:3 == 0
+				PRINTFORM 赤く腫れた
+			ELSEIF PALAM:欲情 >= 3000 && RAND:3 == 0
+				PRINTFORM 発情した
+			ELSEIF LOCAL:2 >= 2 && RAND:3 == 0
+				PRINTFORM 緩んだ
+			ELSEIF TALENT:小柄体型 && RAND:2 == 0
+				PRINTFORM 幼い
+			ELSEIF LOCAL:1 <= 50 && RAND:3 == 0
+				PRINTFORM 可愛い
+			ELSEIF SHOOT("膣内") && PALAM:Ｖ潤 >= 3000
+				PRINTFORM とろとろの
+			ENDIF
+
+			PRINTFORM %LOCALS:2%
+
+			;精液を味わう
+			IF ABL:精液中毒 > RAND:10
+				IF LOCAL:3 >= 9
+					PRINTFORM から溢れる大量の精液を%NAMES("手")%で受け止めて、
+				ELSEIF LOCAL:3 >= 4
+					PRINTFORM から垂れる精液を%NAMES("指")%にとって、
+				ELSE
+					PRINTFORM に%NAMES("指")%先を差し入れて精液をかき出して、
+				ENDIF
+				IF ABL:精液中毒 == 5 && RAND:2 == 0
+					PRINTFORM 恍惚とした笑みを浮かべながら
+				ELSEIF ABL:精液中毒 >= 3 && RAND:2 == 0
+					PRINTFORM 興奮した面持ちで
+				ELSE
+					PRINTFORM 美味しそうに
+				ENDIF
+				IF LOCAL:3 >= 9 && RAND:2 == 0
+					PRINTFORM 喉を潤す
+				ELSEIF LOCAL:3 >= 4
+					PRINTFORM 味わう
+				ELSE
+					PRINTFORM 舐める
+				ENDIF
+				PRINTW 様を見せ付けてきた…
+				;口に精液汚れ
+				CALL ADD_STAIN, TARGET, "Ｍ", "精液"
+				LOCALS:9 = 中出し後精液掻き出し
+			;くぱぁ
+			ELSE
+				IF RAND:2 == 0
+					PRINTFORM を押し広げて
+				ELSE
+					PRINTFORM を%NAMES("指")%で開いて、
+				ENDIF
+				IF ( (SHOOT("膣内") && TALENT:淫壷) || (SHOOT("アナル") && TALENT:尻穴狂い)  || (SHOOT("尿道") && TALENT:尿道狂い) ) && RAND:3 == 0
+					PRINTFORM 貪欲に蠢く
+				ELSEIF ( (SHOOT("膣内") && ABL:Ｖ感覚 >= 3) || (SHOOT("アナル") && ABL:Ａ感覚 >= 3)  || (SHOOT("尿道") && TALENT:尿道性感) ) && RAND:3 == 0
+					PRINTFORM ヒクヒクしている
+				ELSE
+					PRINTFORM 精液にまみれた
+				ENDIF
+				IF SHOOT("尿道")
+					PRINTFORM 様子を
+				ELSEIF LOCAL:2 >= 3 && RAND:3 == 0
+					PRINTFORM 肉の洞窟
+					IF ( (SHOOT("膣内") && TALENT:淫壷) || (SHOOT("アナル") && TALENT:尻穴狂い) ) && RAND:3 == 0
+						IF SHOOT("膣内")
+							PRINTFORM の奥の子宮口まで
+						ELSE
+							PRINTFORM の奥まで
+						ENDIF
+					ELSE
+						PRINTFORM を
+					ENDIF
+				ELSEIF PALAM:欲情 >= 3000 && RAND:2 == 0
+					IF SHOOT("膣内")
+						PRINTFORM 膣内を
+					ELSE
+						PRINTFORM 直腸の粘膜を
+					ENDIF
+				ELSE
+					PRINTFORM 様子を
+				ENDIF
+				PRINTW 見せ付けてきた…
+				LOCALS:9 = 中出し後くぱぁ
+			ENDIF
+		ELSE
+			IF MARK:反発刻印
+				PRINTW そそくさと体勢を立て直し始めた…
+				LOCALS:9 = 中出し後恥じらい
+			ELSE
+				PRINTFORM 脚をさらに広げて、
+				IF AGE(TARGET) < 3 || ABL:Ａ拡張 < 2 || SHOOT("アナル") || RAND:3 == 0
+					PRINTFORM 恥ずかしい部分
+				ELSEIF SHOOT("尿道")
+					IF PENIS(TARGET) == 0 && CALCF("Ｃ発情") >= 3 && RAND:4 == 0
+						IF TALENT:クリピアス && RAND:2
+							PRINTFORM ピアスがお洒落な\@ TALENT:淫核 ? 自慢の # 充血した\@淫核の勃起具合
+						ELSE
+							PRINTFORM 激しい興奮でぷっくりと膨らんでいるクリトリス
+						ENDIF
+					ELSEIF TALENT:好色 + TALENT:淫乱 && RAND:3 == 0
+						PRINTFORM 緩んで尿を溢しながらヒクつくオシッコの穴
+					ELSEIF TALENT:尿道性感 && RAND:3 == 0
+						PRINTFORM 与えられた快感でだらしなく綻んでいる尿道口
+					ELSEIF RAND:2
+						PRINTFORM 犯されたてでバカになって開いたままの粘膜
+					ELSE
+						PRINTFORM 埋めていたモノが無くなって口が閉じきれていないオシッコの穴
+					ENDIF
+				ELSE
+					IF PENIS(TARGET) == 0 && CALCF("Ｃ発情") >= 3 && RAND:4 == 0
+						IF TALENT:クリピアス && RAND:2
+							PRINTFORM ピアスがお洒落な\@ TALENT:淫核 ? 自慢の # 充血した\@淫核の勃起具合
+						ELSE
+							PRINTFORM 激しい興奮でぷっくりと膨らんでいるクリトリス
+						ENDIF
+					ELSEIF TALENT:好色 + TALENT:淫乱 && RAND:3 == 0
+						PRINTFORM 泡立った粘液を溢しながらヒクつくアソコ
+					ELSEIF ABL:Ｖ感覚 >= 3 && RAND:3 == 0
+						PRINTFORM 与えられた快感でだらしなく綻んでいるアソコ
+					ELSEIF RAND:2
+						PRINTFORM 犯されたてで充血した陰唇が開いたままのアソコ
+					ELSE
+						PRINTFORM 埋めていたモノが無くなって口が閉じきれていない膣口
+					ENDIF
+				ENDIF
+				PRINTW を見せ付けてきた…
+				LOCALS:9 = 中出し後くぱぁ
+			ENDIF
+		ENDIF
+	;イっているなら、快感に浸ったり
+	ELSEIF NOWEX:絶頂数合計 && MARK:反発刻印 == 0
+		PRINTFORM %CALLNAME:TARGET%は
+		SIF MAX(NOWEX:Ｃ絶頂, NOWEX:Ｖ絶頂, NOWEX:Ａ絶頂, NOWEX:Ｂ絶頂, NOWEX:Ｍ絶頂, NOWEX:尿道絶頂) >= 2
+			PRINTFORM 激しい
+		PRINTFORM 絶頂の余韻に身を委ね、
+		IF NOWEX:絶頂お漏らし && PENIS(TARGET) == 0
+			PRINTFORM 緩んだ股間から\@ RAND:2 ? ジョロジョロ # チョロチョロ \@とおしっこを垂れ流しながら
+		ELSEIF COND("脚の使用") == 0 || RAND:2 == 0 || TEQUIP:拘束
+		ELSE
+			PRINTFORM だらしなく脚を開いて
+		ENDIF
+		IF RAND:2
+			PRINTW 気持ち良さそうな吐息を吐いています…
+		ELSE
+			PRINTW 気持ち良さそうにしています…
+		ENDIF
+		LOCALS:9 = 中出し後恍惚
+	ENDIF
+
+	;夢魔の台詞（内容は、上で決定）
+	SIF LOCALS:9 != ""
+		CALL SELF_KOJO, LOCALS:9
+
+	;お掃除フェラ(挿入後)
+	CALL OSOUJI_F
+
+	CALL RESET_INSERT, TARGET, PLAYER
+	RETURN 0
+ENDIF
+
+;お掃除フェラ…毎回だとウザいかな？
+OSOUJI_FLAG = 0
+SIF SHOOT("膣内") && CHECK_STAIN(STAIN:MASTER:Ｐ, "Ｖ")
+	OSOUJI_FLAG = 1
+SIF SHOOT("アナル") && CHECK_STAIN(STAIN:MASTER:Ｐ, "Ａ")
+	OSOUJI_FLAG = 2
+SIF SHOOT("尿道") && CHECK_STAIN(STAIN:MASTER:Ｐ, "尿")
+	OSOUJI_FLAG = 3
+
+IF OSOUJI_FLAG && COND("絶頂", PLAYER) && INSERT("インサート") == 0 && PENIS(PLAYER)
+	CALL OSOUJI_F
+ELSEIF TFLAG:8 && PENIS(PLAYER) && STAIN:PLAYER:Ｐ != SET_STAIN(0, "Ｐ")
+	;二本フェラはひとまず中止
+	;IF SELECTCOM == 
+	;	PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:MASTER%と%CALLNAME:ASSI%のペニスを交互に咥え、汚れを舐め取っていった…
+	;ELSE
+		SIF ASSI && SELECTCOM:1 == SELECTCOM
+			PRINTFORM %CALLNAME:ASSI%と
+		PRINTFORM %CALLNAME:TARGET%は
+		SIF (ABL:従順 >= 4 || ABL:精液中毒 >= 2) && COND("絶頂", PLAYER)
+			 PRINTFORM 残った精液を吸い取りながら、
+		PRINTW ペニスの汚れを綺麗に舐めとっていった…
+	;ENDIF
+
+	TFLAG:47 = 1
+	CALL SELF_KOJO, "お掃除フェラ"
+
+	IF ASSI && SELECTCOM:1 == SELECTCOM
+		SWAP TARGET, ASSI
+		TFLAG:47 = 1
+		CALL SELF_KOJO, "お掃除フェラ"
+		SWAP TARGET, ASSI
+
+		IF (ABL:従順 >= 4 || ABL:精液中毒 >= 2) && (ABL:ASSI:従順 >= 4 || ABL:ASSI:精液中毒 >= 2)
+			PRINTW 二人はそれだけでは足りないかのように互いの口に溜まった精液を舐めあっている…
+			CALL EQ_STAIN, TARGET, ASSI, 0, 0
+		ENDIF
+	ENDIF
+
+	;助手のためにPLAYERのＰ汚れを記録
+	LOCAL = STAIN:PLAYER:Ｐ
+
+	;経験や汚れなどの処理は全部ここで行う
+	CALL SETFLAG, "お掃除フェラ", TARGET, MASTER
+
+	PRINTFORML フェラ経験＋１
+	PRINTFORML お掃除フェラ経験＋１
+	PRINTL 
+
+	IF ASSI && SELECTCOM:1 == SELECTCOM
+		STAIN:PLAYER:Ｐ = LOCAL
+
+		CALL SETFLAG, "お掃除フェラ", ASSI, MASTER
+
+		PRINTFORML フェラ経験＋１ (%TEXTS("助手の名称")%)
+		PRINTFORML お掃除フェラ経験＋１ (%TEXTS("助手の名称")%)
+		PRINTL 
+	ENDIF
+
+	RETURN 0
+ENDIF
+
+;--------------------------------------------------------
+;助手のお仕事としてのお掃除フェラ等
+;--------------------------------------------------------
+CALL EVENT_ASSI_AUTO, "お掃除"
+
+;--------------------------------------------------------
+;コマンドテキスト その２
+;--------------------------------------------------------
+SIF FLAG:6 && TFLAG:90 == 0
+	CALL TEXT_B
+;--------------------------------------------------------
+;自発脱ぎ(体力が限界ならしてこない)
+;--------------------------------------------------------
+IF BASE:体力 >= 500
+	CALL EVENT_DATUI
+	CALL EVENT_ZURENAOSHI
+ENDIF
+IF TEQUIP:Ｗ押し倒し
+	SWAP TARGET, TARGET:1
+	SWAP SELECTCOM, SELECTCOM:1
+	SWAP PREVCOM, PREVCOM:1
+	IF BASE:体力 >= 500
+		CALL EVENT_DATUI
+		CALL EVENT_ZURENAOSHI
+	ENDIF
+	SWAP TARGET, TARGET:1
+	SWAP SELECTCOM, SELECTCOM:1
+	SWAP PREVCOM, PREVCOM:1
+ENDIF
+
+
+@TEXT_B
+;--------------------------------------------------------
+;愛撫
+;--------------------------------------------------------
+IF SELECTCOM == 0
+	SELECTCASE CUP:快Ｃ + CUP:快Ｂ + CUP:快Ｍ
+	CASE IS < 100
+		IF TALENT:反抗的
+			PRINTFORML %CALLNAME:TARGET%は愛撫されながらも反抗的な態度を取っている。
+		ELSE
+			PRINTFORML %CALLNAME:TARGET%はむずかゆそうに身体をよじるが快楽を感じるまでには至っていないようだ。
+		ENDIF
+	CASE IS < 300
+		PRINTFORML %CALLNAME:TARGET%はこちらの愛撫に反応して身体を震わせている。
+	CASE IS < 1000
+		PRINTFORML %CALLNAME:TARGET%は軽い電撃でも身体に走ったかのように小さく震えた。
+	CASE IS < 3000
+		PRINTFORML %CALLNAME:TARGET%は明らかに快楽を感じている様子で艶やかな喘ぎ声をあげている。
+	CASE IS < 6000
+	 	IF COND("指の使用")
+			IF RAND:2 == 0
+				PRINTFORML %CALLNAME:TARGET%は何とか快楽を押さえようと、こちらにしがみついて来た。
+			ELSE
+				PRINTFORML %CALLNAME:TARGET%は愛撫に激しく快楽を感じ、自らせがむように手を首にまわしてきた。
+			ENDIF
+		ELSE
+			IF RAND:2 == 0
+				PRINTFORML %CALLNAME:TARGET%は何とか快楽を押さえようと、身を強張らせている。
+			ELSE
+				PRINTFORML %CALLNAME:TARGET%は愛撫に激しく快楽を感じ、自らせがむように身を寄せてきた。
+			ENDIF
+		ENDIF
+	CASE IS < 10000
+		IF RAND:2 == 0
+			PRINTFORML %CALLNAME:TARGET%はこちらの指が身体を這う度にひくひくと身体を震えさせている。
+		ELSE
+			PRINTFORML %CALLNAME:TARGET%はこちらの愛撫だけで激しく感じまくっており、さらなる刺激を求めてしなだれかかってきた。
+		ENDIF
+	CASEELSE
+		PRINTFORM %CALLNAME:TARGET%はこちらの指が動くだけで身体をびくびくと跳ねさせて
+		IF TALENT:恥じらい
+			PRINTL 顔を真っ赤にして、何とか喘ぎ声を抑えようと無駄な努力を続けている。
+		ELSEIF TALENT:快感に素直 || TALENT:解放
+			PRINTL 完全に快楽に蕩け切った表情で、もっとと懇願するように身体を擦り付けて来た。
+		ELSEIF (TALENT:快感の否定 || TALENT:抑圧) && COND("指の使用")
+			PRINTL 首をぶんぶん横に振りながら、あまりの快楽にしがみついて来た。
+		ELSE
+			PRINTL 止め処ない喘ぎ声を上げている。
+		ENDIF
+	ENDSELECT
+ENDIF
+;--------------------------------------------------------
+;クンニ
+;--------------------------------------------------------
+IF SELECTCOM == 1
+	;サドっ気3以上かサド持ちの夢魔に押し倒されて生顔面騎乗をされると、汚れを舐め取る破目に
+	IF TEQUIP:押し倒し && CHECK_CLO("Ｖ露出") && ABL:サドっ気 >= 3 && CHECK_STAIN(STAIN:Ｖ, "精液", "Ａ", "尿") && RAND:10 == 0
+		PRINTFORM %CALLNAME:TARGET%はアソコを
+		SIF TALENT:ハーピー == 0
+			PRINTFORM %NAMES("指")%で広げて、
+		PRINTFORM 舌で綺麗に
+		IF ABL:サドっ気 >= 5 && RAND:5 > 0
+			PRINTW する様に促してきた。
+		ELSE
+			PRINTW して欲しそうにしている…
+		ENDIF
+		PRINTFORM %CALLNAME:PLAYER%は
+		IF TALENT:PLAYER:汚れ無視 == 0 && (CHECK_STAIN(STAIN:Ｖ, "精液", "Ａ") || RAND:2 == 0)
+			PRINTW 頑張って綺麗にしました…
+		ELSE
+			SIF COND("♀に弱い", PLAYER)
+				PRINTFORM 貪る様に
+			PRINTW 汚れを舐めとって綺麗にしました…
+		ENDIF
+		STAIN:Ｖ = SET_STAIN(0, "Ｖ")
+	ELSE
+		SELECTCASE CUP:快Ｃ
+		CASE IS < 100
+			PRINTFORML %CALLNAME:TARGET%のそこはまだしっとりと閉じたままだ。快楽を感じるにはもう少しかかるかもしれない。
+		CASE IS < 1000
+			PRINTFORML %CALLNAME:TARGET%はクンニの刺激にじっと耐えているものの、確実に感じてきているようだ。
+		CASE IS < 3000
+			PRINTFORM \@ PENIS(TARGET) ? ペニスの根元 # 敏感な豆 \@を舐められると感じるのか、%CALLNAME:TARGET%は
+			SIF TALENT:恥じらい
+				PRINTFORM 羞恥に頬を赤く染め手で自分の口を抑えて声が出るのをこらえ、
+			IF TALENT:快感に素直 || TALENT:解放
+				PRINTL 熱い吐息を吐きながら快楽に身をゆだねている。
+			ELSEIF TALENT:快感の否定 || TALENT:抑圧
+				PRINTL 快楽を否定するように首を振って耐えている。
+			ELSE
+				PRINTL 秘所から愛液を垂らしつつ小さく吐息を漏らした。
+			ENDIF
+		CASE IS < 6000
+			PRINTFORM %CALLNAME:TARGET%の\@ PENIS(TARGET) ? アソコ周辺 # 小さな豆 \@を舌で擦り上げてやると、%CALLNAME:TARGET%は
+			SIF TALENT:恥じらい
+				PRINTFORM 羞恥に頬を赤く染め、あまりの快楽に押さえ切れないのか
+			IF TALENT:快感に素直 || TALENT:解放
+				PRINTL がくがくと身体を揺らしながら襲い来る快楽に悶えた。
+			ELSEIF TALENT:快感の否定 || TALENT:抑圧
+				PRINTL 快楽を否定するように首を振り、食い縛った唇の隙間から甘い吐息を漏らしている。
+			ELSE
+				PRINTL 可愛らしい声を漏らしながらがくがくと身体を揺らした。
+			ENDIF
+		CASE IS < 10000
+			PRINTFORM %CALLNAME:TARGET%は明らかな快楽の声をあげ、
+			IF COND("指の使用") && RAND:2
+				PRINTFORML 無意識にこちらの頭を手で押さえてさらにその部分を押し付けてきた。
+			ELSE
+				PRINTFORML 無意識に\@ TEQUIP:押し倒し == 0 ? 腰を浮かして # \@股間を押し付けてきた。
+			ENDIF
+		CASEELSE
+			IF TALENT:Ｃ敏感
+				PRINTFORM %CALLNAME:TARGET%は敏感な\@ PENIS(TARGET) ? 場所 # クリトリス \@への責めに激しく身もだえし、
+				SIF TALENT:恥じらい && COND("指の使用")
+					PRINTFORM あまりの羞恥に真っ赤にした顔を隠すように両手で覆いながら押さえ切れないように
+				IF TALENT:快感に素直 || TALENT:解放
+					PRINTL 激しい喘ぎ声を上げながらよがり狂った。
+				ELSEIF TALENT:快感の否定 || TALENT:抑圧
+					PRINTL 食い縛った唇の隙間から呻き声に似た喘ぎ声を上げて悶えた。
+				ELSE
+					PRINTL あられも無い声を張り上げ続けた。
+				ENDIF
+			ELSE
+				PRINTFORM %CALLNAME:TARGET%は\@ PENIS(TARGET) ? 敏感な場所 # クリトリス \@への刺激に、
+				SIF TALENT:恥じらい && COND("指の使用")
+					PRINTFORM あまりの羞恥に真っ赤にした顔を隠すように両手で覆いながら押さえ切れないように
+				IF TALENT:快感に素直 || TALENT:解放
+					PRINTL 激しい喘ぎ声を上げながらよがり狂った。
+				ELSEIF TALENT:快感の否定 || TALENT:抑圧
+					PRINTL 食い縛った歯の隙間から呻き声に似た喘ぎ声を上げて悶えた。
+				ELSE
+					PRINTL 激しい喘ぎ声を上げながら悶え続けた。
+				ENDIF
+			ENDIF
+		ENDSELECT
+	ENDIF
+ENDIF
+;--------------------------------------------------------
+;アナル愛撫
+;--------------------------------------------------------
+IF SELECTCOM == 2
+	SELECTCASE CUP:快Ａ
+	CASE IS < 1000
+		IF CUP:苦痛 >= 300
+			PRINTFORML %CALLNAME:TARGET%はアヌスを弄られることによる慣れない痛みに体をよじる。
+			IF ABL:Ａ感覚 < 3
+				PRINTL じっくりと開発していけばいいだろう。
+			ELSE
+				PRINTL 身体の準備が足りなかったようだ。
+			ENDIF
+		ELSE
+			PRINTFORM %CALLNAME:TARGET%はちいさく身体を揺らした。
+			IF ABL:Ａ感覚 < 3
+				PRINTL もうすこし開発してやる必要がありそうだ。
+			ELSE
+				PRINTL 快楽を得るにはもう少し身体をほぐしてやってからの方が良いようだ。
+			ENDIF
+		ENDIF
+	CASE IS < 3000
+		PRINTFORML %CALLNAME:TARGET%は小さく嬌声を上げて体を跳ねさせた。
+		SIF TALENT:Ａ敏感
+			PRINTFORM もともとアナルへの刺激に弱かったらしく、
+		PRINTL 明らかに快楽を感じ始めている…
+	CASE IS < 6000
+		IF RAND:2 && ABL:Ａ拡張 >= 2 && COND("アナル栓") == 0
+			PRINTFORML %CALLNAME:TARGET%はアナルで%CALLNAME:PLAYER%の指を容易く受け入れ、快楽に身悶えしている…
+		ELSE
+			PRINTFORML %CALLNAME:TARGET%はアナルへの刺激に明らかな快楽を感じているようだ。
+		ENDIF
+	CASE IS < 10000
+		IF TALENT:Ａ敏感
+			PRINTFORM 敏感なアナルを責められると
+		ELSE
+			PRINTFORM アナルへの刺激に
+		ENDIF
+		PRINTFORM %CALLNAME:TARGET%はよがり声を上げながら
+		IF TALENT:快感に素直 || TALENT:解放
+			PRINTL 快楽を訴えた。
+		ELSEIF TALENT:快感の否定 || TALENT:抑圧
+			PRINTL 必死で快楽を否定した。
+		ELSE
+			PRINTL 悶え狂った。
+		ENDIF
+	CASEELSE
+		PRINTFORML %CALLNAME:TARGET%は開発されきったアナルを弄ってやると、たまらないというように悲鳴まじりの喘ぎ声をあげながらよがり狂った。
+	ENDSELECT
+ENDIF
+;--------------------------------------------------------
+;自慰
+;--------------------------------------------------------
+IF SELECTCOM == 3
+	PRINTFORM %CALLNAME:TARGET%は
+	SIF TALENT:恥じらい && ABL:露出癖 <= 3
+		PRINTFORM 羞恥に顔を真っ赤に染め、
+	SIF TALENT:恥じらい && ABL:露出癖 <= 1
+		PRINTFORM 涙を浮かべて
+	SIF TALENT:小柄体型
+		PRINTFORM 小さな身体で
+	SIF TALENT:小柄体型 == 0 && (TEQUIP:バイブ || TEQUIP:アナルバイブ)
+		PRINTFORM 自らの中に
+	IF TEQUIP:バイブ && TEQUIP:アナルバイブ && GETBIT(CHECK_ONANIE(SELECTCOM), 1) && GETBIT(CHECK_ONANIE(SELECTCOM), 2)
+		PRINTFORM ２本のバイブをくわえ込んでいる卑猥な様を見せつつ、
+	ELSEIF TEQUIP:バイブ && GETBIT(CHECK_ONANIE(SELECTCOM), 1)
+		PRINTFORM 入っているバイブを持ち、
+	ELSEIF TEQUIP:アナルバイブ && GETBIT(CHECK_ONANIE(SELECTCOM), 2)
+		PRINTFORM 突っ込まれているアナルバイブを持って、
+	ENDIF
+	SIF TALENT:巨乳 && (ABL:露出癖 == 3 || ABL:露出癖 == 4)
+		PRINTFORM 挑発するように豊満な胸の先端を舐めながら
+	SIF TALENT:巨乳 == 0 && ABL:露出癖 == 4
+		PRINTFORM 露出の快楽に酔っている表情を見せながら
+	SIF ABL:露出癖 == 5
+		PRINTFORM 完全に見られる快感を覚えてしまったのか、淫蕩な表情を浮かべて自ら愛液を溢れさせ続ける秘所を押し開いて見せながら
+	SIF TEQUIP:ビデオカメラ
+		PRINTFORM ビデオカメラに向かって
+	PRINTL オナニーを続けている。
+	SELECTCASE CUP:快Ｃ + CUP:快Ｖ + CUP:快Ａ + CUP:快Ｂ
+	CASE IS < 300
+		PRINTFORML その%NAMES("指")%の動きはまだ拙く、快楽よりも羞恥の方が強いようだ。
+	CASE IS < 1000
+		PRINTL 時折小さく身体を震わせる様は確実に快楽を感じ始めている様子だがまだ没頭しきれないようだ。
+	CASE IS < 3000
+		PRINTL その表情には明らかに快楽の兆しが見え、熱っぽい吐息が漏れている。
+	CASEELSE
+		IF ABL:自慰中毒 < 3
+			PRINTL その表情には明らかに快楽の兆しが見え、熱っぽい吐息が漏れている。
+		ELSE
+			SELECTCASE CUP:快Ｃ + CUP:快Ｖ + CUP:快Ａ + CUP:快Ｂ
+			CASE IS < 6000
+				PRINTL そして堪えきれない情感に快楽の声を上げながら自慰行為へ没頭していった。
+			CASE IS < 10000
+				PRINTL そして自慰行為を続けながら快楽に身体を跳ねさせ、背中でブリッジを作りながら自らの性器を弄り続けた。
+			CASEELSE
+				PRINTL あまりの快楽になにもかも忘れて蕩けた表情でぐちゅぐちゅと音を立てて性器を弄り続けている。放っとけばいつまでもやり続けそうだ。
+			ENDSELECT
+		ENDIF
+	ENDSELECT
+ENDIF
+;--------------------------------------------------------
+;フェラする
+;--------------------------------------------------------
+IF SELECTCOM == 4
+	IF TEQUIP:押し倒し
+		IF ABL:サドっ気 >= 5 && STAIN:Ｐ !=  SET_STAIN(0, "Ｐ") && RAND:3
+			PRINTFORMW %CALLNAME:TARGET%は汚れたペニスを%CALLNAME:PLAYER%の口内にゴシゴシ擦りつけ、汚れを落とした…
+			STAIN:Ｐ =  SET_STAIN(0, "Ｐ")
+		;PLAYERがあなたなら、汚れ無視が必要
+		ELSEIF NO:PLAYER == 0 && ABL:PLAYER:技巧 + ABL:PLAYER:マゾっ気 >= 5 && TALENT:PLAYER:汚れ無視 && STAIN:Ｐ !=  SET_STAIN(0, "Ｖ") && RAND:3
+			PRINTFORM %CALLNAME:PLAYER%は、
+			IF CHECK_STAIN(STAIN:Ｐ, "Ａ")
+				PRINTFORM 腸液で汚れた
+			ELSEIF CHECK_STAIN(STAIN:Ｐ, "精液")
+				PRINTFORM 精液にまみれた
+			ELSEIF CHECK_STAIN(STAIN:Ｐ, "Ｖ")
+				PRINTFORM 愛液で汚れた
+			ENDIF
+			PRINTFORMW %CALLNAME:TARGET%のペニスを念入りに舌で掃除して、ゴクリと飲み込んだ…
+			CALL RESET_STAIN_EX, "Ｐ", TARGET
+			STAIN:PLAYER:Ｍ = 0
+		ELSEIF ABL:PLAYER:技巧 + ABL:PLAYER:奉仕精神 + ABL:PLAYER:マゾっ気 >= 8 && STAIN:Ｐ != 2 && RAND:3
+			PRINTFORM %CALLNAME:PLAYER%は、
+			IF CHECK_STAIN(STAIN:Ｐ, "Ａ")
+				PRINTFORM 腸液で汚れた
+			ELSEIF CHECK_STAIN(STAIN:Ｐ, "精液")
+				PRINTFORM 精液にまみれた
+			ELSEIF CHECK_STAIN(STAIN:Ｐ, "Ｖ")
+				PRINTFORM 愛液で汚れた
+			ENDIF
+			PRINTFORMW %CALLNAME:TARGET%のペニスを念入りに舌で掃除して、ゴクリと飲み込んだ…
+			STAIN:Ｐ = SET_STAIN(0, "Ｖ")
+			STAIN:PLAYER:Ｍ = 0
+		ENDIF
+	ENDIF
+ENDIF
+;--------------------------------------------------------
+;胸愛撫
+;--------------------------------------------------------
+IF SELECTCOM == 5
+	SELECTCASE CUP:快Ｂ
+	CASE IS < 100
+		PRINTFORML %CALLNAME:TARGET%はまだ胸で快楽を感じられるまでには至っていないようだ。
+	CASE IS < 1000
+		PRINTFORML %CALLNAME:TARGET%は胸への刺激に、むずかゆそうに身体をよじらせた。
+	CASE IS < 3000
+		PRINTFORML %CALLNAME:TARGET%の胸を揉み続けてやると乳首は固くしこっていき、熱い吐息を漏らし始めている。
+	CASE IS < 6000
+		PRINTFORML %CALLNAME:TARGET%は胸への愛撫にトロンとした表情になってされるがままになっている。
+	CASE IS < 10000
+		PRINTFORM %CALLNAME:TARGET%は
+		SIF TALENT:貧乳
+			PRINTFORM その小振りな胸で
+		PRINTFORM 感じまくっており、胸への刺激だけで法悦を極めようとしている。 
+	CASEELSE
+		IF RAND:2 == 0 && CALCF("Ｂ発情")
+			PRINTFORM %CALLNAME:TARGET%の硬くしこり立った乳首を捻り上げてやると、%CALLNAME:TARGET%は
+			IF TALENT:巨乳
+				PRINTL たぷたぷとその巨乳を揺らして、あまりの快楽に悶えた。
+			ELSE
+				PRINTL 背筋を思い切り反らし、強烈な快感に震えた。
+			ENDIF
+		ELSE
+			PRINTFORM %CALLNAME:TARGET%の胸を揉み続けてやるとそれだけで感じまくって身体を跳ねさせ、
+			IF TALENT:巨乳
+				PRINTL 目の前でその巨乳を弾ませてこちらの目を楽しませてくれた。
+			ELSE
+				PRINTL 緩んだ表情で快楽に身を任せていた。
+			ENDIF
+		ENDIF
+	ENDSELECT
+ENDIF
+;--------------------------------------------------------
+;キス
+;--------------------------------------------------------
+IF SELECTCOM == 6
+	SELECTCASE CUP:快Ｍ
+	CASE IS < 1000
+		IF MARK:反発刻印 == 3 && CUP:反感 >= 500
+			PRINTFORML %CALLNAME:TARGET%はキスをされて、嫌そうに表情を歪めている。
+		ELSEIF MARK:反発刻印 == 3 && CUP:反感 >= 100
+			PRINTFORML %CALLNAME:TARGET%はいやいやをするようにキスを拒んでいる…。
+		ELSE
+			PRINTFORML %CALLNAME:PLAYER%が口内を舌で掻き回してやると、%CALLNAME:TARGET%は\@ ABL:舌使い == 0 ? ぎこちなく # \@舌を絡めて来た。
+		ENDIF
+	CASE IS < 5000
+		PRINTFORML %CALLNAME:TARGET%は口内への愛撫に、自らも夢中で舌を絡めて来ている…。
+	CASE IS < 10000
+		PRINTFORM %CALLNAME:TARGET%は
+		SIF TALENT:蕩唇
+			PRINTFORM 貪欲に
+		PRINTL 口内の刺激を受け取り、それだけで達しそうになっている…。 
+	CASEELSE
+		IF NOWEX:Ｍ絶頂
+			IF RAND:2 == 0
+				PRINTFORM %CALLNAME:TARGET%の口内を舌で蹂躙してやると、%CALLNAME:TARGET%は
+				IF TALENT:蕩唇
+					IF TALENT:濡れやすい
+						PRINTL あまりの快感に立て続けに潮を噴きながら、それでも貪欲に舌を絡めて来た。
+					ELSE
+						PRINTL あまりの快感に立て続けに絶頂に達しながら、それでも貪欲に舌を絡めて来た。
+					ENDIF
+				ELSEIF TALENT:濡れやすい
+					PRINTL 立て続けに潮を噴き出しながら、身体を強すぎる絶頂にびくびく跳ねさせた。
+				ELSE
+					PRINTL あまりの快楽に膝を笑わせながら、立て続けに絶頂に達した。
+				ENDIF
+			ELSE
+				PRINTFORM %CALLNAME:TARGET%の口内を蹂躙してやるとそれだけで感じまくって身体を跳ねさせ、
+				IF TALENT:蕩唇
+					IF TALENT:濡れやすい
+						PRINTL お漏らしと見間違わんばかりにぷしゃぷしゃと潮を噴きながら、夢中になって舌を絡めて来た。
+					ELSE
+						PRINTL あまりの快楽に面白い程膝を笑わせながらも、それでも夢中になって舌を絡めて来た。
+					ENDIF
+				ELSEIF TALENT:濡れやすい
+					PRINTL お漏らしと見間違わんばかりにぷしゃぷしゃと潮を噴いて、あまりの快楽に膝を笑わせている。
+				ELSE
+					PRINTL あまりの快楽に膝を笑わせながら、立て続けに絶頂に達していた。
+				ENDIF
+			ENDIF
+		ELSE
+			PRINTFORM %CALLNAME:TARGET%の口内を舌で蹂躙してやると、%CALLNAME:TARGET%は強烈すぎる快感に、舌を絡める事すら忘れてびくびくと身体を跳ねさせている。
+		ENDIF
+	ENDSELECT
+ENDIF
+;--------------------------------------------------------
+;指挿入れ＆Gスポット刺激
+;--------------------------------------------------------
+IF SELECTCOM == 8
+	IF NOWEX:Ｖ絶頂 && TALENT:恥じらい && TEQUIP:口枷 == 0 && EXP_GAIN(71) == 0
+		IF TEQUIP:バイブ
+			PRINTFORMW 快感に蕩けている%CALLNAME:TARGET%の口元に愛液で根元まで濡れ光るバイブを差し出すと、%CALLNAME:TARGET%は恥ずかしそうにぺろっと舐めた…
+			;夢魔の口に夢魔のアソコの汚れが追加
+			CALL EQ_STAIN, TARGET, TARGET, 0, 1
+			STAIN:手 = 0
+		ELSE
+			PRINTFORML 快感に蕩けている%CALLNAME:TARGET%の口元にアソコから抜いた指を差し出すと、%CALLNAME:TARGET%は恥ずかしそうにぺろっと舐めた…
+			;夢魔の口⇔調教者の指の汚れが移動
+			CALL EQ_STAIN, TARGET, PLAYER, 0, 1
+		ENDIF
+	ENDIF
+ENDIF
+;--------------------------------------------------------
+;ローター
+;--------------------------------------------------------
+IF SELECTCOM == 30
+	SELECTCASE CUP:快Ｃ
+	CASE IS < 300
+		PRINTFORML %CALLNAME:TARGET%はまだ大きな快楽を得るには至っていないようだ。
+	CASE IS < 1000
+		PRINTFORML %CALLNAME:TARGET%の\@ PENIS(TARGET) ? ペニス # クリトリス \@にローターを押し付けると小さく悲鳴を上げてビクンと身体を跳ねさせた。
+	CASE IS < 3000
+		IF TALENT:快感に素直
+			PRINTFORML %CALLNAME:TARGET%はローターの刺激に気持ちよさそうにその快楽を享受している。
+		ELSE
+			PRINTFORML %CALLNAME:TARGET%の\@ PENIS(TARGET) ? ペニス # クリトリス \@にローターを押し付けると快楽の声を上げながら刺激から逃れようと身をよじった。
+		ENDIF
+	CASE IS < 6000
+		PRINTFORML %CALLNAME:TARGET%は\@ PENIS(TARGET) ? ペニス # クリトリス \@をじっくりと刺激され、激しい快楽に全身を跳ねさせた。
+	CASE IS < 10000
+		PRINTFORML %CALLNAME:TARGET%の\@ PENIS(TARGET) ? ペニス # クリトリス \@をローターで刺激してやると激しい快楽にのたうち、腰を卑猥にグラインドさせた。
+	CASEELSE
+		IF RAND:2 == 0
+			IF TALENT:濡れやすい
+				PRINTFORML %CALLNAME:TARGET%はローターを押し付けられ、潮を噴きながら身体をのた打ち回らせた。
+			ELSE
+				PRINTFORML %CALLNAME:TARGET%はローターを押し付けられ、立て続けに絶頂に達し、びくびくと身体を跳ねさせた。
+			ENDIF
+		ELSE
+			IF TALENT:濡れやすい
+				PRINTFORML %CALLNAME:TARGET%はローターを押し付けられると、強烈すぎる快楽に激しく背中を反らせたまま連続で潮を噴いた。
+			ELSE
+				PRINTFORML %CALLNAME:TARGET%はローターを押し付けられあまりの快楽に涎すら垂らしながら身体をのた打ち回らせた。
+			ENDIF
+		ENDIF
+	ENDSELECT
+	IF !CHECK_CLO("Ｖ露出") && CUP:快Ｃ/1000 > RAND:10 && PALAM:Ｖ潤 >= 3000
+		PRINTFORM %CLO("股間")%の上からアソコを
+		IF CHECK_CLO("染み")
+			PRINTFORMW 撫で回してみると、じわっと染みが広がっていく…
+		ELSE
+			PRINTFORMW 指で押し込むと、ぬるりとした感触が伝わってくる…
+		ENDIF
+	ENDIF
+ENDIF
+;--------------------------------------------------------
+;バイブ
+;--------------------------------------------------------
+IF SELECTCOM == 31
+	IF TEQUIP:バイブ
+		SELECTCASE CUP:快Ｖ
+		CASE IS < CUP:苦痛
+			PRINTFORML %CALLNAME:TARGET%はバイブの太さに苦しそうにもがいた。
+		CASE IS < 1000
+			PRINTFORML %CALLNAME:TARGET%は慣れないバイブの感覚に戸惑いながらも時折突き上げる快楽の衝撃に体を震わせている。
+		CASE IS < 3000
+			PRINTFORML %CALLNAME:TARGET%はすでにヴァギナでも快楽を感じられる体になってきたのか、振動するバイブを入れてやると明らかに感じている声を上げた。
+		CASE IS < 6000
+			PRINTFORM %CALLNAME:TARGET%の
+			SIF TALENT:小柄体型
+				PRINTFORM 小さな
+			PRINTL ヴァギナにバイブを突っ込んでやるとすぐに快楽に蕩けた表情になった。
+		CASE IS < 10000
+			PRINTFORM %CALLNAME:TARGET%は
+			SIF TALENT:恥じらい
+				PRINTFORM 顔を羞恥に真っ赤にしながら
+			SIF TALENT:小柄体型
+				PRINTFORM 小さな体で
+			IF SIZE("バイブ", TARGET) >= 3
+				PRINTFORM 極太の
+			ELSEIF SIZE("バイブ", TARGET) == 2
+				PRINTFORM 太い
+			ENDIF
+			PRINTL バイブをくわえ込んで、激しい振動による刺激と快楽にその裸身を若鮎のように跳ねさせている。
+		CASEELSE
+			PRINTFORM %CALLNAME:TARGET%に振動させたままのバイブで激しく抜き差ししてやると、愛液を垂れながして激しい快楽に
+			SIF TALENT:恥じらい
+				PRINTFORM 余りの羞恥に顔を手で覆いながら、
+			SIF TALENT:快感に素直
+				PRINTFORM さらなる快楽を求めるように腰を振りながら、
+			PRINTFORML \@ TALENT:小柄体型 ? 小さな # その \@身体をのたうちまわらせた。
+		ENDSELECT
+	ENDIF
+ENDIF
+;--------------------------------------------------------
+;Ｅマッサージャ
+;--------------------------------------------------------
+IF SELECTCOM == 32
+	SELECTCASE CUP:快Ｃ
+	CASE IS < 300
+		PRINTFORML %CALLNAME:TARGET%の\@ PENIS(TARGET) ? ペニス # クリトリス \@にマッサージャを押し当ててやったが、振動に耐えるだけで大きな快楽を得るまでにはいたってないようだ。
+	CASE IS < 1000
+		PRINTFORML %CALLNAME:TARGET%のあそこへマッサージャを押し当ててやるとむずがゆそうにしながらもその表情に快楽の兆しが見える。
+	CASE IS < 3000
+		IF RAND:2 == 0
+			PRINTFORML マッサージャの振動に、%CALLNAME:TARGET%は微かに快楽の声を上げている。
+		ELSE
+			PRINTFORML \@ PENIS(TARGET) ? ペニス # クリトリス \@へマッサージャを押し当ててやると%CALLNAME:TARGET%は小さく可愛らしい声をあげながら体を震わせた。
+		ENDIF
+	CASE IS < 6000
+		IF RAND:2 == 0
+			PRINTFORML %CALLNAME:TARGET%はマッサージャの快楽に、ぴくんぴくんと身体をかすかに跳ねさせている。
+		ELSE
+			PRINTFORML %CALLNAME:TARGET%のあそこへマッサージャを押し当ててやると堪えきれない快楽に思わず両足を閉じてマッサージャを締め付けてしまい、%CALLNAME:TARGET%は身悶えた。
+		ENDIF
+	CASE IS < 10000
+		IF RAND:2 == 0
+			PRINTFORML マッサージャの振動がもたらす快楽に、%CALLNAME:TARGET%は何とか逃げようと腰をくねらせながら艶やかな喘ぎ声を上げた。
+		ELSE
+			PRINTFORML %CALLNAME:TARGET%は\@ PENIS(TARGET) ? ペニス # クリトリス \@に感じるマッサージャの振動がもたらす余りの快楽に必死に逃げようとしながら色っぽい喘ぎ声を出し続けている。
+		ENDIF
+	CASEELSE
+		IF RAND:2 == 0
+			PRINTFORM %CALLNAME:TARGET%は開発され切った\@ PENIS(TARGET) ? ペニス # クリトリス \@にマッサージャを当てられ、
+			IF TALENT:濡れやすい
+				PRINTL 何度も潮をふきながら悶え狂った。
+			ELSE
+				PRINTL 強烈すぎる快感に悶え狂った。
+			ENDIF
+		ELSE
+			PRINTFORM %CALLNAME:TARGET%はマッサージャを押し当てた瞬間に激しく体をのけぞらせ、
+			IF TALENT:濡れやすい
+				PRINTL あそこから何度も潮をふいた。
+			ELSE
+				PRINTL 強烈な快楽に身体を跳ねまくらせた。
+			ENDIF
+		ENDIF
+	ENDSELECT
+ENDIF
+;--------------------------------------------------------
+;アナルバイブ
+;--------------------------------------------------------
+IF SELECTCOM == 33 && COND("アナルパール") == 0
+	IF TEQUIP:アナルバイブ
+		SELECTCASE CUP:快Ａ
+		CASE IS < CUP:苦痛
+			IF CUP:快Ａ >= 1000
+				PRINTFORML %CALLNAME:TARGET%のアナルは大分受け入れられるようになったようだがまだ少し苦しそうだ。
+			ELSE
+				PRINTFORML アナルにバイブを入れてやると%CALLNAME:TARGET%は悲鳴を上げた。まだ苦痛の方が勝るようだ。
+			ENDIF
+		CASE IS < 1000
+			PRINTFORML %CALLNAME:TARGET%はアナルにバイブを入れられ少し苦しそうにするも快楽が勝って来たようだ。
+		CASE IS < 3000
+			PRINTFORML %CALLNAME:TARGET%はアナルにバイブを突っ込まれて明らかな嬌声を上げて快楽を感じている。
+		CASE IS < 10000
+			PRINTFORML %CALLNAME:TARGET%はアナルバイブのもたらす強烈な快楽に表情を緩ませている。
+		CASEELSE
+			PRINTFORM %CALLNAME:TARGET%はアナルへの刺激に激しく感じまくって、
+			PRINTFORML その\@ TALENT:小柄体型 ? 小さな身体 # 汗まみれの全身 \@をのたうちまわらせた。
+		ENDSELECT
+	ENDIF
+ENDIF
+;--------------------------------------------------------
+;クリキャップ
+;--------------------------------------------------------
+IF SELECTCOM == 34
+	SELECTCASE CUP:快Ｃ
+	CASE IS < 300
+		PRINTFORML %CALLNAME:TARGET%はクリトリスへの刺激に目を閉じて耐えている。
+	CASE IS < 1000
+		PRINTFORML %CALLNAME:TARGET%は淫核の淫具からの刺激に耐え兼ね、小さく喘ぎ声を上げた。
+	CASE IS < 3000
+		PRINTFORML %CALLNAME:TARGET%はクリトリスへの刺激に耐え切れず身体を小刻みに震わせて快楽に突き上げられている。
+	CASE IS < 6000
+		PRINTFORML %CALLNAME:TARGET%はクリキャップの刺激がもたらす激しい快感に腰を突き出すようにして卑猥なダンスを踊っている。
+	CASE IS < 10000
+		PRINTFORML %CALLNAME:TARGET%はクリトリスへ送られる振動に、身体をびくびくと跳ねさせた。
+	CASEELSE
+		IF NOWEX:Ｃ絶頂
+			PRINTFORML クリキャップが生み出す激しい振動に、%CALLNAME:TARGET%は連続で絶頂に達している。
+		ELSE
+			PRINTFORML %CALLNAME:TARGET%はクリトリスへ送られる快楽に、意識を朦朧とさせたまま緩んだ表情を見せている。
+		ENDIF
+	ENDSELECT
+ENDIF
+;--------------------------------------------------------
+;ニプルキャップ
+;--------------------------------------------------------
+IF SELECTCOM == 35
+	SELECTCASE CUP:快Ｂ
+	CASE IS < 300
+		PRINTFORML %CALLNAME:TARGET%は乳首への刺激にむずがゆそうに身体をよじらせた。
+	CASE IS < 1000
+		PRINTFORML %CALLNAME:TARGET%は乳首の淫具からの刺激に耐え兼ね、小さく喘ぎ声を上げた。
+	CASE IS < 3000
+		PRINTFORML %CALLNAME:TARGET%は乳首へと送り込まれる快感に耐え切れず身体を小刻みに震わせている。
+	CASE IS < 6000
+		PRINTFORML %CALLNAME:TARGET%はニプルキャップの刺激がもたらす激しい快感に背筋を反らせて卑猥なダンスを踊っている。
+	CASE IS < 10000
+		PRINTFORML %CALLNAME:TARGET%はニプルキャップから乳首へと送られる快楽に意識を朦朧とさせたまま緩んだ表情を見せている。
+	CASEELSE
+		PRINTFORM %CALLNAME:TARGET%は、
+		IF TALENT:小柄体型
+			PRINTL ニプルキャップが生み出す激しい振動にその小さな身体を跳ねさせた。
+		ELSEIF TALENT:巨乳
+			PRINTL 大きな胸を弾ませながらニプルキャップが生み出す激しい快感に浸っている。
+		ELSE
+			PRINTL ニプルキャップが生み出すあまりの快感に悶え狂った。
+		ENDIF
+	ENDSELECT
+ENDIF
+;--------------------------------------------------------
+;正常位
+;--------------------------------------------------------
+IF (SELECTCOM == 60 || SELECTCOM == 62) && INSERT("Ｖインサート") && COND("絶頂", PLAYER) == 0
+	SELECTCASE CUP:快Ｖ
+	CASE IS < 1000
+		IF CUP:快Ｖ < CUP:苦痛 && MARK:反発刻印 == 3
+			PRINTFORML %CALLNAME:TARGET%は苦しそうにもがいている。
+		ELSE
+			PRINTFORML %CALLNAME:TARGET%は微かに身体を震わせるが、まだ感じるまでには至っていないようだ。
+		ENDIF
+	CASE IS < 3000
+		PRINTFORML %CALLNAME:TARGET%は激しい%CALLNAME:PLAYER%の腰の動きに、可愛らしい喘ぎ声を上げた。
+	CASE IS < 6000
+		PRINTFORML 膣内を掻き回される感覚に、%CALLNAME:TARGET%は快楽に蕩けた表情を覗かせている。
+	CASE IS < 10000
+		PRINTFORML 激しく膣内を突いてやると、%CALLNAME:TARGET%はびくびくと身体を跳ねさせて快楽を受け止めた。
+	CASEELSE
+		PRINTFORM %CALLNAME:TARGET%は
+		IF COND("お気に入りの体位中") && CHOSECOM(SELECTCOM) == 0
+			IF SELECTCOM == 60
+				PRINTFORM 大好きな正常位で犯されながら、
+			ELSE
+				PRINTFORM 大好きな恥ずかしい格好で犯されながら、
+			ENDIF
+		ELSE
+			PRINTFORM %CALLNAME:PLAYER%の激しい腰の動きに、
+		ENDIF
+		IF TALENT:小柄体型
+			PRINTL その小さな身体をびくびくと跳ねさせながら快楽に激しい喘ぎ声を上げ続けている。
+		ELSE
+			PRINTL 艶かしい喘ぎ声を上げながら悶え続けた。
+		ENDIF
+	ENDSELECT
+ENDIF
+;--------------------------------------------------------
+;後背位
+;--------------------------------------------------------
+IF SELECTCOM == 61 && INSERT("Ｖインサート") && COND("絶頂", PLAYER) == 0
+	SELECTCASE CUP:快Ｖ
+	CASE IS < 3000
+		IF CUP:快Ｖ < CUP:苦痛 && MARK:反発刻印 == 3
+			PRINTFORML %CALLNAME:TARGET%は苦しそうに顔を顰めてぶんぶん首を横に振っている。
+		ELSEIF CUP:快Ｖ < 1000 && MARK:反発刻印 == 3
+			PRINTFORML %CALLNAME:TARGET%は諦めたように%CALLNAME:PLAYER%の腰の動きを受けている…。
+		ELSE
+			PRINTFORML %CALLNAME:TARGET%は%CALLNAME:PLAYER%の激しい腰の動きに、身体を震わせながら喘ぎ声を上げた。
+		ENDIF
+	CASE IS < 6000
+		PRINTFORML %CALLNAME:TARGET%は、後ろから膣内を突かれる快感に背筋を反らしながら激しく悶えた。
+	CASE IS < 10000
+		PRINTFORML 快感が強すぎるのか、%CALLNAME:TARGET%は蕩け切った表情で首をぶんぶん横に振っている。
+	CASEELSE
+		PRINTFORM %CALLNAME:TARGET%は
+		IF COND("お気に入りの体位中") && CHOSECOM(SELECTCOM) == 0
+			PRINTFORM 大好きな後背位で犯されながら、
+		ELSE
+			PRINTFORM %CALLNAME:PLAYER%の激しい腰の動きに背筋を反らし、
+		ENDIF
+		IF TALENT:巨乳
+			PRINTL その巨乳を突かれる度にぷるぷると震わせながら悶えた。
+		ELSE
+			PRINTL 髪を振り乱しながら全身に響いてくる快楽に悶えた。
+		ENDIF
+	ENDSELECT
+ENDIF
+;--------------------------------------------------------
+;対面座位
+;--------------------------------------------------------
+IF SELECTCOM == 63 && INSERT("Ｖインサート") && COND("絶頂", PLAYER) == 0
+	SELECTCASE CUP:快Ｃ + CUP:快Ｖ
+	CASE IS < 1000
+		IF CUP:快Ｃ + CUP:快Ｖ < CUP:苦痛 && MARK:反発刻印 == 3
+			PRINTFORML %CALLNAME:TARGET%はいやいやをするように首を横に振っている…。
+		ELSE
+			PRINTFORML ゆっくりと下から突き上げてやると、%CALLNAME:TARGET%は衝撃に眉根を寄せた。
+		ENDIF
+	CASE IS < 3000
+		PRINTFORML %CALLNAME:TARGET%は膣奥をこつこつとノックされ、微かな喘ぎ声を漏らした。
+	CASE IS < 6000
+		PRINTFORM 下から%CALLNAME:TARGET%を突き上げてやると、%CALLNAME:TARGET%は
+		IF COND("指の使用") && RAND:2
+			PRINTFORML %CALLNAME:PLAYER%にしがみ付いて来た。
+		ELSE
+			PRINTFORM %CALLNAME:PLAYER%に体を密着させて
+			SIF TALENT:巨乳
+				PRINTFORM 巨乳を押し付けて。
+			PRINTL 来た。
+		ENDIF
+	CASE IS < 10000
+		PRINTFORML 激しく下から突き上げられ、%CALLNAME:TARGET%はあまりの快感に
+		IF COND("指の使用") && RAND:2
+			PRINTFORML ぎゅっと%CALLNAME:PLAYER%にしがみ付いて悶えた。
+		ELSE
+			PRINTFORM %CALLNAME:PLAYER%に体を密着させて
+			SIF TALENT:巨乳
+				PRINTFORM 巨乳を押し付けて。
+			PRINTL 悶えた。
+		ENDIF
+	CASEELSE
+		PRINTFORM %CALLNAME:TARGET%は
+		IF RAND:2
+			IF COND("指の使用") && RAND:2
+				PRINTFORM %CALLNAME:PLAYER%の背中に手足を回してギュッと抱きつきながら、
+			ELSE
+				PRINTFORM %CALLNAME:PLAYER%に体を密着させ
+				SIF TALENT:巨乳
+					PRINTFORM て巨乳を押し付け
+				PRINTFORM ながら、
+			ENDIF
+		ELSEIF COND("お気に入りの体位中") && CHOSECOM(SELECTCOM) == 0
+			PRINTFORM 大好きな対面座位で
+			IF COND("指の使用") && RAND:2
+				PRINTFORM %CALLNAME:PLAYER%に抱きつきながら、
+			ELSE
+				PRINTFORM %CALLNAME:PLAYER%に体を密着させ
+				SIF TALENT:巨乳
+					PRINTFORM て巨乳を押し付け
+				PRINTFORM ながら、
+			ENDIF
+		ELSE
+			PRINTFORM %CALLNAME:PLAYER%の激しい突き上げに背筋を反らし、
+		ENDIF
+		IF RAND:2
+			PRINTFORML 下半身から響く甘い快楽に熱い吐息を漏らしている…
+		ELSE
+			PRINTFORML 気持ち良さそうな顔を目の前で晒しながら悶え狂った
+		ENDIF
+	ENDSELECT
+ENDIF
+;--------------------------------------------------------
+;背面座位
+;--------------------------------------------------------
+IF SELECTCOM == 64 && INSERT("Ｖインサート") && COND("絶頂", PLAYER) == 0
+	SELECTCASE CUP:快Ｃ + CUP:快Ｖ + CUP:快Ｂ
+	CASE IS < CUP:苦痛
+		IF MARK:反発刻印 == 3
+			PRINTFORML %CALLNAME:TARGET%は後ろから突き上げられて不快感に顔を顰めている。
+		ELSE
+			PRINTFORML %CALLNAME:TARGET%は下から緩やかに突き上げられ、いやいやをするように首をぶんぶん横に振っている。
+		ENDIF
+	CASE IS < 3000
+		PRINTFORML %CALLNAME:TARGET%は突き上げられる度に微かな喘ぎ声を上げている。
+	CASE IS < 6000
+		PRINTFORML %CALLNAME:TARGET%は下から突き上げられて、快楽に喘ぎ声を上げ続けた。
+	CASE IS < 10000
+		PRINTFORML 強く下から突き上げられて、%CALLNAME:TARGET%は激しい喘ぎ声を上げた。
+	CASEELSE
+		SIF COND("お気に入りの体位中") && CHOSECOM(SELECTCOM) == 0
+			PRINTFORM 大好きな体位で
+		PRINTFORML 下から突き上げながら乳首と\@ PENIS(TARGET) ? ペニス # クリトリス \@を弄ってやると、%CALLNAME:TARGET%はがくがくと身体を震わせて立て続けの絶頂に翻弄された。
+	ENDSELECT
+ENDIF
+;--------------------------------------------------------
+;騎乗位
+;--------------------------------------------------------
+IF SELECTCOM == 65 && INSERT("Ｖインサート") && COND("絶頂", PLAYER) == 0
+	SELECTCASE CUP:快Ｖ
+	CASE IS < CUP:苦痛
+		IF MARK:反発刻印 == 3 || CUP:快Ｖ < 500
+			PRINTFORML %CALLNAME:TARGET%は苦しそうにしながら命令に従って腰を振る。だが、まだ快楽を得るには遠いようだ。
+		ELSE
+			PRINTFORML %CALLNAME:TARGET%は苦しそうにしながらもその表情には快楽の兆しが見える。
+		ENDIF
+	CASE IS < 3000
+		PRINTFORML %CALLNAME:TARGET%は腰を振りながらこらえきれない快楽に可愛らしい声を漏らしている。
+	CASE IS < 6000
+		IF TALENT:巨乳
+			PRINTFORML 目の前で%CALLNAME:TARGET%は大きな乳房を腰の動きに合わせて上下に弾ませながら快楽に浸りきっている。
+		ELSE
+			PRINTFORML %CALLNAME:TARGET%は大分慣れてきたのか、快楽に突き上げられながら自ら進んで腰を振っている。
+		ENDIF
+	CASE IS < 10000
+		PRINTFORM %CALLNAME:TARGET%は
+		IF RAND:2
+			IF TALENT:小柄体型
+				PRINTFORM その小さな身体で
+			ELSEIF TALENT:巨乳
+				PRINTFORM その大きな乳房を上下に弾ませて
+			ENDIF
+			IF TALENT:抑圧 || TALENT:快感の否定
+				PRINTFORML 快楽を否定する言葉を吐きつつ、こらえ切れない喘ぎ声を上げ続けている。
+			ELSE
+				PRINTFORML 一生懸命腰を振り、背中を反らしながら快楽の喘ぎ声を上げた。
+			ENDIF
+		ELSE
+			IF TALENT:抑圧 || TALENT:快感の否定
+				PRINTFORML 必死に快楽を否定しているが、その表情は明らかに快楽に蕩けている…
+			ELSE
+				IF TALENT:巨乳 && RAND:2
+					PRINTFORM たぷたぷと大きな乳房を弾ませながら、
+				ELSEIF PALAM:Ｖ潤 >= 30000 && RAND:2
+					PRINTFORM 股間を恥ずかしい淫液でびしょびしょにしながら、
+				ELSE
+					PRINTFORM 夢中で腰を振りたてて、
+				ENDIF
+				IF COND("お気に入りの体位中") && CHOSECOM(SELECTCOM) == 0
+					PRINTFORM 大好きな騎乗位で
+				ELSE
+					PRINTFORM だらしなく緩んだ顔で
+				ENDIF
+				PRINTFORML 快楽を貪っている。
+			ENDIF
+		ENDIF
+	ENDSELECT
+ENDIF
+;--------------------------------------------------------
+;アナルセックス
+;--------------------------------------------------------
+IF SELECTCOM >= 70 && SELECTCOM <= 79 && SELECTCOM != 75 && INSERT("Ａインサート") && COND("絶頂", PLAYER) == 0
+	SELECTCASE CUP:快Ａ
+	CASE IS < 3000
+		;アナル許可
+		IF CFLAG:100
+			PRINTFORML %CALLNAME:TARGET%はアナルを緩めて、%CALLNAME:PLAYER%の突き込みを従順に受け入れている…。
+		ELSEIF CUP:快Ａ < CUP:苦痛 && CUP:快Ａ < 500
+			PRINTFORML %CALLNAME:TARGET%はアナルを抉るペニスの感触にじたばたと暴れている…。
+		ELSEIF CUP:快Ａ < CUP:苦痛
+			PRINTFORML %CALLNAME:TARGET%はまだ痛みの方が強いのか、表情を歪めている。
+		ELSE
+			PRINTFORML %CALLNAME:TARGET%のアナルをゆっくりと突いてやると、%CALLNAME:TARGET%はふるふると身体を震わせた。
+		ENDIF
+	CASE IS < 6000
+		IF TALENT:オトコ == 0 && RAND:2
+			PRINTFORML %CALLNAME:TARGET%はアナルを襲う快楽に、秘所から隠し切れない快楽の証を滲ませている…
+		ELSE
+			PRINTFORM 少し強めに奥に突き込んでやると、%CALLNAME:TARGET%は仰け反って
+			IF TEQUIP:口枷
+				PRINTL くぐもった呻き声を漏らした。
+			ELSE
+				PRINTL 口をぱくぱくさせた。
+			ENDIF
+		ENDIF
+	CASE IS < 10000
+		PRINTFORML 激しい突き込みにも慣れたのか、%CALLNAME:TARGET%は今にも達しそうになりながらも更なる快感を求めて来た。
+	CASEELSE
+		SIF COND("お気に入りの体位中") && CHOSECOM(SELECTCOM) == 0
+			PRINTFORM 大好きな体位で
+		PRINTFORM 激しくアナルを責め立ててやると、%CALLNAME:TARGET%は
+		IF ABL:Ａ感覚 >= 5
+			PRINTFORM 快楽に打ち震えながら
+		ELSEIF TALENT:Ａ敏感
+			PRINTFORM 敏感なそこを責められる快感に頭を掻き毟りながら
+		ELSE
+			PRINTFORM 強烈な快感にたぷたぷと尻肉を震わせながら
+		ENDIF
+		SIF TALENT:オトコ == 0
+			PRINTFORM 艶やかな
+		PRINTFORML 喘ぎ声を上げ、悶え狂った。
+	ENDSELECT
+ENDIF
+;--------------------------------------------------------
+;アナル騎乗位
+;--------------------------------------------------------
+IF SELECTCOM == 75 && INSERT("Ｖインサート") && COND("絶頂", PLAYER) == 0
+	SELECTCASE CUP:快Ａ
+	CASE IS < 3000
+		IF CUP:快Ａ < CUP:苦痛 && (MARK:反発刻印 == 3 || CUP:快Ａ < 1000)
+			PRINTFORML %CALLNAME:TARGET%は苦しそうにしながら命令に従って腰を振る。だが、まだ快楽を得るには遠いようだ。
+		ELSEIF CUP:快Ａ < CUP:苦痛
+			PRINTFORML %CALLNAME:TARGET%は苦しそうにしながらもその表情には快楽の兆しが見える。
+		ELSE
+			PRINTFORML %CALLNAME:TARGET%は腰を振りながらこらえきれない快楽に可愛らしい声を漏らしている。
+		ENDIF
+	CASE IS < 6000
+		IF TALENT:巨乳
+			PRINTFORML 目の前で%CALLNAME:TARGET%は大きな乳房を腰の動きに合わせて上下に弾ませながら快楽に浸りきっている。
+		ELSE
+			PRINTFORML %CALLNAME:TARGET%は大分慣れてきたのか、快楽に突き上げられながら自ら進んで腰を振っている。
+		ENDIF
+	CASE IS < 10000
+		PRINTFORM %CALLNAME:TARGET%は
+		IF RAND:2
+			IF TALENT:小柄体型
+				PRINTFORM その小さな身体で
+			ELSEIF TALENT:巨乳
+				PRINTFORM その大きな乳房を上下に弾ませて
+			ENDIF
+			IF TALENT:抑圧 || TALENT:快感の否定
+				SIF TEQUIP:口枷 == 0
+					PRINTFORM 快楽を否定する言葉を吐きつつ
+				PRINTL こらえ切れない喘ぎ声を上げ続けている。
+			ELSE
+				PRINTFORML 一生懸命腰を振り背中を反らしながら快楽の喘ぎ声を上げた。
+			ENDIF
+		ELSE
+			IF TALENT:巨乳
+				PRINTFORM たぷたぷと大きな乳房を弾ませながら
+			ELSE
+				PRINTFORM 腰を振りながら
+			ENDIF
+			IF TALENT:抑圧 || TALENT:快感の否定
+				PRINTFORML 必死に快楽を否定しているが、その表情は明らかに快楽に蕩けている。
+			ELSE
+				PRINTFORML 緩みきった、だらしない顔で快楽を貪っている。
+			ENDIF
+		ENDIF
+	ENDSELECT
+ENDIF
+;--------------------------------------------------------
+;スパンキング、針、鞭
+;--------------------------------------------------------
+IF SELECTCOM == 130 || SELECTCOM == 131 || SELECTCOM == 132
+	SELECTCASE CUP:苦痛
+	CASE IS < 100
+	CASE IS < 300
+		IF ABL:マゾっ気 >= 3
+			PRINTFORML %CALLNAME:TARGET%は快楽が伴い始めたのかところどころで甘い声をだしている。
+		ELSE
+			PRINTFORML %CALLNAME:TARGET%は悲鳴をこらえながら痛みに耐えた。
+		ENDIF
+	CASE IS < 2000
+		IF ABL:マゾっ気 >= 3
+			PRINTFORML %CALLNAME:TARGET%は痛みの中に快楽が伴うのか時折潤いを帯びた目でこちらを見ている。
+		ELSE
+			PRINTFORML %CALLNAME:TARGET%は激しい苦痛にかみ締めた歯の隙間から苦しそうなうめき声を上げた。
+		ENDIF
+	CASEELSE
+		IF ABL:マゾっ気 >= 3
+			PRINTFORML %CALLNAME:TARGET%の顔に苦痛の色は無く頬を上気させ誘うように尻を振っている。
+		ELSE
+			PRINTFORML %CALLNAME:TARGET%は苦痛に堪えきれず悲鳴を上げながら全身を跳ねさせた。
+		ENDIF
+	ENDSELECT
+ENDIF
+;--------------------------------------------------------
+;クンニ強制or69
+;--------------------------------------------------------
+IF SELECTCOM == 98 || (SELECTCOM == 99 && PENIS(PLAYER) == 0)
+	;アソコをお掃除…奉仕精神、技巧、レズっ気の合計値が8以上で実行値を30以上上回っているなら汚れをなめ取る
+	IF ABL:技巧 + ABL:奉仕精神 + ABL:レズっ気 >= 8 && TCVAR:28 >= 30 && STAIN:PLAYER:Ｖ != SET_STAIN(0, "Ｖ")
+		CALL OSOUJI_V
+	ENDIF
+ENDIF
+;--------------------------------------------------------
+;尿道ブジー
+;--------------------------------------------------------
+IF SELECTCOM == 151 && TEQUIP:尿道ブジー
+	;オシッコが溜まっているなら排尿
+	IF BASE:尿意 >= 10000
+		IF GETBIT(TEQUIP:筋弛緩剤, 1)
+			PRINTFORML %CALLNAME:TARGET%の尿道からブジーを引き抜くと、緩んだ穴からジョロジョロと尿が垂れ流された…
+		ELSE
+			PRINTFORML %CALLNAME:TARGET%の尿道からブジーを引き抜き、雑菌を洗い流すために排尿させました
+		ENDIF
+
+		;放尿のソース獲得
+		CALL SOURCE_COM144, 80
+
+		;利尿剤の効果は消失
+		TEQUIP:利尿剤 = 0
+		;自分から放尿したので、最後まで出し切ります
+		BASE:尿意 = 0
+		;放尿
+		EXP:放尿経験 += 1
+		PRINTL 放尿経験＋１
+		NOWEX:放尿 += 1
+		EX:放尿 += 1
+	ELSE
+		PRINTFORML %CALLNAME:PLAYER%は心行くまで%CALLNAME:TARGET%の尿道を虐めた後
+	ENDIF
+	IF RAND:1
+		PRINTFORML 、ブジーを慎重に引き抜いた…
+		TEQUIP:尿道ブジー = 0
+	ELSE
+		PRINTFORML 、プジーを入れたままにした…
+		TEQUIP:尿道ブジー = 1
+	ENDIF
+ENDIF
+;--------------------------------------------------------
+;触手バイブ
+;--------------------------------------------------------
+IF SELECTCOM == 201 && TEQUIP:バイブ
+	IF GETBIT(FLAG:80, 0) || (GETBIT(FLAG:80, 1) && RAND:2 == 0)
+		TEQUIP:バイブ = 0
+		PRINTFORML 膣内を陵辱したあと、触手は%CALLNAME:TARGET%の膣から引き抜かれた…
+	ENDIF
+ENDIF
+;--------------------------------------------------------
+;アナル触手
+;--------------------------------------------------------
+IF SELECTCOM == 202 && TEQUIP:アナルバイブ
+	IF GETBIT(FLAG:80, 2) || (GETBIT(FLAG:80, 3) && RAND:2 == 0)
+		TEQUIP:アナルバイブ = 0
+		PRINTFORML 肛内を陵辱したあと、触手は%CALLNAME:TARGET%のアヌスから引き抜かれた…
+	ENDIF
+ENDIF
+;--------------------------------------------------------
+;触手クリ責め
+;--------------------------------------------------------
+IF SELECTCOM == 203 && TEQUIP:クリキャップ
+	IF GETBIT(FLAG:80, 4) || (GETBIT(FLAG:80, 5) && RAND:2 == 0)
+		TEQUIP:クリキャップ = 0
+		PRINTFORML 触手は%CALLNAME:TARGET%のクリ責めを中断した…
+	ENDIF
+ENDIF
+;--------------------------------------------------------
+;触手乳首責め
+;--------------------------------------------------------
+IF SELECTCOM == 204 && TEQUIP:ニプルキャップ
+	IF GETBIT(FLAG:80, 6) || (GETBIT(FLAG:80, 7) && RAND:2 == 0)
+		TEQUIP:ニプルキャップ = 0
+		PRINTFORML 触手は%CALLNAME:TARGET%の乳首から離れた…
+	ENDIF
+ENDIF
+;--------------------------------------------------------
+;触手搾乳
+;--------------------------------------------------------
+IF SELECTCOM == 205 && TEQUIP:搾乳機
+	IF GETBIT(FLAG:80, 8) || (GETBIT(FLAG:80, 9) && RAND:2 == 0)
+		TEQUIP:搾乳機 = 0
+		PRINTFORML 触手は%CALLNAME:TARGET%の乳首を解放した…
+	ENDIF
+ENDIF
+;--------------------------------------------------------
+;触手口辱
+;--------------------------------------------------------
+IF SELECTCOM == 208 && TEQUIP:触手口辱
+	IF GETBIT(FLAG:80, 12) || (GETBIT(FLAG:80, 13) && RAND:2 == 0)
+		TEQUIP:触手口辱 = 0
+		PRINTFORML 散々口内をかき回したあと、触手は%CALLNAME:TARGET%の口から引き抜かれた…
+	ENDIF
+ENDIF
+;--------------------------------------------------------
+;触手ペニス責め
+;--------------------------------------------------------
+IF SELECTCOM == 209 && TEQUIP:オナホール
+	IF GETBIT(FLAG:80, 10) || (GETBIT(FLAG:80, 11) && RAND:2 == 0)
+		TEQUIP:オナホール = 0
+		PRINTFORML 触手は%CALLNAME:TARGET%のペニスを解放した…
+	ENDIF
+ENDIF
+;--------------------------------------------------------
+;フィスト系コマンド
+;--------------------------------------------------------
+IF SELECTCOM == 141
+	IF CHECK("Ｖフィスト") && COND("指の使用") && RAND:3
+		PRINTFORML %CALLNAME:TARGET%は、自分の膣口を指で拡げて余韻を味わっている…
+	ELSEIF ABL:Ｖ拡張 >= ABL:Ｖ使い
+		IF ABL:Ｖ拡張 >= 6
+			PRINTFORML %CALLNAME:TARGET%の性器からは肉ビラがはみ出し、ぽっかり開いた穴の奥には子宮口が見えている…
+		ELSEIF ABL:Ｖ拡張 >= 4
+			PRINTFORML %CALLNAME:TARGET%の膣はぽっかり口を開いている…
+		ELSE
+			PRINTFORML %CALLNAME:TARGET%の膣は拡がったままなかなか戻らない…
+		ENDIF
+	ENDIF
+ELSEIF SELECTCOM == 142
+	IF CHECK("Ａフィスト") && COND("指の使用") && RAND:3
+		PRINTFORML %CALLNAME:TARGET%は自分の肛門を指で拡げ、恍惚としながら腸内の景色を晒している…
+	ELSEIF ABL:Ａ拡張 >= ABL:Ａ使い
+		IF ABL:Ａ拡張 >= 6
+			PRINTFORML %CALLNAME:TARGET%の肛門はすっかり皺が伸びきり、腸の中が丸見えになっている…
+		ELSEIF ABL:Ａ拡張 >= 4
+			PRINTFORML %CALLNAME:TARGET%の肛門はぽっかり口を開いている…
+		ELSE
+			PRINTFORML %CALLNAME:TARGET%の肛門は拡がったままなかなか戻らない…
+		ENDIF
+	ENDIF
+ELSEIF SELECTCOM == 143
+	IF CHECK("両穴フィスト") && COND("指の使用") && RAND:3
+		PRINTFORML %CALLNAME:TARGET%は余韻を味わっている。
+		PRINTFORML 両手の指が、すっかり拡がって中身を曝している、膣口と肛門の周りを撫で回している…
+	ELSEIF ABL:Ａ拡張 >= ABL:Ａ使い || ABL:Ｖ拡張 >= ABL:Ｖ使い
+		PRINTFORML %CALLNAME:TARGET%は両足を広げぐったりしている。
+		PRINTFORML 拡がりきった膣口と肛門からは粘液が垂れ流しだ…
+	ENDIF
+ENDIF
+
+;--------------------------------------------------------
+;ドラ姦
+;--------------------------------------------------------
+IF SELECTCOM == 304 || SELECTCOM == 305
+	;TEQUIP:押し倒し > 0 なら逆ドラ姦
+	SIF TEQUIP:押し倒し + TEQUIP:PLAYER:押し倒し
+		SWAP PLAYER, TARGET
+
+	IF SELECTCOM == 305
+		LOCAL = ABL:Ａ拡張
+	ELSE
+		LOCAL = ABL:Ｖ拡張
+	ENDIF
+
+	IF SELECTCOM == 305
+		IF CHECK("Ａ竜姦") == 0
+			;拡張経験が少しはある
+			IF LOCAL >= 3
+				IF COND("指の使用") && RAND:3 == 0
+					PRINTFORML %CALLNAME:TARGET%はぽっかりと口を開けている肛門を無言で触っている…
+				ELSEIF RAND:2 == 0
+					PRINTFORML 拡がったままなかなか戻らない肛門に、%CALLNAME:TARGET%の顔が歪む
+				ELSE
+					PRINTFORML 激しい行為に%CALLNAME:TARGET%は荒い呼吸を繰り返している
+				ENDIF
+			ELSE
+				IF COND("指の使用") && RAND:4 == 0
+					PRINTFORML %CALLNAME:TARGET%は自らのアナルに触り、何事か呟いている…
+				ELSEIF RAND:3 == 0
+					PRINTFORML %CALLNAME:TARGET%の全身は脱力し、瞳には生気がない…
+				ELSEIF RAND:2 == 0
+					PRINTFORML %CALLNAME:TARGET%はあまりの苦痛に気を失ったようだ…
+				ELSE
+					PRINTFORML %CALLNAME:TARGET%の股間は見るも無残な状態だ…
+				ENDIF
+			ENDIF
+		ELSEIF LOCAL > SIZE("ドラゴン") && RAND:3
+			IF COND("指の使用") && RAND:3 == 0
+				PRINTFORML %CALLNAME:TARGET%は、自分の肛門を指で拡げ、恍惚としている
+			ELSEIF COND("指の使用") && RAND:2 == 0
+				PRINTFORML ペニスの抜かれた肛門は拡がったままなかなか戻らない。
+				PRINTFORML %CALLNAME:TARGET%の手はその隙間を埋めるかのように伸びていた…
+			ELSE
+				PRINTFORML 侵入者の去った肛門はぽっかり口を開いている。
+				PRINTFORML %CALLNAME:TARGET%は物足りないかのように引き抜かれたペニスを見つめていた…
+			ENDIF
+		ELSE
+			IF COND("指の使用") && RAND:2 == 0
+				PRINTFORML %CALLNAME:TARGET%はぽっかりと口を開けている肛門をいとおしそうに触れている…
+			ELSE
+				PRINTFORML %CALLNAME:TARGET%は脱力して余韻に浸っている…
+			ENDIF
+		ENDIF
+	ELSE
+		IF CHECK("Ｖ竜姦") == 0
+			;拡張経験が少しはある
+			IF LOCAL >= 3
+				IF COND("指の使用") && RAND:3 == 0
+					PRINTFORML %CALLNAME:TARGET%はぽっかりと口を開けている膣を無言で撫でている…
+				ELSEIF RAND:2 == 0
+					PRINTFORML 拡がったままなかなか戻らない膣に、%CALLNAME:TARGET%の顔が歪む…
+				ELSE
+					PRINTFORML 激しい行為に%CALLNAME:TARGET%は荒い呼吸を繰り返している…
+				ENDIF
+			ELSE
+				IF COND("指の使用") && RAND:4 == 0
+					PRINTFORML %CALLNAME:TARGET%は自らの膣口に触り、何事か呟いている…
+				ELSEIF RAND:3 == 0
+					PRINTFORML %CALLNAME:TARGET%の全身は脱力し、瞳には生気がない…
+				ELSEIF RAND:2 == 0
+					PRINTFORML %CALLNAME:TARGET%はあまりの苦痛に気を失ったようだ…
+				ELSE
+					PRINTFORML %CALLNAME:TARGET%の股間は見るも無残な状態だ…
+				ENDIF
+			ENDIF
+		ELSEIF LOCAL > SIZE("ドラゴン") && RAND:3
+			IF COND("指の使用") && RAND:3 == 0
+				PRINTFORML %CALLNAME:TARGET%は、自分の膣口を指で拡げ、恍惚としている…
+			ELSEIF COND("指の使用") && RAND:2 == 0
+				PRINTFORML ペニスの抜かれた膣は拡がったままなかなか戻らない。
+				PRINTFORML %CALLNAME:TARGET%の手はその隙間を埋めるかのように伸びていた…
+			ELSE
+				PRINTFORML 侵入者の去った膣はぽっかり口を開いている。
+				PRINTFORML %CALLNAME:TARGET%は物足りないかのように引き抜かれたペニスを見つめていた…
+			ENDIF
+		ELSE
+			IF COND("指の使用") && RAND:2 == 0
+				PRINTFORML %CALLNAME:TARGET%はぽっかりと口を開けたままの膣をいとおしそうに触れている…
+			ELSE
+				PRINTFORML %CALLNAME:TARGET%は脱力して余韻に浸っている…
+			ENDIF
+		ENDIF
+	ENDIF
+
+	SIF TEQUIP:押し倒し + TEQUIP:PLAYER:押し倒し
+		SWAP PLAYER, TARGET
+
+	TFLAG:16 = 2
+	CALL KOJO_MESSAGE_COM
+	TFLAG:16 = 0
+ENDIF

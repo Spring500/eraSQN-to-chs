@@ -1,0 +1,636 @@
+﻿;-------------------------------------------------
+;パンツを穿かせる関数
+;指定番号によって名前がCSTR:40に代入される。
+;99番までは、その番号の夢魔の下着。
+;EQUIP:パンツはパンツの特徴フラグ。ビット管理する
+;-------------------------------------------------
+@SET_PANTIES, ARG, ARG:1, ARG:2
+;ARGのパンツをARG:1番のものにする。ARG:1==0ならパンツを脱がす
+;ARG:2はブラセットフラグ。==1なら見合ったブラをつける
+;汚れ＆ずれたりしたフラグ等を初期化して新品にする
+STAIN:ARG:パンツ = 0
+TCVAR:ARG:26 = 0
+SIF TALENT:ARG:オトコ
+	ARG:2 = 0
+
+IF ARG:1 == 0
+	EQUIP:ARG:パンツ = 0
+	CSTR:ARG:40 = 
+	RETURN 0
+ENDIF
+
+;足が使えない
+IF COND("脚の使用", ARG) == 0
+	EQUIP:ARG:パンツ = 0
+	CSTR:ARG:40 = 
+	CALL SET_BRA, ARG, ARG:1
+ELSE
+	;名前とEQUIPを記録
+	CSTR:ARG:40 = %PALAM_PANTIES(ARG:1, ARG, 1)%
+	;Ｈなパンツはリネーム
+	SIF CHECK_PANTIES("超Ｈ", ARG)
+		CALL RENAME_PANTIES, ARG
+	;ブラもつける？
+	IF ARG:2
+		CALL SET_BRA, ARG, ARG:1
+		;素材などを揃える
+		IF CHECK_PANTIES("シースルー", ARG)
+			EQUIP:ARG:ブラ |= SETFLAG_COMMON("シースルー")
+		ELSEIF CHECK_BRA("シースルー", ARG)
+			EQUIP:ARG:ブラ -= SETFLAG_COMMON("シースルー")
+		ENDIF
+		IF CHECK_PANTIES("レース", ARG)
+			EQUIP:ARG:ブラ |= SETFLAG_COMMON("レース")
+		ELSEIF CHECK_BRA("レース", ARG)
+			EQUIP:ARG:ブラ -= SETFLAG_COMMON("レース")
+		ENDIF
+		IF CHECK_PANTIES("シルク", ARG)
+			EQUIP:ARG:ブラ |= SETFLAG_COMMON("シルク")
+		ELSEIF CHECK_BRA("シルク", ARG)
+			EQUIP:ARG:ブラ -= SETFLAG_COMMON("シルク")
+		ENDIF
+		;色をそろえる
+		CALL SAME_COLOR, ARG, 40, 41
+		;Ｈなブラはリネーム
+		SIF CHECK_BRA("超Ｈ", ARG)
+			CALL RENAME_BRA, ARG
+	ENDIF
+ENDIF
+
+IF EQUIP:ARG:パンツ && EQUIP:ARG:ボディスーツ
+	IF CHECK_BODYS("Ｔフロント", ARG) && !CHECK_PANTIES("Ｔフロント", ARG)
+		CALL SET_BODYS, ARG
+	ELSEIF CHECK_BODYS("ハイレグ", ARG) && !CHECK_PANTIES("食い込み", ARG)
+		CALL SET_BODYS, ARG
+	ELSEIF CHECK_BODYS("Ｔバック", ARG) && !CHECK_PANTIES("Ｔバック", ARG)
+		CALL SET_BODYS, ARG
+	ELSEIF CHECK_BODYS("Ｖバック", ARG) && !CHECK_PANTIES("Ｔバック", ARG) && !CHECK_PANTIES("Ｖバック", ARG)
+		CALL SET_BODYS, ARG
+	ENDIF
+ENDIF
+IF EQUIP:ARG:パンツ && EQUIP:ARG:アウター
+	IF CHECK_OUTER("パンスト", ARG)
+	ELSEIF CHECK_OUTER("Ｔフロント", ARG) && !CHECK_PANTIES("Ｔフロント", ARG)
+		CALL SET_OUTER, ARG
+	ELSEIF CHECK_OUTER("ハイレグ", ARG) && !CHECK_PANTIES("食い込み", ARG)
+		CALL SET_OUTER, ARG
+	ELSEIF CHECK_OUTER("Ｔバック", ARG) && !CHECK_PANTIES("Ｔバック", ARG)
+		CALL SET_OUTER, ARG
+	ELSEIF CHECK_OUTER("Ｖバック", ARG) && !CHECK_PANTIES("Ｔバック", ARG) && !CHECK_PANTIES("Ｖバック", ARG)
+		CALL SET_OUTER, ARG
+	ENDIF
+ENDIF
+
+TCVAR:ARG:26 = 0
+RETURN ARG:1
+;-------------------------------------------------
+;ARGの穿いているパンツの名前。ARG:1==0なら正式名称 by CSTR。ARG:1==1なら短縮名称 by EQUIP。
+;-------------------------------------------------
+@PANTIES(ARG, ARG:1)
+#FUNCTIONS
+SELECTCASE ARG:1
+CASE 0
+	LOCALS = %CSTR:ARG:40%
+	SIF CONFIG("衣装の細かい色表示の禁止")
+		RETURNF LOCALS
+	LOCALS:1 = %TEXTS("衣装の色", EQUIP:ARG:パンツ)%
+	SIF LOCALS:1 != "" && (SUBSTRING(CSTR:ARG:40, 0, 2) != SUBSTRING(LOCALS:1, 0, 2) )
+		LOCALS = %LOCALS%(%LOCALS:1%)
+CASE 1
+	IF CHECK_PANTIES("ボクサーパンツ", ARG)
+		LOCALS = ボクサーパンツ
+	ELSEIF CHECK_PANTIES("ブリーフ", ARG)
+		LOCALS = ブリーフ
+	ELSEIF CHECK_PANTIES("トランクス", ARG)
+		LOCALS = トランクス
+	ELSEIF CHECK_PANTIES("褌", ARG)
+		LOCALS = 褌
+	;ビキニって呼称は上下合わせないとちょっと微妙かも
+	;ELSEIF CHECK_PANTIES("水着", ARG)
+	;	LOCALS = ビキニ
+	ELSEIF CHECK_PANTIES("スパッツ", ARG)
+		LOCALS = スパッツ
+	ELSEIF CHECK_PANTIES("ドロワーズ", ARG)
+		LOCALS = ドロワーズ
+	ELSEIF CHECK_PANTIES("Ｃストリング", ARG)
+		LOCALS = Ｃストリング
+	;ELSEIF CHECK_PANTIES("前貼り", ARG)
+	;	LOCALS = 前貼り
+	;ELSEIF CHECK_PANTIES("絆創膏", ARG)
+	;	LOCALS = 絆創膏
+	ELSE
+		LOCALS = パンツ
+	ENDIF
+ENDSELECT
+RETURNF LOCALS
+
+;-------------------------------------------------
+;ARG番のパンツの正式名称
+;ARG:1 > 0ならARG:1はキャラ番号として働く
+;-------------------------------------------------
+@NAME_PANTIES(ARG, ARG:1)
+#FUNCTIONS
+LOCALS = %PALAM_PANTIES(ARG, ARG:1)%
+RETURNF LOCALS
+
+;-------------------------------------------------
+;bit値に応じてキャラARGの穿いているパンツの名前をリネーム
+;主にＨなパンツ用
+;-------------------------------------------------
+@RENAME_PANTIES, ARG
+SIF ARG < 0
+	RETURN 0
+SIF ARG == 0 && TARGET
+	ARG = TARGET
+SIF EQUIP:ARG:パンツ == 0
+	RETURN 0
+
+VARSET LOCALS
+IF CHECK_PANTIES("レース", ARG)
+	SELECTCASE TEXTS("衣装の色", EQUIP:ARG:パンツ)
+	CASE "黒", "紫"
+		LOCALS = %TEXTS("衣装の色", EQUIP:ARG:パンツ)%レースパンツ
+	CASEELSE
+		LOCALS = レースのパンツ
+	ENDSELECT
+ELSEIF CHECK_PANTIES("シルク", ARG)
+	LOCALS = シルクの下着
+ELSEIF CHECK_PANTIES("マイクロ", ARG)
+	LOCALS = マイクロショーツ
+ELSEIF CHECK_PANTIES("Ｇストリング", ARG)
+	LOCALS = Ｇストリング
+ELSEIF CHECK_PANTIES("タンガ", ARG)
+	LOCALS = タンガ
+ELSEIF CHECK_PANTIES("紐", ARG)
+	IF CHECK_PANTIES("ハイレグ", ARG)
+		LOCALS = ハイレグ紐パン
+	ELSEIF CHECK_PANTIES("Ｔバック", ARG)
+		LOCALS = Ｔバック紐パン
+	ELSEIF CHECK_PANTIES("ローレグ", ARG)
+		LOCALS = ローレグ紐パン
+	ELSE
+		LOCALS = 紐パン
+	ENDIF
+ELSEIF CHECK_PANTIES("ハイレグ", ARG)
+	LOCALS = ハイレグ
+ELSEIF CHECK_PANTIES("Ｔバック", ARG)
+	LOCALS = Ｔバック
+ELSEIF CHECK_PANTIES("ローレグ", ARG)
+	LOCALS = ローレグ
+ELSEIF CHECK_PANTIES("ローライズ", ARG)
+	LOCALS = ローライズ
+ELSEIF CHECK_PANTIES("シースルー", ARG)
+	LOCALS = シースルーパンツ
+ENDIF
+
+SIF CHECK_PANTIES("シースルー", ARG) && LOCALS != "シースルーパンツ"
+	LOCALS = %LOCALS%(透)
+
+SIF STRLENS(LOCALS)
+	CSTR:ARG:40 = %LOCALS%
+
+;-------------------------------------------------
+;ARG番のパンツの詳細パラ
+;ARG:1 > 0ならARG:1はキャラ番号として働き、ARG:1 > 0 && ARG:2 > 0ならEQUIPを定める
+;-------------------------------------------------
+@PALAM_PANTIES(ARG, ARG:1, ARG:2)
+#FUNCTIONS
+VARSET LOCAL
+VARSET LOCALS
+IF ARG:1 > 0 && COND("脚の使用", ARG:1) == 0
+	SIF ARG:2 > 0
+		EQUIP:(ARG:1):パンツ = LOCAL
+	RETURNF LOCALS
+ENDIF
+
+SELECTCASE ARG
+CASE 1
+	IF CFLAG:(ARG:1):8 == 2
+		LOCALS = 淫魔のビキニ
+		LOCAL = SETFLAG_PANTIES("水着", "Ｇストリング", "紐", "黒")
+	ELSEIF CFLAG:(ARG:1):8 == 3
+		LOCALS = 淫魔のビキニ
+		LOCAL = SETFLAG_PANTIES("水着", "Ｇストリング", "紐", "黒")
+	ELSE
+		LOCALS = 淫魔のビキニ
+		LOCAL = SETFLAG_PANTIES("水着", "Ｇストリング", "紐", "紫")
+	ENDIF
+CASE 4
+	IF CFLAG:(ARG:1):8 == 3
+		LOCALS = ドロワーズ
+		LOCAL = SETFLAG_PANTIES("ドロワーズ", "フリル", "紫")
+	ELSE
+		LOCALS = ドロワーズ
+		LOCAL = SETFLAG_PANTIES("ドロワーズ", "フリル", "純白")
+	ENDIF
+CASE 6
+	IF CFLAG:(ARG:1):8 == 2
+		LOCALS = 魔猫のパンツ
+		LOCAL = SETFLAG_PANTIES("Ｖバック", "ローライズ", "毛皮", "青")
+	ELSEIF CFLAG:(ARG:1):8 == 3
+		LOCALS = 魔猫のパンツ
+		LOCAL = SETFLAG_PANTIES("Ｖバック", "ローライズ", "毛皮", "黒")
+	ELSEIF CFLAG:(ARG:1):8 == 4
+		LOCALS = 魔猫のパンツ
+		LOCAL = SETFLAG_PANTIES("Ｖバック", "ローライズ", "毛皮", "黄")
+	ELSE
+		LOCALS = 魔猫のパンツ
+		LOCAL = SETFLAG_PANTIES("Ｖバック", "ローライズ", "毛皮")
+	ENDIF
+CASE 7
+	IF TALENT:(ARG:1):四足歩行 == 0
+		LOCALS = 人狼のレザーパンツ
+		LOCAL = SETFLAG_PANTIES("タンガ", "レザー", "黒")
+	ENDIF
+CASE 8, 9, 32, 45, 52, 56, 59, 96
+	LOCALS = パンツ
+	LOCAL = SETFLAG_PANTIES("大人しめ")
+CASE 11
+	IF CFLAG:(ARG:1):8 == 2
+		LOCALS = 紐パン
+		LOCAL = SETFLAG_PANTIES("紐", "シルク", "純白")
+	ENDIF
+CASE 18
+	LOCALS = 網目パンツ
+	LOCAL = SETFLAG_PANTIES("タンガ", "レース", "シルク", "黒")
+CASE 20, 21
+	IF PENIS(ARG:1)
+		LOCALS = パンツ
+		LOCAL = SETFLAG_PANTIES("清楚")
+	ENDIF
+CASE 22
+	LOCALS = 褌
+	LOCAL = SETFLAG_PANTIES("ふんどし")
+CASE 23, 58
+	LOCALS = セクシーパンツ
+	LOCAL = SETFLAG_PANTIES("ハイレグ", "Ｔバック", "フリル", "黒")
+CASE 24
+	LOCALS = 紐パン
+	LOCAL = SETFLAG_PANTIES("紐", "シルク", "純白")
+CASE 25
+	LOCALS = Ｔバック
+	LOCAL = SETFLAG_PANTIES("紐", "Ｔバック", "透け", "シルク", "赤")
+CASE 26
+	LOCALS = タンガ
+	LOCAL = SETFLAG_PANTIES("タンガ", "薄緑")
+CASE 31
+	LOCALS = パンツ
+	LOCAL = SETFLAG_PANTIES("ローライズ", "橙")
+CASE 33
+	IF CFLAG:(ARG:1):8 == 4
+		LOCALS = 黒パンツ
+		LOCAL = SETFLAG_PANTIES("ローライズ", "フリル", "黒")
+	ELSE
+		LOCALS = 薄桃色のパンツ
+		LOCAL = SETFLAG_PANTIES("ローライズ", "フリル", "薄桃")
+	ENDIF
+CASE 34
+	LOCALS = 群青のビキニ
+	LOCAL = SETFLAG_PANTIES("水着", "Ｇストリング", "紐", "薄青")
+CASE 35
+	LOCALS = 真紅のスキャンティ
+	LOCAL = SETFLAG_PANTIES("ローレグ", "紐", "真紅")
+CASE 38
+	LOCALS = 新緑のビキニ
+	LOCAL = SETFLAG_PANTIES("水着", "Ｇストリング", "紐", "薄緑")
+CASE 39
+	LOCALS = マイクロビキニ
+	LOCAL = SETFLAG_PANTIES("水着", "マイクロ", "紐", "青")
+CASE 40
+	LOCALS = 橙色のボーイレッグ
+	LOCAL = SETFLAG_PANTIES("シルク", "橙")
+CASE 47
+	LOCALS = Ｈな下着
+	LOCAL = SETFLAG_PANTIES("Ｈ", "超Ｈ")
+CASE 49
+	LOCALS = 清楚なパンツ
+	LOCAL = SETFLAG_PANTIES("シルク", "清楚")
+CASE 50
+	LOCALS = 黒パンツ
+	LOCAL = SETFLAG_PANTIES("黒")
+CASE 54
+	LOCALS = 勝負下着
+	LOCAL = SETFLAG_PANTIES("Ｈ", "超Ｈ")
+CASE 55
+	LOCALS = ドロワーズ
+	LOCAL = SETFLAG_PANTIES("ドロワーズ", "純白")
+CASE 57
+	LOCALS = パンツ
+	LOCAL = SETFLAG_PANTIES("ちょっとＨ")
+CASE 61
+	LOCALS = ハイレグ
+	LOCAL = SETFLAG_PANTIES("ハイレグ")
+CASE 94
+	LOCALS = ブリーフ
+	LOCAL = SETFLAG_PANTIES("ブリーフ")
+CASE 100
+	LOCALS = 縞々パンツ
+	LOCAL = SETFLAG_PANTIES("縞々", "縞々色")
+CASE 101
+	LOCALS = 黒レースパンツ
+	LOCAL = SETFLAG_PANTIES("レース", "シースルー", "黒")
+CASE 102
+	LOCALS = フリルパンツ
+	LOCAL = SETFLAG_PANTIES("フリル", "大人しめの色")
+CASE 103
+	LOCALS = 紐パン
+	LOCAL = SETFLAG_PANTIES("紐", "清楚")
+CASE 104
+	LOCALS = Ｔバック
+	LOCAL = SETFLAG_PANTIES("Ｔバック", "ちょっとＨ")
+CASE 105
+	LOCALS = ローライズ
+	LOCAL = SETFLAG_PANTIES("ローライズ", "大人しめの色")
+CASE 106
+	LOCALS = シースルーパンツ
+	LOCAL = SETFLAG_PANTIES("シースルー", "清楚")
+CASE 107
+	LOCALS = ハイレグ
+	LOCAL = SETFLAG_PANTIES("ハイレグ", "ちょっとＨ")
+CASE 108
+	LOCALS = レザーパンツ
+	LOCAL = SETFLAG_PANTIES("タンガ", "レザー", "ファスナー")
+CASE 109
+	LOCALS = ローレグ
+	LOCAL = SETFLAG_PANTIES("ローレグ", "大人しめの色")
+CASE 110
+	IF ITEM:ビキニ
+		LOCALS = ビキニ
+		LOCAL = SETFLAG_PANTIES("水着", "タンガ", "紐")
+	ENDIF
+CASE 111
+	IF ITEM:ビキニ
+		LOCALS = ミニマルビキニ
+		LOCAL = SETFLAG_PANTIES("水着", "マイクロ", "紐")
+	ENDIF
+CASE 112
+	LOCALS = レースのパンツ
+	LOCAL = SETFLAG_PANTIES("レース", "Ｖバック", "清楚")
+CASE 113
+	LOCALS = スキャンティ
+	LOCAL = SETFLAG_PANTIES("マイクロ")
+	SIF RAND:2
+		LOCAL += SETFLAG_PANTIES("紐")
+CASE 114
+	LOCALS = Ｃストリング
+	LOCAL = SETFLAG_PANTIES("Ｃストリング", "コキ不可")
+CASE 115
+	LOCALS = 褌
+	LOCAL = SETFLAG_PANTIES("ふんどし")
+;以下は保留
+;CASE 116
+;	LOCALS = 前貼り
+;	LOCAL = SETFLAG_PANTIES("前貼り", "コキ不可")
+;CASE 117
+;	LOCALS = 絆創膏
+;	LOCAL = SETFLAG_PANTIES("絆創膏", "コキ不可")
+;CASE 118
+;	LOCALS = 腰巻
+;	LOCAL = SETFLAG_PANTIES("腰巻")
+
+CASE 120
+	LOCALS = ボクサーパンツ
+	LOCAL = SETFLAG_PANTIES("ボクサーパンツ")
+CASE 121
+	LOCALS = ブリーフ
+	LOCAL = SETFLAG_PANTIES("ブリーフ")
+CASE 122
+	LOCALS = トランクス
+	LOCAL = SETFLAG_PANTIES("トランクス")
+
+CASE 130
+	LOCALS = Ｈなパンツ
+	LOCAL = SETFLAG_PANTIES("Ｈ", "超Ｈ")
+
+;大人しめ
+;CASE 131
+;	LOCAL = SETFLAG_PANTIES("大人しめ")
+;清楚
+;CASE 132
+;	LOCAL = SETFLAG_PANTIES("清楚")
+;子供
+;CASE 134
+;少女
+;CASE 135
+;お姉さん
+;CASE 136
+;オトナ
+;CASE 137
+
+;オトコ
+;CASE 139
+
+CASE 140
+	LOCALS = 貞操帯
+	LOCAL = SETFLAG_PANTIES("レザー", "貞操帯", "通気性無し")
+ENDSELECT
+
+SIF ARG:1 > 0 && ARG:2 > 0
+	EQUIP:(ARG:1):パンツ = LOCAL
+
+RETURNF LOCALS
+
+;-------------------------------------------------
+;指示されたとおりのパンツのフラグを設定するために使う
+;-------------------------------------------------
+@SETFLAG_PANTIES(ARGS:1, ARGS:2, ARGS:3, ARGS:4, ARGS:5, ARGS:6, ARGS:7, ARGS:8, ARGS:9, ARGS:10)
+#FUNCTION
+#DIM LCOUNT
+
+LOCAL = 0
+FOR LCOUNT, 1, 11
+	ARGS = %ARGS:LCOUNT%
+	SELECTCASE ARGS
+	CASE "紐"
+		SETBIT LOCAL, 0
+	CASE "ハイレグ"
+		SETBIT LOCAL, 1
+	CASE "Ｔフロント", "Tフロント"
+		SETBIT LOCAL, 2
+	CASE "Ｖバック", "Vバック"
+		SETBIT LOCAL, 3
+	CASE "Ｔバック", "Tバック"
+		SETBIT LOCAL, 4
+	CASE "ローライズ"
+		SETBIT LOCAL, 5
+	CASE "ローレグ"
+		SETBIT LOCAL, 6
+	CASE "スパッツ"
+		SETBIT LOCAL, 7
+	CASE "ドロワーズ"
+		SETBIT LOCAL, 8
+	CASE "褌", "フンドシ", "ふんどし"
+		SETBIT LOCAL, 9
+	CASE "超Ｈ"
+		SETBIT LOCAL, 10
+	CASE "貞操帯"
+		SETBIT LOCAL, 11
+		LOCAL |= SETFLAG_COMMON("ずれ不可", "コキ不可", "脱衣不可", "Ａ露出")
+	CASE "ボクサーパンツ"
+		SETBIT LOCAL, 12
+		LOCAL |= SETFLAG_COMMON("ずれ不可")
+	CASE "ブリーフ"
+		SETBIT LOCAL, 13
+		LOCAL |= SETFLAG_COMMON("ずれ不可")
+	CASE "トランクス"
+		SETBIT LOCAL, 14
+		LOCAL |= SETFLAG_COMMON("ずれ不可")
+	CASE "Ｃストリング"
+		SETBIT LOCAL, 2
+		SETBIT LOCAL, 4
+		SETBIT LOCAL, 15
+		LOCAL |= SETFLAG_COMMON("ずれ不可", "コキ不可")
+	;ハイレグ+Ｖバック
+	CASE "タンガ"
+		SETBIT LOCAL, 1
+		SETBIT LOCAL, 3
+	;ハイレグ+Ｔバック+ローライズ
+	CASE "Ｇストリング", "Gストリング", "Ｇスト", "Gスト"
+		SETBIT LOCAL, 1
+		SETBIT LOCAL, 4
+		SETBIT LOCAL, 5
+	;ハイレグ+Ｔバック+ローレグ
+	CASE "マイクロ"
+		SETBIT LOCAL, 1
+		SETBIT LOCAL, 4
+		SETBIT LOCAL, 6
+	;オートパンツ
+	CASE "大人しめ"
+		SIF RAND:4 == 0
+			SETBIT LOCAL, 5
+		LOCAL |= SETFLAG_COMMON("大人しめの色")
+	CASE "清楚"
+		SIF RAND:3 == 0
+			SETBIT LOCAL, 0
+		SIF RAND:3 == 0
+			LOCAL |= SETFLAG_COMMON("フリル")
+		SIF RAND:3 == 0
+			LOCAL |= SETFLAG_COMMON("シルク")
+		IF RAND:3
+			LOCAL |= SETFLAG_COMMON("純白")
+		ELSE
+			LOCAL |= SETFLAG_COMMON("大人しめの色")
+		ENDIF
+	CASE "ちょっとＨ"
+		SIF RAND:3
+			SETBIT LOCAL, 0
+		SIF RAND:3
+			SETBIT LOCAL, 1
+		SIF RAND:3
+			SETBIT LOCAL, 3+RAND:2
+		SIF RAND:3
+			SETBIT LOCAL, 6
+		LOCAL |= SETFLAG_COMMON("Ｈめの色")
+	CASE "Ｈ"
+		SIF RAND:3
+			SETBIT LOCAL, 0
+		SIF RAND:4
+			SETBIT LOCAL, 1
+		SIF RAND:4 || GETBIT(LOCAL, 1) == 0
+			SETBIT LOCAL, 3+RAND:2
+		SIF RAND:4
+			SETBIT LOCAL, 5+RAND:2
+		SIF RAND:5 == 0
+			LOCAL |= SETFLAG_COMMON("シルク")
+		SIF RAND:5 == 0
+			LOCAL |= SETFLAG_COMMON("レース")
+		IF RAND:4 == 0
+			LOCAL |= SETFLAG_COMMON("シースルー")
+		ELSEIF RAND:2 || GETBITS(LOCAL, 1, 4) == 0
+			IF RAND:5 == 0
+				LOCAL |= SETFLAG_COMMON("ファスナー")
+			ELSEIF RAND:4 == 0
+				LOCAL |= SETFLAG_COMMON("スリット")
+			ELSEIF RAND:3 == 0
+				LOCAL |= SETFLAG_COMMON("Ｖ露出")
+			ELSEIF RAND:2
+				LOCAL |= SETFLAG_COMMON("Ａ露出")
+				CLEARBIT LOCAL, 4
+			ELSE
+				LOCAL |= SETFLAG_COMMON("ＶＡ露出")
+				CLEARBIT LOCAL, 4
+			ENDIF
+		ENDIF
+		LOCAL |= SETFLAG_COMMON("Ｈめの色")
+	CASEELSE
+		SIF STRLENS(ARGS)
+			LOCAL |= SETFLAG_COMMON(ARGS)
+	ENDSELECT
+	SIF STRLENS(ARGS:(LCOUNT + 1) ) == 0
+		RETURNF LOCAL
+NEXT
+RETURNF LOCAL
+
+;-------------------------------------------------
+;ARGのパンツが条件ARGSを満たすか確認する
+;-------------------------------------------------
+@CHECK_PANTIES(ARGS, ARG)
+#FUNCTION
+SIF ARG == 0 && TARGET
+	ARG = TARGET
+SIF EQUIP:ARG:パンツ == 0
+	RETURNF 0
+SELECTCASE ARGS
+;ずれ不可でなく、ずらしていない
+CASE "ずらし可", "ずらせる"
+	;SIF SETFLAG_PANTIES("Ｖ露出")&EQUIP:ARG:パンツ
+	;	RETURNF 0
+	IF SETFLAG_PANTIES("ファスナー")&EQUIP:ARG:パンツ
+		SIF SETFLAG_PANTIES("ファスナー開")&EQUIP:ARG:パンツ
+			RETURNF 0
+		SIF CHECK_PANTIES("ファスナー閉")
+			RETURNF 1
+	ENDIF
+	SIF SETFLAG_PANTIES("ずらした")&EQUIP:ARG:パンツ
+		RETURNF 0
+	SIF SETFLAG_PANTIES("ずれ不可")&EQUIP:ARG:パンツ
+		RETURNF 0
+	RETURNF 1
+;ファスナーがあり、あけていない
+CASE "ファスナー閉"
+	SIF SETFLAG_PANTIES("ファスナー開")&EQUIP:ARG:パンツ
+		RETURNF 0
+	SIF SETFLAG_PANTIES("ファスナー")&EQUIP:ARG:パンツ
+		RETURNF 1
+CASE "クロッチ"
+	SIF SETFLAG_PANTIES("ファスナー開", "ずらした", "破いた", "Ｖ露出", "スリット")&EQUIP:ARG:パンツ
+		RETURNF 0
+	RETURNF 1
+CASE "Ａクロッチ"
+	SIF SETFLAG_PANTIES("ファスナー開", "ずらした", "破いた", "Ａ露出", "スリット")&EQUIP:ARG:パンツ
+		RETURNF 0
+	RETURNF 1
+CASE "食い込み"
+	SIF SETFLAG_PANTIES("ずらした", "ファスナー開", "Ｖ露出", "スリット", "破いた")&EQUIP:ARG:パンツ
+		RETURNF 0
+	SIF SETFLAG_PANTIES("ハイレグ", "Ｔフロント")&EQUIP:ARG:パンツ
+		RETURNF 1
+CASE "Ｈ"
+	SIF SETFLAG_PANTIES("シースルー", "ハイレグ", "Ｔバック", "ファスナー", "スリット")&EQUIP:ARG:パンツ
+		RETURNF 1
+CASE "マイクロ"
+	SIF !(SETFLAG_PANTIES("ハイレグ")&EQUIP:ARG:パンツ)
+		RETURNF 0
+	SIF !(SETFLAG_PANTIES("Ｔバック")&EQUIP:ARG:パンツ)
+		RETURNF 0
+	SIF !(SETFLAG_PANTIES("ローレグ")&EQUIP:ARG:パンツ)
+		RETURNF 0
+	RETURNF 1
+CASE "蒸れ"
+	SIF SETFLAG_PANTIES("ずらした", "ファスナー開", "Ｖ露出", "スリット", "破いた")&EQUIP:ARG:パンツ
+		RETURNF 0
+	SIF CHECK_STAIN(STAIN:ARG:パンツ, "蒸れ")
+		RETURNF 1
+CASE "染み"
+	SIF SETFLAG_PANTIES("ずらした", "ファスナー開", "Ｖ露出", "スリット", "破いた", "通気性無し")&EQUIP:ARG:パンツ
+		RETURNF 0
+	SIF CHECK_STAIN(STAIN:ARG:パンツ, "濡れ")
+		RETURNF 1
+CASE "男物"
+	SIF SETFLAG_PANTIES("ボクサーパンツ", "ブリーフ", "トランクス")&EQUIP:ARG:パンツ
+		RETURNF 1
+CASEELSE
+	SIF (SETFLAG_PANTIES(ARGS)&EQUIP:ARG:パンツ) == SETFLAG_PANTIES(ARGS)
+		RETURNF 1
+ENDSELECT
+RETURNF 0

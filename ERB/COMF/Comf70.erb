@@ -1,0 +1,263 @@
+﻿@COM70
+;正常位アナル
+CALL PRINT_TRAIN_NAME(SELECTCOM)
+
+CALL TRAIN_MESSAGE_B
+
+SIF REFUSE_CHECK()
+	RETURN 0
+
+STR:0 = %STR:2%
+
+;-------------------------------------------------
+;射精チェック
+;-------------------------------------------------
+CALL SAMEN_CHECK
+
+RETURN 1
+
+@FLAG_COM70, ARG
+CALL FLAG_INSERTION, "Ａインサート", ARG, 100
+
+@SOURCE_COM70, ARG
+CALL SOURCE_INSERTION, "Ａインサート", ARG, 100
+
+VARSET LOCAL
+
+LOCAL:12 = 1000
+
+;ABL:Ａ感覚をみる
+SELECTCASE ABL:Ａ感覚
+CASE 0
+	LOCAL:3 = 20
+CASE 1
+	LOCAL:3 = 50
+CASE 2
+	LOCAL:3 = 150
+CASE 3
+	LOCAL:3 = 300
+CASE 4
+	LOCAL:3 = 500
+CASEELSE
+	LOCAL:3 = 900
+ENDSELECT
+
+;PALAM:欲情をみる
+SELECTCASE PALAM:欲情
+CASE IS < PALAMLV:1
+	TIMES LOCAL:3 , 0.30
+CASE IS < PALAMLV:2
+	TIMES LOCAL:3 , 0.60
+CASE IS < PALAMLV:3
+	TIMES LOCAL:3 , 1.00
+CASE IS < PALAMLV:4
+	TIMES LOCAL:3 , 1.50
+CASE IS >= PALAMLV:4
+	TIMES LOCAL:3 , 1.80
+ENDSELECT
+
+CALL CALC, "調教ソース", LOCAL:0, LOCAL:1, LOCAL:2, LOCAL:3, LOCAL:4, LOCAL:5, LOCAL:6, LOCAL:7, LOCAL:8, LOCAL:9, LOCAL:10, LOCAL:11, LOCAL:12, LOCAL:13, LOCAL:14, LOCAL:15, LOCAL:16, LOCAL:17, LOCAL:18, LOCAL:19, LOCAL:20, LOCAL:21, ARG
+
+
+@TRAIN_MESSAGE_COM70
+IF CHECK_COM("３Ｐ奉仕")
+	CALL TRAIN_MESSAGE_3P
+ELSEIF INSERT("Ａインサート") && SELECTCOM == PREVCOM && COND("前Ｔ調教者") == PLAYER
+	PRINTFORM %CALLNAME:TARGET%の腰をしっかりと掴み、
+	SIF PENIS(PLAYER) && STATE("ハードスキン", PLAYER)
+		PRINT ガチガチのペニスで
+	PRINTFORMW しゃくりあげる様にして激しくアナルを犯した…
+;前回と今回の調教者が同じで、抜かないフラグがある場合
+ELSEIF INSERT("Ｖインサート") && COND("前Ｔ調教者") == PLAYER
+	IF INSERT("正常位") || INSERT("対面座位")
+		PRINTFORM %NAMES("ペニス", PLAYER)%を膣から引き抜いて、
+		IF INSERT("対面座位") && RAND:2
+			PRINTFORM %CALLNAME:TARGET%を抱きしめたまま、今度は
+		ELSE
+			PRINTFORM %CALLNAME:TARGET%のアソコの下でヒクついている
+		ENDIF
+	ELSEIF INSERT("屈曲位")
+		PRINTFORM 大股を開かせた恥ずかしい体勢のまま、今度は%CALLNAME:TARGET%の
+	ELSE
+		PRINTFORM %CALLNAME:TARGET%を仰向けに寝かせ、膣から引き抜いた%NAMES("ペニス", PLAYER)%で%TEXTS("アナル")%
+	ENDIF
+	PRINTFORMW アナルを犯しはじめた…
+ELSEIF INSERT("Ａインサート") && COND("前Ｔ調教者") == PLAYER
+	IF INSERT("正常位") || INSERT("屈曲位")
+		IF TEQUIP:キス
+			PRINTFORMW %CALLNAME:PLAYER%は%CALLNAME:TARGET%%TEXTS("キス継続助詞付き")%、再び腰を動かし始めた…
+			CALL SETFLAG, "追加キスフラグ", TARGET
+		;調教者がオトコかふたなりである
+		ELSEIF PENIS(PLAYER)
+			PRINTFORMW %CALLNAME:TARGET%の腸内の感触を味わいながら、再び腰を動かし始めた…
+		ELSE
+			PRINTFORMW %CALLNAME:TARGET%のアナルから抜かずに、再び腰を動かし始めた…
+		ENDIF
+	ELSEIF INSERT("後背位")
+		PRINTFORMW 繋がりあったまま%CALLNAME:TARGET%を仰向けに寝かせ、再び腰を動かし始めた…
+	ELSEIF INSERT("対面座位")
+		PRINTFORMW 抱き合ったまま%CALLNAME:TARGET%を押し倒すように寝かせ、再び腰を動かし始めた…
+	ELSEIF INSERT("背面座位")
+		PRINTFORMW アナルから抜き去ることなく%CALLNAME:TARGET%を仰向けに寝かせ、再び腰を動かし始めた…
+	ELSEIF INSERT("騎乗位")
+		PRINTFORMW %CALLNAME:TARGET%と体を入れ替えて仰向けに押し倒し、再び腰を動かし始めた…
+	ENDIF
+ELSE
+	;前回は助手を犯していた
+	IF COND("前Ｔから対象のみ変更") && PREVCOM:1 >= 60 && PREVCOM:1 <= 79
+		CALL TEXT, "追加地の文：穴から穴へ"
+	;アナルが露出していないで、パンツをずらしていないなら自動的にずらす
+	ELSEIF !CHECK_CLO("Ａ露出") && CHECK_CLO("Ａ露出可")
+		SIF TEQUIP:拘束
+			PRINTFORM 拘束されている
+		PRINTFORM %CALLNAME:TARGET%の
+		CALL SETFLAG, "ボトムを露出：テキスト有り", TARGET
+	;アナルセックスに慣れている、かつ欲情LV4以上で縛られてないと寝転がって誘ってきます
+	ELSEIF CHECK("Ａインサート") && PALAM:欲情 >= PALAMLV:4 && TEQUIP:拘束 == 0 && RAND:2 == 0
+		IF PREVCOM == 13
+			PRINT アソコを指で広げて
+		ELSEIF PREVCOM == 14
+			PRINT お尻を指で押し広げて
+		;淫乱
+		ELSEIF (TALENT:淫乱 || ABL:Ａ感覚 >= 3) && RAND:2 == 0
+			PRINT 大事な場所を見せ付けながら
+		ELSEIF RAND:2 == 0
+			PRINT 恥ずかしい所が丸見えの格好で
+		ELSE
+			PRINT 股間をさらけ出した格好で
+		ENDIF
+		;小悪魔
+		IF TALENT:小悪魔 && RAND:3 >= 1
+			PRINT ニヤニヤしている
+		;(反抗的でなくて淫乱) or(反抗的かつ恋慕)
+		ELSEIF  ( (TALENT:淫乱 && TALENT:反抗的 == 0) || (TALENT:反抗的 && TALENT:恋慕) ) && RAND:3 >= 1
+			SIF TALENT:小悪魔 && RAND:2 == 0
+				PRINT 、生意気にも
+			PRINT 誘っている
+		;反抗的かつ淫乱
+		ELSEIF TALENT:反抗的 && TALENT:淫乱
+			PRINT そっぽを向きながら顔を赤くしている
+		;恥じらい
+		ELSEIF TALENT:恥じらい
+			PRINT 恥ずかしそうにしている
+		ELSEIF RAND:2 == 0
+			PRINT 微笑んでいる
+		ELSE
+			PRINT 横たわっている
+		ENDIF
+		PRINTFORM %CALLNAME:TARGET%の
+		;小柄体型かつＡ経験100未満
+		SIF TALENT:小柄体型 && EXP:Ａ経験 < 100
+			PRINT 小さな
+	ELSE
+		;縛ってますか？
+		IF TEQUIP:拘束
+			PRINTFORM 拘束されている%CALLNAME:TARGET%の
+		;ラミアですか？
+		ELSEIF TALENT:ラミア
+			SIF CHECK("Ａインサート") && RAND:2 == 0
+				PRINT 擦り寄ってきた
+			PRINTFORM %CALLNAME:TARGET%の
+		;アナルセックスに慣れているなら誘ってきます
+		ELSEIF CHECK("Ａインサート") && RAND:2 == 0
+			SIF TALENT:恥じらい
+				PRINT 恥ずかしがりながら
+			PRINT 寝転がって脚を緩く開いた体勢をとっ
+			;淫乱かつ欲情4以上
+			IF TALENT:淫乱 && PALAM:欲情 >= PALAMLV:4 && RAND:2 == 0
+				PRINT て、お尻を振りながら誘っている
+			ELSE
+				PRINT た
+			ENDIF
+			PRINTFORM %CALLNAME:TARGET%の
+		ELSE
+			IF TALENT:反抗的 && ABL:Ａ感覚 <= 2 && TALENT:恋慕 == 0
+				PRINT 嫌がる
+			ELSEIF TALENT:恥じらい
+				PRINT 恥ずかしがる
+			ENDIF
+			PRINTFORM %CALLNAME:TARGET%を押し倒して
+			SIF TALENT:恥じらい || (TALENT:反抗的 && ABL:Ａ感覚 <= 2 && TALENT:恋慕 == 0)
+				PRINT 、
+		ENDIF
+		PRINTFORM %TEXTS("アナル")%
+	ENDIF
+	IF RAND:2 == 0
+		PRINT お尻の穴に
+	ELSE
+		PRINT アナルに
+	ENDIF
+	IF COND("前Ｔから対象のみ変更") && PREVCOM:1 >= 60 && PREVCOM:1 <= 79
+	ELSE
+		PRINTFORM %NAMES("ペニス", PLAYER)%を
+	ENDIF
+	;PLAYERがサドかつA経験20以下orＡ潤1LV未満
+	IF (TALENT:PLAYER:サド && EXP:Ａ経験 <= 20) || PALAM:Ａ潤 < PALAMLV:1
+		PRINT 力任せに
+	;PLAYERがサドorアナルセックスに慣れている
+	ELSEIF (CHECK("Ａインサート") || TALENT:PLAYER:サド) && RAND:2 == 0
+		PRINT 一気に
+	ELSEIF RAND:2 == 0 || EXP:Ａ経験 <= EXPLV:3
+		PRINT 慎重に
+	ENDIF
+	;PLAYERがサドorA経験20以上or恋慕かつA感覚Lv3以上
+	SIF TALENT:PLAYER:サド || MIN(EXP:Ａ経験, EXP:Ａ性交経験) >= 20 || (TALENT:恋慕 && ABL:Ａ感覚 >= 3)
+		PRINT 根元まで
+	;PLAYERがサドorＡ潤1LV未満
+	IF TALENT:PLAYER:サド || PALAM:Ａ潤 < PALAMLV:1
+		PRINT 押し込み、
+	ELSE
+		PRINT 挿入し、
+	ENDIF
+
+	IF TEQUIP:キス
+		PRINTFORM 唇を奪いながら
+		CALL SETFLAG, "追加キスフラグ", TARGET
+	ELSEIF TALENT:妊娠 && TALENT:PLAYER:サド
+		PRINT 妊娠していることなど構わずに
+	ELSEIF TALENT:妊娠 && RAND:2 == 0
+		PRINT 大きなお腹をさすりながら
+	ELSEIF TALENT:妊娠
+		PRINT 負担がかからないよう注意しながら
+	ELSEIF RAND:2
+		PRINT 顔を見つめながら
+	;PLAYERがサドorA経験20以上or恋慕かつA感覚Lv3以上
+	ELSEIF TALENT:PLAYER:サド || MIN(EXP:Ａ経験, EXP:Ａ性交経験) >= 20 || (TALENT:恋慕 && ABL:Ａ感覚 >= 3)
+		PRINTFORM \@ TALENT:小柄体型 ? おなか # くびれ\@を掴んで
+	ENDIF
+	;PLAYERがサドor妊娠していない、かつA経験3以上or恋慕かつA感覚Lv4以上
+	IF (TALENT:PLAYER:サド || TALENT:妊娠 == 0) && (MIN(EXP:Ａ経験, EXP:Ａ性交経験) >= 20 || (TALENT:恋慕 && ABL:Ａ感覚 >= 3) ) && RAND:3 == 0
+		PRINT 荒々しく
+	ELSEIF (TALENT:PLAYER:サド || MIN(EXP:Ａ経験, EXP:Ａ性交経験) >= 20 || ABL:Ａ感覚 >= 3 || ABL:PLAYER:腰使い) && SIZE("ペニス", PLAYER) && RAND:2 == 0
+		SIF ABL:PLAYER:腰使い && RAND:2
+			PRINT 入り口から奥まで責める
+		PRINT 大きなストロークで
+	ELSEIF MAX(EXP:Ａ経験, EXP:Ａ性交経験) < 50
+		IF RAND:2 == 0
+			PRINT 浅めに
+		ELSE
+			PRINT ゆっくりと
+		ENDIF
+	ELSE
+		IF RAND:2 == 0
+			PRINT 腸壁を
+			IF RAND:2 == 0 && TALENT:オトコ == 0
+				PRINT 子宮に向かって押し込みつつ
+			ELSE
+				PRINT ゴシゴシ擦りあげつつ
+			ENDIF
+		ELSE
+			PRINT 激しく
+		ENDIF
+	ENDIF
+	;PLAYERがサドorA経験20以上orA感覚Lv3以上
+	IF (TALENT:PLAYER:サド || MIN(EXP:Ａ経験, EXP:Ａ性交経験) >= 20 || ABL:Ａ感覚 >= 3) && RAND:3 == 0
+		PRINTFORMW 腰を打ちつけた…
+	ELSEIF RAND:3 == 0
+		PRINTFORMW 出し入れした…
+	ELSEIF RAND:2 == 0
+		PRINTFORMW 腰を前後させた…
+	ELSE
+		PRINTFORMW 腰を振った…
+	ENDIF
+ENDIF
