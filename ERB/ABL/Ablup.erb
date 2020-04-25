@@ -19,13 +19,13 @@ CASE "ＬＶ"
 	ENDIF
 
 	CALL ISABLUP, ARGS
-	SIF TALENT:夢魔
+	SIF TALENT:梦魔
 		PRINTFORML 夢魔が15LV以上になるには、素質[上位夢魔]（要10LV以上）が必要
 	IF A:0 > 0
 		PRINTFORM  [ 0] - レベルを{ABL:ARGS + 1}に上げる：経験値
-		SIF EXP:経験値 < A:0
+		SIF EXP:经验值 < A:0
 			SETCOLOR DEF_COLOR("灰色")
-		PRINTFORM {EXP:経験値}
+		PRINTFORM {EXP:经验值}
 		RESETCOLOR
 		PRINTFORML /{A:0} ……%PRINT_ABLUP_OK(Z:0)%
 		LOCAL:0 = !(Z:0)
@@ -35,33 +35,33 @@ CASE "ＬＶ"
 		PRINTFORML  [ 1] - レベルを上げられるだけ上げる
 		LOCAL:1 = 1
 	ENDIF
-	IF TALENT:夢魔 && TALENT:上位夢魔 == 0
+	IF TALENT:梦魔 && TALENT:上位梦魔 == 0
 		PRINTFORM  [ 2] - 上位夢魔となる：経験値
-		SIF EXP:経験値 < A:2
+		SIF EXP:经验值 < A:2
 			SETCOLOR DEF_COLOR("灰色")
-		PRINTFORM {EXP:経験値}
+		PRINTFORM {EXP:经验值}
 		RESETCOLOR
 		PRINTFORML /{A:2} ……%PRINT_ABLUP_OK(Z:2)%
 		LOCAL:2 = !(Z:2)
 	ENDIF
 
-	PRINTFORM  [\@ EXP:経験値 >= NUM("経験値：素質獲得")? {3, 2} # × \@] - 様々な素質等を獲得する：経験値
-	SIF EXP:経験値 < NUM("経験値：素質獲得")
+	PRINTFORM  [\@ EXP:经验值 >= NUM("経験値：素質獲得")? {3, 2} # × \@] - 様々な素質等を獲得する：経験値
+	SIF EXP:经验值 < NUM("経験値：素質獲得")
 		SETCOLOR DEF_COLOR("灰色")
-	PRINTFORM {EXP:経験値}
+	PRINTFORM {EXP:经验值}
 	RESETCOLOR
 	PRINTFORML /{NUM("経験値：素質獲得")}
 	SIF COND("素質獲得可能")
 		LOCAL:3 = 1
 
 	IF COND("成長期")
-		PRINTFORM  [\@ EXP:経験値 >= 1000? {4,2} # × \@] - %CALLNAME:TARGET%を成長させる：経験値
-		SIF EXP:経験値 < 1000
+		PRINTFORM  [\@ EXP:经验值 >= 1000? {4,2} # × \@] - %CALLNAME:TARGET%を成長させる：経験値
+		SIF EXP:经验值 < 1000
 			SETCOLOR DEF_COLOR("灰色")
-		PRINTFORM {EXP:経験値}
+		PRINTFORM {EXP:经验值}
 		RESETCOLOR
 		PRINTFORML /1000
-		SIF EXP:経験値 >= 1000
+		SIF EXP:经验值 >= 1000
 			LOCAL:4 = 1
 	ENDIF
 	PRINTL [100] - やめる
@@ -74,12 +74,12 @@ CASE "ＬＶ"
 		RESTART
 	ELSEIF RESULT == 0
 		ABL:ARGS += 1
-		EXP:経験値 -= A:0
+		EXP:经验值 -= A:0
 		PRINTFORMW %NAME:TARGET%のレベルが{ABL:ＬＶ}\@ABL:ＬＶ == NUM("最大レベル", 90) ? (MAX!) # \@になりました。
 	ELSEIF RESULT == 1
 		FOR LOCAL, 0, NUM("最大レベル", 90)
 			ABL:ARGS += 1
-			EXP:経験値 -= A:0
+			EXP:经验值 -= A:0
 
 			CALL ISABLUP, ARGS
 			SIF Z:0 || ABL:ARGS == NUM("最大レベル", 90)
@@ -87,10 +87,10 @@ CASE "ＬＶ"
 		NEXT
 		PRINTFORMW %NAME:TARGET%のレベルが{ABL:ARGS}\@ABL:ARGS == NUM("最大レベル", 90) ? (MAX!) # \@になりました。
 	ELSEIF RESULT == 2
-		EXP:経験値 -= A:2
+		EXP:经验值 -= A:2
 		PRINTFORMW %CALLNAME:TARGET%は上位夢魔となりました。
-		TALENT:夢魔 = 0
-		TALENT:上位夢魔 = 1
+		TALENT:梦魔 = 0
+		TALENT:上位梦魔 = 1
 	ELSEIF RESULT == 3
 		CALL GET_TALENT
 	ELSEIF RESULT == 4
@@ -101,7 +101,7 @@ CASE "ＬＶ"
 	SIF RESULT
 		RESTART
 	RETURN 0
-CASE "Ｖ拡張", "Ａ拡張"
+CASE "Ｖ扩张", "Ａ扩张"
 	SIF CONFIG("性器詳細表示") == 0
 		RETURN 0
 	;拡張LVが高すぎると緩いという事態に…
@@ -109,8 +109,8 @@ CASE "Ｖ拡張", "Ａ拡張"
 	;4ゆるゆる。フィスト(男)　5ガバガバ。ドラゴン
 
 	SELECTCASE ARGS
-	CASE "Ｖ拡張"
-		SIF TALENT:オトコ
+	CASE "Ｖ扩张"
+		SIF TALENT:男性
 			RETURN 0
 		IF ABL:ARGS >= NUM("最大レベル", 23)
 			PRINTW 既にMAXです。
@@ -121,7 +121,7 @@ CASE "Ｖ拡張", "Ａ拡張"
 		PRINTFORML %ARGS%レベルを上昇させますか？（注意：相対的には名器度は減る事となります）
 		PRINTFORML 
 		;ＬＶＵＰ可能
-		IF CALCF("Ｖ拡張の上限", TARGET) > ABL:Ｖ拡張
+		IF CALCF("Ｖ拡張の上限", TARGET) > ABL:Ｖ扩张
 			ABL:ARGS += 1
 			PRINTFORML  [ 0] - %ARGS%レベルを{ABL:ARGS}に上げる（レベルを上げた後のＶ名器度は{ABL_V(TARGET, "絶対値")}です）
 			ABL:ARGS -= 1
@@ -131,7 +131,7 @@ CASE "Ｖ拡張", "Ａ拡張"
 			PRINTFORML  [×] - %ARGS%レベルを{ABL:ARGS + 1}に上げる ……Ｖ拡張経験や素質が不足しているようです
 			RESETCOLOR
 		ENDIF
-	CASE "Ａ拡張"
+	CASE "Ａ扩张"
 		IF ABL:ARGS >= NUM("最大レベル", 26)
 			PRINTW 既にMAXです。
 			RETURN 0
@@ -141,7 +141,7 @@ CASE "Ｖ拡張", "Ａ拡張"
 		PRINTFORML %ARGS%レベルを上昇させますか？（注意：相対的には名器度は減る事となります）
 		PRINTFORML 
 		;ＬＶＵＰ可能
-		IF CALCF("Ａ拡張の上限", TARGET) > ABL:Ａ拡張
+		IF CALCF("Ａ拡張の上限", TARGET) > ABL:Ａ扩张
 			ABL:ARGS += 1
 			PRINTFORML  [ 0] - %ARGS%レベルを{ABL:ARGS}に上げる（レベルを上げた後のＡ名器度は{ABL_A(TARGET, "絶対値")}です）
 			ABL:ARGS -= 1
@@ -166,9 +166,9 @@ CASE "Ｖ拡張", "Ａ拡張"
 		CALL GET_EXABL2, TARGET
 
 		SELECTCASE ARGS
-		CASE "Ｖ拡張"
+		CASE "Ｖ扩张"
 			PRINTFORMW %NAME:TARGET%の%ARGS%レベルが{ABL:ARGS}になり、名器度は{ABL_V(TARGET, "絶対値")}となりました。
-		CASE "Ａ拡張"
+		CASE "Ａ扩张"
 			PRINTFORMW %NAME:TARGET%の%ARGS%レベルが{ABL:ARGS}になり、名器度は{ABL_A(TARGET, "絶対値")}となりました。
 		ENDSELECT
 	ENDIF
@@ -216,7 +216,7 @@ CASE "淫核", "淫壷", "尻穴狂い", "淫乳", "蕩唇", "サド", "マゾ",
 			PRINTFORMW %CALLNAME:TARGET%は自らのお尻を慰めながら%CALLNAME:MASTER%に物欲しげな視線を送っている…
 		ENDIF
 	CASE "淫乳"
-		IF CONFIG("ニプルファック") && TALENT:巨乳 && TALENT:スライム == 0
+		IF CONFIG("ニプルファック") && TALENT:巨乳 && TALENT:史莱姆 == 0
 			PRINTFORMW %CALLNAME:TARGET%はすっかりいやらしく開花した乳首に指をずぶずぶと潜り込ませ、軽い自慰行為を見せ付けています…
 			PRINTFORMW …これならば胸を使ったもっとハードなプレイもできそうです！
 			CALL PRINT_STR, "ハートピンク_※ニプルファックを行う事ができるようになりました※_W"
@@ -253,25 +253,25 @@ CASE "屈服刻印"
 CASE "反発刻印"
 	SIF MARK:ARGS <= 0
 		RETURN 0
-CASE "技巧", "Ｃ感覚", "Ｖ感覚", "Ａ感覚", "Ｂ感覚", "Ｍ感覚"
+CASE "技巧", "Ｃ感觉", "Ｖ感觉", "Ａ感觉", "Ｂ感觉", "Ｍ感觉"
 	IF ABL:ARGS >= 10 && ARGS:1 == "" && ARGS:2 == ""
 		PRINTW 既にMAXです。
 		RETURN 0
 	ENDIF
-CASE "従順", "欲望", "奉仕精神", "露出癖", "マゾっ気", "自慰中毒", "精液中毒", "サドっ気"
+CASE "服从", "欲望", "侍奉精神", "露出癖", "受虐倾向", "自慰上瘾", "精液上瘾", "施虐倾向"
 	IF ABL:ARGS >= 5 && ARGS:1 == ""
 		PRINTW 既にMAXです。
 		RETURN 0
 	ENDIF
-CASE "レズっ気"
-	SIF TALENT:オトコ
+CASE "百合倾向"
+	SIF TALENT:男性
 		RETURN 0
 	IF ABL:ARGS >= 5 && ARGS:1 == ""
 		PRINTW 既にMAXです。
 		RETURN 0
 	ENDIF
-CASE "ＢＬっ気"
-	SIF TALENT:オトコ == 0
+CASE "ＢＬ倾向"
+	SIF TALENT:男性 == 0
 		RETURN 0
 	IF ABL:ARGS >= 5 && ARGS:1 == ""
 		PRINTW 既にMAXです。
@@ -332,7 +332,7 @@ SIF M > 0 || O > 0 || Q > 0 || S > 0
 
 SETCOLOR DEF_COLOR("黄色")
 SELECTCASE ARGS
-CASE "Ｖ感覚", "Ａ感覚", "Ｍ感覚"
+CASE "Ｖ感觉", "Ａ感觉", "Ｍ感觉"
 	IF ABL:ARGS < 10
 		;必要経験が多い場合には必要な珠の量が減る
 		SELECTCASE EXP:H
@@ -345,7 +345,7 @@ CASE "Ｖ感覚", "Ａ感覚", "Ｍ感覚"
 CASE "技巧"
 	IF ABL:ARGS < 10
 		;フェラ経験～クンニ経験の合計によるEXPLVによる軽減
-		SELECTCASE GET_EXP_LV(EXP:キス経験 + (EXP:フェラ経験+EXP:手淫経験+EXP:足コキ経験+EXP:腰使い経験+EXP:パイズリ経験+EXP:Ａ責め経験+EXP:クンニ経験)*5) - ABL:技巧
+		SELECTCASE GET_EXP_LV(EXP:亲吻经验 + (EXP:口交经验+EXP:手淫经验+EXP:足交经验+EXP:腰技经验+EXP:乳交经验+EXP:Ａ刺激经验+EXP:舔阴经验)*5) - ABL:技巧
 		CASE IS >= 9
 			PRINTFORML （技巧に関わる経験の合計回数が物凄く多いので、必要な%PALAMNAME:B%の珠が激減しています）
 		CASE IS >= 6
@@ -354,19 +354,19 @@ CASE "技巧"
 			PRINTFORML （技巧に関わる経験の合計回数が多いので、必要な%PALAMNAME:B%の珠が減少しています）
 		ENDSELECT
 	ENDIF
-CASE "奉仕精神"
+CASE "侍奉精神"
 	IF ABL:ARGS < 5
-		SELECTCASE EXP:奉仕快楽経験
-		CASE IS >= EXP_LV(ABL:奉仕精神 + 3)
+		SELECTCASE EXP:侍奉快乐经验
+		CASE IS >= EXP_LV(ABL:侍奉精神 + 3)
 			PRINTFORML （奉仕快楽経験が著しく多いので、要求される珠が50％減少しています）
-		CASE IS >= EXP_LV(ABL:奉仕精神 + 2)
+		CASE IS >= EXP_LV(ABL:侍奉精神 + 2)
 			PRINTFORML （奉仕快楽経験が多いので、要求される珠が20％減少しています）
 		ENDSELECT
 	ENDIF
-CASE "サドっ気"
+CASE "施虐倾向"
 	IF ABL:ARGS < 5
 		;嗜虐快楽経験が多いなら必要な珠の量が軽減される
-		SELECTCASE EXP:嗜虐快楽経験 / MAX(G, 1)
+		SELECTCASE EXP:嗜虐快乐经验 / MAX(G, 1)
 		CASE IS >= 4
 			PRINTFORML （嗜虐快楽経験が非常に多いので、要求される珠が70％減少しています）
 		CASE 3
@@ -375,10 +375,10 @@ CASE "サドっ気"
 			PRINTFORML （嗜虐快楽経験が多いので、要求される珠が20％減少しています）
 		ENDSELECT
 	ENDIF
-CASE "精液中毒"
+CASE "精液上瘾"
 	IF ABL:ARGS < 5
 		;精液経験が必要な値より大幅に多い
-		SELECTCASE EXP:精液経験 / MAX(G:0, 1)
+		SELECTCASE EXP:精液经验 / MAX(G:0, 1)
 		CASE IS >= 4
 			PRINTFORML （精液経験が著しく多いので、要求される珠が激減しています）
 		CASE 2, 3
@@ -601,20 +601,20 @@ ENDSELECT
 ;素質が変動したりするもののチェック
 SELECTCASE ARGS
 ;欲望、従順、屈服刻印の上昇による[抑圧][抵抗]の消滅をチェック
-CASE "従順", "欲望", "屈服刻印"
+CASE "服从", "欲望", "屈服刻印"
 	CALL YOKUBO_UP_CHECK, ARGS
-CASE "Ｖ感覚"
+CASE "Ｖ感觉"
 	;子宮性感
-	IF TALENT:子宮性感 == 0 && ABL:Ｖ感覚 + TALENT:Ｖ敏感*2 >= 5
+	IF TALENT:子宫性感 == 0 && ABL:Ｖ感觉 + TALENT:Ｖ敏感*2 >= 5
 		PRINTFORM %CALLNAME:TARGET%は
 		CALL PRINT_COLORTEXT, "[子宮性感]", DEF_COLOR("黄色")
 		PRINTFORML を得た
-		TALENT:子宮性感 = 1
+		TALENT:子宫性感 = 1
 		FORCEWAIT
 	ENDIF
-CASE "Ｍ感覚"
+CASE "Ｍ感觉"
 	;喉性感
-	IF TALENT:喉性感 == 0 && ABL:Ｍ感覚 + TALENT:Ｍ敏感*2 >= 5
+	IF TALENT:喉性感 == 0 && ABL:Ｍ感觉 + TALENT:Ｍ敏感*2 >= 5
 		PRINTFORM %CALLNAME:TARGET%は
 		CALL PRINT_COLORTEXT, "[喉性感]", DEF_COLOR("黄色")
 		PRINTFORML を得た
@@ -622,14 +622,14 @@ CASE "Ｍ感覚"
 		FORCEWAIT
 	ENDIF
 ;[精液に弱い]を得るかのチェック
-CASE "精液中毒"
-	IF TALENT:精液に弱い == 0
+CASE "精液上瘾"
+	IF TALENT:弱精液 == 0
 		CALL CALC, "精液に弱い", TARGET
 		;素質を得た
-		IF TALENT:精液に弱い && EXP:調教回数
+		IF TALENT:弱精液 && EXP:调教次数
 			PRINTFORMW %CALLNAME:TARGET%は幾度も精液を受け止めているうちに、精液で快楽を得る身体になってしまったようだ…
 			PRINTFORM %CALLNAME:TARGET%は
-			LOCALS = [%TALENT_NAME(49, TALENT:精液に弱い)%]
+			LOCALS = [%TALENT_NAME(49, TALENT:弱精液)%]
 			CALL PRINT_COLORTEXT, LOCALS, DEF_COLOR("黄色")
 			PRINTFORMW を得た
 		ENDIF
@@ -658,16 +658,16 @@ ENDIF
 CALL SETFLAG, "一文字関数初期化"
 
 SELECTCASE ARGS
-CASE "Ｖ拡張"
+CASE "Ｖ扩张"
 	SIF ABL:ARGS >= 10 || CONFIG("性器詳細表示") == 0
 		RETURN 0
-	SIF CALCF("Ｖ拡張の上限", TARGET) > ABL:Ｖ拡張
+	SIF CALCF("Ｖ拡張の上限", TARGET) > ABL:Ｖ扩张
 		RETURN 1
 	RETURN 0
-CASE "Ａ拡張"
+CASE "Ａ扩张"
 	SIF ABL:ARGS >= 10 || CONFIG("性器詳細表示") == 0
 		RETURN 0
-	SIF CALCF("Ａ拡張の上限", TARGET) > ABL:Ａ拡張
+	SIF CALCF("Ａ拡張の上限", TARGET) > ABL:Ａ扩张
 		RETURN 1
 	RETURN 0
 CASE "アルカナ"
@@ -697,12 +697,12 @@ CASE "屈服刻印"
 		A = 30000
 	ENDSELECT
 
-	SIF TALENT:生意気 || TALENT:一線越えない
+	SIF TALENT:自大 || TALENT:底线明确
 		TIMES A, 1.20
 	SIF TALENT:恋慕
 		TIMES A, 0.50
 
-	SIF MARK:反発刻印
+	SIF MARK:排斥刻印
 		TIMES A, 2.00
 	SIF CONFIG("ＥＡＳＹ")
 		TIMES A, 0.75
@@ -710,7 +710,7 @@ CASE "屈服刻印"
 	;-----------------
 	;ボスキャラ用。特殊な条件を達成しないと屈服刻印取得に要するパラメータ量が激増。
 	;-----------------
-	IF TALENT:上位夢魔
+	IF TALENT:上位梦魔
 		SELECTCASE MARK:攻略刻印
 		CASE 0
 			TIMES A, 4.00
@@ -755,9 +755,9 @@ CASE "反発刻印"
 		A = 50000
 	ENDSELECT
 
-	SIF TALENT:生意気
+	SIF TALENT:自大
 		TIMES A, 1.50
-	SIF TALENT:素直 || TALENT:恋慕
+	SIF TALENT:坦率 || TALENT:恋慕
 		TIMES A, 0.50
 
 	;反発刻印Lv-1Lvの屈服刻印が必要
@@ -776,17 +776,17 @@ CASE "ＬＶ"
 	A:0 = EXP_NEXTLV(TARGET, ABL:ARGS)
 	A:2 = 200
 
-	SIF EXP:経験値 < A:0
+	SIF EXP:经验值 < A:0
 		SETBIT Z:0, 1
 	;夢魔はMAX14LV
-	SIF ABL:ARGS >= 14 && TALENT:夢魔
+	SIF ABL:ARGS >= 14 && TALENT:梦魔
 		SETBIT Z:0, 3
 
-	SIF EXP:経験値 < A:2
+	SIF EXP:经验值 < A:2
 		SETBIT Z:2, 1
 	SIF ABL:ARGS < 10
 		SETBIT Z:2, 4
-	SIF TALENT:夢魔 == 0 || TALENT:上位夢魔
+	SIF TALENT:梦魔 == 0 || TALENT:上位梦魔
 		SETBIT Z:2, 9
 
 	SIF MIN(Z:0, Z:2) == 0
@@ -864,16 +864,16 @@ CASE "マゾ"
 	P = 1
 	Q = 5
 	R = 8
-CASE "技巧",  "Ｃ感覚",  "Ｖ感覚",  "Ａ感覚", "Ｂ感覚", "Ｍ感覚"
+CASE "技巧",  "Ｃ感觉",  "Ｖ感觉",  "Ａ感觉", "Ｂ感觉", "Ｍ感觉"
 	SIF ABL:ARGS >= 10
 		RETURN 0
-CASE "従順", "欲望", "奉仕精神", "露出癖", "マゾっ気", "レズっ気", "自慰中毒", "精液中毒", "ＢＬっ気", "サドっ気"
+CASE "服从", "欲望", "侍奉精神", "露出癖", "受虐倾向", "百合倾向", "自慰上瘾", "精液上瘾", "ＢＬ倾向", "施虐倾向"
 	SIF ABL:ARGS >= 5
 		RETURN 0
 ENDSELECT
 
 SELECTCASE ARGS
-CASE "従順"
+CASE "服从"
 	;ＬＶ４から５に上げるときは異常経験必要（素質：[臆病][素直][妄信][淫乱化]なら無視できる）
 	;[ 0] - 恐怖の珠　{JUEL:恐怖}/{A:0} ……%PRINT_ABLUP_OK(Z:0)%
 	;[ 1] - 恭順の珠　{JUEL:恭順}/{A:1} ……%PRINT_ABLUP_OK(Z:1)%
@@ -889,7 +889,7 @@ CASE "従順"
 	;A:3 屈服の珠
 	B:3 = 6
 
-	SELECTCASE ABL:従順
+	SELECTCASE ABL:服从
 	CASE 0
 		A:0 = 500
 		A:1 = 300
@@ -914,7 +914,7 @@ CASE "従順"
 	A:3 = A:1 * 2
 
 	IF CONFIG("ＥＡＳＹ")
-		SELECTCASE ABL:従順
+		SELECTCASE ABL:服从
 		CASE 0
 			A:0 = 10
 			A:1 = 10
@@ -943,44 +943,44 @@ CASE "従順"
 		ENDSELECT
 	ENDIF
 
-	IF TALENT:一線越えない && ABL:従順 >= 3
+	IF TALENT:底线明确 && ABL:服从 >= 3
 		TIMES A:0, 2.00
 		TIMES A:1, 2.00
 		TIMES A:2, 2.00
 		TIMES A:3, 2.00
 	ENDIF
-	SIF TALENT:臆病
+	SIF TALENT:胆怯
 		TIMES A:0, 0.50
-	IF TALENT:気丈
+	IF TALENT:刚强
 		TIMES A:0, 3.00
 		TIMES A:1, 2.00
 		TIMES A:2, 1.50
 		TIMES A:3, 1.50
 	ENDIF
-	IF TALENT:高慢
+	IF TALENT:高傲
 		TIMES A:0, 1.50
 		TIMES A:1, 1.50
 		TIMES A:2, 1.20
 		TIMES A:3, 1.50
 	ENDIF
-	IF TALENT:生意気
+	IF TALENT:自大
 		TIMES A:0, 1.50
 		TIMES A:1, 2.00
 		TIMES A:3, 1.50
 	ENDIF
-	IF TALENT:素直
+	IF TALENT:坦率
 		TIMES A:0, 0.50
 		TIMES A:1, 0.50
 		TIMES A:3, 0.50
 	ENDIF
-	IF TALENT:惚れっぽい
+	IF TALENT:纯情
 		TIMES A:0, 0.80
 		TIMES A:1, 0.80
 		TIMES A:3, 0.80
 	ENDIF
 
 	;ＬＶ４から５に上げるときは異常経験必要（素質：[臆病][素直][妄信][淫乱化]なら無視できる）
-	IF ABL:従順 == 4 && TALENT:臆病 == 0 && TALENT:素直 == 0 && TALENT:妄信 == 0 && TALENT:淫乱 == 0
+	IF ABL:服从 == 4 && TALENT:胆怯 == 0 && TALENT:坦率 == 0 && TALENT:盲信 == 0 && TALENT:淫乱 == 0
 		M = 1
 		N = 50
 	ENDIF
@@ -989,7 +989,7 @@ CASE "欲望"
 	B = 5
 	;G 絶頂経験
 	H = 2
-	SIF TALENT:オトコ
+	SIF TALENT:男性
 		H = 3
 
 	SELECTCASE ABL:欲望
@@ -1025,17 +1025,17 @@ CASE "欲望"
 		ENDSELECT
 		G = 0
 	ENDIF
-	SIF TALENT:一線越えない && ABL:欲望 >= 3
+	SIF TALENT:底线明确 && ABL:欲望 >= 3
 		TIMES A, 2.00
-	SIF TALENT:清楚
+	SIF TALENT:清纯
 		TIMES A, 1.50
-	IF TALENT:快感に素直 || TALENT:好色
+	IF TALENT:承认快感 || TALENT:好色
 		TIMES A, 0.80
 		TIMES G, 0.80
 	ENDIF
 
 	;ＬＶ４から５に上げるときは異常経験必要（素質：[快感に素直][淫乱]なら無視できる）
-	IF ABL:欲望 == 4 && TALENT:快感に素直 == 0 && TALENT:淫乱 == 0
+	IF ABL:欲望 == 4 && TALENT:承认快感 == 0 && TALENT:淫乱 == 0
 		M = 1
 		N = 50
 	ENDIF
@@ -1076,7 +1076,7 @@ CASE "技巧"
 	ENDIF
 
 	;フェラ経験～クンニ経験の合計によるEXPLVによる軽減
-	SELECTCASE GET_EXP_LV(EXP:キス経験 + (EXP:フェラ経験+EXP:手淫経験+EXP:足コキ経験+EXP:腰使い経験+EXP:パイズリ経験+EXP:Ａ責め経験+EXP:クンニ経験)*5) - ABL:技巧
+	SELECTCASE GET_EXP_LV(EXP:亲吻经验 + (EXP:口交经验+EXP:手淫经验+EXP:足交经验+EXP:腰技经验+EXP:乳交经验+EXP:Ａ刺激经验+EXP:舔阴经验)*5) - ABL:技巧
 	CASE IS >= 12
 		TIMES A, 0.20
 	CASE IS >= 9
@@ -1089,7 +1089,7 @@ CASE "技巧"
 
 	A = MAX(A, 1)
 
-CASE "Ｃ感覚", "Ｂ感覚"
+CASE "Ｃ感觉", "Ｂ感觉"
 	;必要とする珠の数
 	SELECTCASE ABL:ARGS
 	CASE 0
@@ -1124,12 +1124,12 @@ CASE "Ｃ感覚", "Ｂ感覚"
 	ENDIF
 
 	SELECTCASE ARGS
-	CASE "Ｃ感覚"
+	CASE "Ｃ感觉"
 		;A 快Ｃの珠で上げる
 		B = 0
 		SIF TALENT:Ｃ敏感 || TALENT:淫核
 			TIMES A, 0.80
-	CASE "Ｂ感覚"
+	CASE "Ｂ感觉"
 		;A 快Ｂの珠で上げる
 		B = 14
 		SIF TALENT:Ｂ敏感 || TALENT:淫乳
@@ -1137,7 +1137,7 @@ CASE "Ｃ感覚", "Ｂ感覚"
 	ENDSELECT
 
 	A = MAX(A, 1)
-CASE "Ｖ感覚", "Ａ感覚", "Ｍ感覚"
+CASE "Ｖ感觉", "Ａ感觉", "Ｍ感觉"
 	SELECTCASE ABL:ARGS
 	CASE 0
 		A = 200
@@ -1182,27 +1182,27 @@ CASE "Ｖ感覚", "Ａ感覚", "Ｍ感覚"
 	ENDIF
 
 	SELECTCASE ARGS
-	CASE "Ｖ感覚"
+	CASE "Ｖ感觉"
 		;A 快Ｖの珠で上げる
 		B = 1
 		;G Ｖ経験で上げる
 		H = 0
-		SIF TALENT:Ｖ敏感 || TALENT:淫壷
+		SIF TALENT:Ｖ敏感 || TALENT:淫壶
 			TIMES A, 0.80
-	CASE "Ａ感覚"
+	CASE "Ａ感觉"
 		;A 快Ａの珠で上げる
 		B = 2
 		;G Ａ経験で上げる
 		H = 1
-		SIF TALENT:Ａ敏感 || TALENT:尻穴狂い
+		SIF TALENT:Ａ敏感 || TALENT:尻穴狂
 			TIMES A, 0.80
-	CASE "Ｍ感覚"
+	CASE "Ｍ感觉"
 		;A 快Ｍの珠で上げる
 		B = 15
 		;G キス経験で上げる(増えづらい経験なので回数はＶやＡの半分)
 		H = 70
 		G /= 2
-		SIF TALENT:Ｍ敏感 || TALENT:蕩唇
+		SIF TALENT:Ｍ敏感 || TALENT:荡唇
 			TIMES A, 0.80
 	ENDSELECT
 
@@ -1216,7 +1216,7 @@ CASE "Ｖ感覚", "Ａ感覚", "Ｍ感覚"
 
 	A = MAX(A, 1)
 	G = MAX(G, 1)
-CASE "奉仕精神"
+CASE "侍奉精神"
 	;共通条件で奉仕快楽経験が必要
 	;屈服の珠　{JUEL:屈服}/{A:0} ……%PRINT_ABLUP_OK(Z:0)%
 	;恭順の珠　{JUEL:恭順}/{A:1} ……%PRINT_ABLUP_OK(Z:1)%
@@ -1230,10 +1230,10 @@ CASE "奉仕精神"
 	B:2 = 7
 
 	;M 奉仕快楽経験
-	M = EXP_LV(ABL:奉仕精神 + 1)
+	M = EXP_LV(ABL:侍奉精神 + 1)
 	N = 21
 
-	SELECTCASE ABL:奉仕精神
+	SELECTCASE ABL:侍奉精神
 	CASE 0
 		A:0 = 500
 		A:1 = 300
@@ -1256,17 +1256,17 @@ CASE "奉仕精神"
 		A:2 = 0
 	ENDSELECT
 
-	SELECTCASE EXP:奉仕快楽経験
-	CASE IS >= EXP_LV(ABL:奉仕精神 + 3)
+	SELECTCASE EXP:侍奉快乐经验
+	CASE IS >= EXP_LV(ABL:侍奉精神 + 3)
 		TIMES A:1, 0.50
 		TIMES A:2, 0.50
-	CASE IS >= EXP_LV(ABL:奉仕精神 + 2)
+	CASE IS >= EXP_LV(ABL:侍奉精神 + 2)
 		TIMES A:1, 0.80
 		TIMES A:2, 0.80
 	ENDSELECT
 
 	IF CONFIG("ＥＡＳＹ")
-		SELECTCASE ABL:奉仕精神
+		SELECTCASE ABL:侍奉精神
 		CASE 0
 			A:0 = 100
 			A:1 = 20
@@ -1290,17 +1290,17 @@ CASE "奉仕精神"
 		ENDSELECT
 	ENDIF
 
-	IF TALENT:反抗的
+	IF TALENT:叛逆
 		TIMES A:0, 1.50
 		TIMES A:1, 1.50
 	ENDIF
-	SIF TALENT:気丈
+	SIF TALENT:刚强
 		TIMES A:0, 1.20
-	IF TALENT:素直
+	IF TALENT:坦率
 		TIMES A:0, 0.80
 		TIMES A:1, 0.80
 	ENDIF
-	IF TALENT:高慢
+	IF TALENT:高傲
 		TIMES A:0, 2.00
 		TIMES A:1, 2.00
 	ENDIF
@@ -1308,26 +1308,26 @@ CASE "奉仕精神"
 		TIMES A:0, 0.50
 		TIMES A:1, 0.50
 	ENDIF
-	IF TALENT:サド
+	IF TALENT:抖Ｓ
 		TIMES A:0, 1.30
 		TIMES A:1, 1.30
 	ENDIF
-	IF TALENT:小悪魔
+	IF TALENT:小恶魔
 		TIMES A:0, 1.20
 		TIMES A:1, 1.20
 	ENDIF
 
 	;従順が奉仕精神＋１レベルでないといけない
-	O = ABL:奉仕精神 + 1
+	O = ABL:侍奉精神 + 1
 	P = 0
 CASE "露出癖"
 	;欲望が露出癖+1LVかつ４ＬＶ以上にあげるには異常経験必要
 	;恥情の珠　{JUEL:恥情}/{A:0} ……%PRINT_ABLUP_OK(Z:0)%
-	;　　　　%EXPNAME:10% {EXP:自慰経験}/{G:0}
+	;　　　　%EXPNAME:10% {EXP:自慰经验}/{G:0}
 	;恥情の珠　{JUEL:恥情}/{A:1} ……%PRINT_ABLUP_OK(Z:1)%
-	;　　　　%EXPNAME:34% {EXP:露出経験}/{G:1}
+	;　　　　%EXPNAME:34% {EXP:露出经验}/{G:1}
 	;恥情の珠　{JUEL:恥情}/{A:2} ……%PRINT_ABLUP_OK(Z:2)%
-	;　　　　%EXPNAME:36%　{EXP:羞恥快楽経験}/{G:2}
+	;　　　　%EXPNAME:36%　{EXP:羞耻快乐经验}/{G:2}
 
 	;A:0～A:2 恥情の珠で上げる(A:2だけ他のものより2割減)
 	B:0 = 8
@@ -1383,19 +1383,19 @@ CASE "露出癖"
 		ENDSELECT
 	ENDIF
 
-	SIF TALENT:清楚
+	SIF TALENT:清纯
 		TIMES A:0, 1.50
-	IF TALENT:倒錯的
+	IF TALENT:性变态
 		TIMES A:0, 0.75
 		TIMES G:0, 0.75
 		TIMES G:1, 0.75
 	ENDIF
-	IF TALENT:目立ちたがり
+	IF TALENT:喜欢被关注
 		TIMES A:0, 0.50
 		TIMES G:0, 0.50
 		TIMES G:1, 0.50
 	ENDIF
-	IF TALENT:マゾ
+	IF TALENT:抖Ｍ
 		TIMES A:0, 0.75
 		TIMES G:0, 0.50
 		TIMES G:1, 0.50
@@ -1414,7 +1414,7 @@ CASE "露出癖"
 	P = 1
 
 	;ＬＶ３から４、４から５に上げるときは異常経験必要（素質：[目立ちたがり]なら無視できる）
-	IF TALENT:目立ちたがり == 0
+	IF TALENT:喜欢被关注 == 0
 		SELECTCASE ABL:ARGS
 		CASE 3
 			M = 1
@@ -1424,17 +1424,17 @@ CASE "露出癖"
 			N = 50
 		ENDSELECT
 	ENDIF
-CASE "マゾっ気"
+CASE "受虐倾向"
 	;欲望がマゾっ気＋１LVかつ４ＬＶ以上にあげるには異常経験必要
 	; [ 0] - 恥情の珠　{JUEL:恥情}/{A:0} ……%PRINT_ABLUP_OK(Z:0)%
 	;　　　　欲情の珠　{JUEL:欲情}/{C:0}
-	;　　　　%EXPNAME:36% {EXP:羞恥快楽経験}/{G:0}
+	;　　　　%EXPNAME:36% {EXP:羞耻快乐经验}/{G:0}
 	; [ 1] - 苦痛の珠　{JUEL:苦痛}/{A:1} ……%PRINT_ABLUP_OK(Z:1)%
 	;　　　　屈服の珠　{JUEL:屈服}/{C:1}
-	;　　　　%EXPNAME:30% {EXP:被虐快楽経験}/{G:1}
+	;　　　　%EXPNAME:30% {EXP:被虐快乐经验}/{G:1}
 	; [ 2] - 苦痛の珠　{JUEL:苦痛}/{A:2} ……%PRINT_ABLUP_OK(Z:2)%
 	;　　　　欲情の珠　{JUEL:欲情}/{C:2}
-	;　　　　%EXPNAME:30% {EXP:被虐快楽経験}/{G:2}
+	;　　　　%EXPNAME:30% {EXP:被虐快乐经验}/{G:2}
 
 
 	;A:0 恥情の珠
@@ -1541,20 +1541,20 @@ CASE "マゾっ気"
 	ENDIF
 
 	LOCAL = 100
-	SIF TALENT:高慢
+	SIF TALENT:高傲
 		TIMES LOCAL, 2.00
-	SIF TALENT:プライド低い
+	SIF TALENT:自卑
 		TIMES LOCAL, 0.50
-	SIF TALENT:解放
+	SIF TALENT:奔放
 		TIMES LOCAL, 0.50
-	SIF TALENT:倒錯的
+	SIF TALENT:性变态
 		TIMES LOCAL, 0.75
 	SIF TALENT:淫乱
 		TIMES LOCAL, 0.80
-	SIF TALENT:サド
+	SIF TALENT:抖Ｓ
 		TIMES LOCAL, 1.50
 
-	SELECTCASE ABL:サドっ気
+	SELECTCASE ABL:施虐倾向
 	CASE IS >= 5
 		TIMES LOCAL, 3.00
 	CASE 4
@@ -1583,7 +1583,7 @@ CASE "マゾっ気"
 	P = 1
 
 	;ＬＶ３から４、４から５に上げるときは異常経験必要（素質：[解放]なら無視できる）
-	IF TALENT:解放 == 0
+	IF TALENT:奔放 == 0
 		SELECTCASE ABL:ARGS
 		CASE 3
 			M = 1
@@ -1593,7 +1593,7 @@ CASE "マゾっ気"
 			N = 50
 		ENDSELECT
 	ENDIF
-CASE "サドっ気"
+CASE "施虐倾向"
 	;A 欲情の珠
 	B = 5
 	;C 習得の珠
@@ -1658,22 +1658,22 @@ CASE "サドっ気"
 	ENDIF
 
 	LOCAL = 100
-	SIF TALENT:高慢
+	SIF TALENT:高傲
 		TIMES LOCAL, 0.50
-	SIF TALENT:プライド低い
+	SIF TALENT:自卑
 		TIMES LOCAL, 2.00
-	SIF TALENT:意地悪
+	SIF TALENT:坏心眼
 		TIMES LOCAL, 0.70
-	SIF TALENT:解放
+	SIF TALENT:奔放
 		TIMES LOCAL, 0.50
-	SIF TALENT:倒錯的
+	SIF TALENT:性变态
 		TIMES LOCAL, 0.75
 	SIF TALENT:淫乱
 		TIMES LOCAL, 0.80
-	SIF TALENT:マゾ
+	SIF TALENT:抖Ｍ
 		TIMES LOCAL, 1.50
 
-	SELECTCASE ABL:マゾっ気
+	SELECTCASE ABL:受虐倾向
 	CASE IS >= 5
 		TIMES LOCAL, 3.00
 	CASE 4
@@ -1683,7 +1683,7 @@ CASE "サドっ気"
 	ENDSELECT
 
 	;嗜虐快楽経験が多いなら必要な珠の量が軽減される
-	SELECTCASE EXP:嗜虐快楽経験 / MAX(G, 1)
+	SELECTCASE EXP:嗜虐快乐经验 / MAX(G, 1)
 	CASE IS >= 4
 		TIMES LOCAL, 0.30
 	CASE 3
@@ -1705,7 +1705,7 @@ CASE "サドっ気"
 	P = 1
 
 	;ＬＶ３から４、４から５に上げるときは異常経験必要（素質：[解放]なら無視できる）
-	IF TALENT:解放 == 0
+	IF TALENT:奔放 == 0
 		SELECTCASE ABL:ARGS
 		CASE 3
 			M = 1
@@ -1715,14 +1715,14 @@ CASE "サドっ気"
 			N = 50
 		ENDSELECT
 	ENDIF
-CASE "レズっ気", "ＢＬっ気"
+CASE "百合倾向", "ＢＬ倾向"
 	;A 欲情の珠
 	B = 5
 	SELECTCASE ARGS
-	CASE "レズっ気"
+	CASE "百合倾向"
 		;G レズ経験
 		H = 40
-	CASE "ＢＬっ気"
+	CASE "ＢＬ倾向"
 		;G ＢＬ経験
 		H = 41
 	ENDSELECT
@@ -1765,20 +1765,20 @@ CASE "レズっ気", "ＢＬっ気"
 		ENDSELECT
 	ENDIF
 
-	IF TALENT:両刀
+	IF TALENT:双性恋
 		TIMES A, 0.25
 		TIMES G, 0.25
-	ELSEIF ARGS == "ＢＬっ気" && COND("男の娘")
+	ELSEIF ARGS == "ＢＬ倾向" && COND("男の娘")
 		TIMES A, 0.50
 		TIMES G, 0.50
 	ENDIF
-	IF TALENT:倒錯的
+	IF TALENT:性变态
 		TIMES A, 0.75
 		TIMES G, 0.75
 	ENDIF
 
 	;ＬＶ３から４、４から５に上げるときは異常経験必要（素質：[両刀]なら無視できる）
-	IF TALENT:両刀 == 0
+	IF TALENT:双性恋 == 0
 		SELECTCASE ABL:ARGS
 		CASE 3
 			M = 1
@@ -1788,7 +1788,7 @@ CASE "レズっ気", "ＢＬっ気"
 			N = 50
 		ENDSELECT
 	ENDIF
-CASE "自慰中毒"
+CASE "自慰上瘾"
 	;A 欲情の珠
 	B = 5
 	;C 恥情の珠
@@ -1844,16 +1844,16 @@ CASE "自慰中毒"
 		ENDSELECT
 	ENDIF
 
-	IF TALENT:清楚
+	IF TALENT:清纯
 		TIMES A, 1.20
 		TIMES C, 1.20
 		TIMES G, 1.20
 	ENDIF
-	IF TALENT:自慰しやすい
+	IF TALENT:爱自慰
 		TIMES A, 0.25
 		TIMES C, 0.25
 		TIMES G, 0.25
-	ELSEIF TALENT:中毒しやすい || PENIS(TARGET)
+	ELSEIF TALENT:容易成瘾 || PENIS(TARGET)
 		TIMES A, 0.50
 		TIMES C, 0.50
 		TIMES G, 0.50
@@ -1865,7 +1865,7 @@ CASE "自慰中毒"
 	ENDIF
 
 	;ＬＶ２から３、ＬＶ３から４、４から５に上げるときは異常経験必要（素質：[自慰しやすい][中毒しやすい][淫乱]なら無視できる）
-	IF TALENT:自慰しやすい == 0 && TALENT:中毒しやすい == 0 && TALENT:淫乱 == 0
+	IF TALENT:爱自慰 == 0 && TALENT:容易成瘾 == 0 && TALENT:淫乱 == 0
 		SELECTCASE ABL:ARGS
 		CASE 2
 			M = 1
@@ -1878,7 +1878,7 @@ CASE "自慰中毒"
 			N = 50
 		ENDSELECT
 	ENDIF
-CASE "精液中毒"
+CASE "精液上瘾"
 	;A:0 欲情の珠
 	B:0 = 5
 	;A:1 屈服の珠
@@ -1937,17 +1937,17 @@ CASE "精液中毒"
 	ENDIF
 
 	LOCAL = 100
-	SIF TALENT:清楚
+	SIF TALENT:清纯
 		TIMES LOCAL, 1.20
-	SIF TALENT:汚臭鈍感
+	SIF TALENT:污臭钝感
 		TIMES LOCAL, 0.50
-	SIF TALENT:汚臭敏感
+	SIF TALENT:污臭敏感
 		TIMES LOCAL, 2.00
-	SIF TALENT:中毒しやすい
+	SIF TALENT:容易成瘾
 		TIMES LOCAL, 0.50
-	SIF TALENT:倒錯的
+	SIF TALENT:性变态
 		TIMES LOCAL, 0.75
-	SIF TALENT:においに弱い
+	SIF TALENT:弱气味
 		TIMES LOCAL, 0.75
 	SIF COND("夢魔")
 		TIMES LOCAL, 0.80
@@ -1958,7 +1958,7 @@ CASE "精液中毒"
 	ENDIF
 
 	;精液経験が必要な値より大幅に多い
-	SELECTCASE EXP:精液経験 / MAX(G:0, 1)
+	SELECTCASE EXP:精液经验 / MAX(G:0, 1)
 	CASE IS >= 5
 		TIMES A:0, 0.30
 		TIMES A:1, 0.20
@@ -1975,7 +1975,7 @@ CASE "精液中毒"
 	G:1 = G:0
 
 	;ＬＶ２から３、ＬＶ３から４、４から５に上げるときは異常経験必要（素質：[汚臭鈍感][中毒しやすい]なら無視できる）
-	IF TALENT:中毒しやすい == 0 && TALENT:汚臭鈍感 == 0
+	IF TALENT:容易成瘾 == 0 && TALENT:污臭钝感 == 0
 		SELECTCASE ABL:ARGS
 		CASE 2
 			M = 1

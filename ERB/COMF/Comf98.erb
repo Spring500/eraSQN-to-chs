@@ -46,8 +46,8 @@ LOCAL:11 = CALCF("実行値による欲情追加")
 LOCAL:13 = 1000
 LOCAL:14 = 500
 
-;ABL:奉仕精神をみる
-SELECTCASE ABL:奉仕精神
+;ABL:侍奉精神をみる
+SELECTCASE ABL:侍奉精神
 CASE 0
 	LOCAL:4 = 420
 	LOCAL:5 = 150
@@ -106,7 +106,7 @@ IF TEQUIP:Ｗ押し倒し
 		IF PREVPLAY("Ｖインサート", PLAYER)
 			IF PREVEX("射精") && RAND:3
 				PRINTFORM 精液をトロトロ溢している
-			ELSEIF ABL:サドっ気 >= 3 && RAND:2 == 0
+			ELSEIF ABL:施虐倾向 >= 3 && RAND:2 == 0
 				PRINTFORM 思う存分愉しんだ
 			ELSE
 				PRINTFORM 犯されてほぐれた
@@ -123,7 +123,7 @@ ELSEIF CHECK_COM("３Ｐ奉仕")
 ELSEIF CHECK_COM("恥垢お掃除クンニ")
 	PRINTFORM %CALLNAME:TARGET%は%CALLNAME:PLAYER%のアソコを押し広げ、
 	PRINTFORM %TEXTR("陰唇に残る恥垢", "膣口にこびりついている恥垢", "白くドロリとした汚れ", "チーズの様な汚れ", "粘膜を彩る恥ずかしい汚れ")%
-	IF RAND:2 && PLAYER == MASTER && TALENT:においに弱い && TALENT:恋慕
+	IF RAND:2 && PLAYER == MASTER && TALENT:弱气味 && TALENT:恋慕
 		PRINTFORMW の%TEXTS("匂い")%を嗅ぎながら、舌できれいに掃除した…
 	ELSEIF RAND:2
 		PRINTFORMW を舌で隅々まで舐めとった…
@@ -138,7 +138,7 @@ ELSEIF TEQUIP:押し倒し
 	IF PREVPLAY("Ｖインサート", PLAYER)
 		IF PREVEX("射精") && CHECK_STAIN(STAIN:PLAYER:Ｖ, "精液") && RAND:3
 			PRINTFORM 精液をトロトロ溢している
-		ELSEIF ABL:サドっ気 >= 3 && RAND:2 == 0
+		ELSEIF ABL:施虐倾向 >= 3 && RAND:2 == 0
 			PRINTFORM 思う存分愉しんだ
 		ELSE
 			PRINTFORM 犯されてほぐれた
@@ -191,7 +191,7 @@ ELSE
 	ENDIF
 	IF CHECK_COM("お掃除クンニ")
 		PRINTFORMW 熱心にお掃除をはじめた…
-	ELSEIF TCVAR:28 > 20 && (TALENT:オトコ || ABL:レズっ気)
+	ELSEIF TCVAR:28 > 20 && (TALENT:男性 || ABL:百合倾向)
 		IF RAND:4 == 0
 			PRINTFORMW クリトリスに吸い付いてきた…
 		ELSEIF RAND:3 == 0
@@ -204,10 +204,10 @@ ELSE
 	ELSEIF RAND:2
 		PRINTFORMW 舌での奉仕をはじめた…
 	ELSE
-		PRINTFORMW \@ (ABL:従順 >= 2 && RAND:2) ? 従順に # ぺろぺろと \@舐めはじめた…
+		PRINTFORMW \@ (ABL:服从 >= 2 && RAND:2) ? 従順に # ぺろぺろと \@舐めはじめた…
 	ENDIF
 
-	SIF CHOSECOM(SELECTCOM) == 0 && TALENT:オトコ == 0 && ABL:レズっ気 == 0 && CHECK_COM("お掃除クンニ") == 0
+	SIF CHOSECOM(SELECTCOM) == 0 && TALENT:男性 == 0 && ABL:百合倾向 == 0 && CHECK_COM("お掃除クンニ") == 0
 		PRINTFORMW 同性の性器に口を付けるのに抵抗があるのか、その表情はなんとも複雑な色を覗かせている…
 ENDIF
 
@@ -222,18 +222,18 @@ CALL COM_ORDER, ARG
 
 LOCAL = RESULT
 
-;ABL:奉仕精神
-IF ABL:奉仕精神
-	LOCAL += ABL:奉仕精神 * 4
-	LOCALS = %LOCALS% + %ABLNAME:6%LV{ABL:奉仕精神}({ABL:奉仕精神 * 4})
+;ABL:侍奉精神
+IF ABL:侍奉精神
+	LOCAL += ABL:侍奉精神 * 4
+	LOCALS = %LOCALS% + %ABLNAME:6%LV{ABL:侍奉精神}({ABL:侍奉精神 * 4})
 ENDIF
-;ABL:レズっ気
-IF ABL:レズっ気
-	LOCAL += ABL:レズっ気 * 5
-	LOCALS = %LOCALS% + %ABLNAME:9%LV{ABL:レズっ気}({ABL:レズっ気 * 5})
+;ABL:百合倾向
+IF ABL:百合倾向
+	LOCAL += ABL:百合倾向 * 5
+	LOCALS = %LOCALS% + %ABLNAME:9%LV{ABL:百合倾向}({ABL:百合倾向 * 5})
 ENDIF
 ;恥じらい
-IF TALENT:恥じらい
+IF TALENT:羞耻心强
 	LOCAL -= 3
 	LOCALS = %LOCALS% - %TALENTNAME:35%(3)
 ENDIF
@@ -243,7 +243,7 @@ IF TALENT:献身
 	LOCALS = %LOCALS% + %TALENTNAME:63%(6)
 ENDIF
 ;快感の否定
-IF TALENT:快感の否定
+IF TALENT:否认快感
 	LOCAL -= 1
 	LOCALS = %LOCALS% - %TALENTNAME:71%(1)
 ENDIF
@@ -253,12 +253,12 @@ IF COM_ORDER_STAIN("Ｖ", "Ｍ")
 	LOCAL -= COM_ORDER_STAIN("Ｖ", "Ｍ")
 	LOCALS = %LOCALS% - 汚れあり
 	;汚臭鈍感
-	SIF TALENT:汚臭鈍感 || TALENT:汚臭敏感
-		LOCALS = %LOCALS%、\@TALENT:汚臭鈍感 ? %TALENTNAME:61% # %TALENTNAME:62%\@
+	SIF TALENT:污臭钝感 || TALENT:污臭敏感
+		LOCALS = %LOCALS%、\@TALENT:污臭钝感 ? %TALENTNAME:61% # %TALENTNAME:62%\@
 	LOCALS = %LOCALS%({COM_ORDER_STAIN("Ｖ", "Ｍ")})
 ENDIF
 ;オトコ
-IF TALENT:オトコ
+IF TALENT:男性
 	LOCAL += 10
 	LOCALS = %LOCALS% + %TALENTNAME:122%(10)
 ENDIF

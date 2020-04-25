@@ -24,7 +24,7 @@ IF ABL:ARG:欲望
 	ENDSELECT
 ENDIF
 ;精液欲チェック
-IF ABL:ARG:精液中毒 + TALENT:ARG:夢魔*2 + TALENT:ARG:上位夢魔*2 >= 3
+IF ABL:ARG:精液上瘾 + TALENT:ARG:梦魔*2 + TALENT:ARG:上位梦魔*2 >= 3
 	CALL SETFLAG, "精液欲ゲージ", ARG
 	SELECTCASE BASE:ARG:精液欲
 	CASE 0
@@ -70,23 +70,23 @@ SIF ASSI
 MEMO_LINECOUNT = LINECOUNT
 REDRAW 0
 
-PRINTFORML 
-PRINTFORML □ レベルリミッター □---------------------------------------------------------
+PRINTFORML
+PRINTFORML □ 等级限制器 □---------------------------------------------------------
 PRINTFORML あなたのＬＶ(通常は{FLAG:255}ＬＶ)を制限することができます。
 PRINTFORML 以下から好みのものを選んでください（同じものを選択すると解除します）
-PRINTFORML 
-PRINTFORM  [ 1]〜[{FLAG:255, 2}] 
+PRINTFORML
+PRINTFORM  [ 1]〜[{FLAG:255, 2}]
 IF FLAG:247 && FLAG:247 <= FLAG:255
 	PRINTFORML 常にＬＶ{FLAG:247}
 ELSE
 	PRINTFORML 0〜{FLAG:255}までの範囲で入力したＬＶで固定する
 ENDIF
-PRINTFORML  [91] \@ CONFIG("レベルリミッター：−10ＬＶ") ? ○ # − \@ 相手のＬＶ−10
-PRINTFORML  [92] \@ CONFIG("レベルリミッター：−５ＬＶ") ? ○ # − \@ 相手のＬＶ−５
-PRINTFORML  [93] \@ CONFIG("レベルリミッター：相手に合わせる") ? ○ # − \@ 相手のＬＶに合わせる
-PRINTFORML  [94] \@ CONFIG("レベルリミッター：＋５ＬＶ") ? ○ # − \@ 相手のＬＶ＋５
-PRINTFORML  [95] \@ CONFIG("レベルリミッター：＋10ＬＶ") ? ○ # − \@ 相手のＬＶ＋10
-IF CONFIG("レベルリミッター")
+PRINTFORML  [91] \@ CONFIG("等级限制器：−10ＬＶ") ? ○ # − \@ 相手のＬＶ−10
+PRINTFORML  [92] \@ CONFIG("等级限制器：−５ＬＶ") ? ○ # − \@ 相手のＬＶ−５
+PRINTFORML  [93] \@ CONFIG("等级限制器：相手に合わせる") ? ○ # − \@ 相手のＬＶに合わせる
+PRINTFORML  [94] \@ CONFIG("等级限制器：＋５ＬＶ") ? ○ # − \@ 相手のＬＶ＋５
+PRINTFORML  [95] \@ CONFIG("等级限制器：＋10ＬＶ") ? ○ # − \@ 相手のＬＶ＋10
+IF CONFIG("等级限制器")
 	PRINTFORML  [99] 使用をやめる
 	PRINTFORML [100] これでよい
 ELSE
@@ -99,7 +99,7 @@ CALL INPUT_SELECT, 101
 
 SELECTCASE RESULT
 CASE 100
-	CALL SETFLAG, "レベルリミッター"
+	CALL SETFLAG, "等级限制器"
 	CALL SETFLAG, "射精ゲージ", MASTER
 	REDRAW 1
 	RETURN 0
@@ -147,7 +147,7 @@ RESTART
 #DIM MEMO_LINECOUNT
 SIF TARGET <= 0
 	RETURN 0
-SIF EXP:調教回数 == 0
+SIF EXP:调教次数 == 0
 	RETURN 0
 
 MEMO_LINECOUNT = LINECOUNT
@@ -159,12 +159,12 @@ SIF LINECOUNT > MEMO_LINECOUNT
 	RETURN 0
 
 ;[精液に弱い]を得るかのチェック。ただし通常は精液中毒を上昇させた時に得るのであくまで補助的
-IF TALENT:精液に弱い == 0
+IF TALENT:弱精液 == 0
 	CALL CALC, "精液に弱い", TARGET
 	;素質を得た
-	IF TALENT:精液に弱い
+	IF TALENT:弱精液
 		PRINTFORM %CALLNAME:TARGET%は幾度も精液を受け止めているうちに、
-		SELECTCASE TALENT_NAME(49, TALENT:精液に弱い)
+		SELECTCASE TALENT_NAME(49, TALENT:弱精液)
 		CASE "精飲に弱い"
 			PRINT 精液を飲まされる事
 		CASE "膣内射精に弱い"
@@ -178,17 +178,17 @@ IF TALENT:精液に弱い == 0
 		ENDSELECT
 		PRINTFORMW で快楽を得る身体になってしまったようだ…
 		PRINTFORM %CALLNAME:TARGET%は
-		LOCALS = [%TALENT_NAME(49, TALENT:精液に弱い)%]
+		LOCALS = [%TALENT_NAME(49, TALENT:弱精液)%]
 		CALL PRINT_COLORTEXT, LOCALS, DEF_COLOR("黄色")
 		PRINTFORMW を得た。
 	ENDIF
 ;精液に弱い箇所の変更判定
 ELSE
-	LOCAL = TALENT:精液に弱い
+	LOCAL = TALENT:弱精液
 	CALL CALC, "精液に弱い部位の変化", TARGET
-	IF TALENT:精液に弱い != LOCAL
+	IF TALENT:弱精液 != LOCAL
 		PRINTFORM %CALLNAME:TARGET%は幾度も精液を受け止めているうちに、
-		SELECTCASE TALENT_NAME(49, TALENT:精液に弱い)
+		SELECTCASE TALENT_NAME(49, TALENT:弱精液)
 		CASE "精飲に弱い"
 			PRINT 精液を飲まされる事
 		CASE "膣内射精に弱い"
@@ -205,14 +205,14 @@ ELSE
 		LOCALS = [%TALENT_NAME(49, LOCAL)%]
 		CALL PRINT_COLORTEXT, LOCALS, DEF_COLOR("黄色")
 		PRINTFORM を失い、
-		LOCALS = [%TALENT_NAME(49, TALENT:精液に弱い)%]
+		LOCALS = [%TALENT_NAME(49, TALENT:弱精液)%]
 		CALL PRINT_COLORTEXT, LOCALS, DEF_COLOR("黄色")
 		PRINTFORMW を得た。
 	ENDIF
 ENDIF
 
 @EVENT_MORASI
-SIF TIME == 0 || TALENT:おもらし癖 || EXP:お漏らし経験 < 30 + CFLAG:34
+SIF TIME == 0 || TALENT:漏尿癖 || EXP:漏尿经验 < 30 + CFLAG:34
 	RETURN 0
 ;おねしょ
 PRINTFORMW （む･･･なんだこれ？）
@@ -224,16 +224,16 @@ ELSE
 ENDIF
 PRINTFORMW してしまったようだ…
 PRINTFORMW %CALLNAME:TARGET%は[おもらし癖]がついた。
-TALENT:おもらし癖 = 1
+TALENT:漏尿癖 = 1
 
 @SELL_MILK
 LOCAL = TFLAG:35 * 10
 LOCAL:1 = LOCAL * 10
 IF LOCAL > 0
 	PRINTFORML 搾乳器を使って%CALLNAME:TARGET%から{LOCAL}ccの母乳を搾り出した。
-	SIF TALENT:処女 == 1
+	SIF TALENT:处女 == 1
 		TIMES LOCAL:1 , 1.50
-	SIF TALENT:人気
+	SIF TALENT:有人气
 		TIMES LOCAL:1 , 1.50
 	SIF TALENT:巨乳
 		TIMES LOCAL:1 , 1.50
@@ -247,25 +247,25 @@ ENDIF
 ;助手の調教終了時特典（狐で媚薬入手など）
 @AFTERTRA_BONUS_ASSI
 IF ASSI
-	IF TALENT:ASSI:スライム && ITEM:ローション < 99
-		PRINTL 
+	IF TALENT:ASSI:史莱姆 && ITEM:润滑液 < 99
+		PRINTL
 		PRINTFORMW %CALLNAME:ASSI%からローションを貰いました。
-		ITEM:ローション += 1
+		ITEM:润滑液 += 1
 	ENDIF
-	IF TALENT:ASSI:妖狐 && ITEM:媚薬 < 99
-		PRINTL 
+	IF TALENT:ASSI:妖狐 && ITEM:媚药 < 99
+		PRINTL
 		PRINTFORMW %CALLNAME:ASSI%から媚薬を貰いました。
-		ITEM:媚薬 += 1
+		ITEM:媚药 += 1
 	ENDIF
 	IF BASE:ASSI:種族 == 3
-		IF TALENT:ASSI:上位夢魔 && ITEM:ラヴェンダー < 99
-			PRINTL 
-			PRINTFORMW %CALLNAME:ASSI%からラヴェンダーを貰いました。
-			ITEM:ラヴェンダー += 1
-		ELSEIF ITEM:ジャスミン < 99
-			PRINTL 
-			PRINTFORMW %CALLNAME:ASSI%からジャスミンを貰いました。
-			ITEM:ジャスミン += 1
+		IF TALENT:ASSI:上位梦魔 && ITEM:薰衣草薰香 < 99
+			PRINTL
+			PRINTFORMW %CALLNAME:ASSI%から薰衣草薰香を貰いました。
+			ITEM:薰衣草薰香 += 1
+		ELSEIF ITEM:茉莉薰香 < 99
+			PRINTL
+			PRINTFORMW %CALLNAME:ASSI%から茉莉薰香を貰いました。
+			ITEM:茉莉薰香 += 1
 		ENDIF
 	ENDIF
 ENDIF
@@ -290,7 +290,7 @@ CASE IS < 50
 CASEELSE
 	LOCAL:1 = 10 + RAND:20
 ENDSELECT
-SIF TALENT:魔王のかけら
+SIF TALENT:魔王残片
 	LOCAL:1 += 2
 SIF !COND("成長済み")
 	LOCAL:1 += 3
@@ -408,7 +408,7 @@ FOR LOCAL, 0, 20
 	JUEL:ARG:LOCAL = 0
 NEXT
 
-ABL:ARG:従順 = MIN(ABL:ARG:従順, 1)
+ABL:ARG:服从 = MIN(ABL:ARG:服从, 1)
 
 TALENT:ARG:恋慕 = 0
 
@@ -416,10 +416,10 @@ TALENT:ARG:恋慕 = 0
 ;ARG:1に夢魔にされたARGが、ARG:1に受ける影響をチェック
 ;------------------------------------------------------------------------
 @CHANGE_SUCCUBUS, ARG, ARG:1
-SIF TALENT:ARG:夢魔 || TALENT:ARG:上位夢魔
+SIF TALENT:ARG:梦魔 || TALENT:ARG:上位梦魔
 	RETURN 0
 
-TALENT:ARG:夢魔 = 1
+TALENT:ARG:梦魔 = 1
 CALL SETFLAG, "夢魔化フラグ", ARG
 CALL EXP50_CHECK, ARG
 
@@ -539,12 +539,12 @@ CASE "多腕"
 	LOCAL = 159
 ;この二つはオトコではダメ
 CASE "濡れやすさ"
-	IF TALENT:ARG:オトコ == 0
+	IF TALENT:ARG:男性 == 0
 		LOCAL = 42
 		LOCAL:1 = 43
 	ENDIF
 CASE "胸の大きさ"
-	IF TALENT:ARG:オトコ == 0
+	IF TALENT:ARG:男性 == 0
 		LOCAL = 109
 		LOCAL:1 = 110
 	ENDIF

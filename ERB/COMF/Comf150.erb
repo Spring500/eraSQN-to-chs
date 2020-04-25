@@ -97,13 +97,13 @@ ELSEIF TEQUIP:押し倒し
 		SIF (PREVCOM >= 70 && PREVCOM <= 79) && COND("前Ｔ調教者") == PLAYER && TEQUIP:アイマスク == 0
 			PRINT 自分のアナルから抜いたばかりの
 		;濡れやすいで追加
-		SIF TALENT:濡れやすい && RAND:3 && TEQUIP:アイマスク == 0
+		SIF TALENT:容易湿 && RAND:3 && TEQUIP:アイマスク == 0
 			PRINT べっとりと
 		SIF (PREVCOM >= 60 && PREVCOM <= 69) && COND("前Ｔ調教者") == PLAYER && TEQUIP:アイマスク == 0
 			PRINT 自分の愛液で
 		PRINT 汚れた
 	;淫乱orサドorサドっ気Lv.5以上で「恥じらい」を持たない
-	;ELSEIF (TALENT:淫乱 || TALENT:小悪魔 || ABL:サドっ気 >= 5) && TALENT:恥じらい == 0
+	;ELSEIF (TALENT:淫乱 || TALENT:小恶魔 || ABL:施虐倾向 >= 5) && TALENT:羞耻心强 == 0
 	;	PRINT 唾液を垂らしながら、
 	ELSEIF RAND:3 == 0
 		PRINTFORM 匂いたつ
@@ -144,17 +144,17 @@ IF TALENT:恋慕 && RAND:4 == 0
 	ELSE
 		PRINTFORM うっとりしながら
 	ENDIF
-ELSEIF ABL:奉仕精神 >= 3 && TEQUIP:押し倒し == 0 && TEQUIP:シックスナイン == 0 && RAND:3 == 0
+ELSEIF ABL:侍奉精神 >= 3 && TEQUIP:押し倒し == 0 && TEQUIP:シックスナイン == 0 && RAND:3 == 0
 	PRINTFORM %TEXTR("上目遣い", "潤んだ瞳")%で見上げながら
 ELSEIF ABL:技巧 >= 3 && TEQUIP:口枷 == 0 && RAND:2
 	PRINTFORM %TEXTR("緩急をつけ", "唇できつく締め付け")%ながら
-ELSEIF TALENT:嘔吐反射耐性 == 0 && RAND:2
+ELSEIF TALENT:呕吐反射耐性 == 0 && RAND:2
 	PRINTFORM 擦られた反射で瞳を潤ませながら
 ELSE
 	PRINTFORM 口元から%TEXTR("泡だった唾液をダラダラと", "粘度の高い大量の涎を")%垂らしながら
 ENDIF
 ;技巧４かつ奉仕精神３
-IF ABL:技巧 >= 4 && ABL:奉仕精神 >= 3
+IF ABL:技巧 >= 4 && ABL:侍奉精神 >= 3
 	IF RAND:2
 		PRINTFORMW 喉全体を駆使して刺激してきた…
 	ELSE
@@ -181,23 +181,23 @@ CALL COM_ORDER, ARG
 
 LOCAL = RESULT
 
-;ABL:奉仕精神
-IF ABL:奉仕精神
-	LOCAL += ABL:奉仕精神 * 4
-	LOCALS = %LOCALS% + %ABLNAME:6%LV{ABL:奉仕精神}({ABL:奉仕精神 * 4})
+;ABL:侍奉精神
+IF ABL:侍奉精神
+	LOCAL += ABL:侍奉精神 * 4
+	LOCALS = %LOCALS% + %ABLNAME:6%LV{ABL:侍奉精神}({ABL:侍奉精神 * 4})
 ENDIF
-;ABL:マゾっ気
-IF ABL:マゾっ気
-	LOCAL += ABL:マゾっ気 * 3
-	LOCALS = %LOCALS% + %ABLNAME:8%LV{ABL:マゾっ気}({ABL:マゾっ気 * 3})
+;ABL:受虐倾向
+IF ABL:受虐倾向
+	LOCAL += ABL:受虐倾向 * 3
+	LOCALS = %LOCALS% + %ABLNAME:8%LV{ABL:受虐倾向}({ABL:受虐倾向 * 3})
 ENDIF
-;ABL:精液中毒
-IF ABL:精液中毒
-	LOCAL += ABL:精液中毒 * 3
-	LOCALS = %LOCALS% + %ABLNAME:11%LV{ABL:精液中毒}({ABL:精液中毒 * 3})
+;ABL:精液上瘾
+IF ABL:精液上瘾
+	LOCAL += ABL:精液上瘾 * 3
+	LOCALS = %LOCALS% + %ABLNAME:11%LV{ABL:精液上瘾}({ABL:精液上瘾 * 3})
 ENDIF
 ;恥じらい
-IF TALENT:恥じらい
+IF TALENT:羞耻心强
 	LOCAL -= 1
 	LOCALS = %LOCALS% - %TALENTNAME:35%(1)
 ENDIF
@@ -207,19 +207,19 @@ IF TALENT:献身
 	LOCALS = %LOCALS% + %TALENTNAME:63%(6)
 ENDIF
 ;快感の否定
-IF TALENT:快感の否定
+IF TALENT:否认快感
 	LOCAL -= 1
 	LOCALS = %LOCALS% - %TALENTNAME:71%(1)
 ENDIF
 ;嘔吐反射耐性
-IF TALENT:嘔吐反射耐性
+IF TALENT:呕吐反射耐性
 	LOCAL += 20
 	LOCALS = %LOCALS% + 嘔吐反射耐性(20)
 ENDIF
 
 LOCAL:1 = COM_ORDER_STAIN("Ｐ", "Ｍ")
 ;サドなら、汚れていても、かまわずに突っ込みます
-SIF ABL:PLAYER:サドっ気 >= 3
+SIF ABL:PLAYER:施虐倾向 >= 3
 	LOCAL:1 /= 3
 
 ;汚れあり
@@ -227,8 +227,8 @@ IF LOCAL:1
 	LOCAL -= LOCAL:1
 	LOCALS = %LOCALS% - 汚れあり
 	;汚臭鈍感
-	SIF TALENT:汚臭鈍感 || TALENT:汚臭敏感
-		LOCALS = %LOCALS%、\@TALENT:汚臭鈍感 ? %TALENTNAME:61% # %TALENTNAME:62%\@
+	SIF TALENT:污臭钝感 || TALENT:污臭敏感
+		LOCALS = %LOCALS%、\@TALENT:污臭钝感 ? %TALENTNAME:61% # %TALENTNAME:62%\@
 	LOCALS = %LOCALS%({LOCAL:1})
 ENDIF
 
