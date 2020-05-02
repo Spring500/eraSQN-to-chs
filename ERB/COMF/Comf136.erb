@@ -3,7 +3,7 @@
 ;排泄した場合は NOWEX:排泄 で記録。SOURCEとしては、12：露出、13：屈従、14：逸脱が特に高い。
 ;排泄を撮影すると、初回は屈従が凄まじい事になる
 
-IF COND("アナル栓") || (TEQUIP:触手 && TEQUIP:浣腸)
+IF COND("アナル栓") || (TEQUIP:触手 && TEQUIP:灌肠)
 	IF COND("大量浣腸")
 		PRINT 大量排泄
 	ELSEIF COND("液体浣腸")
@@ -11,7 +11,7 @@ IF COND("アナル栓") || (TEQUIP:触手 && TEQUIP:浣腸)
 	ELSE
 		PRINT 腸内ガス排泄
 	ENDIF
-	SIF TEQUIP:ビデオカメラ
+	SIF TEQUIP:录像带
 		PRINT （ビデオ録画中）
 ELSEIF TEQUIP:触手
 	PRINT 触手浣腸
@@ -26,7 +26,7 @@ SIF REFUSE_CHECK()
 	RETURN 0
 
 IF NOWEX:排泄
-	IF TEQUIP:ビデオカメラ
+	IF TEQUIP:录像带
 		STR:0 = 排泄（ビデオ録画中）
 	ELSE
 		STR:0 = 排泄
@@ -51,7 +51,7 @@ SIF !CHECK_CLO("Ａ露出")
 @SOURCE_COM136, ARG
 VARSET LOCAL
 
-;プレイとしては、TEQUIP:浣腸…つまりCOND("液体浣腸")の値が増えるほどキツいこととする。最高に厳しいのは排泄プレイ。
+;プレイとしては、TEQUIP:灌肠…つまりCOND("液体浣腸")の値が増えるほどキツいこととする。最高に厳しいのは排泄プレイ。
 LOCAL:20 += 60
 LOCAL:21 += 150
 
@@ -76,25 +76,25 @@ IF NOWEX:排泄
 	LOCAL:13 += NOWEX:排泄 * 5000 + 10000
 	LOCAL:14 += NOWEX:排泄 * 5000 + 10000
 	;初めて撮影したなら
-	IF TEQUIP:ビデオカメラ && GETBIT(CFLAG:12, 7) == 0
+	IF TEQUIP:录像带 && GETBIT(CFLAG:12, 7) == 0
 		LOCAL:13 *= 10
 	;撮影したなら
-	ELSEIF TEQUIP:ビデオカメラ
+	ELSEIF TEQUIP:录像带
 		LOCAL:13 *= 2
 	ENDIF
 ENDIF
 
 ;場所をみる
-IF COND("人里") || TEQUIP:館内露出プレイ
+IF COND("人里") || TEQUIP:馆内露出Play
 	TIMES LOCAL:12 , 1.50
 	TIMES LOCAL:14 , 3.00
-ELSEIF TEQUIP:野外プレイ
+ELSEIF TEQUIP:野外Play
 	TIMES LOCAL:12 , 1.50
 	TIMES LOCAL:14 , 2.00
-ELSEIF TEQUIP:羞恥プレイ
+ELSEIF TEQUIP:羞耻Play
 	TIMES LOCAL:12 , 1.20
 	TIMES LOCAL:14 , 1.50
-ELSEIF TEQUIP:お風呂プレイ
+ELSEIF TEQUIP:沐浴Play
 	TIMES LOCAL:14 , 0.50
 ENDIF
 
@@ -148,7 +148,7 @@ ENDSELECT
 SIF (TALENT:处女 == 1 && TALENT:看重贞操) || CFLAG:100
 	LOCAL:14 /= 2
 
-CALL SOURCE_SMPLAY, "浣腸", ARG
+CALL SOURCE_SMPLAY, "灌肠", ARG
 
 CALL CALC, "調教ソース", LOCAL:0, LOCAL:1, LOCAL:2, LOCAL:3, LOCAL:4, LOCAL:5, LOCAL:6, LOCAL:7, LOCAL:8, LOCAL:9, LOCAL:10, LOCAL:11, LOCAL:12, LOCAL:13, LOCAL:14, LOCAL:15, LOCAL:16, LOCAL:17, LOCAL:18, LOCAL:19, LOCAL:20, LOCAL:21, ARG
 
@@ -167,15 +167,15 @@ CALL CALC, "調教ソース", LOCAL:0, LOCAL:1, LOCAL:2, LOCAL:3, LOCAL:4, LOCAL
 IF COND("アナル栓")
 	CALL SETFLAG, "排泄"
 ELSE
-	IF TEQUIP:浣腸
+	IF TEQUIP:灌肠
 		IF COND("大量浣腸")
 			PRINTFORMW %CALLNAME:TARGET%に限界まで浣腸液を追加で注入した
 			PRINTFORMW 大量の液体に満たされた%CALLNAME:TARGET%のお腹は蛙の様に膨れ上がっている…
-			TEQUIP:浣腸 = 1p1 + 1p2 + 1p3 + 1p4
+			TEQUIP:灌肠 = 1p1 + 1p2 + 1p3 + 1p4
 		ELSE
 			PRINTFORMW %CALLNAME:TARGET%の菊穴に追加の浣腸液を流し込んだ
 			PRINTFORMW もう少しなら余裕がありそうだが、%CALLNAME:TARGET%のお腹はぽっこりと膨らんで結構苦しそうだ…
-			TEQUIP:浣腸 = 1p1 + 1p2 + 1p3
+			TEQUIP:灌肠 = 1p1 + 1p2 + 1p3
 		ENDIF
 	ELSEIF ITEM:灌肠器＋肛塞
 		PRINTFORML どれで%CALLNAME:TARGET%のお腹を膨らませますか？
@@ -199,23 +199,23 @@ ELSE
 			RETURN 0
 		ELSEIF RESULT == 0
 			PRINTFORMW %CALLNAME:TARGET%の菊穴に浣腸液を少量だけ流し込んだ
-			TEQUIP:浣腸 = 1p1
+			TEQUIP:灌肠 = 1p1
 		ELSEIF RESULT == 1
 			PRINTFORMW %CALLNAME:TARGET%の菊穴に浣腸液を流し込んだ
-			TEQUIP:浣腸 = 1p1 + 1p2
+			TEQUIP:灌肠 = 1p1 + 1p2
 		ELSEIF RESULT == 2
 			PRINTFORMW %CALLNAME:TARGET%の菊穴に大量の浣腸液を流し込んだ
-			TEQUIP:浣腸 = 1p1 + 1p2 + 1p3
+			TEQUIP:灌肠 = 1p1 + 1p2 + 1p3
 		ELSEIF RESULT == 3
 			PRINTFORMW 大量の浣腸液を注入され%CALLNAME:TARGET%のおなかはまるで妊婦のように膨らんでしまった…
-			TEQUIP:浣腸 = 1p1 + 1p2 + 1p3 + 1p4
+			TEQUIP:灌肠 = 1p1 + 1p2 + 1p3 + 1p4
 		ELSEIF RESULT == 4 && ITEM:打气筒
 			PRINTFORMW %CALLNAME:TARGET%の菊穴に、腹が膨れるくらいポンプで空気を送り込んだ
-			TEQUIP:浣腸 = 1p0 + 1p9
+			TEQUIP:灌肠 = 1p0 + 1p9
 		ENDIF
 	ELSE
 		PRINTFORMW %CALLNAME:TARGET%の菊穴に、腹が膨れるくらいポンプで空気を送り込んだ
-		TEQUIP:浣腸 = 1p0 + 1p9
+		TEQUIP:灌肠 = 1p0 + 1p9
 	ENDIF
 	IF COND("液体浣腸") && COND("アナル栓") == 0
 		PRINTFORML 　
@@ -225,11 +225,11 @@ ELSE
 		CALL INPUT_SELECT, 2
 		IF RESULT == 0
 			PRINTFORMW %CALLNAME:TARGET%のアナルにプラグで栓をした…
-			SETBIT TEQUIP:浣腸, 9
+			SETBIT TEQUIP:灌肠, 9
 		ENDIF
 	ENDIF
 	;精液浣腸フラグ消去
-	CLEARBIT TEQUIP:浣腸, 10
+	CLEARBIT TEQUIP:灌肠, 10
 ENDIF
 
 @TRAIN_MESSAGE_COM207
@@ -237,7 +237,7 @@ IF COND("アナル栓")
 	CALL SETFLAG, "排泄"
 ELSE
 	;液体量MAX＆プラグつき
-	TEQUIP:浣腸 = 1p1 + 1p2 + 1p3 + 1p4 + 1p9
+	TEQUIP:灌肠 = 1p1 + 1p2 + 1p3 + 1p4 + 1p9
 	PRINTFORMW 極太の触手が%CALLNAME:TARGET%の菊穴をふさぎ、体液を流し込んだ…
 	CALL ADD_STAIN, TARGET, "Ａ", "触手"
 ENDIF
@@ -272,7 +272,7 @@ ELSE
 	CASE 4
 		PRINT （超大量）
 	ENDSELECT
-	IF TEQUIP:拡張バルーン == 2
+	IF TEQUIP:扩张气囊 == 2
 		PRINT ＋アナル拡張バルーン
 	ELSEIF INSERT("Ａインサート")
 		PRINT ＋Ａインサート
@@ -295,7 +295,7 @@ IF COND("精液浣腸")
 ELSEIF COND("液体浣腸")
 	VARSET LOCAL
 	;ターンごとに耐えるのがきつくなる
-	LOCAL = 300 + (CUP:快Ｃ + CUP:快Ｖ + CUP:快Ａ + CUP:苦痛)/5 + NOWEX:Ｃ絶頂*200 + NOWEX:Ｖ絶頂*500 + NOWEX:Ａ絶頂*1000 + NOWEX:絶頂数合計*100
+	LOCAL = 300 + (CUP:快Ｃ + CUP:快Ｖ + CUP:快Ａ + CUP:痛苦)/5 + NOWEX:Ｃ绝顶*200 + NOWEX:Ｖ绝顶*500 + NOWEX:Ａ绝顶*1000 + NOWEX:绝顶数合计*100
 
 	;浣腸量による補正
 	SELECTCASE COND("液体浣腸")

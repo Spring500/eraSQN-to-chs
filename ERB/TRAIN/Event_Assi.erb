@@ -46,7 +46,7 @@ CALL ASSI_CHANGE_INDICATE, ASSI
 SIF ASSI <= 0 || ASSIPLAY
 	RETURN 0
 ;Ｗ押し倒しや３Ｐに参加している場合もやってこない
-SIF TEQUIP:Ｗ押し倒し && SELECTCOM:1 >= 0 && TARGET:1 == ASSI
+SIF TEQUIP:Ｗ推到 && SELECTCOM:1 >= 0 && TARGET:1 == ASSI
 	RETURN 0
 SIF SELECTCOM:2 >= 0 && PLAYER:1 == ASSI
 	RETURN 0
@@ -85,7 +85,7 @@ TFLAG:16 = LOCAL
 VARSET LOCAL
 ;主人をお掃除
 IF GETBIT(CFLAG:ASSI:35, 40)
-	IF PLAYER == MASTER && COND("絶頂", PLAYER) && INSERT("インサート") == 0 && PENIS(MASTER)
+	IF PLAYER == MASTER && COND("绝顶", PLAYER) && INSERT("インサート") == 0 && PENIS(MASTER)
 		SIF SHOOT("膣内") && CHECK_STAIN(STAIN:MASTER:Ｐ, "Ｖ")
 			LOCAL = 1
 		SIF SHOOT("アナル") && CHECK_STAIN(STAIN:MASTER:Ｐ, "Ａ")
@@ -98,7 +98,7 @@ IF GETBIT(CFLAG:ASSI:35, 40)
 ENDIF
 ;対象をお掃除
 IF GETBIT(CFLAG:ASSI:35, 41)
-	IF COND("絶頂", PLAYER) && INSERT("インサート") == 0
+	IF COND("绝顶", PLAYER) && INSERT("インサート") == 0
 		SIF SHOOT("膣内") && STAIN:Ｖ != SET_STAIN(0, "Ｖ")
 			LOCAL:1 = 1
 		SIF SHOOT("アナル") && STAIN:Ａ != SET_STAIN(0, "Ａ")
@@ -113,7 +113,7 @@ IF GETBIT(CFLAG:ASSI:35, 41)
 			ENDIF
 		ENDIF
 	ENDIF
-	SIF TALENT:女性 && CHECK_CLO("Ｖ露出") && CHECK_STAIN(STAIN:Ｖ, "尿") && NOWEX:絶頂お漏らし
+	SIF TALENT:女性 && CHECK_CLO("Ｖ露出") && CHECK_STAIN(STAIN:Ｖ, "尿") && NOWEX:绝顶漏尿
 		LOCAL:1 = 4
 ENDIF
 
@@ -382,17 +382,17 @@ CALL COM_ORDER, 1
 MEMO_ORDER = RESULT
 
 IF ITEM:麝香薰香 && (MEMO_ORDER <= 0 || ITEM:麝香薰香 > 2 || ITEM:茉莉薰香 + ITEM:薰衣草薰香 + ITEM:檀香薰香 + ITEM:迷迭香薰香 == 0)
-	TEQUIP:MASTER:インセンス = 1p6
+	TEQUIP:MASTER:薰香 = 1p6
 ELSEIF ITEM:薰衣草薰香 + ITEM:檀香薰香 + ITEM:迷迭香薰香 && (MEMO_ORDER < 20 || ITEM:茉莉薰香 == 0)
 	IF ITEM:迷迭香薰香 && RANDIF(1, ITEM:薰衣草薰香, ITEM:檀香薰香)
-		TEQUIP:MASTER:インセンス = 1p5 + 1p11
+		TEQUIP:MASTER:薰香 = 1p5 + 1p11
 	ELSEIF ITEM:檀香薰香 && RANDIF(1, ITEM:薰衣草薰香)
-		TEQUIP:MASTER:インセンス = 1p5 + 1p8
+		TEQUIP:MASTER:薰香 = 1p5 + 1p8
 	ELSE
-		TEQUIP:MASTER:インセンス = 1p5
+		TEQUIP:MASTER:薰香 = 1p5
 	ENDIF
 ELSEIF ITEM:茉莉薰香
-	TEQUIP:MASTER:インセンス = 1p4
+	TEQUIP:MASTER:薰香 = 1p4
 ENDIF
 
 
@@ -405,13 +405,13 @@ SIF ARGS != "調教開始" && TFLAG:6
 	RETURN 0
 
 ;インセンス
-IF GETBIT(CFLAG:ASSI:35, 25) && TEQUIP:MASTER:インセンス == 0 && NUM("所持インセンス")
+IF GETBIT(CFLAG:ASSI:35, 25) && TEQUIP:MASTER:薰香 == 0 && NUM("所持インセンス")
 	PRINTFORML ＜\@ ARGS != "調教開始" ? オート # \@インセンス＞
 
 	CALL AUTO_INCENSE
 
-	IF TEQUIP:MASTER:インセンス
-		LOCALS = %TEXTS("インセンス", TEQUIP:MASTER:インセンス)%
+	IF TEQUIP:MASTER:薰香
+		LOCALS = %TEXTS("薰香", TEQUIP:MASTER:薰香)%
 		ITEM:LOCALS -= 1
 		PRINTFORML %CALLNAME:ASSI%は%LOCALS%のお香を使った！
 		TFLAG:6 = 1
@@ -429,11 +429,11 @@ IF ARGS == "調教開始" && GETBIT(CFLAG:ASSI:35, 45)
 ENDIF
 
 ;ローション
-IF GETBIT(CFLAG:ASSI:35, 20) && TEQUIP:ローション == 0 && ITEM:润滑液 && MIN(PALAM:Ｖ潤, PALAM:Ａ潤) < 10000
+IF GETBIT(CFLAG:ASSI:35, 20) && TEQUIP:润滑液 == 0 && ITEM:润滑液 && MIN(PALAM:Ｖ润, PALAM:Ａ润) < 10000
 	PRINTFORML ＜\@ ARGS != "調教開始" ? オート # \@ローション＞
 	CALL SETFLAG, "調教外潤滑追加", 10000
 
-	SETBIT TEQUIP:ローション, 0
+	SETBIT TEQUIP:润滑液, 0
 	ITEM:润滑液 -= 1
 	TFLAG:6 = 1
 	IF ARGS != "調教開始"
@@ -443,16 +443,16 @@ IF GETBIT(CFLAG:ASSI:35, 20) && TEQUIP:ローション == 0 && ITEM:润滑液 &&
 	ENDIF
 ENDIF
 ;媚薬
-IF GETBIT(CFLAG:ASSI:35, 21) && TEQUIP:媚薬 == 0 && ITEM:媚药
+IF GETBIT(CFLAG:ASSI:35, 21) && TEQUIP:媚药 == 0 && ITEM:媚药
 	PRINTFORML ＜\@ ARGS != "調教開始" ? オート # \@媚薬＞
 	ITEM:媚药 -= 1
 	;調合知識や禁断の知識があれば効果ＵＰ
 	IF TALENT:ASSI:调合知识 && TALENT:ASSI:禁忌知识
-		TEQUIP:媚薬 = 100
+		TEQUIP:媚药 = 100
 	ELSEIF TALENT:ASSI:调合知识
-		TEQUIP:媚薬 = 50
+		TEQUIP:媚药 = 50
 	ENDIF
-	CALL ADD_STATE, TARGET, "媚薬"
+	CALL ADD_STATE, TARGET, "媚药"
 	TFLAG:6 = 1
 	IF ARGS != "調教開始"
 		PRINTFORM %CALLNAME:ASSI%は%CALLNAME:TARGET%に
@@ -464,10 +464,10 @@ IF GETBIT(CFLAG:ASSI:35, 21) && TEQUIP:媚薬 == 0 && ITEM:媚药
 	ENDIF
 ENDIF
 ;利尿剤
-IF GETBIT(CFLAG:ASSI:35, 22) && TEQUIP:利尿剤 == 0 && ITEM:利尿剂 && TALENT:药物耐性 == 0
+IF GETBIT(CFLAG:ASSI:35, 22) && TEQUIP:利尿剂 == 0 && ITEM:利尿剂 && TALENT:药物耐性 == 0
 	PRINTFORML ＜\@ ARGS != "調教開始" ? オート # \@利尿剤＞
 	ITEM:利尿剂 -= 1
-	TEQUIP:利尿剤 = 1
+	TEQUIP:利尿剂 = 1
 	TFLAG:6 = 1
 	IF ARGS != "調教開始"
 		PRINTFORML %CALLNAME:ASSI%は%CALLNAME:TARGET%に利尿剤を飲ませた
@@ -476,10 +476,10 @@ IF GETBIT(CFLAG:ASSI:35, 22) && TEQUIP:利尿剤 == 0 && ITEM:利尿剂 && TALEN
 	ENDIF
 ENDIF
 ;鎮静剤
-IF GETBIT(CFLAG:ASSI:35, 23) && TEQUIP:MASTER:ドラッグ == 0 && ITEM:镇静剂
+IF GETBIT(CFLAG:ASSI:35, 23) && TEQUIP:MASTER:药品 == 0 && ITEM:镇静剂
 	PRINTFORML ＜\@ ARGS != "調教開始" ? オート # \@鎮静剤＞
 	ITEM:镇静剂 -= 1
-	TEQUIP:MASTER:ドラッグ |= 1
+	TEQUIP:MASTER:药品 |= 1
 	TFLAG:6 = 1
 	IF ARGS != "調教開始"
 		PRINTFORML %CALLNAME:ASSI%は%CALLNAME:MASTER%に鎮静剤を飲ませた
@@ -488,10 +488,10 @@ IF GETBIT(CFLAG:ASSI:35, 23) && TEQUIP:MASTER:ドラッグ == 0 && ITEM:镇静�
 	ENDIF
 ENDIF
 ;排卵誘発剤
-IF GETBIT(CFLAG:ASSI:35, 24) && TEQUIP:排卵誘発剤 == 0 && ITEM:排卵诱发剂 && TALENT:药物耐性 == 0 && COND("妊娠可能")
+IF GETBIT(CFLAG:ASSI:35, 24) && TEQUIP:排卵诱发剂 == 0 && ITEM:排卵诱发剂 && TALENT:药物耐性 == 0 && COND("妊娠可能")
 	PRINTFORML ＜\@ ARGS != "調教開始" ? オート # \@排卵誘発剤＞
 	ITEM:排卵诱发剂 -= 1
-	TEQUIP:排卵誘発剤 = 1
+	TEQUIP:排卵诱发剂 = 1
 	TFLAG:6 = 1
 	IF ARGS != "調教開始"
 		PRINTFORML %CALLNAME:ASSI%は%CALLNAME:TARGET%に排卵誘発剤を飲ませた…
@@ -500,14 +500,14 @@ IF GETBIT(CFLAG:ASSI:35, 24) && TEQUIP:排卵誘発剤 == 0 && ITEM:排卵诱发
 	ENDIF
 ENDIF
 ;入浴剤
-IF GETBIT(CFLAG:ASSI:35, 26) && TEQUIP:お風呂プレイ && TEQUIP:MASTER:入浴剤 == 0 && ITEM:沐浴乳
+IF GETBIT(CFLAG:ASSI:35, 26) && TEQUIP:沐浴Play && TEQUIP:MASTER:沐浴乳 == 0 && ITEM:沐浴乳
 	PRINTFORML ＜\@ ARGS != "調教開始" ? オート # \@入浴剤＞
 	ITEM:沐浴乳 -= 1
-	TEQUIP:MASTER:入浴剤 = 1 + RAND:7
+	TEQUIP:MASTER:沐浴乳 = 1 + RAND:7
 	TFLAG:6 = 1
 	IF ARGS != "調教開始"
 		PRINTFORM %CALLNAME:ASSI%は
-		SELECTCASE TEQUIP:MASTER:入浴剤
+		SELECTCASE TEQUIP:MASTER:沐浴乳
 		CASE 1
 			PRINTFORM 『泡風呂のもと』
 		CASE 2
@@ -529,10 +529,10 @@ IF GETBIT(CFLAG:ASSI:35, 26) && TEQUIP:お風呂プレイ && TEQUIP:MASTER:入�
 	ENDIF
 ENDIF
 ;撮影(撮影されたことがある相手に対してのみ)
-IF ARGS == "調教開始" && GETBIT(CFLAG:ASSI:35, 27) && TEQUIP:ビデオカメラ == 0 && ITEM:摄像机 && ITEM:录像带 && FIRSTCOM(170)
+IF ARGS == "調教開始" && GETBIT(CFLAG:ASSI:35, 27) && TEQUIP:录像带 == 0 && ITEM:摄像机 && ITEM:录像带 && FIRSTCOM(170)
 	PRINTL ＜ビデオ撮影開始＞
 	ITEM:录像带 -= 1
-	TEQUIP:ビデオカメラ = 1
+	TEQUIP:录像带 = 1
 	TFLAG:6 = 1
 ENDIF
 
@@ -768,7 +768,7 @@ SIF TALENT:ARG:调合知识
 ;	PRINTBUTTON "両刀 ", "両刀"
 SIF TALENT:ARG:抖Ｓ
 	PRINTBUTTON "サド ", "サド"
-SIF BASE:ASSI:種族 == 3
+SIF BASE:ASSI:种族 == 3
 	PRINTBUTTON "ドライアド ", "ドライアド"
 SIF TALENT:ARG:妖狐
 	PRINTBUTTON "妖狐 ", "妖狐"

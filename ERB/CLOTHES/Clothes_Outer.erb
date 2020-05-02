@@ -2,20 +2,20 @@
 ;ズボンなど、腰辺りから足首までを覆うものを穿かせる関数。パンストなども含む
 ;指定番号によって名前がCSTR:45に代入される。
 ;99番までは、その番号の夢魔の下着。
-;EQUIP:アウターはズボンの特徴フラグ。ビット管理する
+;EQUIP:外套はズボンの特徴フラグ。ビット管理する
 ;-------------------------------------------------
 @SET_OUTER, ARG, ARG:1
 ;ARGのズボンをARG:1番のものにする。ARG:1==0ならズボンを脱がす
 ;汚れ＆ずれたりしたフラグ等を初期化して新品にする
-STAIN:ARG:アウター = 0
+STAIN:ARG:外套 = 0
 TCVAR:ARG:26 = 0
 
 IF ARG:1 == 0 || COND("脚の使用", ARG) == 0
 	IF CHECK_OUTER("つなぎ", ARG)
-		EQUIP:ARG:上着 = 0
+		EQUIP:ARG:上衣 = 0
 		CSTR:ARG:42 = 
 	ENDIF
-	EQUIP:ARG:アウター = 0
+	EQUIP:ARG:外套 = 0
 	CSTR:ARG:45 = 
 	RETURN 0
 ENDIF
@@ -23,19 +23,19 @@ ENDIF
 ;名前記録
 CSTR:ARG:45 = %PALAM_OUTER(ARG:1, ARG, 1)%
 IF CHECK_OUTER("つなぎ", ARG) == 0 && CHECK_SHIRT("つなぎ", ARG)
-	EQUIP:ARG:上着 = 0
+	EQUIP:ARG:上衣 = 0
 	CSTR:ARG:42 = 
 ENDIF
 
-SIF EQUIP:ARG:アウター && !CHECK_OUTER("パンスト", ARG)
+SIF EQUIP:ARG:外套 && !CHECK_OUTER("パンスト", ARG)
 	CALL SET_BODYS, ARG
-IF EQUIP:ARG:アウター && EQUIP:ARG:パンツ
+IF EQUIP:ARG:外套 && EQUIP:ARG:胖次
 	SIF CHECK_OUTER("食い込み", ARG) && !CHECK_PANTIES("食い込み", ARG) && !CHECK_PANTIES("Ｔバック", ARG) && !CHECK_PANTIES("Ｖバック", ARG)
 		CALL SET_PANTIES, ARG
 	SIF CHECK_OUTER("ファスナー", ARG) || CHECK_OUTER("Ｖ露出", ARG) || CHECK_OUTER("Ａ露出", ARG)
 		CALL SET_PANTIES, ARG
 ENDIF
-SIF EQUIP:ARG:アウター && CHECK_OUTER("パンスト", ARG)
+SIF EQUIP:ARG:外套 && CHECK_OUTER("パンスト", ARG)
 	CALL SET_SOCKS, ARG
 
 TCVAR:ARG:26 = 0
@@ -49,7 +49,7 @@ IF ARG:1 == 0
 	LOCALS = %CSTR:ARG:45%
 	SIF CONFIG("衣装の細かい色表示の禁止")
 		RETURNF LOCALS
-	LOCALS:1 = %TEXTS("衣装の色", EQUIP:ARG:アウター)%
+	LOCALS:1 = %TEXTS("衣装の色", EQUIP:ARG:外套)%
 	SIF LOCALS:1 != "" && (SUBSTRING(CSTR:ARG:45, 0, 2) != SUBSTRING(LOCALS:1, 0, 2) )
 		LOCALS = %LOCALS%(%LOCALS:1%)
 ELSE
@@ -94,7 +94,7 @@ VARSET LOCALS
 
 IF ARG:1 > 0 && COND("脚の使用", ARG:1) == 0
 	SIF ARG:2 > 0
-		EQUIP:(ARG:1):アウター = LOCAL
+		EQUIP:(ARG:1):外套 = LOCAL
 	RETURNF LOCALS
 ENDIF
 
@@ -171,7 +171,7 @@ CASE 135
 ENDSELECT
 
 SIF ARG:1 > 0 && ARG:2 > 0
-	EQUIP:(ARG:1):アウター = LOCAL
+	EQUIP:(ARG:1):外套 = LOCAL
 
 RETURNF LOCALS
 
@@ -242,61 +242,61 @@ RETURNF LOCAL
 #FUNCTION
 SIF ARG == 0 && TARGET
 	ARG = TARGET
-SIF EQUIP:ARG:アウター == 0
+SIF EQUIP:ARG:外套 == 0
 	RETURNF 0
 SELECTCASE ARGS
 ;ずれ不可でなく、ずらしていない
 CASE "ずらし可", "ずらせる"
-	SIF SETFLAG_OUTER("Ｖ露出")&EQUIP:ARG:アウター
+	SIF SETFLAG_OUTER("Ｖ露出")&EQUIP:ARG:外套
 		RETURNF 0
-	IF SETFLAG_OUTER("ファスナー")&EQUIP:ARG:アウター
-		SIF SETFLAG_OUTER("ファスナー開")&EQUIP:ARG:アウター
+	IF SETFLAG_OUTER("ファスナー")&EQUIP:ARG:外套
+		SIF SETFLAG_OUTER("ファスナー開")&EQUIP:ARG:外套
 			RETURNF 0
 		SIF CHECK_OUTER("ファスナー閉")
 			RETURNF 1
 	ENDIF
-	SIF SETFLAG_OUTER("ずらした")&EQUIP:ARG:アウター
+	SIF SETFLAG_OUTER("ずらした")&EQUIP:ARG:外套
 		RETURNF 0
-	SIF SETFLAG_OUTER("ずれ不可")&EQUIP:ARG:アウター
+	SIF SETFLAG_OUTER("ずれ不可")&EQUIP:ARG:外套
 		RETURNF 0
 	RETURNF 1
 ;パンストで、破いていない
 CASE "破ける"
-	SIF SETFLAG_OUTER("破いた")&EQUIP:ARG:アウター
+	SIF SETFLAG_OUTER("破いた")&EQUIP:ARG:外套
 		RETURNF 0
-	SIF SETFLAG_OUTER("パンスト")&EQUIP:ARG:アウター
+	SIF SETFLAG_OUTER("パンスト")&EQUIP:ARG:外套
 		RETURNF 1
 ;ファスナーがあり、あけていない
 CASE "ファスナー閉"
-	SIF SETFLAG_OUTER("ファスナー開")&EQUIP:ARG:アウター
+	SIF SETFLAG_OUTER("ファスナー開")&EQUIP:ARG:外套
 		RETURNF 0
-	SIF SETFLAG_OUTER("ファスナー")&EQUIP:ARG:アウター
+	SIF SETFLAG_OUTER("ファスナー")&EQUIP:ARG:外套
 		RETURNF 1
 CASE "クロッチ"
-	SIF SETFLAG_OUTER("ファスナー開", "ずらした", "破いた", "Ｖ露出", "スリット")&EQUIP:ARG:アウター
+	SIF SETFLAG_OUTER("ファスナー開", "ずらした", "破いた", "Ｖ露出", "スリット")&EQUIP:ARG:外套
 		RETURNF 0
 	RETURNF 1
 CASE "Ａクロッチ"
-	SIF SETFLAG_OUTER("ファスナー開", "ずらした", "破いた", "Ａ露出", "スリット")&EQUIP:ARG:アウター
+	SIF SETFLAG_OUTER("ファスナー開", "ずらした", "破いた", "Ａ露出", "スリット")&EQUIP:ARG:外套
 		RETURNF 0
 	RETURNF 1
 CASE "食い込み"
-	SIF SETFLAG_OUTER("ずらした", "ファスナー開", "Ｖ露出", "スリット", "破いた")&EQUIP:ARG:アウター
+	SIF SETFLAG_OUTER("ずらした", "ファスナー開", "Ｖ露出", "スリット", "破いた")&EQUIP:ARG:外套
 		RETURNF 0
-	SIF SETFLAG_OUTER("ハイレグ", "Ｔフロント")&EQUIP:ARG:アウター
+	SIF SETFLAG_OUTER("ハイレグ", "Ｔフロント")&EQUIP:ARG:外套
 		RETURNF 1
 CASE "蒸れ"
-	SIF SETFLAG_OUTER("ずらした", "ファスナー開", "Ｖ露出", "スリット", "破いた")&EQUIP:ARG:アウター
+	SIF SETFLAG_OUTER("ずらした", "ファスナー開", "Ｖ露出", "スリット", "破いた")&EQUIP:ARG:外套
 		RETURNF 0
-	SIF CHECK_STAIN(STAIN:ARG:アウター, "蒸れ")
+	SIF CHECK_STAIN(STAIN:ARG:外套, "蒸れ")
 		RETURNF 1
 CASE "染み"
-	SIF SETFLAG_OUTER("ずらした", "ファスナー開", "Ｖ露出", "スリット", "破いた", "通気性無し")&EQUIP:ARG:アウター
+	SIF SETFLAG_OUTER("ずらした", "ファスナー開", "Ｖ露出", "スリット", "破いた", "通気性無し")&EQUIP:ARG:外套
 		RETURNF 0
-	SIF CHECK_STAIN(STAIN:ARG:アウター, "濡れ")
+	SIF CHECK_STAIN(STAIN:ARG:外套, "濡れ")
 		RETURNF 1
 CASEELSE
-	SIF (SETFLAG_OUTER(ARGS)&EQUIP:ARG:アウター) == SETFLAG_OUTER(ARGS)
+	SIF (SETFLAG_OUTER(ARGS)&EQUIP:ARG:外套) == SETFLAG_OUTER(ARGS)
 		RETURNF 1
 ENDSELECT
 RETURNF 0

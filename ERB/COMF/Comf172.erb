@@ -11,24 +11,24 @@ STR:0 = %STR:2%
 
 ;風呂場への出入り
 ;終了時は修正なし
-IF TEQUIP:お風呂プレイ
-	TEQUIP:シャワー = 0
-	TEQUIP:お風呂プレイ = 0
+IF TEQUIP:沐浴Play
+	TEQUIP:淋浴 = 0
+	TEQUIP:沐浴Play = 0
 	IF ASSI
-		TEQUIP:ASSI:シャワー = 0
-		TEQUIP:ASSI:お風呂プレイ = 0
+		TEQUIP:ASSI:淋浴 = 0
+		TEQUIP:ASSI:沐浴Play = 0
 	ENDIF
 	;入浴剤リセット
-	TEQUIP:MASTER:入浴剤 = 0
+	TEQUIP:MASTER:沐浴乳 = 0
 	RETURN 1
 ELSE
-	TEQUIP:お風呂プレイ = 1
-	TEQUIP:お風呂上り = 1
+	TEQUIP:沐浴Play = 1
+	TEQUIP:结束淋浴 = 1
 	IF ASSI
-		TEQUIP:ASSI:お風呂プレイ = 1
-		TEQUIP:ASSI:お風呂上り = 1
+		TEQUIP:ASSI:沐浴Play = 1
+		TEQUIP:ASSI:结束淋浴 = 1
 	ENDIF
-	TEQUIP:MASTER:お風呂上り = 1
+	TEQUIP:MASTER:结束淋浴 = 1
 ENDIF
 
 RETURN 1
@@ -79,7 +79,7 @@ CALL CALC, "調教ソース", LOCAL:0, LOCAL:1, LOCAL:2, LOCAL:3, LOCAL:4, LOCAL
 @TRAIN_MESSAGE_COM172
 #DIM MEMO_KISEKAE
 
-IF TEQUIP:お風呂プレイ
+IF TEQUIP:沐浴Play
 	PRINTFORMW 部屋に戻ってきた…
 ELSE
 	;着せ替えさせた状態をチェック
@@ -121,7 +121,7 @@ ELSE
 		CALL SETFLAG, "衣装全脱ぎ", TARGET
 	ENDIF
 	PRINTFORMW 風呂場に連れて行った
-	IF TEQUIP:アイマスク
+	IF TEQUIP:眼罩
 		PRINTFORM 目隠しされている%CALLNAME:TARGET%は、%CALLNAME:PLAYER%
 		IF TALENT:胆怯 || TALENT:坦率 || TALENT:腼腆
 			PRINTFORM に手を引かれながら恐る恐る
@@ -152,40 +152,40 @@ SIF SELECTCOM == 172
 ;お風呂場プレイ
 CALL SOURCE_COM172, 30
 ;入浴剤
-IF TEQUIP:MASTER:入浴剤 >= 1 && TEQUIP:MASTER:入浴剤 <= 19
+IF TEQUIP:MASTER:沐浴乳 >= 1 && TEQUIP:MASTER:沐浴乳 <= 19
 	TFLAG:33 += 1
 
 	;バラの花びら+ドライアド
-	IF TEQUIP:MASTER:入浴剤 == 4 && BASE:種族思考 == 3
+	IF TEQUIP:MASTER:沐浴乳 == 4 && BASE:种族思考 == 3
 		TFLAG:33 += 2
 	;死湖の入浴剤+子供
-	ELSEIF TEQUIP:MASTER:入浴剤 == 5
+	ELSEIF TEQUIP:MASTER:沐浴乳 == 5
 		;傷に染みる
-		SIF TALENT:人鱼 == 0 && PALAM:苦痛 >= 500
-			SOURCE:痛み += MIN(PALAM:苦痛/10, 300)
+		SIF TALENT:人鱼 == 0 && PALAM:痛苦 >= 500
+			SOURCE:痛 += MIN(PALAM:痛苦/10, 300)
 		SIF TALENT:娇小体型 && TALENT:幼稚 && TALENT:好奇心
 			TFLAG:33 += 2
 	;ひのき風呂+クズノハorクノイチ
-	ELSEIF TEQUIP:MASTER:入浴剤 == 6
+	ELSEIF TEQUIP:MASTER:沐浴乳 == 6
 		TFLAG:33 += 1
-		SIF BASE:種族思考 == 16 || BASE:種族思考 == 22
+		SIF BASE:种族思考 == 16 || BASE:种族思考 == 22
 			TFLAG:33 += 2
 	;ミステリアス風呂+魔女
-	ELSEIF TEQUIP:MASTER:入浴剤 == 7
-		SIF BASE:種族思考 == 19 || BASE:種族思考 == 47
+	ELSEIF TEQUIP:MASTER:沐浴乳 == 7
+		SIF BASE:种族思考 == 19 || BASE:种族思考 == 47
 			TFLAG:33 += 2
 	ENDIF
-ELSEIF TEQUIP:MASTER:入浴剤 == 30
+ELSEIF TEQUIP:MASTER:沐浴乳 == 30
 	CALL SETFLAG, "潤滑追加", 1000, TARGET
 	CALL SETFLAG, "潤滑追加", 1000, PLAYER
-	SIF TEQUIP:Ｗ押し倒し
+	SIF TEQUIP:Ｗ推到
 		CALL SETFLAG, "潤滑追加", 1000, TARGET:1
-ELSEIF TEQUIP:MASTER:入浴剤 == 31
+ELSEIF TEQUIP:MASTER:沐浴乳 == 31
 	IF TALENT:药物耐性 == 0
 		SOURCE:欲情追加 += 1000
-		SOURCE:逸脱 += 500
+		SOURCE:脱出 += 500
 	ENDIF
-ELSEIF TEQUIP:MASTER:入浴剤 == 79
+ELSEIF TEQUIP:MASTER:沐浴乳 == 79
 	;PLAYERとTARGETは精液まみれ
 	FOR LOCAL, 1, CHARANUM
 		SIF LOCAL != PLAYER && LOCAL != TARGET
@@ -231,10 +231,10 @@ RETURN 1
 SIF SELECTCOM == 172
 	RETURN 0
 VARSET LOCAL
-SIF TEQUIP:MASTER:入浴剤 >= 1 && TEQUIP:MASTER:入浴剤 <= 19
+SIF TEQUIP:MASTER:沐浴乳 >= 1 && TEQUIP:MASTER:沐浴乳 <= 19
 	LOCAL += 1
 ;お風呂場プレイ
-SELECTCASE TEQUIP:MASTER:入浴剤
+SELECTCASE TEQUIP:MASTER:沐浴乳
 CASE 1
 	PRINTL ＜泡風呂＞
 CASE 2
@@ -253,12 +253,12 @@ CASE 30
 	PRINTL ＜ローション風呂＞
 CASE 31
 	PRINTL ＜媚薬風呂＞
-	IF TEQUIP:媚薬 == 0 && RAND:5 == 0
-		CALL ADD_STATE, TARGET, "媚薬"
+	IF TEQUIP:媚药 == 0 && RAND:5 == 0
+		CALL ADD_STATE, TARGET, "媚药"
 		PRINTFORML %CALLNAME:TARGET%は媚薬が肌から吸収されたのか、艶かしい吐息を吐き出した…
 	ENDIF
-	IF TEQUIP:Ｗ押し倒し && TEQUIP:(TARGET:1):媚薬 == 0 && RAND:5 == 0
-		CALL ADD_STATE, TARGET:1, "媚薬"
+	IF TEQUIP:Ｗ推到 && TEQUIP:(TARGET:1):媚药 == 0 && RAND:5 == 0
+		CALL ADD_STATE, TARGET:1, "媚药"
 		PRINTFORML %CALLNAME:(TARGET:1)%はすっかり媚薬が回ってしまったらしく、蕩けた瞳で%CALLNAME:MASTER%を見ている…
 	ENDIF
 	IF STATE("高敏术", PLAYER) == 0 && RAND:5 == 0
@@ -269,7 +269,7 @@ CASE 79
 	PRINTL ＜精液風呂＞
 	PRINTFORML %EXPNAME:20%＋3
 	EXP:精液经验 += 3
-	IF TEQUIP:Ｗ押し倒し
+	IF TEQUIP:Ｗ推到
 		PRINTFORML %EXPNAME:20%＋3（%CALLNAME:(TARGET:1)%）
 		EXP:(TARGET:1):精液经验 += 3
 	ENDIF

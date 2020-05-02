@@ -10,7 +10,7 @@
 RETURN 0
 
 ;セクハラしたことが無い場合には初回専用の選択肢
-IF CSTR:MASTER:セクハラ履歴 == ""
+IF CSTR:MASTER:性骚扰履历 == ""
 	PRINTFORML [0]セクハラする？
 	RETURN 0
 ENDIF
@@ -34,10 +34,10 @@ PRINTL
 ;一言イベントの相手含めてリセットします
 @RESET_SEXUHARAFLAG
 FLAG:23 = 0
-;現在進行形のセクハラをリセット。履歴自体はCSTR:MASTER:セクハラ履歴に永久に残る
-CSTR:MASTER:セクハラ中 = 
-CSTR:MASTER:セクハラ済 = 
-CSTR:MASTER:直前のセクハラ = 
+;現在進行形のセクハラをリセット。履歴自体はCSTR:MASTER:性骚扰履历に永久に残る
+CSTR:MASTER:性骚扰中 = 
+CSTR:MASTER:性骚扰后 = 
+CSTR:MASTER:性骚扰前 = 
 
 @EVENTBUY_SEXUHARA, ARG
 ;まだ封印
@@ -46,7 +46,7 @@ RETURN 0
 SIF COND("セクハラ終了")
 	RETURN 0
 ;セクハラ選択初回
-IF CSTR:MASTER:セクハラ履歴 == ""
+IF CSTR:MASTER:性骚扰履历 == ""
 	SELECTCASE ARG
 	CASE 0
 		CALL README_SEXUHARA
@@ -98,7 +98,7 @@ CALL PRINT_ADD_SEXUHARA, RESULT
 
 @PRINT_ADD_SEXUHARA, ARG
 CLEARLINE 2
-CALL SETFLAG, "セクハラ履歴", ARG
+CALL SETFLAG, "性骚扰履历", ARG
 CALL PRINT_SEXUHARA, CALCF("一言イベントの相手"), "追加"
 
 
@@ -109,38 +109,38 @@ CALL PRINT_SEXUHARA, CALCF("一言イベントの相手"), "追加"
 #DIM LCOUNT
 #DIMS MEMO_CSTR_SEXUHARA
 
-MEMO_CSTR_SEXUHARA = %CSTR:MASTER:セクハラ中%
+MEMO_CSTR_SEXUHARA = %CSTR:MASTER:性骚扰中%
 
 ;これはここで毎回初期化
-CSTR:MASTER:セクハラ済 = 
-CSTR:MASTER:直前のセクハラ = 
+CSTR:MASTER:性骚扰后 = 
+CSTR:MASTER:性骚扰前 = 
 
 VARSET LOCALS
-SPLIT CSTR:MASTER:セクハラ中, "/", LOCALS
+SPLIT CSTR:MASTER:性骚扰中, "/", LOCALS
 
 FOR LCOUNT, 0, 100
 	SIF LOCALS:LCOUNT == ""
 		BREAK
-	CSTR:MASTER:セクハラ済 = %LOCALS:LCOUNT%/%CSTR:MASTER:セクハラ済%
-	CSTR:MASTER:セクハラ中 = %LOCALS:LCOUNT%
+	CSTR:MASTER:性骚扰后 = %LOCALS:LCOUNT%/%CSTR:MASTER:性骚扰后%
+	CSTR:MASTER:性骚扰中 = %LOCALS:LCOUNT%
 
 	SELECTCASE ARGS
 	CASE "追加"
 		SIF LOCALS:(LCOUNT + 1) == ""
-			CALL PRINT_SEXUHARA_MESSAGE, CSTR:MASTER:セクハラ中, ARG, 1
+			CALL PRINT_SEXUHARA_MESSAGE, CSTR:MASTER:性骚扰中, ARG, 1
 	CASEELSE
-		CALL PRINT_SEXUHARA_MESSAGE, CSTR:MASTER:セクハラ中, ARG
+		CALL PRINT_SEXUHARA_MESSAGE, CSTR:MASTER:性骚扰中, ARG
 	ENDSELECT
 
-	CSTR:MASTER:直前のセクハラ = %LOCALS:LCOUNT%
+	CSTR:MASTER:性骚扰前 = %LOCALS:LCOUNT%
 NEXT
 
-CSTR:MASTER:セクハラ中 = %MEMO_CSTR_SEXUHARA%
+CSTR:MASTER:性骚扰中 = %MEMO_CSTR_SEXUHARA%
 
 
 ;-------------------------------------------------
 ;セクハラ行為の地の文など
-;ARGSは一般にCSTR:MASTER:セクハラ中
+;ARGSは一般にCSTR:MASTER:性骚扰中
 ;ARGは話している相手。ARG:1は0でない場合にはWAITが入る
 ;諸事情により、ここでのRANDはRANDFで行う
 ;-------------------------------------------------
@@ -178,7 +178,7 @@ CASE "アナルを弄る"
 
 CASE "胸を触る"
 
-CASE "褒める"
+CASE "称赞"
 	PRINTFORM %CALLNAME:MASTER%は
 
 	PRINTFORM %CALLNAME:ARG%
@@ -254,7 +254,7 @@ CASE "アナルを弄る"
 
 CASE "胸を触る"
 
-CASE "褒める"
+CASE "称赞"
 
 CASE "抱きしめる"
 
@@ -271,7 +271,7 @@ SIF LINECOUNT == MEMO_LINECOUNT
 ;途中で切り上げた時…まだ何も作ってない
 ;ARGには100以上を選択した際の番号が入っている
 @USERSHOP_SEXUHARA, ARG
-;SIF COND("セクハラ終了") || CSTR:MASTER:セクハラ中 == ""
+;SIF COND("セクハラ終了") || CSTR:MASTER:性骚扰中 == ""
 ;	RETURN 0
 
 ;一言イベント中フラグクリア

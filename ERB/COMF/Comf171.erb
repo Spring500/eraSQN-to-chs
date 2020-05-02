@@ -10,7 +10,7 @@ SIF REFUSE_CHECK()
 
 STR:0 = %STR:2%
 
-IF TEQUIP:野外プレイ == 0
+IF TEQUIP:野外Play == 0
 	PREVCOM = 171
 	RETURN 0
 ELSEIF GETBIT(TFLAG:16, 0)
@@ -31,7 +31,7 @@ RETURN 1
 #DIM MEMO_KISEKAE
 #DIM MEMO_LINECOUNT
 
-IF TEQUIP:野外プレイ == 0
+IF TEQUIP:野外Play == 0
 	PRINTFORML %CALLNAME:TARGET%を何処に連れ出しますか？
 	PRINTFORML 
 	PRINTL  [ 0] 人里に連れて行く
@@ -41,13 +41,13 @@ IF TEQUIP:野外プレイ == 0
 	PRINTL  [ 4] 海に連れて行く
 	PRINTL [100] やめる
 	CALL INPUT_SELECT, 5, 100
-ELSEIF TEQUIP:野外プレイ
+ELSEIF TEQUIP:野外Play
 	;野外プレイ行き先フラグ
-	TFLAG:16 = TEQUIP:野外プレイ
+	TFLAG:16 = TEQUIP:野外Play
 	PRINTFORMW 部屋に戻ってきた…
-	TEQUIP:野外プレイ = 0
+	TEQUIP:野外Play = 0
 	SIF ASSI
-		TEQUIP:ASSI:野外プレイ = 0
+		TEQUIP:ASSI:野外Play = 0
 	CALL KOJO_MESSAGE_COM
 	RETURN 1
 ENDIF
@@ -67,12 +67,12 @@ ELSEIF RESULT == 4
 	LOCALS = 海
 ENDIF
 
-SETBIT TEQUIP:野外プレイ, RESULT
+SETBIT TEQUIP:野外Play, RESULT
 SIF ASSI
-	TEQUIP:ASSI:野外プレイ = TEQUIP:野外プレイ
+	TEQUIP:ASSI:野外Play = TEQUIP:野外Play
 
 ;野外プレイ行き先フラグ
-TFLAG:16 = TEQUIP:野外プレイ
+TFLAG:16 = TEQUIP:野外Play
 
 ;着せ替えさせた状態をチェック
 MEMO_KISEKAE = 0
@@ -95,11 +95,11 @@ CASE "水辺", "海"
 		PRINTFORML 
 		PRINTFORML  [ 0] はい
 		PRINTFORML  [ 1] いいえ
-		IF EQUIP:靴 == 0 && CHECK_FAVORITE("靴", 7)
+		IF EQUIP:鞋子 == 0 && CHECK_FAVORITE("鞋子", 7)
 			PRINTFORML  [ 2] 靴だけ履かせる
 			LOCAL:2 = 2
 		ENDIF
-		IF EQUIP:パンツ
+		IF EQUIP:胖次
 			PRINTFORML  [ 3] パンツだけ脱がせる
 			LOCAL:3 = 3
 		ENDIF
@@ -111,8 +111,8 @@ CASE "水辺", "海"
 			CALL SET_FAVORITE_DRESS, TARGET, 7
 			MEMO_KISEKAE = 1
 		CASE 2
-			EQUIP:靴 = CHECK_FAVORITE("靴", 7)
-			CSTR:47 = %CHECK_FAVORITES("靴", 7)%
+			EQUIP:鞋子 = CHECK_FAVORITE("鞋子", 7)
+			CSTR:47 = %CHECK_FAVORITES("鞋子", 7)%
 			MEMO_KISEKAE = 2
 		CASE 3
 			CALL SET_PANTIES, TARGET
@@ -131,11 +131,11 @@ CASEELSE
 		PRINTFORML 
 		PRINTFORML  [ 0] はい
 		PRINTFORML  [ 1] いいえ
-		IF EQUIP:靴 == 0 && CHECK_FAVORITE("靴", 8)
+		IF EQUIP:鞋子 == 0 && CHECK_FAVORITE("鞋子", 8)
 			PRINTFORML  [ 2] 靴だけ履かせる
 			LOCAL:2 = 2
 		ENDIF
-		IF EQUIP:パンツ
+		IF EQUIP:胖次
 			PRINTFORML  [ 3] パンツだけ脱がせる
 			LOCAL:3 = 3
 		ENDIF
@@ -147,8 +147,8 @@ CASEELSE
 			CALL SET_FAVORITE_DRESS, TARGET, 8
 			MEMO_KISEKAE = 1
 		CASE 2
-			EQUIP:靴 = CHECK_FAVORITE("靴", 8)
-			CSTR:47 = %CHECK_FAVORITES("靴", 8)%
+			EQUIP:鞋子 = CHECK_FAVORITE("鞋子", 8)
+			CSTR:47 = %CHECK_FAVORITES("鞋子", 8)%
 			MEMO_KISEKAE = 2
 		CASE 3
 			CALL SET_PANTIES, TARGET
@@ -158,7 +158,7 @@ CASEELSE
 	ENDIF
 ENDSELECT
 ;その他の場合
-IF MEMO_LINECOUNT == LINECOUNT && EQUIP:パンツ
+IF MEMO_LINECOUNT == LINECOUNT && EQUIP:胖次
 	PRINTFORML …外出に先駆けて%CALLNAME:TARGET%のパンツを脱がせますか？
 	SETCOLOR DEF_COLOR("黄色")
 	PRINTFORM 現在の服装：
@@ -201,7 +201,7 @@ ELSE
 ENDIF
 PRINTFORMW %LOCALS%に連れ出した…
 PRINTFORM %CALLNAME:TARGET%は
-IF (ABL:露出癖 >= 3 || TALENT:羞耻心强) && GETBIT(TEQUIP:野外プレイ, 0)
+IF (ABL:露出癖 >= 3 || TALENT:羞耻心强) && GETBIT(TEQUIP:野外Play, 0)
 	PRINTFORMW 何者かの視線を感じ、顔を紅潮させ震えている…
 ELSEIF ABL:露出癖 >= 3
 	PRINTFORMW 自分に向けられる視線を想像し、顔を紅潮させ震えている…
@@ -232,20 +232,20 @@ RETURN 1
 @SOURCE_COM171, ARG
 VARSET LOCAL
 
-IF GETBIT(TEQUIP:野外プレイ, 0)
+IF GETBIT(TEQUIP:野外Play, 0)
 	LOCAL:20 += 20
 	LOCAL:21 += 80
 	LOCAL:12 = 2000
 	LOCAL:14 = 400
-ELSEIF GETBIT(TEQUIP:野外プレイ, 1)
+ELSEIF GETBIT(TEQUIP:野外Play, 1)
 	LOCAL:20 += 0
 	LOCAL:21 += 30
 	LOCAL:12 = 400
-ELSEIF GETBIT(TEQUIP:野外プレイ, 2)
+ELSEIF GETBIT(TEQUIP:野外Play, 2)
 	LOCAL:20 += 20
 	LOCAL:21 += 30
 	LOCAL:12 = 400
-ELSEIF GETBIT(TEQUIP:野外プレイ, 3) || GETBIT(TEQUIP:野外プレイ, 4)
+ELSEIF GETBIT(TEQUIP:野外Play, 3) || GETBIT(TEQUIP:野外Play, 4)
 	LOCAL:20 += 30
 	LOCAL:21 += 20
 	LOCAL:12 = 600
@@ -255,8 +255,8 @@ LOCAL:14 += 100
 ;服の有無で羞恥、逸脱度が上昇。人里だと物凄い事に。
 IF CHECK_CLO("ハダカ")
 	;種族衣装がハダカでない
-	IF CLO_ORI(TARGET, "服", "スーツ", "アウター", "下着")
-		IF GETBIT(TEQUIP:野外プレイ, 0)
+	IF CLO_ORI(TARGET, "衣服", "スーツ", "外套", "下着")
+		IF GETBIT(TEQUIP:野外Play, 0)
 			LOCAL:12 += 6000
 			LOCAL:14 += 1000
 		ELSE
@@ -266,8 +266,8 @@ IF CHECK_CLO("ハダカ")
 	ENDIF
 ELSEIF CHECK_CLO("下着姿")
 	;種族衣装が服orボディスーツorアウターを含む
-	IF CLO_ORI(TARGET, "服", "スーツ", "アウター")
-		IF GETBIT(TEQUIP:野外プレイ, 0)
+	IF CLO_ORI(TARGET, "衣服", "スーツ", "外套")
+		IF GETBIT(TEQUIP:野外Play, 0)
 			LOCAL:12 += 4000
 			LOCAL:14 += 500
 		ELSE
@@ -278,7 +278,7 @@ ELSEIF CHECK_CLO("下着姿")
 ELSEIF CHECK_CLO("ノーパン")
 	;種族衣装に下着あり
 	IF CLO_ORI(TARGET, "下着")
-		IF GETBIT(TEQUIP:野外プレイ, 0)
+		IF GETBIT(TEQUIP:野外Play, 0)
 			LOCAL:12 += 2000
 			LOCAL:14 += 300
 		ELSE
@@ -372,29 +372,29 @@ CALL SOURCE_COM171, 100
 @EQUIP_COM54_2
 ;露出経験の値を管理
 LOCAL = 1
-IF GETBIT(TEQUIP:野外プレイ, 0)
+IF GETBIT(TEQUIP:野外Play, 0)
 	PRINTL ＜野外プレイ中(人里)＞
 	IF TIME == 0
 		LOCAL = 3
 	ELSE
 		LOCAL = 2
 	ENDIF
-ELSEIF GETBIT(TEQUIP:野外プレイ, 1)
+ELSEIF GETBIT(TEQUIP:野外Play, 1)
 	PRINTL ＜野外プレイ中(森林)＞
 
 	;獣耳ならボーナス
 	SIF PLAYER == MASTER && TALENT:兽耳
 		TFLAG:30 += 1
 	;一部種族にボーナス
-	SIF BASE:種族 == 3
+	SIF BASE:种族 == 3
 		TFLAG:30 += 1
-ELSEIF GETBIT(TEQUIP:野外プレイ, 2)
+ELSEIF GETBIT(TEQUIP:野外Play, 2)
 	PRINTL ＜野外プレイ中(花園)＞
 
 	;花園補正。好感度にボーナス。
 	SIF PLAYER == MASTER
 		TFLAG:30 += 1
-ELSEIF GETBIT(TEQUIP:野外プレイ, 3) || GETBIT(TEQUIP:野外プレイ, 4)
+ELSEIF GETBIT(TEQUIP:野外Play, 3) || GETBIT(TEQUIP:野外Play, 4)
 	PRINTL ＜野外プレイ中(水辺)＞
 
 	;夏ならボーナス

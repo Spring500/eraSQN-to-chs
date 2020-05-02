@@ -2,17 +2,17 @@
 ;ボディスーツを着せる関数
 ;指定番号によって名前がCSTR:44に代入される。
 ;99番までは、その番号の夢魔の下着。
-;EQUIP:ボディスーツはボディスーツの特徴フラグ。ビット管理する
+;EQUIP:连体衣はボディスーツの特徴フラグ。ビット管理する
 ;-------------------------------------------------
 @SET_BODYS, ARG, ARG:1
 ;ARGのボディスーツをARG:1番のものにする。ARG:1==0ならボディスーツを脱がす
 ;汚れ＆ずれたりしたフラグ等を初期化して新品にする
-STAIN:ARG:ボディスーツボトム = 0
-STAIN:ARG:ボディスーツトップ = 0
+STAIN:ARG:连体衣下 = 0
+STAIN:ARG:连体衣上 = 0
 TCVAR:ARG:26 = 0
 
 IF ARG:1 == 0 || COND("脚の使用", ARG) == 0
-	EQUIP:ARG:ボディスーツ = 0
+	EQUIP:ARG:连体衣 = 0
 	CSTR:ARG:44 = 
 	RETURN 0
 ENDIF
@@ -20,15 +20,15 @@ ENDIF
 ;名前記録
 CSTR:ARG:44 = %PALAM_BODYS(ARG:1, ARG, 1)%
 
-;SIF EQUIP:ARG:上着
+;SIF EQUIP:ARG:上衣
 ;	CALL SET_SHIRT, ARG
-SIF EQUIP:ARG:アウター
+SIF EQUIP:ARG:外套
 	CALL SET_OUTER, ARG
-;SIF EQUIP:ARG:アウター && !CHECK_OUTER("パンスト", ARG)
+;SIF EQUIP:ARG:外套 && !CHECK_OUTER("パンスト", ARG)
 ;	CALL SET_OUTER, ARG
-SIF EQUIP:ARG:ブラ
+SIF EQUIP:ARG:胸罩
 	CALL SET_BRA, ARG
-IF EQUIP:ARG:ボディスーツ && EQUIP:ARG:パンツ
+IF EQUIP:ARG:连体衣 && EQUIP:ARG:胖次
 	SIF CHECK_BODYS("食い込み", ARG) && !CHECK_PANTIES("食い込み", ARG) && !CHECK_PANTIES("Ｔバック", ARG) && !CHECK_PANTIES("Ｖバック", ARG)
 		CALL SET_PANTIES, ARG
 	SIF CHECK_BODYS("水着", ARG) || CHECK_BODYS("ファスナー", ARG) || CHECK_BODYS("Ｖ露出", ARG) || CHECK_BODYS("Ａ露出", ARG)
@@ -49,7 +49,7 @@ CASE 0
 	LOCALS = %CSTR:ARG:44%
 	SIF CONFIG("衣装の細かい色表示の禁止")
 		RETURNF LOCALS
-	LOCALS:1 = %TEXTS("衣装の色", EQUIP:ARG:ボディスーツ)%
+	LOCALS:1 = %TEXTS("衣装の色", EQUIP:ARG:连体衣)%
 	SIF LOCALS:1 != "" && (SUBSTRING(CSTR:ARG:44, 0, 2) != SUBSTRING(LOCALS:1, 0, 2) )
 		LOCALS = %LOCALS%(%LOCALS:1%)
 CASE 1
@@ -96,7 +96,7 @@ VARSET LOCAL
 VARSET LOCALS
 IF ARG:1 > 0 && COND("脚の使用", ARG:1) == 0
 	SIF ARG:2 > 0
-		EQUIP:(ARG:1):ボディスーツ = LOCAL
+		EQUIP:(ARG:1):连体衣 = LOCAL
 	RETURNF LOCALS
 ENDIF
 
@@ -136,7 +136,7 @@ CASE 35
 	LOCALS = Ｈなボディスーツ
 	SIF ARG:1 > 0
 		LOCALS = %CALLNAME:(ARG:1)%の衣装
-	LOCAL = SETFLAG_BODYS("ズリ不可", "ハイレグ", "Ｔバック", "ボディスーツ", "紫")
+	LOCAL = SETFLAG_BODYS("ズリ不可", "ハイレグ", "Ｔバック", "连体衣", "紫")
 CASE 41
 	LOCALS = 不思議なレオタード
 	LOCAL = SETFLAG_BODYS("ハイレグ", "Ｔバック", "レオタード", "ファスナー", "黒", "谷間露出")
@@ -210,7 +210,7 @@ CASE 110
 ENDSELECT
 
 SIF ARG:1 > 0 && ARG:2 > 0
-	EQUIP:(ARG:1):ボディスーツ = LOCAL
+	EQUIP:(ARG:1):连体衣 = LOCAL
 
 RETURNF LOCALS
 
@@ -225,7 +225,7 @@ LOCAL = 0
 FOR LCOUNT, 1, 11
 	ARGS = %ARGS:LCOUNT%
 	SELECTCASE ARGS
-	CASE "ボディスーツ"
+	CASE "连体衣"
 		SETBIT LOCAL, 0
 	CASE "ハイレグ"
 		SETBIT LOCAL, 1
@@ -278,61 +278,61 @@ RETURNF LOCAL
 #FUNCTION
 SIF ARG == 0 && TARGET
 	ARG = TARGET
-SIF EQUIP:ARG:ボディスーツ == 0
+SIF EQUIP:ARG:连体衣 == 0
 	RETURNF 0
 SELECTCASE ARGS
 CASE "はだけ可"
-	SIF SETFLAG_BODYS("はだけた")&EQUIP:ARG:ボディスーツ
+	SIF SETFLAG_BODYS("はだけた")&EQUIP:ARG:连体衣
 		RETURNF 0
-	SIF SETFLAG_BODYS("はだけ不可")&EQUIP:ARG:ボディスーツ
+	SIF SETFLAG_BODYS("はだけ不可")&EQUIP:ARG:连体衣
 		RETURNF 0
 	RETURNF 1
 ;ずれ不可でなく、ずらしていない
 CASE "ずらし可", "ずらせる"
-	SIF SETFLAG_BODYS("Ｖ露出")&EQUIP:ARG:ボディスーツ
+	SIF SETFLAG_BODYS("Ｖ露出")&EQUIP:ARG:连体衣
 		RETURNF 0
-	IF SETFLAG_BODYS("ファスナー")&EQUIP:ARG:ボディスーツ
-		SIF SETFLAG_BODYS("ファスナー開")&EQUIP:ARG:ボディスーツ
+	IF SETFLAG_BODYS("ファスナー")&EQUIP:ARG:连体衣
+		SIF SETFLAG_BODYS("ファスナー開")&EQUIP:ARG:连体衣
 			RETURNF 0
 		SIF CHECK_BODYS("ファスナー閉")
 			RETURNF 1
 	ENDIF
-	SIF SETFLAG_BODYS("ずらした")&EQUIP:ARG:ボディスーツ
+	SIF SETFLAG_BODYS("ずらした")&EQUIP:ARG:连体衣
 		RETURNF 0
-	SIF SETFLAG_BODYS("ずれ不可")&EQUIP:ARG:ボディスーツ
+	SIF SETFLAG_BODYS("ずれ不可")&EQUIP:ARG:连体衣
 		RETURNF 0
 	RETURNF 1
 ;ファスナーがあり、あけていない
 CASE "ファスナー閉"
-	SIF SETFLAG_BODYS("ファスナー開")&EQUIP:ARG:ボディスーツ
+	SIF SETFLAG_BODYS("ファスナー開")&EQUIP:ARG:连体衣
 		RETURNF 0
-	SIF SETFLAG_BODYS("ファスナー")&EQUIP:ARG:ボディスーツ
+	SIF SETFLAG_BODYS("ファスナー")&EQUIP:ARG:连体衣
 		RETURNF 1
 CASE "クロッチ"
-	SIF SETFLAG_BODYS("ファスナー開", "ずらした", "破いた", "Ｖ露出", "スリット")&EQUIP:ARG:ボディスーツ
+	SIF SETFLAG_BODYS("ファスナー開", "ずらした", "破いた", "Ｖ露出", "スリット")&EQUIP:ARG:连体衣
 		RETURNF 0
 	RETURNF 1
 CASE "Ａクロッチ"
-	SIF SETFLAG_BODYS("ファスナー開", "ずらした", "破いた", "Ａ露出", "スリット")&EQUIP:ARG:ボディスーツ
+	SIF SETFLAG_BODYS("ファスナー開", "ずらした", "破いた", "Ａ露出", "スリット")&EQUIP:ARG:连体衣
 		RETURNF 0
 	RETURNF 1
 CASE "食い込み"
-	SIF SETFLAG_BODYS("ずらした", "ファスナー開", "Ｖ露出", "スリット", "破いた")&EQUIP:ARG:ボディスーツ
+	SIF SETFLAG_BODYS("ずらした", "ファスナー開", "Ｖ露出", "スリット", "破いた")&EQUIP:ARG:连体衣
 		RETURNF 0
-	SIF SETFLAG_BODYS("ハイレグ", "Ｔフロント")&EQUIP:ARG:ボディスーツ
+	SIF SETFLAG_BODYS("ハイレグ", "Ｔフロント")&EQUIP:ARG:连体衣
 		RETURNF 1
 CASE "蒸れ"
-	SIF SETFLAG_BODYS("ずらした", "ファスナー開", "Ｖ露出", "スリット", "破いた")&EQUIP:ARG:ボディスーツ
+	SIF SETFLAG_BODYS("ずらした", "ファスナー開", "Ｖ露出", "スリット", "破いた")&EQUIP:ARG:连体衣
 		RETURNF 0
-	SIF CHECK_STAIN(STAIN:ARG:ボディスーツボトム, "蒸れ")
+	SIF CHECK_STAIN(STAIN:ARG:连体衣下, "蒸れ")
 		RETURNF 1
 CASE "染み"
-	SIF SETFLAG_BODYS("ずらした", "ファスナー開", "Ｖ露出", "スリット", "破いた", "通気性無し")&EQUIP:ARG:ボディスーツ
+	SIF SETFLAG_BODYS("ずらした", "ファスナー開", "Ｖ露出", "スリット", "破いた", "通気性無し")&EQUIP:ARG:连体衣
 		RETURNF 0
-	SIF CHECK_STAIN(STAIN:ARG:ボディスーツボトム, "濡れ")
+	SIF CHECK_STAIN(STAIN:ARG:连体衣下, "濡れ")
 		RETURNF 1
 CASEELSE
-	SIF (SETFLAG_BODYS(ARGS)&EQUIP:ARG:ボディスーツ) == SETFLAG_BODYS(ARGS)
+	SIF (SETFLAG_BODYS(ARGS)&EQUIP:ARG:连体衣) == SETFLAG_BODYS(ARGS)
 		RETURNF 1
 ENDSELECT
 

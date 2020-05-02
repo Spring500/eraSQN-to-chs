@@ -12,10 +12,10 @@ IF COND("夜") && CONFIG("妊娠パッチ")
 	;お腹の中の胎児の成長
 	IF COND("妊娠中")
 		;すくすく育ってます
-		BASE:胎児 += 1
+		BASE:胎儿 += 1
 		;人でないなら進行率がＵＰ(中出しによって速度アップ)
-		SIF TALENT:梦魔 + TALENT:上位梦魔 + TALENT:魔王残片 && RAND:(3 + BASE:胎児への栄養/10)
-			BASE:胎児 += 1
+		SIF TALENT:梦魔 + TALENT:上位梦魔 + TALENT:魔王残片 && RAND:(3 + BASE:胎儿营养/10)
+			BASE:胎儿 += 1
 
 		;分娩室待ち
 		IF COND("妊娠中：分娩直前")
@@ -24,8 +24,8 @@ IF COND("夜") && CONFIG("妊娠パッチ")
 		ELSEIF COND("妊娠中：臨月")
 			;出産間近イベント(子育て中には発生しない)
 			IF COND("妊娠中：各イベント進行度") >= 3
-				IF BASE:育児中
-					BASE:胎児 -= 1 + RAND:2
+				IF BASE:育儿中
+					BASE:胎儿 -= 1 + RAND:2
 				ELSE
 					CALL SETFLAG, "妊娠中：分娩直前", TARGET
 				ENDIF
@@ -43,11 +43,11 @@ IF COND("夜") && CONFIG("妊娠パッチ")
 		ENDIF
 	ENDIF
 	;子育て。人で２週間、夢魔たちなら１週間程度。
-	IF BASE:育児中
-		BASE:育児中 += 1
+	IF BASE:育儿中
+		BASE:育儿中 += 1
 		;母親が素質【夢魔、上位夢魔、エルダーサキュバス、魔王の欠片】持ち
 		SIF TALENT:梦魔 + TALENT:上位梦魔 + TALENT:魔王残片
-			BASE:育児中 += 1
+			BASE:育儿中 += 1
 		;子育て終了
 		SIF COND("育児中：子供が大きくなった")
 			CALL SETFLAG, "育児中：育児終了", TARGET
@@ -82,13 +82,13 @@ SIF ARG == 0 && TARGET
 
 ;妊娠判定があって男なら、ここで消去。
 IF TALENT:ARG:男性
-	BASE:ARG:胎内精液量 = 0
-	BASE:ARG:胎内精子量 = 0
+	BASE:ARG:子宫内精液量 = 0
+	BASE:ARG:子宫内精子量 = 0
 ENDIF
 
 SELECTCASE ARGS
 CASE "システム処理"
-	;PRINTFORM [{ARG, 2}]%TEXT_LJ(CALLNAME:ARG, 16)% {DAY - CFLAG:ARG:499, 3}日前, 妊娠率：{COND("受精確率"), 3}％, {COND("胎内の精液量", ARG), 6}/{BASE:ARG:胎内精子量, 4}→
+	;PRINTFORM [{ARG, 2}]%TEXT_LJ(CALLNAME:ARG, 16)% {DAY - CFLAG:ARG:499, 3}日前, 妊娠率：{COND("受精確率"), 3}％, {COND("胎内の精液量", ARG), 6}/{BASE:ARG:子宫内精子量, 4}→
 
 	;淫紋持ちはチェックをここ以外の場所でやっているので、精子量の減少をチェック前に行う
 	SIF MARK:ARG:淫纹
@@ -102,10 +102,10 @@ CASE "システム処理"
 				PRINTFORMW %CALLNAME:ARG%が避妊薬を使い切りました。
 		ENDIF
 	;妊娠判定(出産後すぐに妊娠できるようにしてみる)
-	ELSEIF BASE:ARG:胎内精子量 && BASE:ARG:胎児 == 0 && COND("妊娠可能", ARG)
+	ELSEIF BASE:ARG:子宫内精子量 && BASE:ARG:胎儿 == 0 && COND("妊娠可能", ARG)
 		IF COND("排卵中", ARG) || RAND:10 == 0 || (TALENT:ARG:史莱姆 && RAND:3 == 0)
 			IF RAND:100 < COND("受精確率", ARG)
-				BASE:ARG:胎児 = 1
+				BASE:ARG:胎儿 = 1
 				;20%で息子（産まれる時に選べるようにもしてあるので実はなくても良い）
 				SIF RAND:5 == 0
 					CALL SETFLAG, "妊娠中：息子", ARG
@@ -162,7 +162,7 @@ CASEELSE
 	;淫紋持ちはここで妊娠判定も行ってしまう
 	IF MARK:ARG:淫纹 && (COND("受精確率", ARG) >= 100 || RAND:100 < COND("受精確率", ARG) - TCVAR:ARG:110)
 		;おめでた
-		BASE:ARG:胎児 = 1
+		BASE:ARG:胎儿 = 1
 		;20%で息子（産まれる時に選べるようにもしてあるので実はなくても良い）
 		SIF RAND:5 == 0
 			CALL SETFLAG, "妊娠中：息子", ARG
@@ -176,7 +176,7 @@ CASEELSE
 		PRINTFORMW %CALLNAME:ARG%の淫紋の様子がおかしい……目まぐるしく色と形が変わっていく！
 		SETCOLOR DEF_COLOR("ハートピンク")
 		CALL HEARTMARK
-		PRINTFORM %CALLNAME:ARG%は%CONDS("精液の優勢", ARG)%の精子で受精しました
+		PRINTFORM %CALLNAME:ARG%は%CONDS("精液的优势", ARG)%の精子で受精しました
 		CALL HEARTMARK
 		RESETCOLOR
 
@@ -219,18 +219,18 @@ CASE 2
 	ENDIF
 ENDSELECT
 IF LOCAL || LOCAL:1
-	BASE:ARG:胎内精子量 = DIVIDE(BASE:ARG:胎内精子量, LOCAL)
-	BASE:ARG:胎内精液量 = DIVIDE(BASE:ARG:胎内精液量, LOCAL:1)
+	BASE:ARG:子宫内精子量 = DIVIDE(BASE:ARG:子宫内精子量, LOCAL)
+	BASE:ARG:子宫内精液量 = DIVIDE(BASE:ARG:子宫内精液量, LOCAL:1)
 ELSE
-	BASE:ARG:胎内精子量 = 0
-	BASE:ARG:胎内精液量 = 0
+	BASE:ARG:子宫内精子量 = 0
+	BASE:ARG:子宫内精液量 = 0
 ENDIF
 
-;PRINTFORML {COND("胎内の精液量", ARG), 6}/{BASE:ARG:胎内精子量, 4}, {COND("精液の優勢", ARG), 2}\@ BASE:ARG:胎児 ? , 受精！ # \@
+;PRINTFORML {COND("胎内の精液量", ARG), 6}/{BASE:ARG:子宫内精子量, 4}, {COND("精液的优势", ARG), 2}\@ BASE:ARG:胎儿 ? , 受精！ # \@
 
 ;精子が死滅したら父親フラグは消滅
-SIF BASE:ARG:胎内精子量 == 0 && BASE:ARG:胎児 == 0
-	BASE:ARG:精液の優勢 = 0
+SIF BASE:ARG:子宫内精子量 == 0 && BASE:ARG:胎儿 == 0
+	BASE:ARG:精液的优势 = 0
 
 ;---------------------------------------------------------
 ;妊娠発覚＆出産予定報告＆子の親離れ処理
@@ -242,7 +242,7 @@ MEMO_TARGET = TARGET
 TARGET = ARG
 
 ;子育て中
-IF BASE:育児中
+IF BASE:育儿中
 	;子の親離れ
 	IF COND("育児中：育児終了")
 		DRAWLINE
@@ -261,12 +261,12 @@ IF BASE:育児中
 		;子供対象化
 		CALL DAUGHTER_CHECK, "通常"
 
-		BASE:育児中 = 0
+		BASE:育儿中 = 0
 	ENDIF
 ENDIF
 
 ;出産予定報告(子育て中には産まれない)
-IF COND("妊娠中：分娩直前") && TALENT:怀孕 == 2 && BASE:育児中 == 0
+IF COND("妊娠中：分娩直前") && TALENT:怀孕 == 2 && BASE:育儿中 == 0
 	DRAWLINE
 	PRINTFORMW %CALLNAME:TARGET%のお腹の中では胎児が活発に動いているようです。
 	PRINTFORMW 明日にでも産まれそうだ…
@@ -289,14 +289,14 @@ ELSEIF COND("妊娠中：妊娠発覚直前") && TALENT:怀孕 == 0
 		;以下は通常の妊娠時の動作の一部の抜出し
 		;妊娠＆胎児フラグ終了
 		TALENT:怀孕 = 0
-		BASE:胎児 = 0
+		BASE:胎儿 = 0
 		CFLAG:469 += 1
 		;CALL SELF_KOJO, "出産"
 		;子供の数+1
 		TALENT:生产经历 += 1
 		;父親フラグの確定
-		BASE:胎児の父親 = BASE:精液の優勢
-		BASE:精液の優勢 = 0
+		BASE:胎儿的父亲 = BASE:精液的优势
+		BASE:精液的优势 = 0
 		;CALL SELF_KOJO, "子離れ"
 		;子供対象化
 		CALL DAUGHTER_CHECK, "スライム"
@@ -334,7 +334,7 @@ ELSEIF COND("妊娠中：妊娠発覚直前") && TALENT:怀孕 == 0
 ENDIF
 
 ;妊娠に付随する母乳体質や巨乳の消去
-IF CFLAG:468 && COND("妊娠中") == 0 && BASE:育児中 == 0
+IF CFLAG:468 && COND("妊娠中") == 0 && BASE:育儿中 == 0
 	PRINTL 
 	PRINTFORMW （役目を終えた%CALLNAME:TARGET%の胸は元の大きさに戻りました）
 	SIF GETBIT(CFLAG:468, 0)
@@ -351,12 +351,12 @@ TARGET = MEMO_TARGET
 
 ;---------------------------------------------------------
 ;妊娠発覚イベント
-;CALLNAME:(COND("精液の優勢") ) とかなると見苦しいので、FATHER = COND("精液の優勢")とする
+;CALLNAME:(COND("精液的优势") ) とかなると見苦しいので、FATHER = COND("精液的优势")とする
 ;---------------------------------------------------------
 @EVENT_N2_TEXT
 #DIM FATHER
 
-FATHER = COND("精液の優勢")
+FATHER = COND("精液的优势")
 
 DRAWLINE
 ;スライム分裂！
@@ -428,7 +428,7 @@ ELSE
 		PRINTFORMW ………
 		PRINTFORMW ……
 		PRINTFORMW …
-		PRINTFORMW 調べた結果、\@ BASE:育児中 ? 子育ての途中だというのに # どうやら \@
+		PRINTFORMW 調べた結果、\@ BASE:育儿中 ? 子育ての途中だというのに # どうやら \@
 		SELECTCASE FATHER
 		CASE IS > 0
 			PRINTFORM %CALLNAME:FATHER%の
@@ -439,7 +439,7 @@ ELSE
 		ENDSELECT
 		PRINTFORML 子供を妊娠してしまったようです。
 	;子育て中
-	ELSEIF BASE:育児中
+	ELSEIF BASE:育儿中
 		PRINTFORMW %CALLNAME:TARGET%は体調の変化を訴えている…
 		PRINTFORML 調べた結果、%CALLNAME:TARGET%は子育ての途中に再び妊娠したようだ。
 	;恋慕
@@ -504,7 +504,7 @@ ELSE
 			PRINTFORMW %CALLNAME:TARGET%は%CALLNAME:MASTER%以外の子供を身ごもったことが残念な様子です…
 		ENDIF
 	;子育て中
-	ELSEIF BASE:育児中
+	ELSEIF BASE:育儿中
 		PRINTFORMW %CALLNAME:TARGET%はなんともいえない顔をしている…
 	;反発刻印Lv3or反抗的
 	ELSEIF MARK:排斥刻印 == 3 || TALENT:叛逆
@@ -549,7 +549,7 @@ CALL EXP50_CHECK
 
 ;---------------------------------------------------------
 ;その他の妊娠イベント処理
-;CALLNAME:(COND("精液の優勢") ) とかなると見苦しいので、FATHER に代入する
+;CALLNAME:(COND("精液的优势") ) とかなると見苦しいので、FATHER に代入する
 ;---------------------------------------------------------
 @EVENT_N3, ARG
 #DIM FATHER
@@ -558,8 +558,8 @@ LOCAL = TARGET
 TARGET = ARG
 
 ;お産(子育て中には出産しない)
-IF COND("妊娠中：分娩") && TALENT:怀孕 && BASE:育児中 == 0
-	FATHER = COND("精液の優勢")
+IF COND("妊娠中：分娩") && TALENT:怀孕 && BASE:育儿中 == 0
+	FATHER = COND("精液的优势")
 	DRAWLINE
 	IF TARGET == MASTER
 		PRINTFORM %CALLNAME:MASTER%は
@@ -597,7 +597,7 @@ IF COND("妊娠中：分娩") && TALENT:怀孕 && BASE:育児中 == 0
 	PRINTFORML [ 1] 男の娘
 	CALL INPUT_SELECT, 2
 	IF RESULT == 0
-		CLEARBIT BASE:胎児, 20
+		CLEARBIT BASE:胎儿, 20
 	ELSE
 		CALL SETFLAG, "妊娠中：息子", TARGET
 	ENDIF
@@ -641,16 +641,16 @@ IF COND("妊娠中：分娩") && TALENT:怀孕 && BASE:育児中 == 0
 		PRINTFORMW 魔王の魔力の残滓かみるみる子供が成長していく、すぐに遊びまわる姿を見れることだろう…
 
 	;妊娠＆胎児フラグ終了
-	BASE:胎児 = 0
+	BASE:胎儿 = 0
 	TALENT:怀孕 = 0
 
 	;子育て開始
-	BASE:育児中 += 1
+	BASE:育儿中 += 1
 	;子供の数+1
 	TALENT:生产经历 += 1
 	;父親フラグの確定
-	BASE:胎児の父親 = BASE:精液の優勢
-	BASE:精液の優勢 = 0
+	BASE:胎儿的父亲 = BASE:精液的优势
+	BASE:精液的优势 = 0
 
 	;一時的な素質の消去(まだ消えません)
 	IF CFLAG:468
@@ -659,8 +659,8 @@ IF COND("妊娠中：分娩") && TALENT:怀孕 && BASE:育児中 == 0
 	ENDIF
 	SETBIT CFLAG:MASTER:95, 0
 ;子育て中
-ELSEIF BASE:育児中 && RAND:4 && COND("手一杯", MASTER) + COND("同衾イベント", MASTER) == 0
-	FATHER = COND("胎児の父親")
+ELSEIF BASE:育儿中 && RAND:4 && COND("手一杯", MASTER) + COND("同衾イベント", MASTER) == 0
+	FATHER = COND("胎儿的父亲")
 	DRAWLINE
 	;妊娠しているのはMASTER
 	IF TARGET == MASTER
@@ -721,7 +721,7 @@ ELSEIF BASE:育児中 && RAND:4 && COND("手一杯", MASTER) + COND("同衾イ�
 	ENDIF
 ;妊娠中
 ELSEIF TALENT:怀孕 && COND("手一杯", MASTER) + COND("同衾イベント", MASTER) == 0 && RAND:4
-	FATHER = COND("精液の優勢")
+	FATHER = COND("精液的优势")
 	DRAWLINE
 	;妊娠しているのはMASTER
 	IF TARGET == MASTER
@@ -780,7 +780,7 @@ TARGET = LOCAL
 ;---------------------------------------------------------
 ;主人と夢魔たちによる妊娠判定チェック
 ;シチュエーションARGSでARGが妊娠するかどうかを判定する。ARG:1は精液量。
-;ARGSは"通常", "調教外", "ドラゴン", "一般人相手", "触手"
+;ARGSは"通常", "調教外", "龙", "一般人相手", "触手"
 ;SPERMで子宮に入る精子量、IS_FATHERで誰が父親になるかの番号管理を行う
 ;---------------------------------------------------------
 @CHECK_PREGNANT, ARG, ARG:1, ARGS
@@ -795,7 +795,7 @@ SIF ARG:1 <= 0
 ;調教中かどうかとPLAYERが一般人かどうかをチェック
 SELECTCASE ARGS
 ;指定されている場合にはARGSの変化なし
-CASE "ドラゴン", "触手", "一般人相手", "調教外", "通常"
+CASE "龙", "触手", "一般人相手", "調教外", "通常"
 CASEELSE
 	IF TALENT:PLAYER:普通人
 		ARGS = 一般人相手
@@ -811,7 +811,7 @@ SPERM = ARG:1 * (10 + RAND:21)
 SPERM_DENS = 90 + RAND:21
 
 SELECTCASE ARGS
-CASE "ドラゴン"
+CASE "龙"
 	IS_FATHER = -3
 CASE "一般人相手"
 	;処女は判定しない
@@ -834,7 +834,7 @@ CASEELSE
 
 	;TARGETやASSI等の妊娠チェック
 	CASEELSE
-		SELECTCASE BASE:PLAYER:識別番号
+		SELECTCASE BASE:PLAYER:识别号码
 		CASE IS > 0
 			IS_FATHER = PLAYER
 		CASEELSE
@@ -842,8 +842,8 @@ CASEELSE
 		ENDSELECT
 
 		;絶頂を迎える事で確率上昇
-		SIF NOWEX:ARG:絶頂数合計
-			SPERM += MIN(NOWEX:ARG:絶頂数合計, 2)/2
+		SIF NOWEX:ARG:绝顶数合计
+			SPERM += MIN(NOWEX:ARG:绝顶数合计, 2)/2
 
 		IF COND("子宮挿入フラグ", ARG)
 			SPERM *= 10
@@ -858,7 +858,7 @@ CASEELSE
 ENDSELECT
 
 ;妊娠判定フラグ
-BASE:ARG:胎内精液量 += SPERM * SPERM_DENS
+BASE:ARG:子宫内精液量 += SPERM * SPERM_DENS
 
 ;避妊中は精子は受け入れない
 IF COND("避妊中", ARG)
@@ -873,7 +873,7 @@ ENDIF
 
 ;調教以外でも妊娠可能？
 SELECTCASE ARGS
-CASE "ドラゴン", "触手"
+CASE "龙", "触手"
 	;有効精子量が少ない
 	SPERM = MAX(SPERM/3, 1)
 CASE "一般人相手"
@@ -888,28 +888,28 @@ CASE "調教外"
 ENDSELECT
 ;吸精体質の人は精子を頂いちゃう
 SIF TALENT:ARG:吸精体质
-	SPERM = MAX(MIN(1 + EX:ARG:Ｖ中出し*2, SPERM), SPERM/POWER(2, TALENT:ARG:吸精体质) )
+	SPERM = MAX(MIN(1 + EX:ARG:Ｖ中出*2, SPERM), SPERM/POWER(2, TALENT:ARG:吸精体质) )
 
-BASE:ARG:胎内精子量 += SPERM
+BASE:ARG:子宫内精子量 += SPERM
 
 ;父親一時フラグ
-IF SPERM && BASE:ARG:胎児 == 0 && COND("妊娠確実", ARG) == 0 && COND("避妊中", ARG) == 0
+IF SPERM && BASE:ARG:胎儿 == 0 && COND("妊娠確実", ARG) == 0 && COND("避妊中", ARG) == 0
 	;百発百中
 	IF IS_FATHER > 0 && TALENT:IS_FATHER:百发百中
-		BASE:ARG:精液の優勢 = BASE:IS_FATHER:識別番号
-		SETBIT BASE:ARG:バイオリズム, 14
- 	ELSEIF BASE:ARG:胎内精子量 == 0 || COND("精液の優勢", ARG) == 0 || RAND:3 == 0
+		BASE:ARG:精液的优势 = BASE:IS_FATHER:识别号码
+		SETBIT BASE:ARG:生理周期, 14
+ 	ELSEIF BASE:ARG:子宫内精子量 == 0 || COND("精液的优势", ARG) == 0 || RAND:3 == 0
  		SELECTCASE IS_FATHER
 		CASE IS > 0
-			BASE:ARG:精液の優勢 = BASE:IS_FATHER:識別番号
+			BASE:ARG:精液的优势 = BASE:IS_FATHER:识别号码
 		CASEELSE
-			BASE:ARG:精液の優勢 = IS_FATHER
+			BASE:ARG:精液的优势 = IS_FATHER
 		ENDSELECT
 	ENDIF
 ENDIF
 ;排卵誘発剤
-SIF TEQUIP:ARG:排卵誘発剤
-	SETBIT BASE:ARG:バイオリズム, 13
+SIF TEQUIP:ARG:排卵诱发剂
+	SETBIT BASE:ARG:生理周期, 13
 ;中出しされた最新の日付を上書き
 CFLAG:ARG:499 = DAY
 
