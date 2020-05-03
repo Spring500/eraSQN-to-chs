@@ -86,5 +86,6 @@
 
 3. 其他CSV文件说明
   + GameBase.csv
+  + Strname.csv
   + VariableSize.csv
   + \_Replace.csv
