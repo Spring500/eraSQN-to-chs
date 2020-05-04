@@ -1,33 +1,35 @@
-﻿# @EVENTFIRST 新游戏初始化
+﻿# @VER_ERASQN
 
 > [\[回Wiki首页\]](/Wiki) [\[回函数列表\]](/Wiki/function/README.md)
 
 ### 作用描述
 
-+ 作用描述
++ 返回当前eraSQN版本
 
 ### 所在文件
 
-+ [System_Newgame.erb](/ERB/System_Newgame.erb#L1-L201)
++ [Verup.erb](/ERB/Verup.erb#L1-L4)
 
 ### 调用关系
 
 **被调用**：
 
-+ `@SYSTEM_TITLE`<sup>[说明文件](/Wiki/function/s/system_title.md)</sup>
++ `@VER_ERASQN`<sup>[说明文件](/Wiki/function/s/ver_erasqn.md)</sup>
 
 **调用**：
+
++ 无
 
 ### 函数实现
 
 #### 参数
 
-+ 参数1
-
-+ 参数2
++ 无参数
 
 #### 返回值
 
-返回值描述
++ 版本 277
 
 #### 功能实现
+
+返回目前eraSQN的最新版本

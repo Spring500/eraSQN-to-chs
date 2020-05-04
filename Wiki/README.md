@@ -15,3 +15,5 @@
 2. [用户定义变量](https://osdn.net/projects/emuera/wiki/UserVars)
 
 3. [基本语法](https://osdn.net/projects/emuera/wiki/excom)
+
+4. [引擎加载流程](https://osdn.net/projects/emuera/wiki/flow)
