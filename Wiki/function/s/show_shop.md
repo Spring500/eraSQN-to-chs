@@ -22,6 +22,8 @@
 
 + `@SETFLAG`<sup>[说明文件](/Wiki/function/s/setflag.md)</sup>
 
++ `@CHECK_FLAG_MUMA`<sup>[说明文件](/Wiki/function/c/check_flag_muma.md)</sup>
+
 ### 函数实现
 
 #### 参数
@@ -55,3 +57,5 @@ L154-L182：变量初始化列表
   TARGET|MAX(TARGET, 0)|TARGETとASSIが-1となることを禁止
   ASSI|MAX(ASSI, 0)|TARGETとASSIが-1となることを禁止<br/>作用不明，需要后续的程序解析
   -|-|`CALL SETFLAG, "等级限制器"`<br/>检查等级限制器
+
+L187：调用`@CHECK_FLAG_MUMA`

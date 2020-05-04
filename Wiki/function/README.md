@@ -17,3 +17,7 @@
 + @VERUP_ERASQN 更新旧版存档<br/>暂不研究，内容太多<br/><sup>[说明文件](/Wiki/function/v/verup_erasqn.md)</sup><br/><sup>[所在文件](/ERB/Verup.erb#L8-L4640)</sup>
 
 + @VERUP_ERASQN 返回当前eraSQN版本<br/><sup>[说明文件](/Wiki/function/v/ver_erasqn.md)</sup><br/><sup>[所在文件](/ERB/Verup.erb#L1-L4)</sup>
+
++ @SETFLAG
+
++ @CHECK_FLAG_MUMA
