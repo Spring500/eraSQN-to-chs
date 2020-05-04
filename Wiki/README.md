@@ -8,6 +8,8 @@
 
 2. [游戏内函数说明](/Wiki/function)
 
+3. [游戏FLAGs说明](/Wiki/variable/flags.md)
+
 ### Emuera引擎说明
 
 1. [引擎内置变量](https://osdn.net/projects/emuera/wiki/exvar)
