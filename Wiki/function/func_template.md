@@ -8,13 +8,21 @@
 
 ### 所在文件
 
-+ [所在文件](/ERB/Title.erb#L14)
++ [XXXX.erb](/ERB/Title.erb#L14)
 
 ### 调用关系
 
-**被调用**：funcname0, funcname1
+**被调用**：
 
-**调用**：funcname2, funcname3
++ `@funcname0`<sup>[说明文件](/Wiki/function/func_template.md)</sup>
+
++ `@funcname1`<sup>[说明文件](/Wiki/function/func_template.md)</sup>
+
+**调用**：
+
++ `@funcname2`<sup>[说明文件](/Wiki/function/func_template.md)</sup>
+
++ `funcname3`<sup>[文档](https://osdn.net/projects/emuera/wiki/FrontPage)</sup>
 
 ### 函数实现
 

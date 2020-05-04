@@ -13,3 +13,5 @@
 1. [引擎内置变量](https://osdn.net/projects/emuera/wiki/exvar)
 
 2. [用户定义变量](https://osdn.net/projects/emuera/wiki/UserVars)
+
+3. [基本语法](https://osdn.net/projects/emuera/wiki/excom)

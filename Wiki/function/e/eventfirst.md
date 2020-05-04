@@ -8,11 +8,13 @@
 
 ### 所在文件
 
-+ [所在文件](/ERB/System_Newgame.erb#L1)
++ [System_Newgame.erb](/ERB/System_Newgame.erb#L1)
 
 ### 调用关系
 
 **被调用**：
+
++ `@SYSTEM_TITLE`<sup>[说明文件](/Wiki/function/s/system_title.md)</sup>
 
 **调用**：
 

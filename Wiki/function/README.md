@@ -8,4 +8,6 @@
 
 + @EVENTFIRST 新游戏初始化<br/><sup>[说明文件](/Wiki/function/e/eventfirst.md)</sup><br/><sup>[所在文件](/ERB/System_Newgame.erb#L1)</sup>
 
-+ @LOADGAME_EX 读取存档<br/><sup>[说明文件](/Wiki/function/e/eventfirst.md)</sup><br/><sup>[所在文件](/ERB/Saveload.erb#L77)</sup>
++ @LOADGAME_EX 读取存档<br/><sup>[说明文件](/Wiki/function/l/loadgame_ex.md)</sup><br/><sup>[所在文件](/ERB/Saveload.erb#L77)</sup>
+
++ @PRINT_SAVEDATA 打印存档列表<br/><sup>[说明文件](/Wiki/function/p/print_savedata.md)</sup><br/><sup>[所在文件](/ERB/Saveload.erb#L122)</sup>

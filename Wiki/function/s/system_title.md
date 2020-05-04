@@ -10,23 +10,33 @@
 
 ### 所在文件
 
-+ [所在文件](/ERB/Title.erb#L14)
++ [Title.erb](/ERB/Title.erb#L14)
 
 ### 调用关系
 
-**被调用**：直接被Emuera引擎调用，是整个游戏的入口
+**被调用**：
 
-**调用**：`@EVENTFIRST`、`@LOADGAME_EX`
++ 直接被Emuera引擎调用，是整个游戏的入口
+
+**调用**：
+
++ `@EVENTFIRST`<sup>[说明文件](/Wiki/function/e/eventfirst.md)</sup>
+
++ `@LOADGAME_EX`<sup>[说明文件](/Wiki/function/l/loadgame_ex.md)</sup>
+
++ `ADDDEFCHARA`<sup>[文档](https://osdn.net/projects/emuera/wiki/excom%23h5-ADDDEFCHARA)</sup>
+
++ `BEGIN FIRST`<sup>[文档](https://osdn.net/projects/emuera/wiki/excom#h5-BEGIN.20.3C.E3.82.AD.E3.83.BC.E3.83.AF.E3.83.BC.E3.83.89.3E)</sup>
 
 ### 函数实现
 
 #### 参数
 
-无
+无参数
 
 #### 返回值
 
-无
+无返回值
 
 #### 功能实现
 
@@ -38,10 +48,12 @@ L43-L49：通过读取[/CSV/Strname.csv](/CSV/Strname.csv)里的汉化版描述�
 
 L54-L55：显示新游戏和读取菜单
 
-L64：调用内置函数`ADDDEFCHARA`<sup>[文档](https://osdn.net/projects/emuera/wiki/excom%23h5-ADDDEFCHARA)</sup>读取[/CSV/CHARA/Chara0.csv](/CSV/CHARA/Chara0.csv)作为玩家角色初始值，并开始初始化游戏
+L64：调用引擎内置函数`ADDDEFCHARA`读取[/CSV/CHARA/Chara0.csv](/CSV/CHARA/Chara0.csv)作为玩家角色初始值，并开始初始化游戏
 
-L65：调用内置函数`BEGIN FIRST`<sup>[文档](https://osdn.net/projects/emuera/wiki/excom#h5-BEGIN.20.3C.E3.82.AD.E3.83.BC.E3.83.AF.E3.83.BC.E3.83.89.3E)</sup>，这个函数会自动调用`@EVENTFIRST`函数，正式开始新游戏
+L65：调用引擎内置函数`BEGIN FIRST`，这个函数会自动调用`@EVENTFIRST`函数，正式开始新游戏
 
 L68：调用函数`@LOADGAME_EX`，读取存档
+
+L69：当用户在`@LOADGAME_EX`中没有读取到存档时，跳转到L57的标记`$TITLE_INPUT`，重新读取新的输入
 
 L59.L67.L71：判断用户输入，0=新游戏/1=读取存档/其他=错误值，清除输入，并要求重新选择
