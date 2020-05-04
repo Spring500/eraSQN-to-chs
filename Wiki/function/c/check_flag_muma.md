@@ -18,9 +18,7 @@
 
 **调用**：
 
-+ `@RESETFLAG_CLO`<sup>[说明文件](/Wiki/function/func_template.md)</sup>
-
-+ `@SETFLAG`<sup>[文档](https://osdn.net/projects/emuera/wiki/FrontPage)</sup>
++ `@funcname2`<sup>[说明文件](/Wiki/function/func_template.md)</sup>
 
 ### 函数实现
 

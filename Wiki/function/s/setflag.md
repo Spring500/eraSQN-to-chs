@@ -14,7 +14,7 @@
 
 **被调用**：
 
-+ `@funcname0`<sup>[说明文件](/Wiki/function/func_template.md)</sup>
++ `@SHOW_SHOP`<sup>[说明文件](/Wiki/function/s/show_shop.md)</sup>
 
 + `@funcname1`<sup>[说明文件](/Wiki/function/func_template.md)</sup>
 

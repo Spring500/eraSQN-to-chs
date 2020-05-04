@@ -59,3 +59,11 @@ L154-L182：变量初始化列表
   -|-|`CALL SETFLAG, "等级限制器"`<br/>检查等级限制器
 
 L187：调用`@CHECK_FLAG_MUMA`
+
+L190：调用`@SET_COUNTER_BASE`设置精力和STOCK
+
+L192：调用`@SAVE_PALAM_BEFORECOM`执行调教命令前记录参数？
+
+L197-L217：可否温泉旅行预订判断
+
+L222：
