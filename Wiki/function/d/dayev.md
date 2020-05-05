@@ -18,7 +18,7 @@
 
 **调用**：
 
-+ `@CONFIG`<sup>[说明文件]()</sup>
++ `@CONFIG`<sup>[说明文件](/Wiki/function/c/config.md)</sup>
 
 ### 函数实现
 

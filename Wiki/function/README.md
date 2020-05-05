@@ -23,3 +23,9 @@
 + @CHECK_FLAG_MUMA 作用待测<br/><sup>[说明文件](/Wiki/function/c/check_flag_muma.md)</sup><br/><sup>[所在文件](/ERB/TRAIN/Event_Setflag.erb#L5-L2958)</sup>
 
 + @DAYEV 计算游戏内部时间<br/><sup>[说明文件](/Wiki/function/d/dayev.md)</sup><br/><sup>[所在文件](/ERB/TRAIN/Function_Sq.erb#L4100-L4336)</sup>
+
++ @CONFIG 读取设定值<br/><sup>[说明文件](Wiki/function/c/config.md)</sup><br/><sup>[所在文件](/ERB/Configure.erb#L142-L565)</sup>
+
++ `@COND`<br/><sup>[说明文件](/wiki/function/d/dayev.md)</sup><br/><sup>[所在文件](/ERB/TRAIN/Function_Sq.erb#L869-L3399)</sup>
+
++ @SETCONFIG 设置设定值<br/><sup>[说明文件](Wiki/function/s/setconfig.md)</sup><br/><sup>[所在文件](/ERB/Configure.erb#L567-L2059)</sup>
