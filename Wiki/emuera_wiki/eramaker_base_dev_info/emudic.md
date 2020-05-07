@@ -3,7 +3,7 @@
 > 在本Wiki使用到的术语。
 > 由于术语数量会随着Emuera的更新而增加，因此我会试着尽量记录下来。
 
-> 译者：有些概念[原文](https://osdn.net/projects/emuera/wiki/EmuDic)解释太绕（Google翻译不给力，希望有熟悉日语的老哥帮忙翻译一下），我就会在自己理解后进行意译🤣。
+> 译者：有些概念[原文](/Wiki/emuera_wiki/eramaker_base_dev_info_jp_edition/emudic_jp.md)解释太绕（Google翻译不给力，希望有熟悉日语的老哥帮忙翻译一下），我就会在自己理解后进行意译🤣。
 
 + [启动模式](#启动模式)
 	+ [普通模式](#普通模式)
@@ -66,14 +66,16 @@
 
 但是，如果ERB文件中引用了CSV文件的字段，则需要另外检查对应的CSV文件，因为目前分析模式只能分析ERB文件。（这段为意译，确实看不太懂）
 
-从`v1738g`开始，如果在分析模式下启用“加载时显示报告”，
+从`v1738g`版本开始，如果在分析模式下启用“加载时显示报告”，
 对于每个被分析的ERB文件，都会显示文件中包含函数的列表。
 
 如果分析日志过多，请在配置中增加日志输出行数。
 
 ### DEBUG模式
 
-传入命令行参数`-Debug`即可启动DEBUG模式，要了解DEBUG模式的更多信息，请参阅[这里](https://osdn.net/projects/emuera/wiki/debug)。
+传入命令行参数`-Debug`即可启动DEBUG模式。
+
+要了解DEBUG模式的更多信息，请参阅[这里](/Wiki/emuera_wiki/eramaker_base_dev_info/debug.md)。
 
 ----------------------------------------
 
@@ -133,7 +135,7 @@ ERB文件中的某些行，这些行会在别的指令执行前就预先处理�
 
 被`[ ]`包括的语句，是特殊区块的表示方式。
 
-需要更多信息，请参阅[这里](https://osdn.net/projects/emuera/wiki/exfunc#h3-.E7.89.B9.E6.AE.8A.E3.81.AA.E3.83.96.E3.83.AD.E3.83.83.E3.82.AF.E3.82.92.E8.A1.A8.E3.81.99.E8.A1.8C)。
+需要更多信息，请参阅[这里](/Wiki/emuera_wiki/eramaker_base_dev_info/exfunc.md#特殊なブロックを表す行)。
 
 ### 属性（预处理器）
 
@@ -297,7 +299,7 @@ eramaker的说明中，角色变量被视为数组变量之一，但Emuear Wiki�
 
 从`v1807`版本开始， 只有`CDFLAG`属于这种变量。
 
-有关信息请参阅[CDFLAG](https://osdn.net/projects/emuera/wiki/exvar#h5-CDFLAG)。
+有关信息请参阅[CDFLAG](/Wiki/emuera_wiki/eramaker_base_dev_info/exvar.md#CDFLAG)。
 
 ### 局部变量
 
@@ -319,7 +321,7 @@ eramaker的说明中，角色变量被视为数组变量之一，但Emuear Wiki�
 
 你也可以通过在`ERH`中使用`#DIM`或`#DIMS`来定义全局变量。
 
-有关信息请参阅[头文件（ERH）](https://osdn.net/projects/emuera/wiki/ERH)。
+有关信息请参阅[头文件（ERH）](https://osdn.net/projects/emuera/wiki/erh.md)。
 
 ### 全局变量
 
@@ -337,4 +339,4 @@ Emuera的全局变量与其他程序语言中的全局变量的概念无关。
 
 但是它和局部变量不同，不能通过`LOCAL@函数名`或`LOCALS@函数名`从函数外部进行分配或引用。
 
-有关信息请参阅[用户定义变量](https://osdn.net/projects/emuera/wiki/UserVars)。
+有关信息请参阅[用户定义变量](https://osdn.net/projects/emuera/wiki/uservars.md)。
