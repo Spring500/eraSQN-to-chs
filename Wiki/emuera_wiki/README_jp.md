@@ -14,15 +14,15 @@
 
 それらについては次のリンク先（外部リンクです）を参照してください。
 
-http://cbaku.com/b/2010/12/eramaker/
+[http://cbaku.com/b/2010/12/eramaker/](http://cbaku.com/b/2010/12/eramaker/)
 
 ## エンドユーザー向け情報
 
-+ [利用方法]()
-+ [コンフィグ設定]()
-+ [ショートカットキー]()
-+ [更新履歴]()
-+ [Emueraスレッド]()
++ [利用方法](/Wiki/emuera_wiki/user_info_jp_edition/howto_jp.md)
++ [コンフィグ設定](/Wiki/emuera_wiki/user_info_jp_edition/config_jp.md)
++ [ショートカットキー](/Wiki/emuera_wiki/user_info_jp_edition/shortcut_jp.md)
++ [更新履歴](https://osdn.net/projects/emuera/wiki/history)
++ [Emueraスレッド](/Wiki/emuera_wiki/user_info_jp_edition/thread_jp.md)
 
 ## eramaker basic 開発者向け情報
 
@@ -34,15 +34,15 @@ http://cbaku.com/b/2010/12/eramaker/
 + [フロー図](/Wiki/emuera_wiki/eramaker_base_dev_info_jp_edition/flow_jp.md)
 + [eramakerとの相違点](/Wiki/emuera_wiki/eramaker_base_dev_info_jp_edition/diff_jp.md)
 + [Emueraで追加された拡張文法](/Wiki/emuera_wiki/eramaker_base_dev_info_jp_edition/extended_jp.md)
-	+ [一般]()
-	+ [演算]()
-	+ [定数・変数]()
-	+ [ユーザー定義の変数]()
-	+ [命令]()
-	+ [関数・プリプロセッサ]()
-	+ [式中で使える関数]()
-	+ [ユーザー定義の式中関数]()
-	+ [ヘッダーファイル（ERH）]()
-	+ [HTML_PRINT関連]()
-	+ [リソースファイル]()
+	+ [一般](/Wiki/emuera_wiki/eramaker_base_dev_info_jp_edition/exetc_jp.md)
+	+ [演算](/Wiki/emuera_wiki/eramaker_base_dev_info_jp_edition/exop_jp.md)
+	+ [定数・変数](/Wiki/emuera_wiki/eramaker_base_dev_info_jp_edition/exvar_jp.md)
+	+ [ユーザー定義の変数](/Wiki/emuera_wiki/eramaker_base_dev_info_jp_edition/uservars_jp.md)
+	+ [命令](/Wiki/emuera_wiki/eramaker_base_dev_info_jp_edition/excom_jp.md)
+	+ [関数・プリプロセッサ](/Wiki/emuera_wiki/eramaker_base_dev_info_jp_edition/exfunc_jp.md)
+	+ [式中で使える関数](/Wiki/emuera_wiki/eramaker_base_dev_info_jp_edition/exmeth_jp.md)
+	+ [ユーザー定義の式中関数](/Wiki/emuera_wiki/eramaker_base_dev_info_jp_edition/usermeth_jp.md)
+	+ [ヘッダーファイル（ERH）](/Wiki/emuera_wiki/eramaker_base_dev_info_jp_edition/erh_jp.md)
+	+ [HTML_PRINT関連](/Wiki/emuera_wiki/eramaker_base_dev_info_jp_edition/exhtml_jp.md)
+	+ [リソースファイル](/Wiki/emuera_wiki/eramaker_base_dev_info_jp_edition/resources_jp.md)
 	
