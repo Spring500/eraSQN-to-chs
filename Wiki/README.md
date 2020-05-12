@@ -10,11 +10,4 @@
 
 ### Emuera引擎文档翻译
 
-1. [Emuera Wiki](/Wiki/emuera_wiki/README.md)
-
-### Emuera引擎文档原文
-
-1. [引擎内置变量](https://osdn.net/projects/emuera/wiki/exvar)
-2. [用户定义变量](https://osdn.net/projects/emuera/wiki/UserVars)
-3. [基本语法](https://osdn.net/projects/emuera/wiki/excom)
-4. [引擎加载流程](https://osdn.net/projects/emuera/wiki/flow)
++ [Emuera Wiki](/Wiki/emuera_wiki)
