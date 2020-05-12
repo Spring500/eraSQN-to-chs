@@ -14,6 +14,8 @@
 
 + @SHOW_SHOP 加载存档后自动执行<br/><sup>[说明文件](/Wiki/erasqn_wiki/function/s/show_shop.md)</sup><br/><sup>[所在文件](/ERB/SHOP/Shop.erb#L137-L545)</sup>
 
++ @USERSHOP `@SHOW_SHOP执`行后，被游戏引擎自动调用<br/><sup>[说明文件](/Wiki/erasqn_wiki/function/u/usershop.md)</sup><br/><sup>[所在文件](/ERB/SHOP/Shop.erb#L570-L896)</sup>
+
 + @VERUP_ERASQN 更新旧版存档<br/>暂不研究，内容太多<br/><sup>[说明文件](/Wiki/erasqn_wiki/function/v/verup_erasqn.md)</sup><br/><sup>[所在文件](/ERB/Verup.erb#L8-L4640)</sup>
 
 + @VERUP_ERASQN 返回当前eraSQN版本<br/><sup>[说明文件](/Wiki/erasqn_wiki/function/v/ver_erasqn.md)</sup><br/><sup>[所在文件](/ERB/Verup.erb#L1-L4)</sup>
@@ -26,6 +28,6 @@
 
 + @CONFIG 读取设定值<br/><sup>[说明文件](Wiki/function/c/config.md)</sup><br/><sup>[所在文件](/ERB/Configure.erb#L142-L565)</sup>
 
-+ `@COND`<br/><sup>[说明文件](/Wiki/erasqn_wiki/function/d/dayev.md)</sup><br/><sup>[所在文件](/ERB/TRAIN/Function_Sq.erb#L869-L3399)</sup>
++ @COND<br/><sup>[说明文件](/Wiki/erasqn_wiki/function/d/dayev.md)</sup><br/><sup>[所在文件](/ERB/TRAIN/Function_Sq.erb#L869-L3399)</sup>
 
 + @SETCONFIG 设置设定值<br/><sup>[说明文件](Wiki/function/s/setconfig.md)</sup><br/><sup>[所在文件](/ERB/Configure.erb#L567-L2059)</sup>
