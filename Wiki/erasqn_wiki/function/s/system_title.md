@@ -5,7 +5,9 @@
 ### 作用描述
 
 + Emuera引擎的入口
+
 + 游戏开始首屏显示：游戏名、版本和作者等信息
+
 + 提供开始新游戏和读取进度的选项
 
 ### 所在文件
@@ -40,20 +42,48 @@
 
 #### 功能实现
 
-L25-L30：通过引擎内置变量读取[/CSV/GameBase.csv](/CSV/GameBase.csv)里的游戏版本信息，将整型的游戏版本转化成`.`分隔的版本号
+**L25-L30**：
 
-L36-L42：通过引擎内置变量读取[/CSV/GameBase.csv](/CSV/GameBase.csv)里的游戏版本信息，然后显示到游戏首屏
+通过引擎内置变量读取[/CSV/GameBase.csv](/CSV/GameBase.csv)里的游戏版本信息，将整型的游戏版本转化成`.`分隔的版本号。
 
-L43-L49：通过读取[/CSV/Strname.csv](/CSV/Strname.csv)里的汉化版描述信息，然后显示到游戏首屏
+**L33**：
 
-L54-L55：显示新游戏和读取菜单
+声明跳转标记`$TITLE_SELECT`。
 
-L64：调用引擎内置函数`ADDDEFCHARA`读取[/CSV/CHARA/Chara0.csv](/CSV/CHARA/Chara0.csv)作为玩家角色初始值，并开始初始化游戏
+**L36-L42**：
 
-L65：调用引擎内置函数`BEGIN FIRST`，这个函数会自动调用`@EVENTFIRST`函数，正式开始新游戏
+通过引擎内置变量读取[/CSV/GameBase.csv](/CSV/GameBase.csv)里的游戏标题、版本信息、作者、制作年、附加信息，然后显示到游戏标题屏幕。
 
-L68：调用函数`@LOADGAME_EX`，读取存档
+**L43-L49**：
 
-L69：当用户在`@LOADGAME_EX`中没有读取到存档时，跳转到L57的标记`$TITLE_INPUT`，重新读取新的输入
+通过读取[/CSV/Strname.csv](/CSV/Strname.csv)里的汉化版描述信息，然后显示到游戏首屏。
 
-L59.L67.L71：判断用户输入，0=新游戏/1=读取存档/其他=错误值，清除输入，并要求重新选择
+**L54-L55**：
+
+显示新游戏和读取菜单。
+
+**L56**：
+
+声明跳转标记`$TITLE_INPUT`。
+
+**L57**：
+
+读取玩家输入的选择项。
+
+**L58-L74**：
+
+如果玩家在上一步中输入的是`0`，
+
+  1. 调用引擎命令`RESETDATA`初始化所有变量。
+
+  2. 调用引擎命令`ADDDEFCHARA`读取[/CSV/CHARA/Chara0.csv](/CSV/CHARA/Chara0.csv)作为玩家角色初始值，并开始初始化游戏。
+
+  3. 调用引擎命令`BEGIN FIRST`，执行`@EVENTFIRST`。
+
+如果玩家在上一步中输入的是`1`，
+
+  1. 调用`@LOADGAME_EX`，进入存档加载画面。
+
+  2. 当`@LOADGAME_EX`执行结束后，跳转到标记`$TITLE_SELECT`，重新显示游戏标题屏幕。
+
+如果玩家在上一步中的输入既不是`0`也不是`1`，则输出提示`数值无效`，接着跳转到标记`$TITLE_INPUT`，重新读取玩家输入。
