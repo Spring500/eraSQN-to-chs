@@ -16,6 +16,8 @@
 
 + `@DAYEV`<sup>[说明文件](/Wiki/erasqn_wiki/function/d/dayev.md)</sup>
 
++ `@USERSHOP`<sup>[说明文件](Wiki/erasqn_wiki/function/u/usershop.md)</sup>
+
 **调用**：
 
 + `@COND`<sup>[说明文件](/Wiki/erasqn_wiki/function/d/dayev.md)</sup>

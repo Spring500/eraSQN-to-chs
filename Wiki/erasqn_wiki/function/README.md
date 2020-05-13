@@ -2,32 +2,72 @@
 
 > [\[回Wiki首页\]](/Wiki)
 
-> 尽量按照函数在游戏中被调用的顺序列出
+> 按函数名字母顺序称列出
 
-+ @SYSTEM_TITLE 游戏入口<br/><sup>[说明文件](/Wiki/erasqn_wiki/function/s/system_title.md)</sup><br/><sup>[所在文件](/ERB/Title.erb#L14-L75)</sup>
+## 主要函数
 
-+ @EVENTFIRST 新游戏初始化<br/><sup>[说明文件](/Wiki/erasqn_wiki/function/e/eventfirst.md)</sup><br/><sup>[所在文件](/ERB/System_Newgame.erb#L1-L201)</sup>
+函数名称|所在文件|解说文件|作用简述|解析进度|备注
+----|----|----|----|----|----
+@ACCESSORY_SHOP|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/a/accessory_shop.md)|||
+@ANALYSIS|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/a/analysis.md)|||
+@ARCANA_SHOP|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/a/arcana_shop.md)|||
+@CHANGE_TARGET|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/c/change_target.md)|||
+@CHARA_BUY|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/c/chara_buy.md)|||
+@CHARA_NUM|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/c/chara_num.md)|||
+@CHARA_SALE|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/c/chara_sale.md)|||
+@CHECK_COM_ABLE|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/c/check_com_able.md)|||
+@CHECK_FLAG_MUMA|[所在文件](/ERB/TRAIN/Event_Setflag.erb#L5-L2958)|[解说文件](/Wiki/erasqn_wiki/function/c/check_flag_muma.md)|||
+@CHECK_SINGLE_ENDING|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/c/check_single_ending.md)|||
+@COMPOUND_ITEM|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/c/compound_item.md)|||
+@COND|[所在文件](/ERB/TRAIN/Function_Sq.erb#L869-L3399)|[解说文件](/Wiki/erasqn_wiki/function/d/cond.md)|||
+@CONFIG|[所在文件](/ERB/Configure.erb#L142-L565)|[解说文件](/Wiki/function/c/config.md)|||
+@COSPLAY_LIST|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/c/cosplay_list.md)|||
+@DAYEV|[所在文件](/ERB/TRAIN/Function_Sq.erb#L4100-L4336)|[解说文件](/Wiki/erasqn_wiki/function/d/dayev.md)|||
+@DEBUG_MODE|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/d/debug_mode.md)|||
+@EAT_LUNCH|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/e/eat_lunch.md)|||
+@ENDING_CHECK|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/e/ending_check.md)|||
+@EVENT_DESKWORK|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/e/event_deskwork.md)|||
+@EVENT_KOTYOUNOYUME|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/e/event_kotyounoyume.md)|||
+@EVENT_RANKOU|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/e/event_rankou.md)|||
+@EVENT_RANKOU_SET|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/e/event_rankou_set.md)|||
+@EVENT_REST_PRE|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/e/event_rest_pre.md)|||
+@EVENT_SHOP|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/e/event_shop.md)|||
+@EVENT_TRAVEL_SELECT|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/e/event_travel_select.md)|||
+@EVENTFIRST|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/e/eventfirst.md)|||
+@EXPLORER|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/e/explorer.md)|||
+@GIVE_NAME|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/g/give_name.md)|||
+@INPUT_SELECT|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/i/input_select.md)|||
+@LOADGAME_EX|[所在文件](/ERB/Saveload.erb#L77-L120)|[解说文件](/Wiki/erasqn_wiki/function/l/loadgame_ex.md)|||
+@LV_LIMITTER|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/l/lv_limitter.md)|||
+@NAME_CONVERT|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/n/name_convert.md)|||
+@NUM|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/n/num.md)|||
+@PLAY_WITH_ASSI|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/p/play_with_assi.md)|||
+@PRINT_SAVEDATA|[所在文件](/ERB/Saveload.erb#L122-L142)|[解说文件](/Wiki/erasqn_wiki/function/p/print_savedata.md)|||
+@PRINT_STR|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/p/print_str.md)|||
+@RESETFLAG_CLO|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/r/resetflag_clo.md)|||
+@SAVEGAME_EX|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/s/savegame_ex.md)|||
+@SELECT_ASSI|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/s/select_assi.md)|||
+@SET_3SIZE|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/s/set_3size.md)|||
+@SET_CHARA_LOVE|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/s/set_chara_love.md)|||
+@SET_CHARA_NIGHTWALKER|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/s/set_chara_nightwalker.md)|||
+@SET_CONFIGURE|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/s/set_configure.md)|||
+@SETCONFIG|[所在文件](/ERB/Configure.erb#L567-L2059)|[解说文件](/Wiki/function/s/setconfig.md)|||
+@SETFLAG|[所在文件](/ERB/TRAIN/Event_Setflag.erb#L5-L2958)|[解说文件](/Wiki/erasqn_wiki/function/s/setflag.md)|||
+@SHOP_EX|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/s/shop_ex.md)|||
+@SHOW_CHARADATA|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/s/show_charadata.md)|||
+@SHOW_ITEM_HAVE|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/s/show_item_have.md)|||
+@SHOW_SHOP|[所在文件](/ERB/SHOP/Shop.erb#L137-L545)|[解说文件](/Wiki/erasqn_wiki/function/s/show_shop.md)|||
+@SYSTEM_TITLE|[所在文件](/ERB/Title.erb#L14-L75)|[解说文件](/Wiki/erasqn_wiki/function/s/system_title.md)|Emuera引擎入口||
+@TEXTS|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/t/texts.md)|||
+@USERSHOP|[所在文件](/ERB/SHOP/Shop.erb#L570-L896)|[解说文件](/Wiki/erasqn_wiki/function/u/usershop.md)|处理玩家在`@SHOW_SHOP`输入的选项|99%|
+@USERSHOP_SEXUHARA|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/u/usershop_sexuhara.md)|||
+@VER_ERASQN|[所在文件](/ERB/Verup.erb#L8-L4640)|[解说文件](/Wiki/erasqn_wiki/function/v/verup_erasqn.md)|||
+@VERUP_ERASQN|[所在文件](/ERB/Verup.erb#L1-L4)|[解说文件](/Wiki/erasqn_wiki/function/v/ver_erasqn.md)|||
 
-+ @LOADGAME_EX 读取存档<br/><sup>[说明文件](/Wiki/erasqn_wiki/function/l/loadgame_ex.md)</sup><br/><sup>[所在文件](/ERB/Saveload.erb#L77-L120)</sup>
+----------------------------------------
 
-+ @PRINT_SAVEDATA 打印存档列表<br/><sup>[说明文件](/Wiki/erasqn_wiki/function/p/print_savedata.md)</sup><br/><sup>[所在文件](/ERB/Saveload.erb#L122-L142)</sup>
+## 其他函数
 
-+ @SHOW_SHOP 加载存档后自动执行<br/><sup>[说明文件](/Wiki/erasqn_wiki/function/s/show_shop.md)</sup><br/><sup>[所在文件](/ERB/SHOP/Shop.erb#L137-L545)</sup>
++ `@GUEST_KOJO_K{NO:TARGET}_{CFLAG:209}`
 
-+ @USERSHOP `@SHOW_SHOP执`行后，被游戏引擎自动调用<br/><sup>[说明文件](/Wiki/erasqn_wiki/function/u/usershop.md)</sup><br/><sup>[所在文件](/ERB/SHOP/Shop.erb#L570-L896)</sup>
-
-+ @VERUP_ERASQN 更新旧版存档<br/>暂不研究，内容太多<br/><sup>[说明文件](/Wiki/erasqn_wiki/function/v/verup_erasqn.md)</sup><br/><sup>[所在文件](/ERB/Verup.erb#L8-L4640)</sup>
-
-+ @VERUP_ERASQN 返回当前eraSQN版本<br/><sup>[说明文件](/Wiki/erasqn_wiki/function/v/ver_erasqn.md)</sup><br/><sup>[所在文件](/ERB/Verup.erb#L1-L4)</sup>
-
-+ @SETFLAG 作用待测<br/><sup>[说明文件](/Wiki/erasqn_wiki/function/s/setflag.md)</sup><br/><sup>[所在文件](/ERB/TRAIN/Event_Setflag.erb#L5-L2958)</sup>
-
-+ @CHECK_FLAG_MUMA 作用待测<br/><sup>[说明文件](/Wiki/erasqn_wiki/function/c/check_flag_muma.md)</sup><br/><sup>[所在文件](/ERB/TRAIN/Event_Setflag.erb#L5-L2958)</sup>
-
-+ @DAYEV 计算游戏内部时间<br/><sup>[说明文件](/Wiki/erasqn_wiki/function/d/dayev.md)</sup><br/><sup>[所在文件](/ERB/TRAIN/Function_Sq.erb#L4100-L4336)</sup>
-
-+ @CONFIG 读取设定值<br/><sup>[说明文件](Wiki/function/c/config.md)</sup><br/><sup>[所在文件](/ERB/Configure.erb#L142-L565)</sup>
-
-+ @COND<br/><sup>[说明文件](/Wiki/erasqn_wiki/function/d/dayev.md)</sup><br/><sup>[所在文件](/ERB/TRAIN/Function_Sq.erb#L869-L3399)</sup>
-
-+ @SETCONFIG 设置设定值<br/><sup>[说明文件](Wiki/function/s/setconfig.md)</sup><br/><sup>[所在文件](/ERB/Configure.erb#L567-L2059)</sup>
++ `@GUEST_KOJO_K{NO:ASSI}_{CFLAG:ASSI:209}`

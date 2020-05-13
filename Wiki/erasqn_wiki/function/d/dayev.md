@@ -20,6 +20,8 @@
 
 + `@CONFIG`<sup>[说明文件](/Wiki/erasqn_wiki/function/c/config.md)</sup>
 
++ `@USERSHOP`<sup>[说明文件](Wiki/erasqn_wiki/function/u/usershop.md)</sup>
+
 ### 函数实现
 
 #### 参数

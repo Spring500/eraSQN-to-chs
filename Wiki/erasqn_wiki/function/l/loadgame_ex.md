@@ -16,6 +16,8 @@
 
 + `@SYSTEM_TITLE`<sup>[说明文件](/Wiki/erasqn_wiki/function/s/system_title.md)</sup>
 
++ `@USERSHOP`<sup>[说明文件](Wiki/erasqn_wiki/function/u/usershop.md)</sup>
+
 **调用**：
 
 + `@PRINT_SAVEDATA`<sup>[说明文件](/Wiki/erasqn_wiki/function/p/print_savedata.md)</sup>

@@ -1,4 +1,4 @@
-﻿# @COND
+﻿# @func_template
 
 > [\[回Wiki首页\]](/Wiki) [\[回函数列表\]](/Wiki/erasqn_wiki/function/README.md)
 
@@ -8,15 +8,15 @@
 
 ### 所在文件
 
-+ [Function_Sq.erb](/ERB/TRAIN/Function_Sq.erb#L869-L3399)
++ [XXXX.erb](/ERB/Title.erb#L14)
 
 ### 调用关系
 
 **被调用**：
 
-+ `@CONFIG`<sup>[说明文件](/Wiki/erasqn_wiki/function/c/config.md)</sup>
++ `@funcname0`<sup>[说明文件](/Wiki/erasqn_wiki/function/func_template.md)</sup>
 
-+ `@USERSHOP`<sup>[说明文件](Wiki/erasqn_wiki/function/u/usershop.md)</sup>
++ `@funcname1`<sup>[说明文件](/Wiki/erasqn_wiki/function/func_template.md)</sup>
 
 **调用**：
 
@@ -28,9 +28,9 @@
 
 #### 参数
 
-+ ARG
++ 参数1
 
-+ ARGS
++ 参数2
 
 #### 返回值
 
