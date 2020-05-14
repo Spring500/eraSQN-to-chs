@@ -26,10 +26,6 @@
 
 + `@LOADGAME_EX`<sup>[说明文件](/Wiki/erasqn_wiki/function/l/loadgame_ex.md)</sup>
 
-+ `ADDDEFCHARA`<sup>[文档](https://osdn.net/projects/emuera/wiki/excom%23h5-ADDDEFCHARA)</sup>
-
-+ `BEGIN FIRST`<sup>[文档](https://osdn.net/projects/emuera/wiki/excom#h5-BEGIN.20.3C.E3.82.AD.E3.83.BC.E3.83.AF.E3.83.BC.E3.83.89.3E)</sup>
-
 ### 函数实现
 
 #### 参数

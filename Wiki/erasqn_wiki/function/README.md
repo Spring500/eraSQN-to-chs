@@ -11,6 +11,9 @@
 @ACCESSORY_SHOP|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/a/accessory_shop.md)|||
 @ANALYSIS|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/a/analysis.md)|||
 @ARCANA_SHOP|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/a/arcana_shop.md)|||
+@ASSI_LIST_ABL|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/a/assi_list_abl.md)|||
+@ASSI_LIST_INDICATE|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/a/assi_list_abl.md)|||
+@CDAYEV|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/c/cdayev.md)|||
 @CHANGE_TARGET|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/c/change_target.md)|||
 @CHARA_BUY|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/c/chara_buy.md)|||
 @CHARA_NUM|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/c/chara_num.md)|||
@@ -24,6 +27,7 @@
 @COSPLAY_LIST|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/c/cosplay_list.md)|||
 @DAYEV|[所在文件](/ERB/TRAIN/Function_Sq.erb#L4100-L4336)|[解说文件](/Wiki/erasqn_wiki/function/d/dayev.md)|||
 @DEBUG_MODE|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/d/debug_mode.md)|||
+@DEL_CEVENT_GROUP|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/d/del_cevent_group.md)|||
 @EAT_LUNCH|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/e/eat_lunch.md)|||
 @ENDING_CHECK|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/e/ending_check.md)|||
 @EVENT_DESKWORK|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/e/event_deskwork.md)|||
@@ -32,42 +36,136 @@
 @EVENT_RANKOU_SET|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/e/event_rankou_set.md)|||
 @EVENT_REST_PRE|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/e/event_rest_pre.md)|||
 @EVENT_SHOP|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/e/event_shop.md)|||
+@EVENT_TRAVEL|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/e/event_travel.md)|||
 @EVENT_TRAVEL_SELECT|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/e/event_travel_select.md)|||
-@EVENTFIRST|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/e/eventfirst.md)|||
+@EVENTFIRST|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/e/eventfirst.md)||95%|
+@EVENTTURNEND_FLAG|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/e/eventturnend_flag.md)|||
 @EXPLORER|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/e/explorer.md)|||
 @GIVE_NAME|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/g/give_name.md)|||
 @INPUT_SELECT|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/i/input_select.md)|||
+@LOAD_CONFIGURE|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/l/load_configure.md)|||
 @LOADGAME_EX|[所在文件](/ERB/Saveload.erb#L77-L120)|[解说文件](/Wiki/erasqn_wiki/function/l/loadgame_ex.md)|||
 @LV_LIMITTER|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/l/lv_limitter.md)|||
+@LVUPCHECK_MASTER|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/l/lvupcheck_master.md)|||
+@MONEY_C|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/m/money_c.md)|||
 @NAME_CONVERT|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/n/name_convert.md)|||
 @NUM|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/n/num.md)|||
 @PLAY_WITH_ASSI|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/p/play_with_assi.md)|||
+@PRINT_BAR|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/P/print_bar.md)|||
+@PRINT_DRESS|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/P/print_dress.md)|||
 @PRINT_SAVEDATA|[所在文件](/ERB/Saveload.erb#L122-L142)|[解说文件](/Wiki/erasqn_wiki/function/p/print_savedata.md)|||
 @PRINT_STR|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/p/print_str.md)|||
 @RESETFLAG_CLO|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/r/resetflag_clo.md)|||
+@SAVE_PALAM_BEFORECOM|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/s/save_palam_beforecom.md)|||
 @SAVEGAME_EX|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/s/savegame_ex.md)|||
 @SELECT_ASSI|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/s/select_assi.md)|||
 @SET_3SIZE|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/s/set_3size.md)|||
 @SET_CHARA_LOVE|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/s/set_chara_love.md)|||
 @SET_CHARA_NIGHTWALKER|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/s/set_chara_nightwalker.md)|||
 @SET_CONFIGURE|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/s/set_configure.md)|||
+@SET_COUNTER_BASE|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/s/set_counter_base.md)|||
+@SET_NEWNAME|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/s/set_newname.md)|||
 @SETCONFIG|[所在文件](/ERB/Configure.erb#L567-L2059)|[解说文件](/Wiki/function/s/setconfig.md)|||
 @SETFLAG|[所在文件](/ERB/TRAIN/Event_Setflag.erb#L5-L2958)|[解说文件](/Wiki/erasqn_wiki/function/s/setflag.md)|||
 @SHOP_EX|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/s/shop_ex.md)|||
 @SHOW_CHARADATA|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/s/show_charadata.md)|||
 @SHOW_ITEM_HAVE|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/s/show_item_have.md)|||
 @SHOW_SHOP|[所在文件](/ERB/SHOP/Shop.erb#L137-L545)|[解说文件](/Wiki/erasqn_wiki/function/s/show_shop.md)|显示游戏主菜单<br/>Emuera引擎在读取存档后，自动调用此函数|95%|
+@START_CHARA_SELECT|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/s/start_chara_select.md)|||
 @SYSTEM_TITLE|[所在文件](/ERB/Title.erb#L14-L75)|[解说文件](/Wiki/erasqn_wiki/function/s/system_title.md)|Emuera引擎入口，游戏首屏|100%|
+@TEXT|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/t/text.md)|||
+@TEXT_LJ|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/t/text_lj.md)|||
+@TEXT_RJ|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/t/text_rj.md)|||
 @TEXTS|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/t/texts.md)|||
 @USERSHOP|[所在文件](/ERB/SHOP/Shop.erb#L570-L896)|[解说文件](/Wiki/erasqn_wiki/function/u/usershop.md)|处理玩家在`@SHOW_SHOP`输入的选项|99%|
 @USERSHOP_SEXUHARA|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/u/usershop_sexuhara.md)|||
 @VER_ERASQN|[所在文件](/ERB/Verup.erb#L8-L4640)|[解说文件](/Wiki/erasqn_wiki/function/v/verup_erasqn.md)|||
 @VERUP_ERASQN|[所在文件](/ERB/Verup.erb#L1-L4)|[解说文件](/Wiki/erasqn_wiki/function/v/ver_erasqn.md)|||
+@|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function//.md)|||
 
 ----------------------------------------
 
 ## 其他函数
 
-+ `@GUEST_KOJO_K{NO:TARGET}_{CFLAG:209}`
-
-+ `@GUEST_KOJO_K{NO:ASSI}_{CFLAG:ASSI:209}`
++ `@GUEST_KOJO_K1_1`
++ `@GUEST_KOJO_K1_2`
++ `@GUEST_KOJO_K2_1`
++ `@GUEST_KOJO_K3_1`
++ `@GUEST_KOJO_K3_2`
++ `@GUEST_KOJO_K4_1`
++ `@GUEST_KOJO_K4_2`
++ `@GUEST_KOJO_K4_3`
++ `@GUEST_KOJO_K5_1`
++ `@GUEST_KOJO_K6_1`
++ `@GUEST_KOJO_K7_1`
++ `@GUEST_KOJO_K7_2`
++ `@GUEST_KOJO_K7_3`
++ `@GUEST_KOJO_K8_1`
++ `@GUEST_KOJO_K8_2`
++ `@GUEST_KOJO_K9_1`
++ `@GUEST_KOJO_K9_2`
++ `@GUEST_KOJO_K10_1`
++ `@GUEST_KOJO_K10_2`
++ `@GUEST_KOJO_K11_1`
++ `@GUEST_KOJO_K11_2`
++ `@GUEST_KOJO_K12_1`
++ `@GUEST_KOJO_K12_2`
++ `@GUEST_KOJO_K13_1`
++ `@GUEST_KOJO_K14_1`
++ `@GUEST_KOJO_K15_1`
++ `@GUEST_KOJO_K15_2`
++ `@GUEST_KOJO_K16_1`
++ `@GUEST_KOJO_K17_1`
++ `@GUEST_KOJO_K17_2`
++ `@GUEST_KOJO_K18_1`
++ `@GUEST_KOJO_K19_1`
++ `@GUEST_KOJO_K20_1`
++ `@GUEST_KOJO_K21_1`
++ `@GUEST_KOJO_K22_1`
++ `@GUEST_KOJO_K22_2`
++ `@GUEST_KOJO_K23_1`
++ `@GUEST_KOJO_K24_1`
++ `@GUEST_KOJO_K24_2`
++ `@GUEST_KOJO_K25_1`
++ `@GUEST_KOJO_K25_2`
++ `@GUEST_KOJO_K25_3`
++ `@GUEST_KOJO_K26_1`
++ `@GUEST_KOJO_K27_1`
++ `@GUEST_KOJO_K28_1`
++ `@GUEST_KOJO_K29_1`
++ `@GUEST_KOJO_K30_1`
++ `@GUEST_KOJO_K30_2`
++ `@GUEST_KOJO_K31_1`
++ `@GUEST_KOJO_K31_2`
++ `@GUEST_KOJO_K32_1`
++ `@GUEST_KOJO_K33_1`
++ `@GUEST_KOJO_K34_1`
++ `@GUEST_KOJO_K35_1`
++ `@GUEST_KOJO_K37_1`
++ `@GUEST_KOJO_K38_1`
++ `@GUEST_KOJO_K39_1`
++ `@GUEST_KOJO_K40_1`
++ `@GUEST_KOJO_K41_1`
++ `@GUEST_KOJO_K42_1`
++ `@GUEST_KOJO_K42_2`
++ `@GUEST_KOJO_K43_1`
++ `@GUEST_KOJO_K44_1`
++ `@GUEST_KOJO_K44_2`
++ `@GUEST_KOJO_K44_3`
++ `@GUEST_KOJO_K46_1`
++ `@GUEST_KOJO_K47_1`
++ `@GUEST_KOJO_K48_1`
++ `@GUEST_KOJO_K48_2`
++ `@GUEST_KOJO_K49_1`
++ `@GUEST_KOJO_K50_1`
++ `@GUEST_KOJO_K52_1`
++ `@GUEST_KOJO_K57_1`
++ `@GUEST_KOJO_K58_1`
++ `@GUEST_KOJO_K59_1`
++ `@GUEST_KOJO_K60_1`
++ `@GUEST_KOJO_K60_2`
++ `@GUEST_KOJO_K61_1`
++ `@GUEST_KOJO_K95_1`
++ `@GUEST_KOJO_K97_22`
++ `@GUEST_KOJO_K97_857`
++ `@GUEST_KOJO_K98_2`

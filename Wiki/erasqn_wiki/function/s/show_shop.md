@@ -20,39 +20,39 @@
 
 **调用**：
 
-+ `@ASSI_LIST_ABL`
++ `@ASSI_LIST_ABL`<sup>[说明文件](/Wiki/erasqn_wiki/function/a/assi_list_abl.md)</sup>
 
-+ `@ASSI_LIST_INDICATE`
++ `@ASSI_LIST_INDICATE`<sup>[说明文件](/Wiki/erasqn_wiki/function/a/assi_list_indicate.md)</sup>
 
-+ `@CDAYEV`
++ `@CDAYEV`<sup>[说明文件](/Wiki/erasqn_wiki/function/c/cdayev.md)</sup>
 
-+ `@CHARA_NUM`
++ `@CHARA_NUM`<sup>[说明文件](/Wiki/erasqn_wiki/function/c/chara_num.md)</sup>
 
 + `@CHECK_FLAG_MUMA`<sup>[说明文件](/Wiki/erasqn_wiki/function/c/check_flag_muma.md)</sup>
 
-+ `@CONFIG`
++ `@CONFIG`<sup>[说明文件](/Wiki/erasqn_wiki/function/c/config.md)</sup>
 
-+ `@DAYEV`
++ `@DAYEV`<sup>[说明文件](/Wiki/erasqn_wiki/function/d/dayev.md)</sup>
 
-+ `@DEL_CEVENT_GROUP`
++ `@DEL_CEVENT_GROUP`<sup>[说明文件](/Wiki/erasqn_wiki/function/d/del_cevent_group.md)</sup>
 
-+ `@EVENTTURNEND_FLAG`
++ `@EVENTTURNEND_FLAG`<sup>[说明文件](/Wiki/erasqn_wiki/function/e/eventturnend_flag.md)</sup>
 
-+ `@EVENT_TRAVEL`
++ `@EVENT_TRAVEL`<sup>[说明文件](/Wiki/erasqn_wiki/function/e/event_travel.md)</sup>
 
-+ `@PRINT_BAR`
++ `@PRINT_BAR`<sup>[说明文件](/Wiki/erasqn_wiki/function/p/print_bar.md)</sup>
 
-+ `@PRINT_DRESS`
++ `@PRINT_DRESS`<sup>[说明文件](/Wiki/erasqn_wiki/function/p/print_dress.md)</sup>
 
-+ `@SAVE_PALAM_BEFORECOM`
++ `@SAVE_PALAM_BEFORECOM`<sup>[说明文件](/Wiki/erasqn_wiki/function/s/save_palam_beforecom.md)</sup>
 
 + `@SETFLAG`<sup>[说明文件](/Wiki/erasqn_wiki/function/s/setflag.md)</sup>
 
-+ `@SET_COUNTER_BASE`
++ `@SET_COUNTER_BASE`<sup>[说明文件](/Wiki/erasqn_wiki/function/s/set_counter_base.md)</sup>
 
-+ `@TEXT`
++ `@TEXT`<sup>[说明文件](/Wiki/erasqn_wiki/function/t/text.md)</sup>
 
-+ `@TEXT_LJ`
++ `@TEXT_LJ`<sup>[说明文件](/Wiki/erasqn_wiki/function/t/text_lj.md)</sup>
 
 + `@VERUP_ERASQ`<sup>[说明文件](/Wiki/erasqn_wiki/function/v/verup_erasqn.md)</sup>
 
@@ -64,7 +64,7 @@
 
 #### 返回值
 
-返回值描述
++ 无返回值
 
 #### 功能实现
 

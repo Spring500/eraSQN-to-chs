@@ -2,7 +2,7 @@
 
 GLOBALs|作用
 ----|----
-GLOBAL:99|全局保存日期
+GLOBAL:99|全局保存日期<br/>上次全局设定保存时间
 GLOBAL:100|eraSQN的版本号(FLAG:29)
 GLOBAL:101|[0]射精场所变更(FLAG:91)
 GLOBAL:102|(FLAG:92)
