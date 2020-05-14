@@ -56,8 +56,8 @@
 @SHOP_EX|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/s/shop_ex.md)|||
 @SHOW_CHARADATA|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/s/show_charadata.md)|||
 @SHOW_ITEM_HAVE|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/s/show_item_have.md)|||
-@SHOW_SHOP|[所在文件](/ERB/SHOP/Shop.erb#L137-L545)|[解说文件](/Wiki/erasqn_wiki/function/s/show_shop.md)|||
-@SYSTEM_TITLE|[所在文件](/ERB/Title.erb#L14-L75)|[解说文件](/Wiki/erasqn_wiki/function/s/system_title.md)|Emuera引擎入口，游戏首屏||
+@SHOW_SHOP|[所在文件](/ERB/SHOP/Shop.erb#L137-L545)|[解说文件](/Wiki/erasqn_wiki/function/s/show_shop.md)|显示游戏主菜单<br/>Emuera引擎在读取存档后，自动调用此函数|95%|
+@SYSTEM_TITLE|[所在文件](/ERB/Title.erb#L14-L75)|[解说文件](/Wiki/erasqn_wiki/function/s/system_title.md)|Emuera引擎入口，游戏首屏|100%|
 @TEXTS|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/t/texts.md)|||
 @USERSHOP|[所在文件](/ERB/SHOP/Shop.erb#L570-L896)|[解说文件](/Wiki/erasqn_wiki/function/u/usershop.md)|处理玩家在`@SHOW_SHOP`输入的选项|99%|
 @USERSHOP_SEXUHARA|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/u/usershop_sexuhara.md)|||
