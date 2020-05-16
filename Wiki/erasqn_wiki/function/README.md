@@ -43,7 +43,7 @@
 @EXPLORER|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/e/explorer.md)|||
 @GIVE_NAME|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/g/give_name.md)|||
 @INPUT_SELECT|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/i/input_select.md)|||
-@LOAD_CONFIGURE|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/l/load_configure.md)|||
+@LOAD_CONFIGURE|[所在文件](/ERB/Global.erb#L144-L291)|[解说文件](/Wiki/erasqn_wiki/function/l/load_configure.md)|读取全局设定|100%|
 @LOADGAME_EX|[所在文件](/ERB/Saveload.erb#L77-L120)|[解说文件](/Wiki/erasqn_wiki/function/l/loadgame_ex.md)|||
 @LV_LIMITTER|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/l/lv_limitter.md)|||
 @LVUPCHECK_MASTER|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/l/lvupcheck_master.md)|||
@@ -56,6 +56,7 @@
 @PRINT_SAVEDATA|[所在文件](/ERB/Saveload.erb#L122-L142)|[解说文件](/Wiki/erasqn_wiki/function/p/print_savedata.md)|||
 @PRINT_STR|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/p/print_str.md)|||
 @RESETFLAG_CLO|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/r/resetflag_clo.md)|||
+@SAVE_CONFIGURE|[所在文件](/ERB/Global.erb#L1-L141)|[解说文件](/Wiki/erasqn_wiki/function/s/save_configure.md)|保存全局设定|100%|
 @SAVE_PALAM_BEFORECOM|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/s/save_palam_beforecom.md)|||
 @SAVEGAME_EX|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/s/savegame_ex.md)|||
 @SELECT_ASSI|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/s/select_assi.md)|||
