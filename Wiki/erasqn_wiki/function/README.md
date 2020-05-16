@@ -62,7 +62,7 @@
 @SET_3SIZE|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/s/set_3size.md)|||
 @SET_CHARA_LOVE|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/s/set_chara_love.md)|||
 @SET_CHARA_NIGHTWALKER|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/s/set_chara_nightwalker.md)|||
-@SET_CONFIGURE|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/s/set_configure.md)|||
+@SET_CONFIGURE|[所在文件](/ERB/Global.erb#L1-L141)|[解说文件](/Wiki/erasqn_wiki/function/s/set_configure.md)|保存游戏全局设定|100%|
 @SET_COUNTER_BASE|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/s/set_counter_base.md)|||
 @SET_NEWNAME|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/s/set_newname.md)|||
 @SETCONFIG|[所在文件](/ERB/Configure.erb#L567-L2059)|[解说文件](/Wiki/function/s/setconfig.md)|||
