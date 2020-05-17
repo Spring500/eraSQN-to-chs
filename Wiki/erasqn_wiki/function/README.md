@@ -9,7 +9,7 @@
 函数名称|所在文件|解说文件|作用简述|解析进度|备注
 ----|----|----|----|----|----
 @ACCESSORY_SHOP|[所在文件](/ERB/SHOP/Accessory_System.erb#L8-L15)|[解说文件](/Wiki/erasqn_wiki/function/a/accessory_shop.md)|饰品店入口函数|100%|
-@ACCESSORY_SHOP_BUY|[所在文件](/ERB/SHOP/Accessory_System.erb#L17-L118)|[解说文件](/Wiki/erasqn_wiki/function/a/accessory_shop_buy.md)|||
+@ACCESSORY_SHOP_BUY|[所在文件](/ERB/SHOP/Accessory_System.erb#L17-L118)|[解说文件](/Wiki/erasqn_wiki/function/a/accessory_shop_buy.md)|饰品店处理玩家选择|100%|
 @ANALYSIS|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/a/analysis.md)|||
 @ARCANA_SHOP|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/a/arcana_shop.md)|||
 @ASSI_LIST_ABL|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/a/assi_list_abl.md)|||
