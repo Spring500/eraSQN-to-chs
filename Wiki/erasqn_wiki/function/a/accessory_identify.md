@@ -8,7 +8,7 @@
 
 ### 所在文件
 
-+ [Accessory_System.erb](/ERB/SHOP/Accessory_System.erb#L125-L201)
++ [Accessory_System.erb](/ERB/SHOP/Accessory_System.erb#L139-L216)
 
 ### 调用关系
 
@@ -40,7 +40,7 @@
 
 声明变量`LCOUNT`。
 
-**L128-L133**：
+**L142-L147**：
 
 （作用不明，过后研究）
 
@@ -56,7 +56,7 @@
 
 然后用`LOCAL`记录此标志，并立即跳出循环。
 
-**L135-L149**：
+**L151-L163**：
 
 当调用函数传入的`ARGS`为`鑑定`时，以引擎内置的随机数生成器生成`0～9`的随机数作为选择支，
 
