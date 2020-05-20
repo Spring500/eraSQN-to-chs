@@ -8,7 +8,7 @@
 
 函数名称|所在文件|解说文件|作用简述|解析进度|备注
 ----|----|----|----|----|----
-@ACCESSORY_IDENTIFY|[所在文件](/ERB/SHOP/Accessory_System.erb#L139-L216)|[解说文件](/Wiki/erasqn_wiki/function/a/accessory_identify.md)|||
+@ACCESSORY_IDENTIFY|[所在文件](/ERB/SHOP/Accessory_System.erb#L139-L216)|[解说文件](/Wiki/erasqn_wiki/function/a/accessory_identify.md)|鉴定饰品相关功能|80%|
 @ACCESSORY_SHOP|[所在文件](/ERB/SHOP/Accessory_System.erb#L8-L15)|[解说文件](/Wiki/erasqn_wiki/function/a/accessory_shop.md)|饰品店入口函数|100%|
 @ACCESSORY_SHOP_BUY|[所在文件](/ERB/SHOP/Accessory_System.erb#L17-L132)|[解说文件](/Wiki/erasqn_wiki/function/a/accessory_shop_buy.md)|饰品店处理玩家选择|100%|
 @ANALYSIS|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/a/analysis.md)|||
@@ -40,7 +40,7 @@
 @EVENT_SHOP|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/e/event_shop.md)|||
 @EVENT_TRAVEL|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/e/event_travel.md)|||
 @EVENT_TRAVEL_SELECT|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/e/event_travel_select.md)|||
-@EVENTFIRST|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/e/eventfirst.md)||95%|
+@EVENTFIRST|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/e/eventfirst.md)|开始新游戏|95%|
 @EVENTTURNEND_FLAG|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/e/eventturnend_flag.md)|||
 @EXPLORER|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/e/explorer.md)|||
 @GIVE_NAME|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/g/give_name.md)|||
