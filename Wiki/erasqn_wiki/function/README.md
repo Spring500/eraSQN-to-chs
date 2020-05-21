@@ -8,7 +8,7 @@
 
 函数名称|所在文件|解说文件|作用简述|解析进度|备注
 ----|----|----|----|----|----
-@ACCESSORY_ABL|[所在文件](/ERB/SHOP/Accessory_System.erb#L763-L915)|[解说文件](/Wiki/erasqn_wiki/function/a/accessory_abl.md)|95%|已解读随机生成的规则，但仍不清楚为什要设成这些数值|
+@ACCESSORY_ABL|[所在文件](/ERB/SHOP/Accessory_System.erb#L763-L915)|[解说文件](/Wiki/erasqn_wiki/function/a/accessory_abl.md)|随机生成饰品素质|95%|已解读随机生成的规则，<br/>但仍不清楚为什要设成这些数值
 @ACCESSORY_IDENTIFY|[所在文件](/ERB/SHOP/Accessory_System.erb#L139-L216)|[解说文件](/Wiki/erasqn_wiki/function/a/accessory_identify.md)|鉴定饰品相关功能|80%|
 @ACCESSORY_SHOP|[所在文件](/ERB/SHOP/Accessory_System.erb#L8-L15)|[解说文件](/Wiki/erasqn_wiki/function/a/accessory_shop.md)|饰品店入口函数|100%|
 @ACCESSORY_SHOP_BUY|[所在文件](/ERB/SHOP/Accessory_System.erb#L17-L132)|[解说文件](/Wiki/erasqn_wiki/function/a/accessory_shop_buy.md)|饰品店处理玩家选择|100%|
