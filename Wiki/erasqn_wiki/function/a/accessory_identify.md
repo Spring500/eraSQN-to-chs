@@ -108,7 +108,7 @@
 
     + 在`LCOUNT`大于等于`2`且`RAND:(LCOUNT)`大于`0`的情况下，直接跳出当前循环
 
-然后调用`@ACCESSORY_ABL()`，并将结果储存到`FLAG:(300 + LOCAL*10 + LCOUNT)`。
+然后调用`@ACCESSORY_ABL()`，并将随机生成的饰品素质储存到`FLAG:(300 + LOCAL*10 + LCOUNT)`归属于这个饰品的饰品槽属性FLAG中（可能为FLAG:3X1～3X5）。
 
 **L214-L216**：
 
