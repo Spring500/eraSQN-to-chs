@@ -54,6 +54,7 @@
 @NAME_CONVERT|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/n/name_convert.md)|||
 @NUM|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/n/num.md)|||
 @PLAY_WITH_ASSI|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/p/play_with_assi.md)|||
+@PRINT_ACCESSORY|[所在文件](/ERB/SHOP/Accessory_System.erb#L222-L272)|[解说文件](/Wiki/erasqn_wiki/function/p/print_accessory.md)|||
 @PRINT_BAR|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/P/print_bar.md)|||
 @PRINT_DRESS|[所在文件]()|[解说文件](/Wiki/erasqn_wiki/function/P/print_dress.md)|||
 @PRINT_SAVEDATA|[所在文件](/ERB/Saveload.erb#L122-L142)|[解说文件](/Wiki/erasqn_wiki/function/p/print_savedata.md)|||
