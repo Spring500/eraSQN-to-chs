@@ -12,6 +12,7 @@
 @ACCESSORY_EFFECT|[所在文件](/ERB/SHOP/Accessory_System.erb#L917-L973)|[解说文件](/Wiki/erasqn_wiki/function/a/accessory_effect.md)|打印饰品的各类效果加成|100%|
 @ACCESSORY_EQUIP|[所在文件](/ERB/SHOP/Accessory_System.erb#L633-L643)|[解说文件](/Wiki/erasqn_wiki/function/a/accessory_equip.md)|装上或卸下装饰品|100%|
 @ACCESSORY_IDENTIFY|[所在文件](/ERB/SHOP/Accessory_System.erb#L139-L216)|[解说文件](/Wiki/erasqn_wiki/function/a/accessory_identify.md)|鉴定饰品相关功能|80%|
+@ACCESSORY_LVUP|[所在文件](/ERB/SHOP/Accessory_System.erb#L275-L320)|[解说文件](/Wiki/erasqn_wiki/function/a/accessory_lvup.md)|饰品升级|100%|
 @ACCESSORY_SET_TALENT|[所在文件](/ERB/SHOP/Accessory_System.erb#L645-L703)|[解说文件](/Wiki/erasqn_wiki/function/a/accessory_set_talent.md)|根据是否装备饰品，设置MASTER的天赋加成|100%|
 @ACCESSORY_SHOP|[所在文件](/ERB/SHOP/Accessory_System.erb#L8-L15)|[解说文件](/Wiki/erasqn_wiki/function/a/accessory_shop.md)|饰品店入口函数|100%|
 @ACCESSORY_SHOP_BUY|[所在文件](/ERB/SHOP/Accessory_System.erb#L17-L132)|[解说文件](/Wiki/erasqn_wiki/function/a/accessory_shop_buy.md)|饰品店处理玩家选择|100%|
