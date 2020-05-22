@@ -96,6 +96,6 @@
 
 **L319-L320**：
 
-调用引擎命令`CLEARLINE`删除`LINECOUNT - MEMO_LINECOUNT`行以显示的内容。
+调用引擎命令`CLEARLINE`删除`LINECOUNT - MEMO_LINECOUNT`行已显示的内容。
 
 调用引擎命令`RESTART`，重新从头执行本函数。

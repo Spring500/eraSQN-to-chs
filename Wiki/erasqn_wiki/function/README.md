@@ -11,6 +11,7 @@
 @ACCESSORY_ABL|[所在文件](/ERB/SHOP/Accessory_System.erb#L763-L915)|[解说文件](/Wiki/erasqn_wiki/function/a/accessory_abl.md)|随机生成饰品素质|95%|已解读随机生成的规则，<br/>但仍不清楚为什要设成这些数值
 @ACCESSORY_EFFECT|[所在文件](/ERB/SHOP/Accessory_System.erb#L917-L973)|[解说文件](/Wiki/erasqn_wiki/function/a/accessory_effect.md)|打印饰品的各类效果加成|100%|
 @ACCESSORY_EQUIP|[所在文件](/ERB/SHOP/Accessory_System.erb#L633-L643)|[解说文件](/Wiki/erasqn_wiki/function/a/accessory_equip.md)|装上或卸下装饰品|100%|
+@ACCESSORY_FIRE|[所在文件](/ERB/SHOP/Accessory_System.erb#L322-L373)|[解说文件](/Wiki/erasqn_wiki/function/a/accessory_fire.md)|消去饰品特殊效果|100%|
 @ACCESSORY_IDENTIFY|[所在文件](/ERB/SHOP/Accessory_System.erb#L139-L216)|[解说文件](/Wiki/erasqn_wiki/function/a/accessory_identify.md)|鉴定饰品相关功能|80%|
 @ACCESSORY_LVUP|[所在文件](/ERB/SHOP/Accessory_System.erb#L275-L320)|[解说文件](/Wiki/erasqn_wiki/function/a/accessory_lvup.md)|饰品升级|100%|
 @ACCESSORY_SET_TALENT|[所在文件](/ERB/SHOP/Accessory_System.erb#L645-L703)|[解说文件](/Wiki/erasqn_wiki/function/a/accessory_set_talent.md)|根据是否装备饰品，设置MASTER的天赋加成|100%|
