@@ -19,6 +19,7 @@
 @ACCESSORY_SET_TALENT|[所在文件](/ERB/SHOP/Accessory_System.erb#L645-L703)|[说明文件](/Wiki/erasqn_wiki/function/a/accessory_set_talent.md)|根据是否装备饰品，设置MASTER的天赋加成|100%|
 @ACCESSORY_SHOP|[所在文件](/ERB/SHOP/Accessory_System.erb#L8-L15)|[说明文件](/Wiki/erasqn_wiki/function/a/accessory_shop.md)|饰品店入口函数|100%|
 @ACCESSORY_SHOP_BUY|[所在文件](/ERB/SHOP/Accessory_System.erb#L17-L132)|[说明文件](/Wiki/erasqn_wiki/function/a/accessory_shop_buy.md)|饰品店处理玩家选择|100%|
+@ACCESSORY_TRASH|[所在文件](/ERB/SHOP/Accessory_System.erb#L554-L609)|[说明文件](/Wiki/erasqn_wiki/function/a/accessory_trash.md)|丢弃装饰品|100%|
 @ANALYSIS|[所在文件]()|[说明文件](/Wiki/erasqn_wiki/function/a/analysis.md)|||
 @ARCANA_SHOP|[所在文件]()|[说明文件](/Wiki/erasqn_wiki/function/a/arcana_shop.md)|||
 @ASSI_LIST_ABL|[所在文件]()|[说明文件](/Wiki/erasqn_wiki/function/a/assi_list_abl.md)|||
