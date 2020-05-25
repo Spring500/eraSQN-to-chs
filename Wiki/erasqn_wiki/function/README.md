@@ -8,13 +8,14 @@
 
 函数名称|所在文件|解说文件|作用简述|解析进度|备注
 ----|----|----|----|----|----
-@ACCESSORY_ABL|[所在文件](/ERB/SHOP/Accessory_System.erb#L763-L915)|[说明文件](/Wiki/erasqn_wiki/function/a/accessory_abl.md)|随机生成饰品素质|95%|已解读随机生成的规则，<br/>但仍不清楚为什要设成这些数值
+@ACCESSORY_ABL|[所在文件](/ERB/SHOP/Accessory_System.erb#L763-L915)|[说明文件](/Wiki/erasqn_wiki/function/a/accessory_abl.md)|随机生成饰品素质|98%|
 @ACCESSORY_EFFECT|[所在文件](/ERB/SHOP/Accessory_System.erb#L917-L973)|[说明文件](/Wiki/erasqn_wiki/function/a/accessory_effect.md)|打印饰品的各类效果加成|100%|
 @ACCESSORY_EQUIP|[所在文件](/ERB/SHOP/Accessory_System.erb#L633-L643)|[说明文件](/Wiki/erasqn_wiki/function/a/accessory_equip.md)|装上或卸下装饰品|100%|
 @ACCESSORY_FIRE|[所在文件](/ERB/SHOP/Accessory_System.erb#L322-L373)|[说明文件](/Wiki/erasqn_wiki/function/a/accessory_fire.md)|消去饰品特殊效果|100%|
 @ACCESSORY_IDENTIFY|[所在文件](/ERB/SHOP/Accessory_System.erb#L139-L216)|[说明文件](/Wiki/erasqn_wiki/function/a/accessory_identify.md)|鉴定饰品相关功能|80%|
 @ACCESSORY_LVUP|[所在文件](/ERB/SHOP/Accessory_System.erb#L275-L320)|[说明文件](/Wiki/erasqn_wiki/function/a/accessory_lvup.md)|饰品升级|100%|
 @ACCESSORY_PIERISRAPAE|[所在文件](/ERB/SHOP/Accessory_System.erb#L376-L493)|[说明文件](/Wiki/erasqn_wiki/function/a/accessory_pierisrapae.md)|饰品整合|95%|部分FLAG有关的语句太绕，没详细解释，<br/>请参照饰品部分的其他文件一同理解
+@ACCESSORY_SELECT|[所在文件](/ERB/SHOP/Accessory_System.erb#L496-L551)|[说明文件](/Wiki/erasqn_wiki/function/a/accessory_select.md)|装备或卸下饰品<br/>提供饰品升降级菜单|100%|
 @ACCESSORY_SET_TALENT|[所在文件](/ERB/SHOP/Accessory_System.erb#L645-L703)|[说明文件](/Wiki/erasqn_wiki/function/a/accessory_set_talent.md)|根据是否装备饰品，设置MASTER的天赋加成|100%|
 @ACCESSORY_SHOP|[所在文件](/ERB/SHOP/Accessory_System.erb#L8-L15)|[说明文件](/Wiki/erasqn_wiki/function/a/accessory_shop.md)|饰品店入口函数|100%|
 @ACCESSORY_SHOP_BUY|[所在文件](/ERB/SHOP/Accessory_System.erb#L17-L132)|[说明文件](/Wiki/erasqn_wiki/function/a/accessory_shop_buy.md)|饰品店处理玩家选择|100%|
