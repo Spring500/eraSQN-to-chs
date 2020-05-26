@@ -9,6 +9,8 @@
 函数名称|所在文件|解说文件|作用简述|解析进度|备注
 ----|----|----|----|----|----
 @ACCESSORY_ABL|[所在文件](/ERB/SHOP/Accessory_System.erb#L763-L915)|[说明文件](/Wiki/erasqn_wiki/function/a/accessory_abl.md)|随机生成饰品素质|98%|
+@ACCESSORY_BUY|[所在文件](/ERB/SHOP/Accessory_System.erb#L976-L980)|[说明文件](/Wiki/erasqn_wiki/function/a/accessory_buy.md)|判断饰品盒是否装满|100%|疑似造成了判定bug，<br/>已被我造的`@ACCESSORY_COUNT`代替
+@ACCESSORY_COUNT|[所在文件](/ERB/SHOP/Accessory_System.erb#L982-L994)|[说明文件](/Wiki/erasqn_wiki/function/a/accessory_count.md)|返回已记录饰品的饰品槽个数|100%|`@ACCESSORY_BUY`替代品<br/>也许可以换回去
 @ACCESSORY_EFFECT|[所在文件](/ERB/SHOP/Accessory_System.erb#L917-L973)|[说明文件](/Wiki/erasqn_wiki/function/a/accessory_effect.md)|打印饰品的各类效果加成|100%|
 @ACCESSORY_EQUIP|[所在文件](/ERB/SHOP/Accessory_System.erb#L633-L643)|[说明文件](/Wiki/erasqn_wiki/function/a/accessory_equip.md)|装上或卸下装饰品|100%|
 @ACCESSORY_FIRE|[所在文件](/ERB/SHOP/Accessory_System.erb#L322-L373)|[说明文件](/Wiki/erasqn_wiki/function/a/accessory_fire.md)|消去饰品特殊效果|100%|
