@@ -64,6 +64,7 @@
 @NUM|[所在文件]()|[说明文件](/Wiki/erasqn_wiki/function/n/num.md)|||
 @PLAY_WITH_ASSI|[所在文件]()|[说明文件](/Wiki/erasqn_wiki/function/p/play_with_assi.md)|||
 @PRINT_ACCESSORY|[所在文件](/ERB/SHOP/Accessory_System.erb#L222-L272)|[说明文件](/Wiki/erasqn_wiki/function/p/print_accessory.md)|打印饰品的名称及特性|100%|
+@PRINT_ACCESSORY_NAME|[所在文件](/ERB/SHOP/Accessory_System.erb#L706-L760)|[说明文件](/Wiki/erasqn_wiki/function/p/print_accessory_name.md)|打印饰品的名称及特性|100%|
 @PRINT_BAR|[所在文件]()|[说明文件](/Wiki/erasqn_wiki/function/P/print_bar.md)|||
 @PRINT_DRESS|[所在文件]()|[说明文件](/Wiki/erasqn_wiki/function/P/print_dress.md)|||
 @PRINT_SAVEDATA|[所在文件](/ERB/Saveload.erb#L122-L142)|[说明文件](/Wiki/erasqn_wiki/function/p/print_savedata.md)|||
