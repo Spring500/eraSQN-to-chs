@@ -12,6 +12,7 @@
 @ACCESSORY_EFFECT|[所在文件](/ERB/SHOP/Accessory_System.erb#L917-L973)|[说明文件](/Wiki/erasqn_wiki/function/a/accessory_effect.md)|打印饰品的各类效果加成|100%|
 @ACCESSORY_EQUIP|[所在文件](/ERB/SHOP/Accessory_System.erb#L633-L643)|[说明文件](/Wiki/erasqn_wiki/function/a/accessory_equip.md)|装上或卸下装饰品|100%|
 @ACCESSORY_FIRE|[所在文件](/ERB/SHOP/Accessory_System.erb#L322-L373)|[说明文件](/Wiki/erasqn_wiki/function/a/accessory_fire.md)|消去饰品特殊效果|100%|
+@ACCESSORY_HELP|[所在文件](/ERB/SHOP/Accessory_System.erb#L611-L630)|[说明文件](/Wiki/erasqn_wiki/function/a/accessory_help.md)|打印饰品效果描述|100%|
 @ACCESSORY_IDENTIFY|[所在文件](/ERB/SHOP/Accessory_System.erb#L139-L216)|[说明文件](/Wiki/erasqn_wiki/function/a/accessory_identify.md)|鉴定饰品相关功能|80%|
 @ACCESSORY_LVUP|[所在文件](/ERB/SHOP/Accessory_System.erb#L275-L320)|[说明文件](/Wiki/erasqn_wiki/function/a/accessory_lvup.md)|饰品升级|100%|
 @ACCESSORY_PIERISRAPAE|[所在文件](/ERB/SHOP/Accessory_System.erb#L376-L493)|[说明文件](/Wiki/erasqn_wiki/function/a/accessory_pierisrapae.md)|饰品整合|95%|部分FLAG有关的语句太绕，没详细解释，<br/>请参照饰品部分的其他文件一同理解
