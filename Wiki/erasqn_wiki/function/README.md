@@ -77,6 +77,7 @@
 @SAVEGAME_EX|[所在文件]()|[说明文件](/Wiki/erasqn_wiki/function/s/savegame_ex.md)|||
 @SELECT_ASSI|[所在文件]()|[说明文件](/Wiki/erasqn_wiki/function/s/select_assi.md)|||
 @SET_3SIZE|[所在文件]()|[说明文件](/Wiki/erasqn_wiki/function/s/set_3size.md)|||
+@SET_ACCESSORY_ABILITY|[所在文件](/ERB/SHOP/Accessory_Ordermade.erb#L122-L243)|[说明文件](/Wiki/erasqn_wiki/function/s/set_accessory_ability.md)|根据玩家的选择定制饰品能力|100%|去除了一个没必要的循环和与之相关的判定项
 @SET_CHARA_LOVE|[所在文件]()|[说明文件](/Wiki/erasqn_wiki/function/s/set_chara_love.md)|||
 @SET_CHARA_NIGHTWALKER|[所在文件]()|[说明文件](/Wiki/erasqn_wiki/function/s/set_chara_nightwalker.md)|||
 @SET_CONFIGURE|[所在文件](/ERB/Global.erb#L1-L141)|[说明文件](/Wiki/erasqn_wiki/function/s/set_configure.md)|||
