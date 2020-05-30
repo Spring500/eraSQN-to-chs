@@ -57,7 +57,7 @@
 @EVENTTURNEND_FLAG|[所在文件]()|[说明文件](/Wiki/erasqn_wiki/function/e/eventturnend_flag.md)|||
 @EXPLORER|[所在文件]()|[说明文件](/Wiki/erasqn_wiki/function/e/explorer.md)|||
 @GIVE_NAME|[所在文件]()|[说明文件](/Wiki/erasqn_wiki/function/g/give_name.md)|||
-@IS_SAMONTRBL|[所在文件](/ERB/SHOP/Shop2.erb#L81-L94)|[说明文件](/Wiki/erasqn_wiki/function/i/is_samontrbl.md)|||
+@IS_SAMONTRBL|[所在文件](/ERB/SHOP/Shop2.erb#L81-L94)|[说明文件](/Wiki/erasqn_wiki/function/i/is_samontrbl.md)|根据一些标志和MASTER的素质返回是否发生召唤事故|100%|
 @INPUT_SELECT|[所在文件]()|[说明文件](/Wiki/erasqn_wiki/function/i/input_select.md)|||
 @LOAD_CONFIGURE|[所在文件](/ERB/Global.erb#L144-L291)|[说明文件](/Wiki/erasqn_wiki/function/l/load_configure.md)|读取全局设定|100%|
 @LOADGAME_EX|[所在文件](/ERB/Saveload.erb#L77-L120)|[说明文件](/Wiki/erasqn_wiki/function/l/loadgame_ex.md)|||
