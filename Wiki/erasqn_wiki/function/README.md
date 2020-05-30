@@ -31,6 +31,7 @@
 @CHANGE_TARGET|[所在文件]()|[说明文件](/Wiki/erasqn_wiki/function/c/change_target.md)|||
 @CHARA_BUY|[所在文件](/ERB/SHOP/Shop2.erb#L14-L79)|[说明文件](/Wiki/erasqn_wiki/function/c/chara_buy.md)|梦魔召唤入口函数|80%|很多变量作用尚不明朗，需要更多代码协助理解
 @CHARA_BUY_SHOW|[所在文件](/ERB/SHOP/Shop2.erb#L96-L116)|[说明文件](/Wiki/erasqn_wiki/function/c/chara_buy_show.md)|显示梦魔召唤菜单头部和尾部提示|100%|
+@CHARA_MANUAL|[所在文件](/ERB/SHOP/Shop3.erb#L1011-L1031)|[说明文件](/Wiki/erasqn_wiki/function/c/chara_manula.md)|打印角色素质详情，并提供召唤确认菜单项|100%|
 @CHARA_NUM|[所在文件]()|[说明文件](/Wiki/erasqn_wiki/function/c/chara_num.md)|||
 @CHARA_SALE|[所在文件]()|[说明文件](/Wiki/erasqn_wiki/function/c/chara_sale.md)|||
 @CHECK_COM_ABLE|[所在文件]()|[说明文件](/Wiki/erasqn_wiki/function/c/check_com_able.md)|||
