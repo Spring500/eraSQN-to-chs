@@ -4,7 +4,7 @@
 
 ### 作用描述
 
-+ 作用描述
++ 梦魔召唤入口菜单
 
 ### 所在文件
 
@@ -18,13 +18,13 @@
 
 **调用**：
 
-+ `@CHAR_SAMON_T`<sup>[说明文件](/Wiki/erasqn_wiki/function/func_template.md)</sup>
++ `@CHAR_SAMON_T`<sup>[说明文件](/Wiki/erasqn_wiki/function/c/char_show_t.md)</sup>
 
-+ `@CHARA_BUY_SHOW`<sup>[说明文件](/Wiki/erasqn_wiki/function/func_template.md)</sup>
++ `@CHARA_BUY_SHOW`<sup>[说明文件](/Wiki/erasqn_wiki/function/c/chara_buy_show.md)</sup>
 
-+ `@CHARA_MANUAL`<sup>[说明文件](/Wiki/erasqn_wiki/function/func_template.md)</sup>
++ `@CHARA_MANUAL`<sup>[说明文件](/Wiki/erasqn_wiki/function/c/chara_manual.md)</sup>
 
-+ `@IS_SAMONTRBL`<sup>[说明文件](/Wiki/erasqn_wiki/function/func_template.md)</sup>
++ `@IS_SAMONTRBL`<sup>[说明文件](/Wiki/erasqn_wiki/function/i/is_samontrbl.md)</sup>
 
 ### 函数实现
 

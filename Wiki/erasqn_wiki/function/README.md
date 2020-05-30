@@ -29,7 +29,8 @@
 @ASSI_LIST_INDICATE|[所在文件]()|[说明文件](/Wiki/erasqn_wiki/function/a/assi_list_abl.md)|||
 @CDAYEV|[所在文件]()|[说明文件](/Wiki/erasqn_wiki/function/c/cdayev.md)|||
 @CHANGE_TARGET|[所在文件]()|[说明文件](/Wiki/erasqn_wiki/function/c/change_target.md)|||
-@CHARA_BUY|[所在文件]()|[说明文件](/Wiki/erasqn_wiki/function/c/chara_buy.md)|||
+@CHARA_BUY|[所在文件](/ERB/SHOP/Shop2.erb#L14-L79)|[说明文件](/Wiki/erasqn_wiki/function/c/chara_buy.md)|梦魔召唤入口菜单|80%|很多变量作用尚不明朗，需要更多代码协助理解
+@CHARA_BUY_SHOW|[所在文件](/ERB/SHOP/Shop2.erb#L96-L116)|[说明文件](/Wiki/erasqn_wiki/function/c/chara_buy_show.md)|||
 @CHARA_NUM|[所在文件]()|[说明文件](/Wiki/erasqn_wiki/function/c/chara_num.md)|||
 @CHARA_SALE|[所在文件]()|[说明文件](/Wiki/erasqn_wiki/function/c/chara_sale.md)|||
 @CHECK_COM_ABLE|[所在文件]()|[说明文件](/Wiki/erasqn_wiki/function/c/check_com_able.md)|||
@@ -56,6 +57,7 @@
 @EVENTTURNEND_FLAG|[所在文件]()|[说明文件](/Wiki/erasqn_wiki/function/e/eventturnend_flag.md)|||
 @EXPLORER|[所在文件]()|[说明文件](/Wiki/erasqn_wiki/function/e/explorer.md)|||
 @GIVE_NAME|[所在文件]()|[说明文件](/Wiki/erasqn_wiki/function/g/give_name.md)|||
+@IS_SAMONTRBL|[所在文件](/ERB/SHOP/Shop2.erb#L81-L94)|[说明文件](/Wiki/erasqn_wiki/function/i/is_samontrbl.md)|||
 @INPUT_SELECT|[所在文件]()|[说明文件](/Wiki/erasqn_wiki/function/i/input_select.md)|||
 @LOAD_CONFIGURE|[所在文件](/ERB/Global.erb#L144-L291)|[说明文件](/Wiki/erasqn_wiki/function/l/load_configure.md)|读取全局设定|100%|
 @LOADGAME_EX|[所在文件](/ERB/Saveload.erb#L77-L120)|[说明文件](/Wiki/erasqn_wiki/function/l/loadgame_ex.md)|||
@@ -78,6 +80,7 @@
 @SELECT_ASSI|[所在文件]()|[说明文件](/Wiki/erasqn_wiki/function/s/select_assi.md)|||
 @SET_3SIZE|[所在文件]()|[说明文件](/Wiki/erasqn_wiki/function/s/set_3size.md)|||
 @SET_ACCESSORY_ABILITY|[所在文件](/ERB/SHOP/Accessory_Ordermade.erb#L122-L243)|[说明文件](/Wiki/erasqn_wiki/function/s/set_accessory_ability.md)|根据玩家的选择定制饰品能力|100%|去除了一个没必要的循环和与之相关的判定项
+@SET_CHARA_BUY_SHOW|[所在文件](/ERB/SHOP/Shop2.erb#L96-L116)|[说明文件](/Wiki/erasqn_wiki/function/s/set_chara_buy_show.md)|显示梦魔召唤的主菜单|100%|
 @SET_CHARA_LOVE|[所在文件]()|[说明文件](/Wiki/erasqn_wiki/function/s/set_chara_love.md)|||
 @SET_CHARA_NIGHTWALKER|[所在文件]()|[说明文件](/Wiki/erasqn_wiki/function/s/set_chara_nightwalker.md)|||
 @SET_CONFIGURE|[所在文件](/ERB/Global.erb#L1-L141)|[说明文件](/Wiki/erasqn_wiki/function/s/set_configure.md)|||
