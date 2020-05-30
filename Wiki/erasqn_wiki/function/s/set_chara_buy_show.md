@@ -77,7 +77,7 @@
 
       + 尝试调用`@IS_SINGLE_ENDING_K{LCOUNT}_{LCOUNT2}`
 
-      + 当`RESULT`不为`0`时：
+      + 当上一步的`RESULT`不为`0`时：
 
         + 将输出颜色设为`粉红色`
 
