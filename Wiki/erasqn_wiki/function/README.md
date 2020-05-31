@@ -68,6 +68,7 @@
 @NAME_CONVERT|[所在文件]()|[说明文件](/Wiki/erasqn_wiki/function/n/name_convert.md)|||
 @NUM|[所在文件]()|[说明文件](/Wiki/erasqn_wiki/function/n/num.md)|||
 @PLAY_WITH_ASSI|[所在文件]()|[说明文件](/Wiki/erasqn_wiki/function/p/play_with_assi.md)|||
+@PROFILE|[所在文件](/ERB/SHOP/Shop3.erb#L418-L890)|[说明文件](/Wiki/erasqn_wiki/function/p/profile.md)|设置角色详情|95%|还有`@MEMO_FAVORITE_DRESS`没看懂，<br/>以后看到再更新
 @PRINT_ACCESSORY|[所在文件](/ERB/SHOP/Accessory_System.erb#L222-L272)|[说明文件](/Wiki/erasqn_wiki/function/p/print_accessory.md)|打印饰品的名称及特性|100%|
 @PRINT_ACCESSORY_NAME|[所在文件](/ERB/SHOP/Accessory_System.erb#L706-L760)|[说明文件](/Wiki/erasqn_wiki/function/p/print_accessory_name.md)|打印饰品的名称及特性|100%|
 @PRINT_BAR|[所在文件]()|[说明文件](/Wiki/erasqn_wiki/function/P/print_bar.md)|||
