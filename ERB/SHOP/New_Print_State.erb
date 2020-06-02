@@ -14,63 +14,63 @@ SELECTCASE ARGS
 CASE "通常", "通常：２", "キャラメイク", "ＬＶＵＰ"
 	DRAWLINE
 	IF ARG < 0
-		PRINTW エラー：参照番号が負の数です
+		PRINTW ERROR：角色编号不能为负数
 		RETURN 0
 	ELSEIF ARG == 0
-		PRINTW エラー：参照番号がダミーです
+		PRINTW ERROR：角色编号不存在
 		RETURN 0
-	ELSEIF ARG > CHARANUM-1
-		PRINTW エラー：参照番号が末端キャラの登録番号を超えています
+	ELSEIF ARG > CHARANUM - 1
+		PRINTW ERROR：角色编号超过总角色数
 		RETURN 0
 	ENDIF
 
-	PRINTFORM ■ %CALLNAME:ARG%
+	PRINTFORM ■ %CALLNAME:ARG%%BL(1)%
 	;口上セレクタ表示のテストなど
 	IF ARG != MASTER
-		SIF CFLAG:ARG:209 && CFLAG:ARG:209 != 1 && CFLAG:ARG:209 != 857
-			PRINTFORM  口上{CFLAG:ARG:209}
+		SIF CFLAG:ARG:209 && (CFLAG:ARG:209 != 1) && (CFLAG:ARG:209 != 857)
+			PRINTFORM  口癖{CFLAG:ARG:209}
 		RESULT = 0
 		TRYCALLFORM IS_SINGLE_ENDING_K{NO:ARG}_{CFLAG:ARG:209}
 		SIF RESULT
-			CALL PRINT_STR, "(_ハートピンク_個別ＥＮＤ有_)_ _"
+			CALL PRINT_STR, "(_ハートピンク_有特殊ＥＮＤ_)_ _"
 	ENDIF
 	PRINT (
 	IF STATE("悪酔い", ARG)
-		CALL PRINT_COLORTEXT, "悪酔い中", DEF_COLOR("青")
+		CALL PRINT_COLORTEXT, "烂醉如泥", DEF_COLOR("青")
 		PRINT )(
 	ELSEIF STATE("ドランク", ARG)
-		CALL PRINT_COLORTEXT, "ドランク", DEF_COLOR("ハートピンク")
+		CALL PRINT_COLORTEXT, "醉酒", DEF_COLOR("ハートピンク")
 		PRINT )(
 	ENDIF
 	SELECTCASE ARG
 	CASE MASTER
-		PRINTFORM 主人
+		PRINTFORM 主人%BL(1)%
 	CASE ASSI
 		SELECTCASE ABL:ASSI:助手
 		CASE 0
-			PRINTFORM %TEXTS("助手の名称")%見習い
+			PRINTFORM 见习%TEXTS("助手の名称")%%BL(1)%
 		CASEELSE
-			PRINTFORM LV{ABL:ASSI:助手}%TEXTS("助手の名称")%
+			PRINTFORM LV{ABL:ASSI:助手}%TEXTS("助手の名称")%%BL(1)%
 		ENDSELECT
 	CASE TARGET
 		SIF EXP:ARG:调教次数
-			PRINTFORM 調教中
+			PRINTFORM 调教中%BL(1)%
 	ENDSELECT
 
 
 	PRINTFORM LV:
 	IF ABL:ARG:ＬＶ < NUM("最大レベル", 90)
 		PRINTFORM {ABL:ARG:ＬＶ}
-		SIF ARG == MASTER && ABL:MASTER:ＬＶ < FLAG:255
-			PRINT  制限中
+		SIF (ARG == MASTER) && (ABL:MASTER:ＬＶ < FLAG:255)
+			PRINT  限制中
 		PRINTFORM  EXP:{EXP:ARG:经验值}Ｐ
 		LOCAL = 0
-		SIF ARG != MASTER && ABL:ARG:ＬＶ == 14 && TALENT:ARG:梦魔
+		SIF (ARG != MASTER) && (ABL:ARG:ＬＶ == 14) && TALENT:ARG:梦魔
 			LOCAL = 200
 		IF EXP_NEXTLV(ARG, ABL:ARG:ＬＶ) + LOCAL - EXP:ARG:经验值 > 0
 			PRINTFORM  NEXT:{EXP_NEXTLV(ARG, ABL:ARG:ＬＶ) + LOCAL - EXP:ARG:经验值}Ｐ
 		ELSE
-			CALL PRINT_STR, "黄色_LVUPOK!"
+			CALL PRINT_STR, "黄色_ LVUPOK!"
 		ENDIF
 	ELSE
 		CALL PRINT_STR, "黄色_MAX!"
@@ -78,40 +78,40 @@ CASE "通常", "通常：２", "キャラメイク", "ＬＶＵＰ"
 	ENDIF
 
 	SIF COND("化蝶之梦", ARG) > 0
-		PRINTFORM  %CALLNAME:COND("化蝶之梦", ARG)%の体
+		PRINTFORM  %CALLNAME:COND("化蝶之梦", ARG)%的身体
 
 	PRINTFORM ) ■
 
 	SIF TALENT:ARG:怀孕 || BASE:ARG:育儿中 || GETBITS(BASE:ARG:生理周期, 10, 20) || COND("避妊中", ARG) || COND("着床確認", ARG)
 		PRINT  (
 	IF BASE:ARG:育儿中
-		PRINTFORM %CONDS("胎儿的父亲", ARG)%の子を子育て中
+		PRINTFORM 正在养育%CONDS("胎儿的父亲", ARG)%的孩子
 		SIF TALENT:ARG:怀孕 || GETBITS(BASE:ARG:生理周期, 10, 20) || COND("避妊中", ARG)
 			PRINT 　
 	ENDIF
 	IF TALENT:ARG:怀孕
-		PRINTFORM %CONDS("精液的优势", ARG)%の子を妊娠中
+		PRINTFORM 正在怀着%CONDS("精液的优势", ARG)%的孩子
 	ELSEIF COND("発情期", ARG)
 		SETCOLOR DEF_COLOR("ハートピンク")
-		PRINTFORM 発情期
+		PRINTFORM 发情期
 	ELSEIF COND("着床確認", ARG)
 		SETCOLOR DEF_COLOR("ハートピンク")
-		PRINTFORM %CONDS("精液的优势", ARG)%の精子で着床
+		PRINTFORM %CONDS("精液的优势", ARG)%的精子已着床
 		CALL HEARTMARK
 	ELSEIF COND("避妊中", ARG)
 		IF TALENT:ARG:避孕护符
 			PRINTFORM 避孕护符
 		ELSEIF TALENT:ARG:避孕药服用
-			PRINTFORM 避妊薬服用中:あと{TALENT:ARG:避孕药服用}日分
+			PRINTFORM 避孕药服用中:药效剩余{TALENT:ARG:避孕药服用}日
 		ENDIF
 	ELSEIF COND("安全日", ARG)
 		PRINTFORM 安全日
 	ELSEIF COND("排卵中", ARG)
 		SETCOLOR DEF_COLOR("ハートピンク")
-		PRINTFORM 危険日
+		PRINTFORM 危险日
 	ELSEIF COND("危険日", ARG)
 		SETCOLOR DEF_COLOR("イエロー")
-		PRINTFORM 危険日
+		PRINTFORM 危险日
 	ENDIF
 	RESETCOLOR
 	SIF TALENT:ARG:怀孕 || BASE:ARG:育儿中 || GETBITS(BASE:ARG:生理周期, 10, 20) || COND("避妊中", ARG) || COND("着床確認", ARG)
@@ -122,15 +122,15 @@ CASE "通常", "通常：２", "キャラメイク", "ＬＶＵＰ"
 		PRINTFORM 好感度:{CFLAG:ARG:2}　
 	;体力の表示
 	PRINTFORM 体力:{MAXBASE:ARG:体力}　
-	PRINTFORM 気力:{MAXBASE:ARG:气力}　
+	PRINTFORM 气力:{MAXBASE:ARG:气力}　
 	SIF MAXBASE:ARG:精力
 		PRINTFORM 精力:{MAXBASE:ARG:精力}\@ MAXBASE:ARG:STOCK ? ×{MAXBASE:ARG:STOCK} # \@　
 	SIF TALENT:ARG:男性 == 0
-		PRINTFORM 胎内精液量:{COND("胎内の精液量", ARG)}pt
+		PRINTFORM 子宫内精液量:{COND("胎内の精液量", ARG)}pt
 	PRINTL
 	;最後に相手した日からの経過日数
-	SIF ARG != MASTER && COND("前回調教日", ARG) && COND("調教空白期間", ARG) >= 2
-		PRINTFORML 前回調教日：{COND("前回調教日", ARG)}日　放置期間：{COND("調教空白期間", ARG)}日
+	SIF (ARG != MASTER) && COND("前回調教日", ARG) && (COND("調教空白期間", ARG) >= 2)
+		PRINTFORML 上次调教日期：{COND("前回調教日", ARG)}日　放置时间：{COND("調教空白期間", ARG)}日
 CASE "召喚"
 	CALL PROFILE_TEXT, NO:ARG
 ENDSELECT
@@ -162,30 +162,30 @@ CASE "通常"
 		CALL PRINT_RELATION, ARG
 		CALL PRINT_OTHER, ARG
 		DRAWLINE
-		PRINTFORM [ 0]身嗜みの変更
+		PRINTFORM [ 0] 仪表管理%BL(2)%
 		IF NUM("所持アクセサリ")
-			PRINTFORM  [ 7]アクセサリセット
+			PRINTFORM [ 7] 饰品装备%BL(2)%
 		ELSE
-			PRINTPLAINFORM  [×]アクセサリセット
+			PRINTPLAINFORM [×] 饰品装备%BL(2)%
 		ENDIF
 		PRINTL
 
-		PRINTBUTTON "[Enter]閉じる", "Enter"
-		;PRINTPLAINFORM  [×]page1
-		PRINTFORM  [ 2]page2
-		PRINTPLAINFORM  [×]主人
+		PRINTBUTTON "[Enter] 关闭", "Enter"
+		PRINTFORM %BL(2)%
+		PRINTFORM [ 2] page2%BL(2)%
+		PRINTPLAINFORM [×] 主人%BL(2)%
 		IF TARGET > 0
-			PRINTFORM  [ 5]調教対象
+			PRINTFORM [ 5] 调教对象%BL(2)%
 		ELSE
-			PRINTPLAINFORM  [×]調教対象
+			PRINTPLAINFORM [×] 调教对象%BL(2)%
 		ENDIF
 		IF ASSI > 0
-			PRINTFORM  [ 6]%TEXTS("助手の名称")%
+			PRINTFORM [ 6] %TEXTS("助手の名称")%%BL(2)%
 		ELSE
-			PRINTPLAINFORM  [×]%TEXTS("助手の名称")%
+			PRINTPLAINFORM [×] %TEXTS("助手の名称")%%BL(2)%
 		ENDIF
-		PRINTFORM  [ 8]\@ ARG == 1 ? 最後 # 前 \@
-		PRINTFORML  [ 9]\@ ARG == CHARANUM - 1 ? 最初 # 次 \@
+		PRINTFORM [ 8] \@ ARG == 1 ? 末位角色%BL(2)% # 上一角色%BL(2)% \@
+		PRINTFORML [ 9] \@ ARG == CHARANUM - 1 ? 首位角色%BL(2)% # 下一角色%BL(2)% \@
 
 		ONEINPUTS
 
@@ -222,7 +222,7 @@ CASE "通常"
 			ENDIF
 			RESTART
 		CASE "9"
-			IF ARG == CHARANUM - 1
+			IF ARG == (CHARANUM - 1)
 				ARG = 1
 			ELSE
 				ARG += 1
@@ -242,22 +242,22 @@ CASE "通常"
 		CALL PRINT_EQUIPPING_ACCESSORY, ARG
 
 		DRAWLINE
-		PRINTBUTTON "[Enter]閉じる", "Enter"
-		;PRINTPLAINFORM  [×]page1
-		PRINTFORM  [ 2]page2
-		PRINTFORM  [ 4]主人
-		IF ARG != TARGET && TARGET > 0
-			PRINTFORM  [ 5]調教対象
+		PRINTBUTTON "[Enter] 关闭", "Enter"
+		PRINTFORM %BL(2)%
+		PRINTFORM [ 2] page2%BL(2)%
+		PRINTFORM [ 4] 主人%BL(2)%
+		IF (ARG != TARGET) && (TARGET > 0)
+			PRINTFORM [ 5] 调教对象%BL(2)%
 		ELSE
-			PRINTPLAINFORM  [×]調教対象
+			PRINTPLAINFORM [×] 调教对象%BL(2)%
 		ENDIF
-		IF ARG != ASSI && ASSI > 0
-			PRINTFORM  [ 6]%TEXTS("助手の名称")%
+		IF (ARG != ASSI) && (ASSI > 0)
+			PRINTFORM [ 6] %TEXTS("助手の名称")%%BL(2)%
 		ELSE
-			PRINTPLAINFORM  [×]%TEXTS("助手の名称")%
+			PRINTPLAINFORM [×] %TEXTS("助手の名称")%%BL(2)%
 		ENDIF
-		PRINTFORM  [ 8]\@ ARG == 1 ? 最後 # 前 \@
-		PRINTFORML  [ 9]\@ ARG == CHARANUM - 1 ? 最初 # 次 \@
+		PRINTFORM [ 8] \@ ARG == 1 ? 末位角色%BL(2)% # 上一角色%BL(2)% \@
+		PRINTFORML [ 9] \@ ARG == CHARANUM - 1 ? 首位角色%BL(2)% # 下一角色%BL(2)% \@
 
 		ONEINPUTS
 
@@ -272,11 +272,11 @@ CASE "通常"
 			ARG = MASTER
 			RESTART
 		CASE "5"
-			SIF ARG != TARGET && TARGET > 0
+			SIF (ARG != TARGET) && (TARGET > 0)
 				ARG = TARGET
 			RESTART
 		CASE "6"
-			SIF ARG != ASSI && ASSI > 0
+			SIF (ARG != ASSI) && (ASSI > 0)
 				ARG = ASSI
 			RESTART
 		CASE "8"
@@ -299,30 +299,30 @@ CASE "通常：２"
 	IF ARG == MASTER
 		CALL SHOOT_RANKING, ARG
 		DRAWLINE
-		PRINTFORM [ 0]身嗜みの変更
+		PRINTFORM [ 0] 仪表管理%BL(2)%
 		IF NUM("所持アクセサリ")
-			PRINTFORM  [ 7]アクセサリセット
+			PRINTFORM [ 7] 饰品装备%BL(2)%
 		ELSE
-			PRINTPLAINFORM  [×]アクセサリセット
+			PRINTPLAINFORM [×] 饰品装备%BL(2)%
 		ENDIF
 		PRINTL
 
-		PRINTBUTTON "[Enter]閉じる", "Enter"
-		PRINTFORM  [ 1]page1
-		;PRINTPLAINFORM  [×]page2
-		PRINTPLAINFORM  [×]主人
+		PRINTBUTTON "[Enter] 关闭", "Enter"
+		PRINTFORM %BL(2)%
+		PRINTFORM [ 1] page1%BL(2)%
+		PRINTPLAINFORM [×] 主人%BL(2)%
 		IF TARGET > 0
-			PRINTFORM  [ 5]調教対象
+			PRINTFORM [ 5] 调教对象%BL(2)%
 		ELSE
-			PRINTPLAINFORM  [×]調教対象
+			PRINTPLAINFORM [×] 调教对象%BL(2)%
 		ENDIF
 		IF ASSI > 0
-			PRINTFORM  [ 6]%TEXTS("助手の名称")%
+			PRINTFORM [ 6] %TEXTS("助手の名称")%%BL(2)%
 		ELSE
-			PRINTPLAINFORM  [×]%TEXTS("助手の名称")%
+			PRINTPLAINFORM [×] %TEXTS("助手の名称")%%BL(2)%
 		ENDIF
-		PRINTFORM  [ 8]\@ ARG == 1 ? 最後 # 前 \@
-		PRINTFORML  [ 9]\@ ARG == CHARANUM - 1 ? 最初 # 次 \@
+		PRINTFORM [ 8] \@ ARG == 1 ? 末位角色%BL(2)% # 上一角色%BL(2)% \@
+		PRINTFORML [ 9] \@ ARG == CHARANUM - 1 ? 首位角色%BL(2)% # 下一角色%BL(2)% \@
 		ONEINPUTS
 
 		SELECTCASE RESULTS
@@ -375,22 +375,22 @@ CASE "通常：２"
 		CALL PRINT_VIDEO, ARG
 		CALL PRINT_OTHER, ARG
 		DRAWLINE
-		PRINTBUTTON "[Enter]閉じる", "Enter"
-		PRINTFORM  [ 1]page1
-		;PRINTPLAINFORM  [×]page2
-		PRINTFORM  [ 4]主人
+		PRINTBUTTON "[Enter] 关闭", "Enter"
+		PRINTFORM %BL(2)%
+		PRINTFORM [ 1] page1%BL(2)%
+		PRINTFORM [ 4] 主人%BL(2)%
 		IF ARG != TARGET && TARGET > 0
-			PRINTFORM  [ 5]調教対象
+			PRINTFORM [ 5] 调教对象%BL(2)%
 		ELSE
-			PRINTPLAINFORM  [×]調教対象
+			PRINTPLAINFORM [×] 调教对象%BL(2)%
 		ENDIF
 		IF ARG != ASSI && ASSI > 0
-			PRINTFORM  [ 6]%TEXTS("助手の名称")%
+			PRINTFORM [ 6] %TEXTS("助手の名称")%%BL(2)%
 		ELSE
-			PRINTPLAINFORM  [×]%TEXTS("助手の名称")%
+			PRINTPLAINFORM [×] %TEXTS("助手の名称")%%BL(2)%
 		ENDIF
-		PRINTFORM  [ 8]\@ ARG == 1 ? 最後 # 前 \@
-		PRINTFORML  [ 9]\@ ARG == CHARANUM - 1 ? 最初 # 次 \@
+		PRINTFORM  [ 8] \@ ARG == 1 ? 末位角色%BL(2)% # 上一角色%BL(2)% \@
+		PRINTFORML  [ 9] \@ ARG == CHARANUM - 1 ? 首位角色%BL(2)% # 下一角色%BL(2)% \@
 
 		ONEINPUTS
 
